@@ -143,7 +143,7 @@ export class AppNode extends EventEmitter {
       fs.writeFileSync(
         this.opts.routerFile,
         [
-          `import { createRouter } from '@anchorlib/${this.opts.framework}';`,
+          `import { createRouter } from '@airlib/${this.opts.framework}';`,
           '',
           'const router = createRouter();',
           'export default router;',

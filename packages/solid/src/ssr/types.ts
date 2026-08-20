@@ -1,5 +1,5 @@
-import type { AnyType } from '@anchorlib/core';
-import type { CoreAppOptions, SSRContext, SSROptions, SSROutput, SSRRenderOptions } from '@anchorlib/ssr';
+import type { AnyType } from '@airlib/core';
+import type { CoreAppOptions, SSRContext, SSROptions, SSROutput, SSRRenderOptions } from '@airlib/ssr';
 import type { JSX } from 'solid-js';
 import type { BindableComponent } from '../hoc.js';
 import type { BindableProps } from '../types.js';

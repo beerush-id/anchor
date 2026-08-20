@@ -1,4 +1,4 @@
-import { $symbol } from '@anchorlib/core';
+import { $symbol } from '@airlib/core';
 import { PRELOAD_MODE, RENDER_MODE, RETRY_MODE, ROUTE_TYPE } from './enum.js';
 import type { RouterOptions } from './types.js';
 

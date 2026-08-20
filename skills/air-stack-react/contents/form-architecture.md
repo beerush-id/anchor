@@ -7,7 +7,7 @@ For standalone fields, the component owns its own state mutations internally and
 
 ```tsx
 import type { EventHandler, ChangeEvent } from 'react';
-import { setup, render, type Bindable } from '@anchorlib/react';
+import { setup, render, type Bindable } from '@airlib/react';
 
 // Single-purpose autonomous wrapper
 export const InputField = setup<{ 
@@ -35,7 +35,7 @@ For specialized inputs (e.g., number, date), use a local `mutable` state to buff
 
 ```tsx
 import type { EventHandler, ChangeEvent, FocusEvent } from 'react';
-import { setup, render, mutable, effect, type Bindable } from '@anchorlib/react';
+import { setup, render, mutable, effect, type Bindable } from '@airlib/react';
 
 export const NumberInput = setup<{ 
   value?: Bindable<number>, 
@@ -92,10 +92,10 @@ export const NumberInput = setup<{
 When multiple inputs must be validated and submitted together, use a `Form` component as the State Owner, coordinating state via Context.
 
 ```tsx
-import { setup, render, createContext, form, snapshot, type Bindable } from '@anchorlib/react';
+import { setup, render, createContext, form, snapshot, type Bindable } from '@airlib/react';
 import type { ReactNode, FormEvent } from 'react';
 import type { ZodType } from 'zod';
-import type { ExceptionMap } from '@anchorlib/react';
+import type { ExceptionMap } from '@airlib/react';
 
 // Define explicit context shapes
 export type FormContext = {
@@ -237,7 +237,7 @@ export const SubmitButton = setup<{ disabled?: boolean, children?: ReactNode }>(
 To enforce type safety on field names (`name` prop matching schema keys), graduate to a Form Factory function.
 
 ```tsx
-import { setup, render, createContext, form, derived, snapshot } from '@anchorlib/react';
+import { setup, render, createContext, form, derived, snapshot } from '@airlib/react';
 import type { ReactNode, FormEvent } from 'react';
 import { z, type ZodType } from 'zod';
 

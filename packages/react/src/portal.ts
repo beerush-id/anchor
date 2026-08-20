@@ -1,4 +1,4 @@
-import { isBrowser } from '@anchorlib/core';
+import { isBrowser } from '@airlib/core';
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 

@@ -1,4 +1,4 @@
-import { anchor, isBrowser } from '@anchorlib/core';
+import { anchor, isBrowser } from '@airlib/core';
 import { UnknownError } from './error.js';
 import type { RouteRegistry } from './registry.js';
 import type {

@@ -1,6 +1,6 @@
 <script lang="ts">
   import '../../../src/index.js';
-  import { mutable, onCleanup } from '@anchorlib/core';
+  import { mutable, onCleanup } from '@airlib/core';
 
   const counter = mutable({ count: 0 });
   const onclick = () => counter.count++;

@@ -1,4 +1,4 @@
-## Image Architecture (`@anchorlib/react` & `@anchorlib/vite-ssr`)
+## Image Architecture (`@airlib/react` & `@airlib/vite`)
 
 The AIR stack provides a dedicated image architecture that spans the UI, the build pipeline, and TypeScript.
 
@@ -28,7 +28,7 @@ export interface AirImage extends AirImageMeta {
 To process static assets into `AirImage` objects during development or production builds, configure the Vite plugin:
 
 ```typescript
-import { airImage, airWorker } from '@anchorlib/vite-ssr';
+import { airImage, airWorker } from '@airlib/vite';
 
 export default defineConfig({
   plugins: [
@@ -50,7 +50,7 @@ To ensure TypeScript infers the `?airimg` query return type as `AirImage`, you m
 ```json
 {
   "compilerOptions": {
-    "types": ["@anchorlib/vite-ssr/ambient"]
+    "types": ["@airlib/vite/ambient"]
   }
 }
 ```
@@ -74,7 +74,7 @@ interface ImageProps extends ImgHTMLAttributes<HTMLImageElement> {
 ```
 
 ```tsx
-import { Image } from '@anchorlib/react';
+import { Image } from '@airlib/react';
 import heroImage from './assets/hero.jpg?airimg';
 
 // Automatically uses the closest variant >= 300px

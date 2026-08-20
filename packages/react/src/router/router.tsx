@@ -1,4 +1,4 @@
-import { $symbol, type AnyType, createContext, isBrowser, setContext, sleep, untrack } from '@anchorlib/core';
+import { $symbol, type AnyType, createContext, isBrowser, setContext, sleep, untrack } from '@airlib/core';
 import {
   createRouter as createAppRouter,
   DEFAULT_CONFIG,
@@ -16,7 +16,7 @@ import {
   setRedirectHandler,
   setRendererFactory,
   type UnknownRoute,
-} from '@anchorlib/router';
+} from '@airlib/router';
 import type { FC, ReactNode } from 'react';
 import { setup, snippet } from '../hoc.js';
 import { createEffect, createRef } from '../hooks.js';

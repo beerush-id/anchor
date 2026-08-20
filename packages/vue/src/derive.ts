@@ -1,4 +1,4 @@
-import { type PipeTransformer, type State, type StateUnsubscribe, subscribe as derive } from '@anchorlib/core';
+import { type PipeTransformer, type State, type StateUnsubscribe, subscribe as derive } from '@airlib/core';
 import { customRef, isRef, onUnmounted, type Ref } from 'vue';
 import type { ConstantRef } from './types.js';
 import { REF_REGISTRY } from './ref.js';

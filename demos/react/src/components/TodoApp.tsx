@@ -1,4 +1,4 @@
-import { render, setup } from '@anchorlib/react';
+import { render, setup } from '@airlib/react';
 import { todoTable } from '../utils/todos';
 import TodoForm from './TodoForm';
 import TodoList from './TodoList';

@@ -1,4 +1,4 @@
-import { captureStack } from '@anchorlib/core';
+import { captureStack } from '@airlib/core';
 import { type RouteCacheSnapshot, URLCache } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from './constant.js';
 import { RouterContext } from './context.js';

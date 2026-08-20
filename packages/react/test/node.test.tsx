@@ -1,5 +1,5 @@
 import '../src/client/index';
-import { mutable } from '@anchorlib/core';
+import { mutable } from '@airlib/core';
 import { render } from '@testing-library/react';
 import type { RefObject } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

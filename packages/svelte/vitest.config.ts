@@ -8,8 +8,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@base': resolve(__dirname, 'src'),
-      '@anchorlib/svelte': resolve(__dirname, 'src'),
-      '@anchorlib/svelte/storage': resolve(__dirname, 'src/storage'),
+      '@airlib/svelte': resolve(__dirname, 'src'),
+      '@airlib/svelte/storage': resolve(__dirname, 'src/storage'),
     },
     conditions: ['browser'],
   },

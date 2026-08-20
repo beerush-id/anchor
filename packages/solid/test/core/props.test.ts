@@ -1,4 +1,4 @@
-import { classx, mutable } from '@anchorlib/core';
+import { classx, mutable } from '@airlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BindingRef } from '../../src/binding.js';
 import { omitProps, pickProps, proxyProps, setCurrentProps } from '../../src/props.js';

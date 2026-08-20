@@ -1,4 +1,4 @@
-import { derived } from '@anchorlib/solid';
+import { derived } from '@airlib/solid';
 import type { TodoRec } from '../utils/todos.js';
 
 interface TodoStatsProps {

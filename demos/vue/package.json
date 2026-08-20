@@ -10,11 +10,11 @@
     "format": "biome format --write"
   },
   "dependencies": {
-    "@anchorlib/vue": "workspace:*",
+    "@airlib/vue": "workspace:*",
     "vue": "catalog:app"
   },
   "devDependencies": {
-    "@anchorlib/core": "workspace:*",
+    "@airlib/core": "workspace:*",
     "@biomejs/biome": "catalog:",
     "@tailwindcss/vite": "catalog:app",
     "@vitejs/plugin-vue": "catalog:",

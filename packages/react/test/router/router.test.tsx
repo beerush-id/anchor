@@ -1,6 +1,6 @@
 import '../../src/client/index.js';
-import { type AnyType, clearContextStore, mutable } from '@anchorlib/core';
-import { DEFAULT_CONFIG, Redirect, type UnknownRoute } from '@anchorlib/router';
+import { type AnyType, clearContextStore, mutable } from '@airlib/core';
+import { DEFAULT_CONFIG, Redirect, type UnknownRoute } from '@airlib/router';
 import { act, render, screen } from '@testing-library/react';
 import type { FC, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -34,7 +34,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
   });
 
   describe('route() HOC wrapper', () => {
-    it('wraps an @anchorlib/router Route and exposes it accurately via the .index and .route properties', () => {
+    it('wraps an @airlib/router Route and exposes it accurately via the .index and .route properties', () => {
       const router = createRouter<ReactNode>();
       const rawRoute = router.route('/testing');
       const UiRoute = page(rawRoute);

@@ -1,4 +1,4 @@
-import { $do, type AnyType, awaited, createObserver, retriable, safeRun } from '@anchorlib/core';
+import { $do, type AnyType, awaited, createObserver, retriable, safeRun } from '@airlib/core';
 import { RouteCache, type RouteCacheSnapshot } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
 import { ERROR_TYPE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';

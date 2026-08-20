@@ -1,4 +1,4 @@
-import { shortId } from '@anchorlib/core';
+import { shortId } from '@airlib/core';
 
 let generateId = shortId;
 

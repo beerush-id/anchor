@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createTableRef } from '../../src/storage/table.js';
-import { createTable } from '@anchorlib/storage/db';
+import { createTable } from '@airlib/storage/db';
 
 // Mock the dependencies
-vi.mock('@anchorlib/storage/db', () => {
+vi.mock('@airlib/storage/db', () => {
   return {
     createTable: vi.fn(),
   };

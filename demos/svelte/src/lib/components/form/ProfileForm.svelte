@@ -1,6 +1,6 @@
 <script lang="ts">
   import { z } from 'zod/v4';
-  import { form } from '@anchorlib/svelte';
+  import { form } from '@airlib/svelte';
   import type { FormEventHandler } from 'svelte/elements';
 
   const schema = z.object({

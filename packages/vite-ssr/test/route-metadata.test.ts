@@ -11,7 +11,7 @@ describe('route metadata linking (linkMetadata)', () => {
     cleanFixture(dir);
   });
 
-  it('chains .meta() with @airstack/metadata import for leaf MDX pages when linkMetadata is enabled', () => {
+  it('chains .meta() with @airlib-cache/metadata import for leaf MDX pages when linkMetadata is enabled', () => {
     dir = makeFixture({
       'router.ts': '',
       'pages/docs/page.mdx': '---\ntitle: Docs\n---\n# Docs\n',
@@ -20,7 +20,7 @@ describe('route metadata linking (linkMetadata)', () => {
     app = makeApp(dir, { linkMetadata: true });
 
     const routeContent = readFixture(dir, 'pages/docs/route.ts');
-    const metaPos = routeContent.indexOf("import docsMeta from '@airstack/metadata/docs/page.js';");
+    const metaPos = routeContent.indexOf("import docsMeta from '@airlib-cache/metadata/docs/page.js';");
     const parentPos = routeContent.indexOf("import rootRoute from '../route.js';");
     expect(metaPos).toBeGreaterThan(-1);
     expect(parentPos).toBeGreaterThan(-1);
@@ -38,7 +38,7 @@ describe('route metadata linking (linkMetadata)', () => {
     app = makeApp(dir, { linkMetadata: true });
 
     const routeContent = readFixture(dir, 'pages/docs/route.ts');
-    expect(routeContent).toContain("import docsIndexMeta from '@airstack/metadata/docs/page.js';");
+    expect(routeContent).toContain("import docsIndexMeta from '@airlib-cache/metadata/docs/page.js';");
     expect(routeContent).toContain("export const docsRoute = rootRoute.route('/docs');");
     expect(routeContent).toContain("export const docsIndexRoute = docsRoute.route('/').meta(docsIndexMeta);");
   });
@@ -52,7 +52,7 @@ describe('route metadata linking (linkMetadata)', () => {
     app = makeApp(dir, { linkMetadata: true });
 
     const routeContent = readFixture(dir, 'pages/docs/route.ts');
-    expect(routeContent).toContain("import docsGettingStartedMeta from '@airstack/metadata/docs/getting-started.js';");
+    expect(routeContent).toContain("import docsGettingStartedMeta from '@airlib-cache/metadata/docs/getting-started.js';");
     expect(routeContent).toContain(
       "export const docsGettingStartedRoute = docsRoute.route('/getting-started').meta(docsGettingStartedMeta);"
     );
@@ -69,8 +69,8 @@ describe('route metadata linking (linkMetadata)', () => {
     app = makeApp(dir, { linkMetadata: true });
 
     const routeContent = readFixture(dir, 'pages/route.ts');
-    expect(routeContent).toContain("import pageMeta from '@airstack/metadata/page.js';");
-    expect(routeContent).toContain("import guideMeta from '@airstack/metadata/guide.js';");
+    expect(routeContent).toContain("import pageMeta from '@airlib-cache/metadata/page.js';");
+    expect(routeContent).toContain("import guideMeta from '@airlib-cache/metadata/guide.js';");
     expect(routeContent).toContain('export const rootRoute = router.route();');
     expect(routeContent).toContain("export const indexRoute = rootRoute.route('/').meta(pageMeta);");
     expect(routeContent).toContain("export const guideRoute = rootRoute.route('/guide').meta(guideMeta);");
@@ -85,7 +85,7 @@ describe('route metadata linking (linkMetadata)', () => {
     app = makeApp(dir, { linkMetadata: true });
 
     const routeContent = readFixture(dir, 'pages/route.ts');
-    expect(routeContent).toContain("import pageMeta from '@airstack/metadata/page.js';");
+    expect(routeContent).toContain("import pageMeta from '@airlib-cache/metadata/page.js';");
     expect(routeContent).toContain('export const rootRoute = router.route().meta(pageMeta);');
   });
 
@@ -98,7 +98,7 @@ describe('route metadata linking (linkMetadata)', () => {
     app = makeApp(dir, { linkMetadata: true });
 
     const routeContent = readFixture(dir, 'pages/(app)/route.ts');
-    expect(routeContent).toContain("import appMeta from '@airstack/metadata/(app)/page.js';");
+    expect(routeContent).toContain("import appMeta from '@airlib-cache/metadata/(app)/page.js';");
     expect(routeContent).toContain("export const appRoute = router.add('/app').meta(appMeta);");
   });
 
@@ -133,7 +133,7 @@ describe('route metadata linking (linkMetadata)', () => {
     app = makeApp(dir, { linkMetadata: true });
 
     const routeContent = readFixture(dir, 'pages/about/route.ts');
-    expect(routeContent).not.toContain('@airstack/metadata');
+    expect(routeContent).not.toContain('@airlib-cache/metadata');
     expect(routeContent).not.toContain('.meta(');
     expect(routeContent).toContain("export const aboutRoute = rootRoute.route('/about');");
   });
@@ -147,7 +147,7 @@ describe('route metadata linking (linkMetadata)', () => {
     app = makeApp(dir, { linkMetadata: false });
 
     const routeContent = readFixture(dir, 'pages/docs/route.ts');
-    expect(routeContent).not.toContain('@airstack/metadata');
+    expect(routeContent).not.toContain('@airlib-cache/metadata');
     expect(routeContent).not.toContain('.meta(');
   });
 
@@ -166,7 +166,7 @@ describe('route metadata linking (linkMetadata)', () => {
     app.rootFolder.children.get('docs')?.handleFileAdded('intro.page.mdx');
 
     const routeContent = readFixture(dir, 'pages/docs/route.ts');
-    expect(routeContent).toContain("import docsIntroMeta from '@airstack/metadata/docs/intro.js';");
+    expect(routeContent).toContain("import docsIntroMeta from '@airlib-cache/metadata/docs/intro.js';");
     expect(routeContent).toContain("export const docsIntroRoute = docsRoute.route('/intro').meta(docsIntroMeta);");
   });
 
@@ -196,8 +196,8 @@ describe('route metadata linking (linkMetadata)', () => {
     app = makeApp(dir, { linkMetadata: true });
 
     const routeContent = readFixture(dir, 'pages/docs/route.ts');
-    expect(routeContent).toContain("import docsIndexMeta from '@airstack/metadata/docs/page.js';");
-    expect(routeContent).toContain("import docsGuideMeta from '@airstack/metadata/docs/guide.js';");
+    expect(routeContent).toContain("import docsIndexMeta from '@airlib-cache/metadata/docs/page.js';");
+    expect(routeContent).toContain("import docsGuideMeta from '@airlib-cache/metadata/docs/guide.js';");
     expect(routeContent).toContain("export const docsIndexRoute = docsRoute.route('/').meta(docsIndexMeta);");
     expect(routeContent).toContain("export const docsGuideRoute = docsRoute.route('/guide').meta(docsGuideMeta);");
   });
@@ -220,7 +220,7 @@ describe('route metadata linking (linkMetadata)', () => {
     app = makeApp(dir, { linkMetadata: true });
 
     const routeContent = readFixture(dir, 'pages/leaf/route.ts');
-    expect(routeContent).toContain("import leafMeta from '@airstack/metadata/leaf/page.js';");
+    expect(routeContent).toContain("import leafMeta from '@airlib-cache/metadata/leaf/page.js';");
     expect(routeContent).toContain("export const leafRoute = rootRoute.route('/leaf').meta(leafMeta);");
   });
 
@@ -248,7 +248,7 @@ describe('route metadata linking (linkMetadata)', () => {
     app.rootFolder.children.get('docs')?.handleFileAdded('page.mdx');
 
     const routeContent = readFixture(dir, 'pages/docs/route.ts');
-    expect(routeContent).toContain("import docsIndexMeta from '@airstack/metadata/docs/page.js';");
+    expect(routeContent).toContain("import docsIndexMeta from '@airlib-cache/metadata/docs/page.js';");
     expect(routeContent).toContain("export const docsIndexRoute = docsRoute.route('/').meta(docsIndexMeta);");
   });
 
@@ -265,7 +265,7 @@ describe('route metadata linking (linkMetadata)', () => {
     app = makeApp(dir, { linkMetadata: true });
 
     const routeContent = readFixture(dir, 'pages/docs/route.ts');
-    expect(routeContent).toContain("import docsMeta from '@airstack/metadata/docs/page.js';");
+    expect(routeContent).toContain("import docsMeta from '@airlib-cache/metadata/docs/page.js';");
   });
 
   it('ignores routes with non-string path arguments safely in routeBinding', () => {

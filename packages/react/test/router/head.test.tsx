@@ -1,5 +1,5 @@
 import '../../src/client/index';
-import { createLifecycle, withIsolation } from '@anchorlib/core';
+import { createLifecycle, withIsolation } from '@airlib/core';
 import { render } from '@testing-library/react';
 import { renderToString } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';

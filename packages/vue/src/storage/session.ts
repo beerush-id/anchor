@@ -1,6 +1,6 @@
-import type { LinkableSchema, ObjLike, StateOptions } from '@anchorlib/core';
+import type { LinkableSchema, ObjLike, StateOptions } from '@airlib/core';
 import { onUnmounted } from 'vue';
-import { session } from '@anchorlib/storage';
+import { session } from '@airlib/storage';
 import { type ConstantRef, constantRef } from '../index.js';
 
 /**

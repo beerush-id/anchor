@@ -1,4 +1,4 @@
-import { mutable } from '@anchorlib/solid';
+import { mutable } from '@airlib/solid';
 import type { JSX } from 'solid-js';
 import { type TodoRecList, todoTable } from '../utils/todos.js';
 

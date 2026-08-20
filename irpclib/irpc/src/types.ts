@@ -1,4 +1,4 @@
-import type { AsyncValue, StateChange } from '@anchorlib/core';
+import type { AsyncValue, StateChange } from '@airlib/core';
 import type {
   ZodArray,
   ZodBoolean,

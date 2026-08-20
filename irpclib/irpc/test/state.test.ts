@@ -1,4 +1,4 @@
-import { anchor } from '@anchorlib/core';
+import { anchor } from '@airlib/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Context from '../src/context.js';
 import { IRPC_STATUS } from '../src/enum.js';

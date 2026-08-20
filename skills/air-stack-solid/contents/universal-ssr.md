@@ -19,10 +19,10 @@ type SSRRenderer = (url: string, cookie: string, context?: SSRContext, controlle
 Client-side hydration module. Resolves route state via `router.activate()` before using `hydrate` to attach Solid to the pre-rendered HTML.
 
 ```tsx
-import '@anchorlib/solid/client'; // MUST be first import
+import '@airlib/solid/client'; // MUST be first import
 import './styles/styles.css';
 
-import { UIRouter } from '@anchorlib/solid';
+import { UIRouter } from '@airlib/solid';
 import { render } from 'solid-js/web';
 import { router } from './lib/router.js';
 import { RootLayout } from './pages/layout.js';
@@ -34,12 +34,12 @@ router.activate(window.location.href).then(() => {
 });
 ```
 
-### Vite Plugin (`@anchorlib/vite-ssr`)
+### Vite Plugin (`@airlib/vite`)
 Vite plugin that handles SSR rendering and IRPC routing. By delegating to your edge worker, it requires zero configuration.
 
 ```ts
 // vite.config.ts
-import { airWorker } from '@anchorlib/vite-ssr';
+import { airWorker } from '@airlib/vite';
 import solid from 'vite-plugin-solid';
 
 export default defineConfig({
@@ -56,7 +56,7 @@ export default defineConfig({
 For apps that only need SSR without IRPC backend. Handles abort signals, timeouts, asset resolution, cookie propagation, and redirects.
 
 ```ts
-import { createWorker, createSSR } from '@anchorlib/solid/ssr';
+import { createWorker, createSSR } from '@airlib/solid/ssr';
 import router from './lib/router.js';
 import RootLayout from './pages/layout.js';
 
@@ -71,7 +71,7 @@ export default createWorker(render, {
 For apps that run IRPC and SSR on the same thread. Routes POST requests to IRPC, GET requests to SSR. Shares hooks, context isolation, and abort signals between both.
 
 ```ts
-import { createFullWorker, createSSR } from '@anchorlib/solid/ssr';
+import { createFullWorker, createSSR } from '@airlib/solid/ssr';
 import { HTTPRouter } from '@irpclib/http/router';
 import { irpc, transport } from './lib/module.js';
 import router from './lib/router.js';
@@ -134,7 +134,7 @@ binding = "ASSETS"
 To enable WebSocket connections, import the `wsTransport` and pass a `WebSocketRouter` instance in the `createFullWorker` options. The `airWorker()` Vite plugin will automatically intercept upgrade requests during development and forward them to this worker.
 
 ```ts
-import { createFullWorker, createSSR } from '@anchorlib/solid/ssr';
+import { createFullWorker, createSSR } from '@airlib/solid/ssr';
 import { HTTPRouter } from '@irpclib/http/router';
 import { WebSocketRouter } from '@irpclib/ws/router';
 import { irpc, transport, wsTransport } from './lib/module.js';
@@ -232,7 +232,7 @@ Serves cached HTML when available, renders and caches on miss.
 
 ```ts
 ```ts
-import { createWorker, createSSR, defaultAssetResolver } from '@anchorlib/solid/ssr';
+import { createWorker, createSSR, defaultAssetResolver } from '@airlib/solid/ssr';
 import router from './lib/router.js';
 import RootLayout from './pages/layout.js';
 import { cacheLayer } from './lib/cache.js'; // Implement your own storage (KV, FS, etc.)
@@ -279,7 +279,7 @@ export default createWorker(render, {
 Serves stale pages instantly and re-renders in the background based on file age.
 
 ```ts
-import { createFullWorker, createSSR, defaultAssetResolver } from '@anchorlib/solid/ssr';
+import { createFullWorker, createSSR, defaultAssetResolver } from '@airlib/solid/ssr';
 import { HTTPRouter } from '@irpclib/http/router';
 import { irpc, transport } from './lib/module.js';
 import router from './lib/router.js';
@@ -345,7 +345,7 @@ Generate static HTML at build time so ISR serves cached pages from the first req
 
 ```ts
 // scripts/prerender.ts
-import { createSSR } from '@anchorlib/solid/ssr';
+import { createSSR } from '@airlib/solid/ssr';
 import router from '../src/lib/router.js';
 import RootLayout from '../src/pages/layout.js';
 
@@ -374,9 +374,9 @@ for (const pathname of PAGES) {
 Full control over request routing, IRPC resolution, and SSR rendering with proper abort propagation, request isolation, and cookie management.
 
 ```ts
-import { createSSR } from '@anchorlib/solid/ssr';
+import { createSSR } from '@airlib/solid/ssr';
 import { HTTPRouter } from '@irpclib/http/router';
-import { decodeCookies, setCookieContext } from '@anchorlib/solid';
+import { decodeCookies, setCookieContext } from '@airlib/solid';
 import template from '../dist/client/index.html?raw';
 import { irpc, transport } from './lib/module.js';
 import pageRouter from './lib/router.js';

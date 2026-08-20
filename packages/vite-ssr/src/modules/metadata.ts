@@ -38,7 +38,7 @@ export class MetadataNode extends EventEmitter {
     private readonly pagesDir: string
   ) {
     super();
-    this.metadataDir = path.join(viteRoot, '.airstack', 'metadata');
+    this.metadataDir = path.join(viteRoot, '.airlib', 'metadata');
 
     folderNode.on('childAdded', this.handleChildAdded);
     folderNode.on('childRemoved', this.handleChildRemoved);
@@ -78,13 +78,13 @@ export class MetadataNode extends EventEmitter {
   private booting = false;
 
   /**
-   * Re-creates the `.airstack` package and symlink when missing — boot-only
-   * originally, but a deleted `.airstack` mid-run must self-heal on the next
+   * Re-creates the `.airlib` package and symlink when missing — boot-only
+   * originally, but a deleted `.airlib` mid-run must self-heal on the next
    * generate instead of leaving imports broken until restart.
    */
   private ensureInstalled() {
     if (this.parent) return;
-    bootPackage(this.metadataDir, '@airstack/metadata', {
+    bootPackage(this.metadataDir, '@airlib-cache/metadata', {
       '.': './index.ts',
       './*': './*.ts',
       './*.js': './*.ts',

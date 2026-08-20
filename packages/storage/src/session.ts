@@ -10,7 +10,7 @@ import {
   type StateOptions,
   type StateUnsubscribe,
   subscribe,
-} from '@anchorlib/core';
+} from '@airlib/core';
 import { MemoryStorage } from './memory.js';
 import { createState } from './state.js';
 import type { SessionFn } from './types.js';

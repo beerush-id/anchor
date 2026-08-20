@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { sessionRef } from '../../src/storage/session.js';
-import { session } from '@anchorlib/storage';
+import { session } from '@airlib/storage';
 
 // Mock the dependencies
-vi.mock('@anchorlib/storage', () => {
+vi.mock('@airlib/storage', () => {
   const session = vi.fn();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (session as any).leave = vi.fn();

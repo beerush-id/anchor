@@ -43,12 +43,12 @@ export function folderAt(app: AppNode, rel: string): FolderNode | undefined {
   return app.rootFolder.findNode(path.join(app.rootFolder.dir, ...segments));
 }
 
-/** Reads a generated manifest index file under `.airstack/manifest`. */
+/** Reads a generated manifest index file under `.airlib/manifest`. */
 export function readManifest(dir: string, rel = 'index.ts'): string {
-  return readFixture(dir, `.airstack/manifest/${rel}`);
+  return readFixture(dir, `.airlib/manifest/${rel}`);
 }
 
-/** Reads a generated metadata index/module file under `.airstack/metadata`. */
+/** Reads a generated metadata index/module file under `.airlib/metadata`. */
 export function readMetadata(dir: string, rel: string): string {
-  return readFixture(dir, `.airstack/metadata/${rel}`);
+  return readFixture(dir, `.airlib/metadata/${rel}`);
 }

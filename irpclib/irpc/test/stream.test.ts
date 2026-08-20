@@ -1,4 +1,4 @@
-import { AsyncStore, withIsolation } from '@anchorlib/core';
+import { AsyncStore, withIsolation } from '@airlib/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Context from '../src/context.js';
 import { IRPC_BASE_CONTEXT, IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';

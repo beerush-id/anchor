@@ -89,7 +89,7 @@ form.changeList;  // { email: 'new@test.com' } — changed fields and their valu
 Use IRPC's `.later()` to create a deferred call, and the field's `match` prop to block submission when validation fails. No manual state or `form.block()` needed.
 
 ```tsx
-import { setup, render } from '@anchorlib/react';
+import { setup, render } from '@airlib/react';
 import { checkUsername } from './api';
 
 export const SignUp = setup(() => {
@@ -116,7 +116,7 @@ export const SignUp = setup(() => {
 The same pattern using `mutable` state and a manual async call.
 
 ```tsx
-import { setup, render, mutable } from '@anchorlib/react';
+import { setup, render, mutable } from '@airlib/react';
 
 export const SignUp = setup(() => {
   const state = mutable({ taken: false, checking: false });
@@ -277,7 +277,7 @@ const URLInput = createInput('url');
 For inputs with custom behavior — formatted currency, rich text, third-party components — use `formInput` from the core. `parse` converts the display string to the stored value. `stringify` converts the stored value to the display string. `settled()` flushes the internal buffer back to a valid display value — call it on blur for inputs that buffer raw text (e.g., user types `"1."` then leaves, display restores to `"1"`).
 
 ```tsx
-import { setup, render } from '@anchorlib/react';
+import { setup, render } from '@airlib/react';
 import { formInput } from '@airlib/form';
 
 const CurrencyInput = setup<{ name: string }>((props) => {
@@ -304,7 +304,7 @@ const CurrencyInput = setup<{ name: string }>((props) => {
 Build custom submit or reset buttons by accessing the core form state. Use `getForm()` for a generic reusable button, or `UserForm.get()` for a button strictly typed to a specific schema.
 
 ```tsx
-import { setup, render } from '@anchorlib/react';
+import { setup, render } from '@airlib/react';
 import { getForm } from '@airlib/form';
 
 // Generic (reusable across any form)

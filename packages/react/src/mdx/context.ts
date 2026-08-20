@@ -1,4 +1,4 @@
-import { getContext, mutable, setContext } from '@anchorlib/core';
+import { getContext, mutable, setContext } from '@airlib/core';
 
 export interface TocHeading {
   id: string;

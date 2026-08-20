@@ -9,7 +9,7 @@ For dynamic forms built from server responses, JSON schemas, or user configurati
 The general `<Form>` component takes the schema and initial value as props. It creates the reactive form state and provides it to all child fields.
 
 ```tsx
-import { setup, render, mutable } from '@anchorlib/react';
+import { setup, render, mutable } from '@airlib/react';
 import { z } from 'zod';
 import { Form, Field, TextInput, FormSubmit } from '@airlib/react-form';
 
@@ -46,7 +46,7 @@ export const DynamicForm = setup(() => {
 The general `<Field>` component accepts any `string` as its `name` prop. It functions exactly like a typed field — providing label association, error rendering, and context for nested inputs.
 
 ```tsx
-import { setup, render } from '@anchorlib/react';
+import { setup, render } from '@airlib/react';
 
 const RenderDynamicField = setup<{ name: string; label: string; type: string }>((props) => {
   return render(() => (

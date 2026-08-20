@@ -43,7 +43,7 @@ export class ManifestNode extends EventEmitter {
     private readonly routeFile: string
   ) {
     super();
-    this.manifestDir = path.join(viteRoot, '.airstack', 'manifest');
+    this.manifestDir = path.join(viteRoot, '.airlib', 'manifest');
 
     folderNode.on('childAdded', this.handleChildAdded);
     folderNode.on('childRemoved', this.handleChildRemoved);
@@ -105,13 +105,13 @@ export class ManifestNode extends EventEmitter {
   };
 
   /**
-   * Re-creates the `.airstack` package and symlink when missing — boot-only
-   * originally, but a deleted `.airstack` mid-run must self-heal on the next
+   * Re-creates the `.airlib` package and symlink when missing — boot-only
+   * originally, but a deleted `.airlib` mid-run must self-heal on the next
    * generate instead of leaving imports broken until restart.
    */
   private ensureInstalled() {
     if (this.parent) return;
-    bootPackage(this.manifestDir, '@airstack/manifest', {
+    bootPackage(this.manifestDir, '@airlib-cache/manifest', {
       '.': './index.ts',
       './*': './*.ts',
       './*.js': './*.ts',

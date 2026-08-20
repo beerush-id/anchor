@@ -1,4 +1,4 @@
-import { createRouter } from '@anchorlib/router';
+import { createRouter } from '@airlib/router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { navigate, redirect } from '../../src/router/navigate.js';
 import { page } from '../../src/router/router.js';

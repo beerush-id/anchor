@@ -1,6 +1,6 @@
 /** @jsxImportSource solid-js */
 
-import { createRouter } from '@anchorlib/router';
+import { createRouter } from '@airlib/router';
 import { fireEvent, render, screen } from '@solidjs/testing-library';
 import type { Component } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

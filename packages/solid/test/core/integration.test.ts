@@ -1,4 +1,4 @@
-import { mutable } from '@anchorlib/core';
+import { mutable } from '@airlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { $bind, bind, isBinding } from '../../src/binding.js';
 import { bindable } from '../../src/hoc.js';

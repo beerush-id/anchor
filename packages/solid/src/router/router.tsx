@@ -1,4 +1,4 @@
-import { type AnyType, isBrowser } from '@anchorlib/core';
+import { type AnyType, isBrowser } from '@airlib/core';
 import {
   createRouter as createAppRouter,
   getRenderProps,
@@ -12,7 +12,7 @@ import {
   setRedirectHandler,
   setRendererFactory,
   type UnknownRoute,
-} from '@anchorlib/router';
+} from '@airlib/router';
 import { type Component, For, type JSX, onCleanup, onMount, type ParentComponent } from 'solid-js';
 import { setup } from '../hoc.js';
 import { Show } from '../switch.js';

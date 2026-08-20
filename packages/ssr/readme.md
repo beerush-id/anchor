@@ -1,4 +1,4 @@
-# @anchorlib/ssr
+# @airlib/ssr
 
 A framework-agnostic Server-Side Rendering core for the AIR stack. Part of the Anchor library ecosystem.
 
@@ -12,9 +12,9 @@ A framework-agnostic Server-Side Rendering core for the AIR stack. Part of the A
 ## Installation
 
 ```bash
-npm install @anchorlib/ssr
+npm install @airlib/ssr
 # or
-bun add @anchorlib/ssr
+bun add @airlib/ssr
 ```
 
 ## Scripts

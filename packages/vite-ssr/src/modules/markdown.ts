@@ -167,7 +167,7 @@ export class MdxModule {
     const body = stripFrontmatter(code);
 
     if (this.extended) {
-      const compSource = `@anchorlib/${AIR_ENV.framework}/mdx`;
+      const compSource = `@airlib/${AIR_ENV.framework}/mdx`;
       this.globals.push(
         `import { CodeGroup as AirCodeGroup, CodeBlock as AirCodeBlock, Admonition as AirAdmonition, Badge as AirBadge } from '${compSource}';`
       );
@@ -350,7 +350,7 @@ export function mdxEntryWrapper(opts: {
   const routePath = `./${files.route}`;
 
   return [
-    `import { page as __airPage } from '@anchorlib/${framework}';`,
+    `import { page as __airPage } from '@airlib/${framework}';`,
     `import { ${routeName} as __airRoute } from '${routePath}';`,
     `if (import.meta.hot) import.meta.hot.accept();`,
     `export default __airPage(__airRoute).renderAsync(async () => {`,

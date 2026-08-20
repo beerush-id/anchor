@@ -375,14 +375,14 @@ export class RouteNode extends EventEmitter {
 
   /**
    * Resolves the metadata import specifier and variable name for an MDX page in this folder.
-   * e.g., pageName 'getting-started' in 'docs' -> varName 'docsGettingStartedMeta', source '@airstack/metadata/docs/getting-started.js'
+   * e.g., pageName 'getting-started' in 'docs' -> varName 'docsGettingStartedMeta', source '@airlib-cache/metadata/docs/getting-started.js'
    */
   private resolveMetadataImport(
     kind: 'folder' | 'index' | 'named',
     pageName: string
   ): { varName: string; source: string } {
     const relPath = this.rel ? `${this.rel}/${pageName}` : pageName;
-    const source = `@airstack/metadata/${relPath}.js`;
+    const source = `@airlib-cache/metadata/${relPath}.js`;
     let varName: string;
     if (kind === 'folder') {
       varName = deriveMetaName(this.folderNode.segment);

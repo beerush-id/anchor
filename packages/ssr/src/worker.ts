@@ -5,7 +5,7 @@ import {
   isBrowser,
   setCookieContext,
   setScope,
-} from '@anchorlib/core';
+} from '@airlib/core';
 import type { HTTPTransport } from '@irpclib/http';
 import type { HTTPRouter } from '@irpclib/http/router';
 import { createAssetResolver, resolveCacheControl } from './assets.js';

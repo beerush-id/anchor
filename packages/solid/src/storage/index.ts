@@ -1,4 +1,4 @@
 import '../client/index.js';
 
-export * from '@anchorlib/storage';
-export * from '@anchorlib/storage/db';
+export * from '@airlib/storage';
+export * from '@airlib/storage/db';

@@ -92,7 +92,7 @@ interface WorkflowStepper<I, O, D = O | undefined> extends Promise<O> {
 A Workflow pipeline accepts **exactly one argument** (the input state). They are built with sequential `.then()` blocks.
 
 ```typescript
-import { plan } from '@anchorlib/solid';
+import { plan } from '@airlib/solid';
 import { lockInventory, processPayment, releaseInventory, verifySession } from './functions.js'; // IRPC Stubs
 
 // Standalone Pipeline
@@ -137,7 +137,7 @@ export const secureOrderFlow = plan(authFlow)
 Workflows natively support zero-dependency duck-typed schema validation (Zod, Valibot, custom validators). You can validate the global pipeline boundaries or strictly enforce intermediate step outputs.
 
 ```typescript
-import { plan } from '@anchorlib/solid';
+import { plan } from '@airlib/solid';
 import { z } from 'zod';
 import { provisionDatabase } from './functions.js'; // IRPC Stub
 
@@ -171,7 +171,7 @@ export const deployAppFlow = plan({
 When a process has multiple potential outcomes, use `.switch()` to declaratively route the execution path instead of relying on unreadable nested `if/else` statements. Each route receives an isolated branch builder to independently chain steps for that specific outcome.
 
 ```typescript
-import { plan } from '@anchorlib/solid';
+import { plan } from '@airlib/solid';
 import { processCard, processPaypal, flagForReview, autoApprove } from './functions.js'; // IRPC Stubs
 
 // Key-Based Branching
@@ -214,7 +214,7 @@ irpc.construct(processOrder, async (token, cartId) => {
 
 ```tsx
 // UI Execution
-import { setup, mutable } from '@anchorlib/solid';
+import { setup, mutable } from '@airlib/solid';
 import { uploadFilesFlow } from './workflows.js';
 
 export const UploadButton = setup<{ files: File[] }>((props) => {
@@ -242,7 +242,7 @@ export const UploadButton = setup<{ files: File[] }>((props) => {
 Executing a workflow returns a reactive `WorkflowStepper` which tracks the precise state of the pipeline, including the currently executing step's name and per-step introspection.
 
 ```tsx
-import { setup, Show, mutable } from '@anchorlib/solid';
+import { setup, Show, mutable } from '@airlib/solid';
 import { searchFlow, uploadFilesFlow } from './workflows.js';
 
 export const DataView = setup<{ token: string }>((props) => {
@@ -283,7 +283,7 @@ export const DataView = setup<{ token: string }>((props) => {
 For wizard-style UIs or approval flows, use `.step()` to advance one step at a time. Use `.run()` to execute all remaining steps.
 
 ```typescript
-import { plan } from '@anchorlib/solid';
+import { plan } from '@airlib/solid';
 
 const onboardingFlow = plan<{ name: string }>()
   .then((input) => ({ ...input, profile: createProfile(input.name) }), { name: 'Creating Profile...' })
@@ -325,7 +325,7 @@ if (saved) {
 Passing `seed` to an execution binding seeds `stepper.data` with an initial value, making it typed as `O` instead of `O | undefined`. This avoids null guards in the UI when the data shape is known upfront.
 
 ```tsx
-import { setup, Show, mutable } from '@anchorlib/solid';
+import { setup, Show, mutable } from '@airlib/solid';
 import { searchFlow } from './workflows.js';
 
 export const SearchView = setup(() => {
@@ -352,7 +352,7 @@ export const SearchView = setup(() => {
 A deferred stepper can serve as a stable UI binding target while imperative executions pipe their state into it. The UI stays bound to one stepper, each execution's status, data, and errors flow through automatically.
 
 ```tsx
-import { setup, Show } from '@anchorlib/solid';
+import { setup, Show } from '@airlib/solid';
 import { processOrderFlow } from './workflow.js';
 
 export const OrderButton = setup<{ cartId: string; userId: string }>((props) => {
@@ -382,7 +382,7 @@ export const OrderButton = setup<{ cartId: string; userId: string }>((props) => 
 Workflows are inherently observable without littering business logic with tracking code. The `WORKFLOW_STORE` maintains a live map of all pipelines and active executions.
 
 ```tsx
-import { setup, WORKFLOW_STORE } from '@anchorlib/solid';
+import { setup, WORKFLOW_STORE } from '@airlib/solid';
 
 // Telemetry / Logging
 WORKFLOW_STORE.subscribe((event) => {

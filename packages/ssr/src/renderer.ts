@@ -8,8 +8,8 @@ import {
   setCookieContext,
   setScope,
   withIsolation,
-} from '@anchorlib/core';
-import { GuardError, NotFoundError, ProviderError, Redirect, redirectUrl, type Router } from '@anchorlib/router';
+} from '@airlib/core';
+import { GuardError, NotFoundError, ProviderError, Redirect, redirectUrl, type Router } from '@airlib/router';
 import type {
   RouterOptions,
   SSRContext,

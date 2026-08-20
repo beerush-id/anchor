@@ -1,4 +1,4 @@
-import { replay, type StateChange } from '@anchorlib/core';
+import { replay, type StateChange } from '@airlib/core';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { IRPCError } from './error.js';
 import { RemoteState } from './state.js';

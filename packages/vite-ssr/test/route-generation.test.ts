@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { withIsolation } from '@anchorlib/core';
+import { withIsolation } from '@airlib/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Route } from '../../router/src/index.js';
 import { DEFAULT_FILE_MAP, importSpecifier } from '../src/utils/mapper.js';

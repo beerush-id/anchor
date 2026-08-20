@@ -1,4 +1,4 @@
-import type { AnyType, RetriableOptions, StateObserver } from '@anchorlib/core';
+import type { AnyType, RetriableOptions, StateObserver } from '@airlib/core';
 import type { RouteCache, URLCache } from './cache.js';
 import type { RouterContext } from './context.js';
 import type { ERROR_TYPE, PRELOAD_MODE, RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';

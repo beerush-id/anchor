@@ -5,7 +5,7 @@ This is the official Anchor library for Vue. It provides a set of tools to manag
 ## Installation
 
 ```bash
-npm install @anchorlib/vue
+npm install @airlib/vue
 ```
 
 ## Documentation
@@ -18,7 +18,7 @@ Here's a simple example of how to use `anchorRef` in a Vue component:
 
 ```vue
 <script setup>
-import { anchorRef } from '@anchorlib/vue';
+import { anchorRef } from '@airlib/vue';
 
 const state = anchorRef({
   user: {

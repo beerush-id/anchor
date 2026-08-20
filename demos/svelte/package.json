@@ -2,10 +2,10 @@
   "name": "@anchor-demo/svelte",
   "version": "1.3.0",
   "dependencies": {
-    "@anchorlib/svelte": "workspace:*"
+    "@airlib/svelte": "workspace:*"
   },
   "devDependencies": {
-    "@anchorlib/core": "workspace:*",
+    "@airlib/core": "workspace:*",
     "@biomejs/biome": "catalog:",
     "@sveltejs/adapter-auto": "catalog:",
     "@sveltejs/kit": "catalog:",

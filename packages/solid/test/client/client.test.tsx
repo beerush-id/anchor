@@ -1,6 +1,6 @@
 /** @jsxImportSource solid-js */
 
-import { mutable, onCleanup, setReactive, type StateObserver } from '@anchorlib/core';
+import { mutable, onCleanup, setReactive, type StateObserver } from '@airlib/core';
 import { render, renderHook } from '@solidjs/testing-library';
 import { createEffect, type Owner } from 'solid-js';
 import { describe, expect, it, vi } from 'vitest';

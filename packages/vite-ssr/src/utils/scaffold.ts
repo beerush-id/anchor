@@ -3,8 +3,8 @@ import {
   deriveIndexName,
   deriveRouteName,
   type FileMap,
-  FRAMEWORK_PACKAGE,
   type Framework,
+  FRAMEWORK_PACKAGE,
   humanizeSegment,
 } from './mapper.js';
 
@@ -142,7 +142,7 @@ export default createApp(router, App);
  * Scaffolds an ambient `global.d.ts` declarations file.
  */
 export function scaffoldGlobalDts(): string {
-  return `/// <reference types="@anchorlib/vite-ssr/ambient" />
+  return `/// <reference types="@airlib/vite/ambient" />
 
 interface AirRouteMeta {
   name?: string;

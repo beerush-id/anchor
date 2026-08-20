@@ -1,4 +1,4 @@
-import { createRecord, createTable, type InferList, type InferRow } from '@anchorlib/solid/storage';
+import { createRecord, createTable, type InferList, type InferRow } from '@airlib/solid/storage';
 
 export type Todo = {
   text: string;

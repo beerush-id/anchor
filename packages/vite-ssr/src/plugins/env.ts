@@ -37,8 +37,8 @@ function detectFramework(root: string): Framework {
     const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf-8'));
     const deps = { ...pkg.dependencies, ...pkg.devDependencies };
 
-    if (deps['@anchorlib/solid']) return 'solid';
-    if (deps['@anchorlib/react']) return 'react';
+    if (deps['@airlib/solid']) return 'solid';
+    if (deps['@airlib/react']) return 'react';
   } catch {}
 
   return 'react';

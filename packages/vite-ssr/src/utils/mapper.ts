@@ -12,8 +12,8 @@ export const MARKER_DEFAULT = '// @generated - do not edit';
 export const LEGACY_DEFAULT_MARKER = '// @generated — do not edit';
 
 export const FRAMEWORK_PACKAGE: Record<Framework, string> = {
-  react: '@anchorlib/react',
-  solid: '@anchorlib/solid',
+  react: '@airlib/react',
+  solid: '@airlib/solid',
 };
 
 export type FileMap = {

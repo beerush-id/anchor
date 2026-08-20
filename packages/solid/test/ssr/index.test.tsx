@@ -1,8 +1,8 @@
 /** @jsxImportSource solid-js */
 
-import { AsyncStore, setAsyncScope } from '@anchorlib/core';
-import { ALS_INSTANCE } from '@anchorlib/core/server';
-import { createRouter, GuardError, NotFoundError, ProviderError, Redirect } from '@anchorlib/router';
+import { AsyncStore, setAsyncScope } from '@airlib/core';
+import { ALS_INSTANCE } from '@airlib/core/server';
+import { createRouter, GuardError, NotFoundError, ProviderError, Redirect } from '@airlib/router';
 import type { JSX } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { page, UIRouter } from '../../src/index.js';

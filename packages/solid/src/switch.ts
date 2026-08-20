@@ -1,4 +1,4 @@
-import type { AnyType } from '@anchorlib/core';
+import type { AnyType } from '@airlib/core';
 import { createMemo, type JSX, untrack } from 'solid-js';
 
 export type ShowProps<T> = {

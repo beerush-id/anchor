@@ -1,4 +1,4 @@
-import { effect, mutable, untrack } from '@anchorlib/core';
+import { effect, mutable, untrack } from '@airlib/core';
 import { type TodoRec, type TodoRecList, todoTable } from './todos.js';
 
 export class TodoApp {

@@ -45,7 +45,7 @@ export type {
   UnitMeta,
   UnitProvider,
   Writable,
-} from '@anchorlib/core';
+} from '@airlib/core';
 
 export {
   $module,
@@ -103,8 +103,8 @@ export {
   withIsolation,
   withScope,
   writable,
-} from '@anchorlib/core';
-export { plan, WORKFLOW_STATUS, WORKFLOW_STORE } from '@anchorlib/core/workflow';
+} from '@airlib/core';
+export { plan, WORKFLOW_STATUS, WORKFLOW_STORE } from '@airlib/core/workflow';
 
 export type {
   ManifestRoute,
@@ -116,7 +116,7 @@ export type {
   RouterOptions,
   RouteStatus,
   RouteTarget,
-} from '@anchorlib/router';
+} from '@airlib/router';
 
 export {
   createRouteManifest,
@@ -132,7 +132,7 @@ export {
   RouteManifest,
   redirectUrl,
   UnknownError,
-} from '@anchorlib/router';
+} from '@airlib/router';
 
 export * from './binding.js';
 export * from './context.js';

@@ -63,7 +63,7 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
     config(userConfig, env) {
       if (!userConfig.ssr) userConfig.ssr = {};
       const noExternal = userConfig.ssr.noExternal;
-      const airModules = [/^@airlib\//, /^@anchorlib\//, /^@irpclib\//];
+      const airModules = [/^@airlib\//, /^@airlib\//, /^@irpclib\//];
 
       // biome-ignore lint/suspicious/noExplicitAny: Expect any.
       let mergedNoExternal: any;

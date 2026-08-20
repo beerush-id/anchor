@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { kvRef } from '../../src/storage/index.js';
-import { kv } from '@anchorlib/storage/db';
+import { kv } from '@airlib/storage/db';
 
 // Mock the dependencies
-vi.mock('@anchorlib/storage/db', () => {
+vi.mock('@airlib/storage/db', () => {
   const kv = vi.fn();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (kv as any).leave = vi.fn();

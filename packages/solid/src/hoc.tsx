@@ -1,4 +1,4 @@
-import { $symbol, type AsyncKey, AsyncStore, CONTEXT_STORE, getContextStore } from '@anchorlib/core';
+import { $symbol, type AsyncKey, AsyncStore, CONTEXT_STORE, getContextStore } from '@airlib/core';
 import { type Component, getOwner, type JSX, type Owner } from 'solid-js';
 import { proxyProps, setCurrentProps } from './props.js';
 import type { BindableComponentProps, BindableProps } from './types.js';

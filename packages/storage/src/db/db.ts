@@ -1,4 +1,4 @@
-import { captureStack, isFunction } from '@anchorlib/core';
+import { captureStack, isFunction } from '@airlib/core';
 import { type Connection, type DBEvent, type DBSubscriber, type DBUnsubscribe, IDBStatus } from './types.js';
 
 export const DB_NAME = 'anchor';

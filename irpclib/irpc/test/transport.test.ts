@@ -1,4 +1,4 @@
-import type { AnyType } from '@anchorlib/core';
+import type { AnyType } from '@airlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 import { RESOLVE_ERROR, ResolveError, TRANSPORT_ERROR, TransportError } from '../src/error.js';

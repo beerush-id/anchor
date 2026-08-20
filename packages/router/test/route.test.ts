@@ -1,4 +1,4 @@
-import { mutable, setReactive } from '@anchorlib/core';
+import { mutable, setReactive } from '@airlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from '../src/constant.js';
 import { ROUTE_STATUS, ROUTE_TYPE } from '../src/enum.js';

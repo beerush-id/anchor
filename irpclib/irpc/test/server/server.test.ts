@@ -1,5 +1,5 @@
 import '../../src/server/index.js';
-import { anchor, mutable, sleep } from '@anchorlib/core';
+import { anchor, mutable, sleep } from '@airlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createContextStore, getContext, setContext, withContext } from '../../src/context.js';
 

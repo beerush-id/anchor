@@ -1,4 +1,4 @@
-import { AsyncStore, getContext, setContext, withIsolation } from '@anchorlib/core';
+import { AsyncStore, getContext, setContext, withIsolation } from '@airlib/core';
 import { describe, expect, it } from 'vitest';
 import { createCredentials, credential, getCredentials } from '../src/credential.js';
 import { IRPC_BASE_CONTEXT } from '../src/enum.js';

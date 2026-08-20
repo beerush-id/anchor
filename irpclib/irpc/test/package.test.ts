@@ -1,4 +1,4 @@
-import { type AnyType, createLifecycle, isReactive, setReactive, sleep } from '@anchorlib/core';
+import { type AnyType, createLifecycle, isReactive, setReactive, sleep } from '@airlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createContextStore, withContext } from '../src/context.js';
 import { IRPC_BASE_CONTEXT, IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';

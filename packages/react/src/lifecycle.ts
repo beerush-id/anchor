@@ -11,7 +11,7 @@ import {
   setScope,
   STACK_SYMBOL,
   untrack,
-} from '@anchorlib/core';
+} from '@airlib/core';
 import { RenderContext } from './context.js';
 import { PROPS_SYMBOL, proxyProps } from './props.js';
 import type { CleanupHandler, Lifecycle, MountHandler } from './types.js';

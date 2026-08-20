@@ -1,4 +1,4 @@
-import { anchor } from '@anchorlib/core';
+import { anchor } from '@airlib/core';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 let errorSpy: ReturnType<typeof vi.spyOn>;

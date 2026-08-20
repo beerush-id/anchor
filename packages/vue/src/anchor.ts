@@ -8,7 +8,7 @@ import {
   type ModelOutput,
   type StateBaseOptions,
   type StateOptions,
-} from '@anchorlib/core';
+} from '@airlib/core';
 import { variableRef } from './ref.js';
 import type { VariableRef } from './types.js';
 

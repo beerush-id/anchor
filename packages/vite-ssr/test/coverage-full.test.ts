@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { AnyType } from '@anchorlib/core';
+import type { AnyType } from '@airlib/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AIR_ENV } from '../src/modules/env.js';
 import { FolderNode } from '../src/modules/folder-node.js';
@@ -377,8 +377,8 @@ describe('symlink — windows platforms', () => {
     try {
       expect(() => ensureSymlink(dir)).not.toThrow();
       expect(symlinkSpy).toHaveBeenCalledWith(
-        fixturePath(dir, '.airstack'),
-        fixturePath(dir, 'node_modules/@airstack'),
+        fixturePath(dir, '.airlib'),
+        fixturePath(dir, 'node_modules/@airlib'),
         'junction'
       );
     } finally {
@@ -390,7 +390,7 @@ describe('symlink — windows platforms', () => {
   it('repairs a stale symlink with junction links on win32', () => {
     dir = makeFixture({});
 
-    const target = fixturePath(dir, 'node_modules/@airstack');
+    const target = fixturePath(dir, 'node_modules/@airlib');
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.symlinkSync(fixturePath(dir, 'wrong-target'), target, 'dir');
 
@@ -400,7 +400,7 @@ describe('symlink — windows platforms', () => {
 
     try {
       expect(() => ensureSymlink(dir)).not.toThrow();
-      expect(symlinkSpy).toHaveBeenCalledWith(fixturePath(dir, '.airstack'), target, 'junction');
+      expect(symlinkSpy).toHaveBeenCalledWith(fixturePath(dir, '.airlib'), target, 'junction');
       expect(symlinkSpy).toHaveBeenCalledTimes(1);
     } finally {
       symlinkSpy.mockRestore();
@@ -616,11 +616,11 @@ describe('metadata — event and cleanup edge cases', () => {
 
   it('tolerates an unlink failure while pruning an empty metadata index', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/empty/placeholder.txt': '' });
-    fs.mkdirSync(fixturePath(dir, '.airstack/metadata/empty/index.ts'), { recursive: true });
+    fs.mkdirSync(fixturePath(dir, '.airlib/metadata/empty/index.ts'), { recursive: true });
 
     app = makeApp(dir);
 
-    const stat = fs.statSync(fixturePath(dir, '.airstack/metadata/empty/index.ts'));
+    const stat = fs.statSync(fixturePath(dir, '.airlib/metadata/empty/index.ts'));
     expect(stat.isDirectory()).toBe(true);
   });
 
@@ -628,8 +628,8 @@ describe('metadata — event and cleanup edge cases', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/guide/page.mdx': '---\ntitle: Guide\n---\n' });
     app = makeApp(dir);
 
-    removeFixture(dir, '.airstack/metadata/guide/index.ts');
-    fs.mkdirSync(fixturePath(dir, '.airstack/metadata/guide/index.ts'), { recursive: true });
+    removeFixture(dir, '.airlib/metadata/guide/index.ts');
+    fs.mkdirSync(fixturePath(dir, '.airlib/metadata/guide/index.ts'), { recursive: true });
 
     expect(() => app?.destroy()).not.toThrow();
   });
@@ -638,12 +638,12 @@ describe('metadata — event and cleanup edge cases', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/guide/page.mdx': '---\ntitle: Guide\n---\n' });
     app = makeApp(dir);
 
-    expect(fixtureExists(dir, '.airstack/metadata/guide/index.ts')).toBe(true);
+    expect(fixtureExists(dir, '.airlib/metadata/guide/index.ts')).toBe(true);
 
     removeFixture(dir, 'pages/guide/page.mdx');
     app.rootFolder.children.get('guide')?.handleFileRemoved('page.mdx');
 
-    expect(fixtureExists(dir, '.airstack/metadata/guide/index.ts')).toBe(false);
+    expect(fixtureExists(dir, '.airlib/metadata/guide/index.ts')).toBe(false);
   });
 });
 
@@ -666,11 +666,11 @@ describe('manifest — cleanup edge cases', () => {
     manifest.boot();
 
     const blogsManifest = manifest.children.get('blogs')!;
-    removeFixture(dir, '.airstack/manifest/blogs/index.ts');
-    fs.mkdirSync(fixturePath(dir, '.airstack/manifest/blogs/index.ts'), { recursive: true });
+    removeFixture(dir, '.airlib/manifest/blogs/index.ts');
+    fs.mkdirSync(fixturePath(dir, '.airlib/manifest/blogs/index.ts'), { recursive: true });
 
     expect(() => blogsManifest.destroy()).not.toThrow();
-    expect(fixtureExists(dir, '.airstack/manifest/blogs')).toBe(true);
+    expect(fixtureExists(dir, '.airlib/manifest/blogs')).toBe(true);
 
     manifest.destroy();
     route.destroy();

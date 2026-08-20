@@ -1,4 +1,4 @@
-import type { AnyType } from '@anchorlib/core';
+import type { AnyType } from '@airlib/core';
 import {
   $do,
   anchor,
@@ -8,7 +8,7 @@ import {
   isBrowser,
   microtask,
   setContextStore,
-} from '@anchorlib/core';
+} from '@airlib/core';
 import type { FC, FunctionComponent, ReactNode } from 'react';
 import type { RenderContext } from './context.js';
 import { createEffect, createState, memoize } from './hooks.js';

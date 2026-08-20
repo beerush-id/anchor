@@ -8,7 +8,7 @@ import type {
   RoutePath,
   Router,
   UnknownRoute,
-} from '@anchorlib/router';
+} from '@airlib/router';
 import type { ComponentProps as ReactProps, FC, ReactNode } from 'react';
 
 /**

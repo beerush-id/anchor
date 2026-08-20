@@ -1,4 +1,4 @@
-import { createObserver, isBrowser } from '@anchorlib/core';
+import { createObserver, isBrowser } from '@airlib/core';
 import type { HTMLAttributes, InputHTMLAttributes, RefObject } from 'react';
 import { onCleanup } from './lifecycle.js';
 import type { NodeRef } from './types.js';

@@ -1,4 +1,4 @@
-import { anchor, setCleanUpHandler } from '@anchorlib/core';
+import { anchor, setCleanUpHandler } from '@airlib/core';
 import { afterAll, beforeAll, beforeEach } from 'vitest';
 
 const cleanupList = new Set<() => void>();

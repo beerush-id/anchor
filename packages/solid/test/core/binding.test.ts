@@ -1,4 +1,4 @@
-import { mutable, type MutableRef } from '@anchorlib/core';
+import { mutable, type MutableRef } from '@airlib/core';
 import { describe, expect, it } from 'vitest';
 import { $bind, bind, BindingRef, isBinding } from '../../src/binding.js';
 

@@ -1,5 +1,5 @@
-import { classx, derived, untrack } from '@anchorlib/core';
-import { Route } from '@anchorlib/router';
+import { classx, derived, untrack } from '@airlib/core';
+import { Route } from '@airlib/router';
 import type { MouseEventHandler, ReactNode, RefObject } from 'react';
 import { render, setup } from '../hoc.js';
 import { onMount } from '../lifecycle.js';

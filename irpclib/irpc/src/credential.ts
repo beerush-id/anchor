@@ -1,4 +1,4 @@
-import { AsyncStore, getContext } from '@anchorlib/core';
+import { AsyncStore, getContext } from '@airlib/core';
 import { IRPC_BASE_CONTEXT } from './enum.js';
 import type { IRPCCredentials } from './types.js';
 

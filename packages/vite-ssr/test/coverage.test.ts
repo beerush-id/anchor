@@ -404,7 +404,7 @@ describe('coverage tests for unreached branches', () => {
 
     it('scaffolds the solid worker entry against the solid ssr package', () => {
       const content = scaffoldForFile({ base: 'worker.ts', framework: 'solid', files: DEFAULT_FILE_MAP });
-      expect(content).toContain("import { createApp } from '@anchorlib/solid/ssr';");
+      expect(content).toContain("import { createApp } from '@airlib/solid/ssr';");
     });
 
     it('returns undefined for unknown file bases', () => {
@@ -511,14 +511,14 @@ describe('coverage tests for unreached branches', () => {
 
     it('boots a scoped package with its exports map', () => {
       dir = makeFixture({});
-      bootPackage(fixturePath(dir, 'pkg'), '@airstack/test', { '.': './index.ts' });
+      bootPackage(fixturePath(dir, 'pkg'), '@airlib/test', { '.': './index.ts' });
 
       const { name, exports: exportsMap } = JSON.parse(readFixture(dir, 'pkg/package.json'));
-      expect(name).toBe('@airstack/test');
+      expect(name).toBe('@airlib/test');
       expect(exportsMap).toEqual({ '.': './index.ts' });
     });
 
-    it('is idempotent when creating the @airstack symlink', () => {
+    it('is idempotent when creating the @airlib symlink', () => {
       dir = makeFixture({});
 
       expect(() => ensureSymlink(dir)).not.toThrow();
@@ -594,25 +594,25 @@ describe('coverage tests for unreached branches', () => {
   });
 
   describe('symlink & write helpers', () => {
-    it('creates the @airstack symlink when node_modules is missing', () => {
+    it('creates the @airlib symlink when node_modules is missing', () => {
       dir = makeFixture({});
 
       expect(fs.existsSync(fixturePath(dir, 'node_modules'))).toBe(false);
       ensureSymlink(dir);
 
-      expect(fs.lstatSync(fixturePath(dir, 'node_modules/@airstack')).isSymbolicLink()).toBe(true);
+      expect(fs.lstatSync(fixturePath(dir, 'node_modules/@airlib')).isSymbolicLink()).toBe(true);
     });
 
-    it('repairs a stale @airstack symlink target', () => {
+    it('repairs a stale @airlib symlink target', () => {
       dir = makeFixture({});
-      fs.mkdirSync(fixturePath(dir, 'node_modules/@airstack'), { recursive: true });
-      fs.writeFileSync(fixturePath(dir, 'node_modules/@airstack/stale.txt'), 'x');
+      fs.mkdirSync(fixturePath(dir, 'node_modules/@airlib'), { recursive: true });
+      fs.writeFileSync(fixturePath(dir, 'node_modules/@airlib/stale.txt'), 'x');
 
       ensureSymlink(dir);
 
-      const stat = fs.lstatSync(fixturePath(dir, 'node_modules/@airstack'));
+      const stat = fs.lstatSync(fixturePath(dir, 'node_modules/@airlib'));
       expect(stat.isSymbolicLink()).toBe(true);
-      expect(fs.readlinkSync(fixturePath(dir, 'node_modules/@airstack'))).toBe('../.airstack');
+      expect(fs.readlinkSync(fixturePath(dir, 'node_modules/@airlib'))).toBe('../.airlib');
     });
 
     it('writeIfChanged creates missing parent directories', () => {
@@ -671,25 +671,25 @@ describe('coverage tests for unreached branches', () => {
       dir = makeFixture({ 'pages/guide/page.mdx': '---\ntitle: "Guide"\n---\n' });
       app = makeApp(dir);
 
-      expect(fixtureExists(dir, '.airstack/metadata/guide/page.ts')).toBe(true);
+      expect(fixtureExists(dir, '.airlib/metadata/guide/page.ts')).toBe(true);
 
       removeFixture(dir, 'pages/guide/page.mdx');
       app.rootFolder.children.get('guide')?.handleFileRemoved('page.mdx');
 
-      expect(fixtureExists(dir, '.airstack/metadata/guide/page.ts')).toBe(false);
-      expect(fixtureExists(dir, '.airstack/metadata/guide/index.ts')).toBe(false);
+      expect(fixtureExists(dir, '.airlib/metadata/guide/page.ts')).toBe(false);
+      expect(fixtureExists(dir, '.airlib/metadata/guide/index.ts')).toBe(false);
     });
 
     it('removes a metadata folder when an mdx folder is removed', () => {
       dir = makeFixture({ 'pages/blogs/[slug]/test.mdx': '---\ntitle: "Post"\n---\n' });
       app = makeApp(dir);
 
-      expect(fixtureExists(dir, '.airstack/metadata/blogs/[slug]/test.ts')).toBe(true);
+      expect(fixtureExists(dir, '.airlib/metadata/blogs/[slug]/test.ts')).toBe(true);
 
       removeFixture(dir, 'pages/blogs');
       app.rootFolder.handleChildRemoved('blogs');
 
-      expect(fixtureExists(dir, '.airstack/metadata/blogs')).toBe(false);
+      expect(fixtureExists(dir, '.airlib/metadata/blogs')).toBe(false);
     });
 
     it('removes manifest entries when a folder is removed', () => {
@@ -709,12 +709,12 @@ describe('coverage tests for unreached branches', () => {
       dir = makeFixture({ 'router.ts': '', 'pages/blogs/page.tsx': '' });
       app = makeApp(dir);
 
-      expect(fixtureExists(dir, '.airstack/manifest/index.ts')).toBe(true);
+      expect(fixtureExists(dir, '.airlib/manifest/index.ts')).toBe(true);
 
       app.destroy();
       app = undefined;
 
-      expect(fixtureExists(dir, '.airstack/manifest/index.ts')).toBe(false);
+      expect(fixtureExists(dir, '.airlib/manifest/index.ts')).toBe(false);
     });
   });
 

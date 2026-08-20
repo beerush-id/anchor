@@ -1,4 +1,4 @@
-import { isArray, isObject, uuid } from '@anchorlib/core';
+import { isArray, isObject, uuid } from '@airlib/core';
 import { IRPCBlob, IRPCFile, type IRPCFileMeta, IRPCFileStream } from './file.js';
 import type { IRPCData } from './types.js';
 

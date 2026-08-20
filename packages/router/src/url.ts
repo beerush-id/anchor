@@ -1,4 +1,4 @@
-import { isValid } from '@anchorlib/core';
+import { isValid } from '@airlib/core';
 
 /**
  * Constructs a URL string from a route path, parameters, and query parameters.

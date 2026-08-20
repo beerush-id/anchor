@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { subscribe } from '@anchorlib/core';
-  import { persistent } from '@anchorlib/svelte/storage';
+  import { subscribe } from '@airlib/core';
+  import { persistent } from '@airlib/svelte/storage';
   import TodoApp from '$lib/components/todo/TodoApp.svelte';
   import ProfileForm from '$lib/components/form/ProfileForm.svelte';
 

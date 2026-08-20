@@ -1,4 +1,4 @@
-import type { StateChange } from '@anchorlib/core';
+import type { StateChange } from '@airlib/core';
 import { describe, expect, it, vi } from 'vitest';
 import { Durable, type DurableBridge, type DurableState, durable } from '../src/durable.js';
 

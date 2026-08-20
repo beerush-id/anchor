@@ -1,4 +1,4 @@
-import { anchor, isObject } from '@anchorlib/core';
+import { anchor, isObject } from '@airlib/core';
 import type { StorageEvent, StorageSubscriber } from './types.js';
 
 /**

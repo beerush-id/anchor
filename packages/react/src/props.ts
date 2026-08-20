@@ -8,7 +8,7 @@ import {
   isValueGetter,
   setScope,
   untrack,
-} from '@anchorlib/core';
+} from '@airlib/core';
 import { isBinding, isLinkingRef } from './binding.js';
 import { renderDynamic } from './dynamic.js';
 import type { ComponentProps, ReactiveProps } from './types.js';

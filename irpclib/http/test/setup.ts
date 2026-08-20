@@ -1,4 +1,4 @@
-import { anchor } from '@anchorlib/core';
+import { anchor } from '@airlib/core';
 import { beforeEach } from 'vitest';
 
 // Mock for any global setup needed for tests

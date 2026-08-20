@@ -1,4 +1,4 @@
-import { uuid } from '@anchorlib/core';
+import { uuid } from '@airlib/core';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { CallError } from './error.js';
 import { IRPCReader } from './reader.js';

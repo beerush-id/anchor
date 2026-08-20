@@ -1,4 +1,4 @@
-import { derived, setup, snippet } from '@anchorlib/react';
+import { derived, setup, snippet } from '@airlib/react';
 import type { TodoRecList } from '../utils/todos';
 import TodoItem from './TodoItem';
 import TodoStats from './TodoStats';

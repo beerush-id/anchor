@@ -26,7 +26,7 @@
     "docs:preview": "vitepress preview docs --port 5611"
   },
   "devDependencies": {
-    "@anchorlib/react": "workspace:*",
+    "@airlib/react": "workspace:*",
     "@biomejs/biome": "catalog:",
     "@irpclib/irpc": "workspace:*",
     "@tailwindcss/browser": "catalog:",

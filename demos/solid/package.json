@@ -10,11 +10,11 @@
     "format": "biome format --write"
   },
   "dependencies": {
-    "@anchorlib/solid": "workspace:*",
+    "@airlib/solid": "workspace:*",
     "solid-js": "catalog:app"
   },
   "devDependencies": {
-    "@anchorlib/core": "workspace:*",
+    "@airlib/core": "workspace:*",
     "@biomejs/biome": "catalog:",
     "@tailwindcss/vite": "catalog:app",
     "jsdom": "catalog:",

@@ -1,4 +1,4 @@
-import { $symbol, getScope, microtask, setScope } from '@anchorlib/core';
+import { $symbol, getScope, microtask, setScope } from '@airlib/core';
 import type { AnyRoute, InferParams, InferQuery, RouteTarget, UnknownRedirect } from './types.js';
 import { createUrl } from './url.js';
 

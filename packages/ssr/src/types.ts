@@ -1,5 +1,5 @@
-import type { AsyncKey, AsyncStore, AsyncValue } from '@anchorlib/core';
-import type { Router, SitemapConfig } from '@anchorlib/router';
+import type { AsyncKey, AsyncStore, AsyncValue } from '@airlib/core';
+import type { Router, SitemapConfig } from '@airlib/router';
 import type { HTTPRouter } from '@irpclib/http/router';
 import type { StaticAdapter } from './static.js';
 

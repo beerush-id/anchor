@@ -1,6 +1,6 @@
 import { customRef, onUnmounted } from 'vue';
 import type { ConstantRef } from './types.js';
-import { createObserver, type StateObserver } from '@anchorlib/core';
+import { createObserver, type StateObserver } from '@airlib/core';
 
 /**
  * Creates a custom Vue ref that automatically tracks dependencies and triggers reactivity

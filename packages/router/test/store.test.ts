@@ -1,4 +1,4 @@
-import type { Linkable } from '@anchorlib/core';
+import type { Linkable } from '@airlib/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createState, safeAssign, safeRead } from '../src/store.js';
 

@@ -1,7 +1,7 @@
 import { act, render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import '../src/client/index';
-import { mutable } from '@anchorlib/core';
+import { mutable } from '@airlib/core';
 import { $use, createSwitch, For, Show, Snippet, stubScheduler } from '../src/index.js';
 
 stubScheduler();

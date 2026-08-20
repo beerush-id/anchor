@@ -24,7 +24,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@anchorlib/core": "workspace:*",
+    "@airlib/core": "workspace:*",
     "@irpclib/irpc": "workspace:*"
   },
   "devDependencies": {

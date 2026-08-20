@@ -1,5 +1,5 @@
-import { AsyncStore } from '@anchorlib/core';
-import { GuardError, NotFoundError, ProviderError, Redirect, type Router } from '@anchorlib/router';
+import { AsyncStore } from '@airlib/core';
+import { GuardError, NotFoundError, ProviderError, Redirect, type Router } from '@airlib/router';
 import { describe, expect, it, vi } from 'vitest';
 import { createRenderer, ssrRenderToString } from '../src/index.js';
 import type { SSRRenderView } from '../src/types.js';

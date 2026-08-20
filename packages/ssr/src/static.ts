@@ -1,4 +1,4 @@
-import type { Router, StaticOption, StaticOptions } from '@anchorlib/router';
+import type { Router, StaticOption, StaticOptions } from '@airlib/router';
 import { resolveCacheControl } from './assets.js';
 import type { CacheControl } from './types.js';
 

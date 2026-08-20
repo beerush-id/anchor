@@ -25,7 +25,7 @@ describe('scaffolding — empty files become working pages', () => {
     dir = makeFixture({ 'pages/blogs/page.tsx': '' });
     const content = scaffold(dir, 'blogs', 'page.tsx');
 
-    expect(content).toContain("import { page } from '@anchorlib/react';");
+    expect(content).toContain("import { page } from '@airlib/react';");
     expect(content).toContain("import blogsRoute from './route.js';");
     expect(content).toContain('page(blogsRoute).render(');
     expect(content).toContain('<h1>Blogs</h1>');
@@ -76,7 +76,7 @@ describe('scaffolding — empty files become working pages', () => {
     dir = makeFixture({ 'pages/blogs/page.tsx': '' });
     const content = scaffold(dir, 'blogs', 'page.tsx', 'solid');
 
-    expect(content).toContain("import { page } from '@anchorlib/solid';");
+    expect(content).toContain("import { page } from '@airlib/solid';");
   });
 
   it('scaffolds inside a folder with existing route.ts', () => {
@@ -150,8 +150,8 @@ describe('scaffolding — empty files become working pages', () => {
     app = makeApp(dir);
 
     expect(readFixture(dir, 'src/app.tsx')).toContain('export default (({ url }) =>');
-    expect(readFixture(dir, 'src/client.tsx')).toContain("import '@anchorlib/react/client';");
-    expect(readFixture(dir, 'src/worker.ts')).toContain("import { createApp } from '@anchorlib/react/ssr';");
+    expect(readFixture(dir, 'src/client.tsx')).toContain("import '@airlib/react/client';");
+    expect(readFixture(dir, 'src/worker.ts')).toContain("import { createApp } from '@airlib/react/ssr';");
     expect(readFixture(dir, 'src/global.d.ts')).toContain('interface AirRouteMeta');
   });
 

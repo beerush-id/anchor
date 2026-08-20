@@ -1,4 +1,4 @@
-import { AsyncStore, createContext, getContext, setAsyncScope, setContext, withIsolation } from '@anchorlib/core';
+import { AsyncStore, createContext, getContext, setAsyncScope, setContext, withIsolation } from '@airlib/core';
 import { IRPC_BASE_CONTEXT } from './enum.js';
 import type { DeferredHook } from './router.ts';
 import type { IRPCContext, IRPCContextProvider } from './types.js';

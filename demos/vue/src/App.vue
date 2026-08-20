@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import TodoApp from './components/todo/TodoApp.vue';
-  import { derive } from '@anchorlib/core';
-  import { persistentRef } from '@anchorlib/vue/storage';
+  import { derive } from '@airlib/core';
+  import { persistentRef } from '@airlib/vue/storage';
 
   const settings = persistentRef('settings', {
     theme: 'light',

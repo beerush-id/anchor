@@ -1,4 +1,4 @@
-import { isFunction } from '@anchorlib/core';
+import { isFunction } from '@airlib/core';
 import type { FilterFn, Rec, Row } from './types.js';
 import { uuid } from './uuid.js';
 

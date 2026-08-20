@@ -1,5 +1,5 @@
-import type { NavigateOptions, Redirect, RedirectOptions, RouteTarget } from '@anchorlib/router';
-import { createUrl, redirect as redirectTo, Route } from '@anchorlib/router';
+import type { NavigateOptions, Redirect, RedirectOptions, RouteTarget } from '@airlib/router';
+import { createUrl, redirect as redirectTo, Route } from '@airlib/router';
 import type { AnyRoute, RouteComponent } from './types.js';
 
 /**

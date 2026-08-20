@@ -1,4 +1,4 @@
-import { anchor, captureStack, microtask, onGlobalCleanup, type StateUnsubscribe, subscribe } from '@anchorlib/core';
+import { anchor, captureStack, microtask, onGlobalCleanup, type StateUnsubscribe, subscribe } from '@airlib/core';
 import { createState } from '../state.js';
 import { DB_SYNC_DELAY, IndexedStore } from './db.js';
 import { put, remove } from './helper.js';

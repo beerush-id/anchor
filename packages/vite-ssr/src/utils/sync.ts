@@ -12,9 +12,9 @@ export function writeIfChanged(filePath: string, content: string): boolean {
 }
 
 export function ensureSymlink(viteRoot: string): void {
-  const absAirStackDir = path.join(viteRoot, '.airstack');
+  const absAirStackDir = path.join(viteRoot, '.airlib');
   const nodeModulesDir = path.join(viteRoot, 'node_modules');
-  const target = path.join(nodeModulesDir, '@airstack');
+  const target = path.join(nodeModulesDir, '@airlib-cache');
   fs.mkdirSync(nodeModulesDir, { recursive: true });
 
   const isWin32 = process.platform === 'win32';

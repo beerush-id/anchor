@@ -1,9 +1,9 @@
-import * as core from '@anchorlib/core';
+import * as core from '@airlib/core';
 import { describe, expect, it, vi } from 'vitest';
 import { SSR_ENV_KEY, ssrEnv } from '../src/index.js';
 
-vi.mock('@anchorlib/core', async () => {
-  const actual = await vi.importActual('@anchorlib/core');
+vi.mock('@airlib/core', async () => {
+  const actual = await vi.importActual('@airlib/core');
   return {
     ...actual,
     getContext: vi.fn(),

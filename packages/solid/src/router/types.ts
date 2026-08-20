@@ -7,7 +7,7 @@ import type {
   RoutePath,
   Router,
   UnknownRoute,
-} from '@anchorlib/router';
+} from '@airlib/router';
 import type { JSX, ParentComponent } from 'solid-js';
 
 /**

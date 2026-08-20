@@ -1,4 +1,4 @@
-import type { Linkable, LinkableSchema, StateBaseOptions, StateMetadata } from '@anchorlib/core';
+import type { Linkable, LinkableSchema, StateBaseOptions, StateMetadata } from '@airlib/core';
 
 import { StateMap } from './map.js';
 

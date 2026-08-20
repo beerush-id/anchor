@@ -1,5 +1,5 @@
-import { type AnyType, derived } from '@anchorlib/core';
-import { createUrl, Route } from '@anchorlib/router';
+import { type AnyType, derived } from '@airlib/core';
+import { createUrl, Route } from '@airlib/router';
 import type { JSX } from 'solid-js';
 import { splitProps } from 'solid-js';
 import { navigate } from './navigate.js';

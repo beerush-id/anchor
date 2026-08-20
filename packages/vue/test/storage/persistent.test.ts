@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { persistentRef } from '../../src/storage/persistent.js';
-import { persistent } from '@anchorlib/storage';
+import { persistent } from '@airlib/storage';
 
 // Mock the dependencies
-vi.mock('@anchorlib/storage', () => {
+vi.mock('@airlib/storage', () => {
   const persistent = vi.fn();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (persistent as any).leave = vi.fn();

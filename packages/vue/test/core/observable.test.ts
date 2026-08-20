@@ -1,4 +1,4 @@
-import { anchor } from '@anchorlib/core';
+import { anchor } from '@airlib/core';
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
 import type { Ref } from 'vue';

@@ -1,4 +1,4 @@
-import type { AnyType } from '@anchorlib/core';
+import type { AnyType } from '@airlib/core';
 import { describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 import { getRouterHooks, IRPCTransport } from '../src/index.js';

@@ -44,7 +44,7 @@ We typically use `tsdown` or `tsup` for bundling.
 **Best Practices:**
 1. **Preserve JSX/Directives**: If your library contains UI components, ensure you compile JSX/TSX appropriately or distribute raw files for the consumer's bundler to process.
 2. **Export Maps**: Use `exports` in your `package.json` to clearly define public entry points (e.g., separating client components from server-only logic).
-3. **Peer Dependencies**: List `@anchorlib/core` or `@anchorlib/react` as `peerDependencies` instead of `dependencies` to prevent multiple versions of reactivity engines from running simultaneously in the consumer's app.
+3. **Peer Dependencies**: List `@airlib/core` or `@airlib/react` as `peerDependencies` instead of `dependencies` to prevent multiple versions of reactivity engines from running simultaneously in the consumer's app.
 
 ### Example `package.json` setup for a Library
 ```json
@@ -77,7 +77,7 @@ We typically use `tsdown` or `tsup` for bundling.
     }
   },
   "peerDependencies": {
-    "@anchorlib/react": "^1.0.0",
+    "@airlib/react": "^1.0.0",
     "@irpclib/irpc": "^1.0.0"
   },
   "devDependencies": {

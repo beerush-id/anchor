@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { exceptionRef, modelRef } from '../../src/model.js';
 import { z } from 'zod';
-import { anchor } from '@anchorlib/core';
+import { anchor } from '@airlib/core';
 import { anchorRef } from '../../src/index.js';
 
 describe('Anchor Vue - Model', () => {

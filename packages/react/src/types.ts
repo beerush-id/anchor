@@ -1,4 +1,4 @@
-import type { AsyncStore, RefStack, ValueGetterType } from '@anchorlib/core';
+import type { AsyncStore, RefStack, ValueGetterType } from '@airlib/core';
 import type { FC, FunctionComponent, HTMLAttributes, MemoExoticComponent, ReactNode, RefObject } from 'react';
 
 export type MountHandler = () => void | CleanupHandler;

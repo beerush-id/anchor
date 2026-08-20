@@ -5,7 +5,7 @@ This is the official Anchor library for Solid. It provides a set of tools to man
 ## Installation
 
 ```bash
-npm install @anchorlib/solid
+npm install @airlib/solid
 ```
 
 ## Documentation
@@ -17,7 +17,7 @@ For full documentation, visit [Anchor for Solid](https://airlib.dev/solid/introd
 Here's a simple example of how to use `variableRef`, `anchorRef` and `observedRef` in a Solid component:
 
 ```tsx
-import { variableRef, anchorRef, observedRef } from '@anchorlib/solid';
+import { variableRef, anchorRef, observedRef } from '@airlib/solid';
 
 // In your component
 function MyComponent() {

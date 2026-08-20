@@ -1,4 +1,4 @@
-import '@anchorlib/react/client'; // Required for reactivity
+import '@airlib/react/client'; // Required for reactivity
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';

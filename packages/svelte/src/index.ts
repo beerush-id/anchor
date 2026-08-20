@@ -39,7 +39,7 @@ export type {
   StateUnsubscribe,
   TaskHandler,
   Writable,
-} from '@anchorlib/core';
+} from '@airlib/core';
 
 export {
   $module,
@@ -96,5 +96,5 @@ export {
   withIsolation,
   withScope,
   writable,
-} from '@anchorlib/core';
-export { plan, WORKFLOW_STATUS, WORKFLOW_STORE } from '@anchorlib/core/workflow';
+} from '@airlib/core';
+export { plan, WORKFLOW_STATUS, WORKFLOW_STORE } from '@airlib/core/workflow';

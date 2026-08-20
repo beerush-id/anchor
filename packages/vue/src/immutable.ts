@@ -10,7 +10,7 @@ import {
   type MutationKey,
   type StateBaseOptions,
   type StateOptions,
-} from '@anchorlib/core';
+} from '@airlib/core';
 import type { VariableRef } from './types.js';
 import { variableRef } from './ref.js';
 

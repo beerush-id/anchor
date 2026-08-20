@@ -12,4 +12,4 @@ bpkg publish -f irpclib/http
 bpkg publish -f irpclib/ws
 bpkg publish -f irpclib/broadcast
 
-bpkg publish -f packages/vite-ssr
+bpkg publish -f packages/vite

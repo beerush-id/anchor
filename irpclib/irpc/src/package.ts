@@ -8,7 +8,7 @@ import {
   onCleanup,
   type StateUnsubscribe,
   uuid,
-} from '@anchorlib/core';
+} from '@airlib/core';
 import { IRPCCacher } from './cache.js';
 import { getAbortSignal, getRouterHooks } from './context.js';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';

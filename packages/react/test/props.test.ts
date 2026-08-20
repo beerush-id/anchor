@@ -1,4 +1,4 @@
-import { classx, effect, mutable } from '@anchorlib/core';
+import { classx, effect, mutable } from '@airlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { $use, bind } from '../src/binding';
 import type { Bindable, ComponentProps, ReactiveProps } from '../src/index.js';

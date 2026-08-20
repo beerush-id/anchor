@@ -131,14 +131,14 @@ describe('mdx metadata generator', () => {
     });
 
     app = makeApp(dir);
-    expect(fixtureExists(dir, '.airstack/metadata/docs/page.ts')).toBe(true);
+    expect(fixtureExists(dir, '.airlib/metadata/docs/page.ts')).toBe(true);
 
     app.destroy();
     app = undefined;
 
-    expect(fixtureExists(dir, '.airstack/metadata/index.ts')).toBe(false);
-    expect(fixtureExists(dir, '.airstack/metadata/docs/page.ts')).toBe(false);
-    expect(fixtureExists(dir, '.airstack/metadata/docs/index.ts')).toBe(false);
+    expect(fixtureExists(dir, '.airlib/metadata/index.ts')).toBe(false);
+    expect(fixtureExists(dir, '.airlib/metadata/docs/page.ts')).toBe(false);
+    expect(fixtureExists(dir, '.airlib/metadata/docs/index.ts')).toBe(false);
   });
 
   it('regenerates metadata when an mdx file changes', () => {

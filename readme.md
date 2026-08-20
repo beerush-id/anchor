@@ -153,10 +153,10 @@ const toggleTheme = () => {
 
 ### Anchor: State Management
 The heart of the ecosystem. Anchor provides fine-grained reactivity, flexible state primitives, and a comprehensive toolkit for managing application state.
-- [@anchorlib/core](./packages/core) - Framework-agnostic reactive state
-- [@anchorlib/react](./packages/react) - React integration
-- [@anchorlib/solid](./packages/solid) - SolidJS integration
-- [@anchorlib/svelte](./packages/svelte) - Svelte integration
+- [@airlib/core](./packages/core) - Framework-agnostic reactive state
+- [@airlib/react](./packages/react) - React integration
+- [@airlib/solid](./packages/solid) - SolidJS integration
+- [@airlib/svelte](./packages/svelte) - Svelte integration
 
 ### IRPC: Type-Safe API Layer
 Isomorphic Remote Procedure Call framework bridging frontend state and backend data.
@@ -167,15 +167,15 @@ Isomorphic Remote Procedure Call framework bridging frontend state and backend d
 
 ### Router: Reactive, Framework-Agnostic Router
 Guards and data providers resolve before rendering. Route state re-evaluates when dependencies change — no imperative redirects or scattered guard logic.
-- [@anchorlib/router](./packages/router) - Reactive routing engine
+- [@airlib/router](./packages/router) - Reactive routing engine
 
 ### Storage: Reactive, Browser Storage Engine
 Persistent state across sessions, tabs, and storage limits. Reactive wrappers for localStorage, sessionStorage, and IndexedDB.
-- [@anchorlib/storage](./packages/storage) - Persistent storage engines
+- [@airlib/storage](./packages/storage) - Persistent storage engines
 
 ### Vite Integration
 SSR rendering and IRPC routing as a single Vite plugin. Deploys to Bun, Node.js, Cloudflare Workers, and Deno.
-- [@anchorlib/vite-ssr](./packages/vite-ssr) - Vite plugin for SSR rendering and IRPC routing
+- [@airlib/vite](./packages/vite-ssr) - Vite plugin for SSR rendering and IRPC routing
 
 ### Agent Skills
 Structured instructions for AI coding assistants to build applications, APIs, and libraries using AIR Stack.

@@ -1,4 +1,4 @@
-import { anchor } from '@anchorlib/core';
+import { anchor } from '@airlib/core';
 import { beforeEach, vi } from 'vitest';
 
 beforeEach(() => {

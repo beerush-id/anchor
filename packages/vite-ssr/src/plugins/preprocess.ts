@@ -33,7 +33,7 @@ export function airPreprocess(options: Partial<AirPreprocessOptions> = {}) {
 
         log.verbose(color.event('Injected client import'));
         const magic = new MagicString(code);
-        magic.prepend('import "@anchorlib/react/client";');
+        magic.prepend('import "@airlib/react/client";');
 
         return { code: magic.toString(), map: magic.generateMap({ hires: true }) };
       },

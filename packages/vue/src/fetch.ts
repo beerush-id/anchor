@@ -1,4 +1,4 @@
-import { type FetchOptions, fetchState, type FetchState, type StreamOptions, streamState } from '@anchorlib/core';
+import { type FetchOptions, fetchState, type FetchState, type StreamOptions, streamState } from '@airlib/core';
 import { constantRef } from './ref.js';
 import type { ConstantRef } from './types.js';
 

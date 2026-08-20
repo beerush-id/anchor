@@ -1,5 +1,5 @@
 import '../../src/client/index.js';
-import { createRouter } from '@anchorlib/router';
+import { createRouter } from '@airlib/router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { navigate, page, redirect } from '../../src/index.js';
 

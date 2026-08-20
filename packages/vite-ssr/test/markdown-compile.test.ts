@@ -109,7 +109,7 @@ describe('mdx docs mode — extended plugins enrich markdown', () => {
     });
 
     expect(file.metadata.title).toBe('Extended Guide');
-    expect(code).toContain('@anchorlib/react/mdx');
+    expect(code).toContain('@airlib/react/mdx');
     expect(code).toContain('<AirCodeGroup');
     expect(code).toContain('<AirCodeBlock');
     expect(file.globals.join('\n')).toContain('const moduleScope = 1;');
@@ -136,7 +136,7 @@ describe('mdx docs mode — extended plugins enrich markdown', () => {
       headingDepth: 3,
     });
 
-    expect(code).toContain('@anchorlib/react/mdx');
+    expect(code).toContain('@airlib/react/mdx');
   });
 });
 
@@ -258,7 +258,7 @@ describe('mdx framework wrapping — output adapts to the target runtime', () =>
   it('wraps compiled output in the solid runtime', () => {
     const code = wrapJsx('solid', 'const head = 1;', 'const body = 2;');
 
-    expect(code).toContain("from '@anchorlib/solid';");
+    expect(code).toContain("from '@airlib/solid';");
     expect(code).toContain('<AirHtmlHead meta={airMdxMeta} />');
   });
 

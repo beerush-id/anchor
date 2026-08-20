@@ -7,7 +7,7 @@ IRPC client stubs (`.once`, `.with`, `.later`) return an `IRPCReader<T>`, while 
 To interact with the results returned by executing client stubs, call the stub execution methods natively:
 
 ```tsx
-import { setup, render, mutable } from '@anchorlib/react';
+import { setup, render, mutable } from '@airlib/react';
 import { getUser, searchUsers, uploadAvatar, getAppConfig } from './api/index.js';
 
 export const UserProfile = setup<{ id: string }>((props) => {

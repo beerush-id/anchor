@@ -1,4 +1,4 @@
-import type { LinkableSchema, ObjLike, StateOptions } from '@anchorlib/core';
+import type { LinkableSchema, ObjLike, StateOptions } from '@airlib/core';
 import { session, SessionStorage, STORAGE_KEY } from './session.js';
 import type { PersistentFn } from './types.js';
 

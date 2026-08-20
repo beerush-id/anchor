@@ -1,4 +1,4 @@
-import { createObserver, onGlobalCleanup, setCleanUpHandler, setTracker, type StateObserver } from '@anchorlib/core';
+import { createObserver, onGlobalCleanup, setCleanUpHandler, setTracker, type StateObserver } from '@airlib/core';
 import { createSignal, getOwner, onCleanup, type Owner } from 'solid-js';
 
 type ElementRef = {

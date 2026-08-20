@@ -1,4 +1,4 @@
-# @anchorlib/router
+# @airlib/router
 
 A type-safe, reactive router for JavaScript and TypeScript applications. Part of the Anchor library ecosystem.
 
@@ -9,22 +9,22 @@ A type-safe, reactive router for JavaScript and TypeScript applications. Part of
 - **Route Guards** - Protect routes with authentication and authorization checks
 - **Data Providers** - Load data asynchronously when routes activate
 - **Smart Caching** - LRU cache for URL matching with time-based expiration for provider data
-- **Reactive** - Integrates with `@anchorlib/core` for reactive state management
+- **Reactive** - Integrates with `@airlib/core` for reactive state management
 - **Preloading** - Prefetch route data before navigation for instant transitions
 - **Redirects** - Declarative redirect handling with guard integration
 
 ## Installation
 
 ```bash
-npm install @anchorlib/router
+npm install @airlib/router
 # or
-bun add @anchorlib/router
+bun add @airlib/router
 ```
 
 ## Quick Start
 
 ```ts
-import { createRouter, redirect } from '@anchorlib/router';
+import { createRouter, redirect } from '@airlib/router';
 
 // Create a router instance
 const router = createRouter({ baseUrl: 'https://example.com' });
@@ -62,7 +62,7 @@ console.log(router.path);          // 'users/:id'
 The main router class for managing routes and navigation.
 
 ```ts
-import { Router, createRouter } from '@anchorlib/router';
+import { Router, createRouter } from '@airlib/router';
 
 // Create via constructor
 const router = new Router({
@@ -139,7 +139,7 @@ const indexRoute = usersRoute.route('/'); // Matches '/users' exactly
 Routes are automatically classified by their path pattern:
 
 ```ts
-import { ROUTE_TYPE } from '@anchorlib/router';
+import { ROUTE_TYPE } from '@airlib/router';
 
 // Static route - fixed path
 router.route('/users'); // type: ROUTE_TYPE.STATIC
@@ -156,7 +156,7 @@ router.route('/*'); // type: ROUTE_TYPE.WILDCARD
 Guards protect routes from unauthorized access. Throw a `Redirect` or `Error` to block navigation.
 
 ```ts
-import { redirect } from '@anchorlib/router';
+import { redirect } from '@airlib/router';
 
 route.guard(async ({ params, query }) => {
   // Check authentication
@@ -196,7 +196,7 @@ route.provide('posts', async ({ params }) => {
 Create redirects to navigate programmatically or from guards.
 
 ```ts
-import { redirect, redirectUrl, setRedirectHandler } from '@anchorlib/router';
+import { redirect, redirectUrl, setRedirectHandler } from '@airlib/router';
 
 // Create a redirect
 const r = redirect(loginRoute, { returnTo: '/dashboard' });

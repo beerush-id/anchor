@@ -11,7 +11,7 @@ To work effectively without polluting your context, use the `view_file` tool to 
 
 ## Installation & Setup
 - **When problems**: Starting a new project. Not sure which architecture to use (full-stack, SSR-only, SPA, API-only). Need to know file organization and naming conventions.
-- **When tools**: Using `degit` templates, `@anchorlib/react` packages, folder structure (`function.ts`, `constructor.ts`, `route.ts`).
+- **When tools**: Using `degit` templates, `@airlib/react` packages, folder structure (`function.ts`, `constructor.ts`, `route.ts`).
 - **Action**: Read `contents/installation.md`
 
 ## Isomorphic RPC (IRPC)
@@ -47,7 +47,7 @@ To work effectively without polluting your context, use the `view_file` tool to 
 
 ## Universal SSR
 - **When problems**: Setting up server-side rendering. Hydration mismatches between server and client. Deploying to Cloudflare Workers, Bun, Node.js, or Deno. Implementing ISR or stale-while-revalidate. Generating static pages at build time. Propagating cookies into response headers.
-- **When tools**: Using `createWorker()`, `createFullWorker()`, `vite-ssr` plugin. Configuring `@anchorlib/vite-ssr`, `wrangler.toml`. Server entry points per runtime (`server/bun.js`, `server/node.js`).
+- **When tools**: Using `createWorker()`, `createFullWorker()`, `vite-ssr` plugin. Configuring `@airlib/vite`, `wrangler.toml`. Server entry points per runtime (`server/bun.js`, `server/node.js`).
 - **Action**: Read `contents/universal-ssr.md`
 
 ## User Interface & Components
@@ -62,12 +62,12 @@ To work effectively without polluting your context, use the `view_file` tool to 
 
 ## Form Architecture
 - **When problems**: Input fields with two-way binding. Cursor jumping in number/date inputs. Form validation with Zod. Context-aware inputs that auto-connect to parent form. Real-time input formatting.
-- **When tools**: Using `$bind()`, `Bindable<T>`, form context, typed form factories. `@anchorlib/react` field components (`InputField`, `CheckboxField`, etc.).
+- **When tools**: Using `$bind()`, `Bindable<T>`, form context, typed form factories. `@airlib/react` field components (`InputField`, `CheckboxField`, etc.).
 - **Action**: Read `contents/form-architecture.md`
 
 ## Headless Composition
 - **When problems**: Same logic duplicated across server and client. Reusable state machines or domain logic outside UI. DOM side-effects that need automatic cleanup. Logic shared between React and Solid.
-- **When tools**: Using factories from `@anchorlib/core`. Headless state/logic/action patterns. Creating composable DOM utilities (keyboard shortcuts, scroll observers).
+- **When tools**: Using factories from `@airlib/core`. Headless state/logic/action patterns. Creating composable DOM utilities (keyboard shortcuts, scroll observers).
 - **Action**: Read `contents/headless-composition.md`
 
 ## Library Authoring
@@ -82,7 +82,7 @@ To work effectively without polluting your context, use the `view_file` tool to 
 
 ## Browser Utilities
 - **When problems**: Keyboard shortcuts (ctrl+c to copy selected user). Copy-paste from system clipboard. Drag files from desktop into the app. Show/hide UI based on scroll position. Respond to dark mode or reduced motion. Geolocation-based features. Detect URL hash changes.
-- **When tools**: Importing from `@anchorlib/react/browser`. Using `LIVE_KEYBOARD`, `LIVE_CLIPBOARD`, `LIVE_DND`, `LIVE_CURSOR`, `LIVE_SCROLL`, `LIVE_SELECTION`, `LIVE_MEDIA`, `LIVE_WINDOW`, `LIVE_NETWORK`, `LIVE_GEO`, `LIVE_LOCATION`, `cursorRef()`, `scrollRef()`, `keyboardRef()`, `reframe()`, `acceptInteractions()`.
+- **When tools**: Importing from `@airlib/react/browser`. Using `LIVE_KEYBOARD`, `LIVE_CLIPBOARD`, `LIVE_DND`, `LIVE_CURSOR`, `LIVE_SCROLL`, `LIVE_SELECTION`, `LIVE_MEDIA`, `LIVE_WINDOW`, `LIVE_NETWORK`, `LIVE_GEO`, `LIVE_LOCATION`, `cursorRef()`, `scrollRef()`, `keyboardRef()`, `reframe()`, `acceptInteractions()`.
 - **Action**: Read `contents/browser-utilities.md`
 
 ## Testing

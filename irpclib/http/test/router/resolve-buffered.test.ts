@@ -1,4 +1,4 @@
-import { COOKIE_JAR_KEY, COOKIE_JAR_WRITABLE, cookies, getScope } from '@anchorlib/core';
+import { COOKIE_JAR_KEY, COOKIE_JAR_WRITABLE, cookies, getScope } from '@airlib/core';
 import {
   createPackage,
   credential,

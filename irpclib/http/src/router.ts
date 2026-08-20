@@ -1,4 +1,4 @@
-import { COOKIE_JAR_WRITABLE, decodeCookies, replay, setCookieContext, setScope } from '@anchorlib/core';
+import { COOKIE_JAR_WRITABLE, decodeCookies, replay, setCookieContext, setScope } from '@airlib/core';
 import {
   createContextStore,
   createCredentials,

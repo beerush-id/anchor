@@ -26,7 +26,7 @@ This file covers only React-specific UI binding patterns.
 Executes immediately when the component mounts. Reads are tracked inside `render()` boundaries.
 
 ```tsx
-import { setup, render, Show } from '@anchorlib/react';
+import { setup, render, Show } from '@airlib/react';
 import { getUser } from './function.js';
 
 export const UserCard = setup<{ id: string }>((props) => {
@@ -46,7 +46,7 @@ export const UserCard = setup<{ id: string }>((props) => {
 Tracks the arguments getter and re-executes when arguments change. The `render()` wrapper tracks the reactive read.
 
 ```tsx
-import { setup, render, mutable } from '@anchorlib/react';
+import { setup, render, mutable } from '@airlib/react';
 import { searchUsers } from './function.js';
 
 export const UserSearch = setup(() => {
@@ -91,7 +91,7 @@ return render(() => (
 For streaming functions, the `effect.client()` boundary handles reactive updates:
 
 ```tsx
-import { setup, effect } from '@anchorlib/react';
+import { setup, effect } from '@airlib/react';
 import { watchPrice } from './function.js';
 
 export const PriceDisplay = setup<{ symbol: string }>((props) => {

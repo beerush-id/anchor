@@ -1,6 +1,6 @@
-import type { AnyType } from '@anchorlib/core';
-import type { Router } from '@anchorlib/router';
-import { createApp as createCoreApp } from '@anchorlib/ssr';
+import type { AnyType } from '@airlib/core';
+import type { Router } from '@airlib/router';
+import { createApp as createCoreApp } from '@airlib/ssr';
 import { generateHydrationScript, renderToString } from 'solid-js/web';
 import { headings } from '../router/index.js';
 import type { AppEntry } from '../types.js';

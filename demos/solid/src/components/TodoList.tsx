@@ -1,4 +1,4 @@
-import { derived } from '@anchorlib/solid';
+import { derived } from '@airlib/solid';
 import { For } from 'solid-js';
 import type { TodoRecList } from '../utils/todos.js';
 import TodoItem from './TodoItem.js';

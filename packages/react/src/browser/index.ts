@@ -1,1 +1,1 @@
-export * from '@anchorlib/core/browser';
+export * from '@airlib/core/browser';

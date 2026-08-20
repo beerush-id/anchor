@@ -1,4 +1,4 @@
-import { mutable, setup, snippet } from '@anchorlib/react';
+import { mutable, setup, snippet } from '@airlib/react';
 import { type TodoRecList, todoTable } from '../utils/todos';
 
 interface TodoFormProps {

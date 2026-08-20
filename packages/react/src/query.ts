@@ -1,4 +1,4 @@
-import { $symbol, type AsyncStatus } from '@anchorlib/core';
+import { $symbol, type AsyncStatus } from '@airlib/core';
 import type { ReactNode } from 'react';
 import { createSwitch, type SlotNode, type SwitchProps } from './switch.js';
 

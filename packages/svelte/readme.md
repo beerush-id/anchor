@@ -5,7 +5,7 @@ This is the official Anchor library for Svelte. It provides a set of tools to ma
 ## Installation
 
 ```bash
-npm install @anchorlib/svelte
+npm install @airlib/svelte
 ```
 
 ## Documentation
@@ -16,7 +16,7 @@ For full documentation, visit [Anchor for Svelte](https://airlib.dev/svelte/intr
 
 ```svelte
 <script>
-  import { anchorRef } from '@anchorlib/svelte';
+  import { anchorRef } from '@airlib/svelte';
 
   // Create a reactive state object
   const state = anchorRef({

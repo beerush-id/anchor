@@ -1,6 +1,6 @@
-import { createTableRef, type InferListRef, type InferRef } from '@anchorlib/vue/storage';
-import type { InferList, InferRow } from '@anchorlib/storage/db';
-import { createRecord, createTable } from '@anchorlib/storage/db';
+import { createTableRef, type InferListRef, type InferRef } from '@airlib/vue/storage';
+import type { InferList, InferRow } from '@airlib/storage/db';
+import { createRecord, createTable } from '@airlib/storage/db';
 
 export type Todo = {
   text: string;

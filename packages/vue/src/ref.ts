@@ -1,5 +1,5 @@
 import { type ComponentInternalInstance, customRef, getCurrentInstance, onUnmounted, type Ref } from 'vue';
-import { anchor, captureStack, createObserver, microbatch, setTracker, type StateObserver } from '@anchorlib/core';
+import { anchor, captureStack, createObserver, microbatch, setTracker, type StateObserver } from '@airlib/core';
 import type { ConstantRef, StateRef, VariableRef } from './types.js';
 
 export const REF_REGISTRY = new WeakMap<Ref, StateRef<unknown>>();

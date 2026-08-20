@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@anchorlib/react": "workspace:*",
+    "@airlib/react": "workspace:*",
     "react": "catalog:app",
     "react-dom": "catalog:app"
   },

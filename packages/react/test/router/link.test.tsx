@@ -1,5 +1,5 @@
 import '../../src/client/index.js';
-import { createRouter, DEFAULT_CONFIG } from '@anchorlib/router';
+import { createRouter, DEFAULT_CONFIG } from '@airlib/router';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { FC, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

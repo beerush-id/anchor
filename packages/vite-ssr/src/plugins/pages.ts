@@ -7,10 +7,10 @@ import { AppNode } from '../modules/app-node.js';
 import { AIR_ENV, type Framework } from '../modules/env.js';
 import type { MdxExtendedOptions } from '../modules/markdown.js';
 import type { FileMap } from '../utils/mapper.js';
-import { type AirWorkerOptions, airWorker, resolveWorkerEntry } from '../worker.js';
+import { airWorker, type AirWorkerOptions, resolveWorkerEntry } from '../worker.js';
 import { airEnv } from './env.js';
-import { type AirImageOptions, airImage } from './image.js';
-import { type AirMarkdownOptions, airMarkdown } from './markdown.js';
+import { airImage, type AirImageOptions } from './image.js';
+import { airMarkdown, type AirMarkdownOptions } from './markdown.js';
 import { airPreprocess } from './preprocess.js';
 import { airSearch, type MdxSearchOptions } from './search.js';
 
@@ -88,13 +88,13 @@ export type AirPagesOptions = {
   irpc?: boolean;
 
   /**
-   * Whether to generate route manifest in `.airstack/manifest`.
+   * Whether to generate route manifest in `.airlib/manifest`.
    * Defaults to true (`false` to disable).
    */
   manifest?: boolean;
 
   /**
-   * Whether to generate MDX metadata in `.airstack/metadata`.
+   * Whether to generate MDX metadata in `.airlib/metadata`.
    * Defaults to true (`false` to disable).
    */
   metadata?: boolean;
@@ -147,10 +147,10 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
     config() {
       return {
         optimizeDeps: {
-          exclude: ['@airstack/manifest', '@airstack/metadata'],
+          exclude: ['@airlib-cache/manifest', '@airlib-cache/metadata'],
         },
         ssr: {
-          noExternal: ['@airstack/manifest', '@airstack/metadata'],
+          noExternal: ['@airlib-cache/manifest', '@airlib-cache/metadata'],
         },
       };
     },

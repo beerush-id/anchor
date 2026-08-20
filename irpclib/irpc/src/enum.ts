@@ -1,4 +1,4 @@
-import { $symbol } from '@anchorlib/core';
+import { $symbol } from '@airlib/core';
 
 export const IRPC_PACKET_TYPE = {
   CALL: 'call',

@@ -1,4 +1,4 @@
-## 6. User Interface (`@anchorlib/solid`)
+## 6. User Interface (`@airlib/solid`)
 Anchor UI components are autonomous. They own their own behaviors and mutations rather than relying on their parents to micromanage them via massive callback props.
 
 ### Styling Patterns
@@ -16,7 +16,7 @@ export const BillingHeader = () => (
 ```
 
 #### Core Styling Utilities (`classx` & `stylex`)
-Use the `@anchorlib/solid` utilities as the primary convention for **dynamic styles and classes**.
+Use the `@airlib/solid` utilities as the primary convention for **dynamic styles and classes**.
 
 > **ℹ️ No `.use()` in Solid**
 >
@@ -26,7 +26,7 @@ Use the `@anchorlib/solid` utilities as the primary convention for **dynamic sty
 
 **ClassX (`classx`)**: Joins class names based on strings, arrays, or object maps.
 ```tsx
-import { classx } from '@anchorlib/solid';
+import { classx } from '@airlib/solid';
 import { InvoiceBadge } from './InvoiceBadge.js'; // Example Anchor Component
 
 export const Badge = ({ status, isActive, isOld }) => (
@@ -49,7 +49,7 @@ export const Badge = ({ status, isActive, isOld }) => (
 
 **StyleX (`stylex`)**: Automatically handles CSS units and unitless properties. Use the inline `style` property strictly as an escape hatch for continuous, JS-calculated values that cannot be mapped to discrete utility classes. Never map dynamic variables directly to Tailwind arbitrary brackets (e.g., `bg-[${color}]`).
 ```tsx
-import { stylex, $unit } from '@anchorlib/solid';
+import { stylex, $unit } from '@airlib/solid';
 import { ScrollView } from './ScrollView.js'; // Example Anchor Component
 
 export const VirtualList = ({ height, scrollY, tenantColor, progress }) => (
@@ -75,7 +75,7 @@ When a class combination is repeated in the *same file*, extract it to a local v
 *Note: Define styling helpers below your components so the primary UI logic isn't buried.*
 
 ```tsx
-import { For } from '@anchorlib/solid';
+import { For } from '@airlib/solid';
 
 export const InvoiceList = ({ invoices }) => (
   <div class="flex flex-col gap-4">
@@ -150,7 +150,7 @@ When passing state down to a custom Component or View, you **must use a binding*
 When passing state directly into native HTML elements (e.g., `<div>{state.value}</div>`), the surrounding block **must be wrapped in a reactive boundary** (like `render(() => ...)` or `<Show>`). In this scenario, the wrapper itself *is* the binding that tracks the read.
 
 ```tsx
-import { setup, template, $bind } from '@anchorlib/solid';
+import { setup, template, $bind } from '@airlib/solid';
 import { metricsContext, appStateContext } from './contexts.js';
 
 export const SettingsPanel = setup(() => {
@@ -200,7 +200,7 @@ export const ProfilePage = page(profileRoute).render(({ state }) => (
 If a structure is repeated multiple times on the *same page*, extract it to a local static structure in the *same file*.
 
 ```tsx
-import { For } from '@anchorlib/solid';
+import { For } from '@airlib/solid';
 
 export const ProfilePage = page(profileRoute).render(({ state }) => (
   <div class="grid">
@@ -233,7 +233,7 @@ export const ProfileCard = ({ profile }) => (
 );
 
 // AnyOtherPage.tsx
-import { page } from '@anchorlib/solid';
+import { page } from '@airlib/solid';
 import { otherRoute } from './route.js';
 import { ProfileCard } from '@/lib/components/ProfileCard';
 
@@ -256,7 +256,7 @@ In Solid, JSX is natively reactive — signal reads in the template register dep
 `<Show>` is both a conditional gate and a rendering boundary. The `when` prop guarantees safety: when falsy, children never render. When truthy, destructuring inside the children function is safe — the data is guaranteed non-null.
 
 ```tsx
-import { Show } from '@anchorlib/solid';
+import { Show } from '@airlib/solid';
 
 // Safe: Show gates on condition before destructuring
 <Show when={() => user.data}>
@@ -271,7 +271,7 @@ Use `<Show>` when you need **flow control** (show/hide) AND rendering isolation 
 `<Snippet>` creates an inline rendering boundary WITHOUT a conditional gate. The user is responsible for handling nullish values — the data is passed through as-is.
 
 ```tsx
-import { Snippet } from '@anchorlib/solid';
+import { Snippet } from '@airlib/solid';
 
 // No gate: user handles nullish themselves
 <Snippet data={metrics}>
@@ -293,7 +293,7 @@ Use `<Snippet>` when you need **rendering isolation only** and the element is al
 Use `template()` to create a standalone, reusable reactive View. Unlike a snippet, a template requires explicit props and can be extracted to a different file.
 
 ```tsx
-import { template } from '@anchorlib/solid';
+import { template } from '@airlib/solid';
 
 // A highly optimized, standalone reactive boundary
 export const FeatureCard = template<{ title: string, description: string, theme: Theme }>(
@@ -319,7 +319,7 @@ If it only presents data, it is a **Static UI** (standard function) or a **View*
 Use `setup` to create a Component. 
 
 ```tsx
-import { setup, mutable, onMount, onCleanup, createContext } from '@anchorlib/solid';
+import { setup, mutable, onMount, onCleanup, createContext } from '@airlib/solid';
 import type { JSX } from 'solid-js';
 
 // A component with reactive JSX
@@ -355,7 +355,7 @@ In the AIR Stack, `props` is reactive state and the **source of truth** of your 
 Create a separate internal `mutable()` state only for data that belongs strictly to the component itself (e.g., local loading status, intermediate buffering, or internal toggles).
 
 ```tsx
-import { setup } from '@anchorlib/solid';
+import { setup } from '@airlib/solid';
 
 export const Counter = setup<{ count?: number }>((props) => {
   // Initialize missing props
@@ -375,7 +375,7 @@ export const Counter = setup<{ count?: number }>((props) => {
 When a component needs to sync internal mutations back to its parent, it should type the prop as `Bindable<T>`. The component directly mutates this prop (`props.value = ...`), and the binding automatically propagates the state change. The component must also dispatch the associated native events back to the parent to maintain full composability.
 
 ```tsx
-import { setup, type Bindable } from '@anchorlib/solid';
+import { setup, type Bindable } from '@airlib/solid';
 
 // User Interaction (Reactive JSX)
 export const Toggle = setup<{ 
@@ -396,7 +396,7 @@ export const Toggle = setup<{
 ```
 
 ```tsx
-import { mutable, setup, type Bindable } from '@anchorlib/solid';
+import { mutable, setup, type Bindable } from '@airlib/solid';
 
 // System Event (Imperative API)
 export const VideoPlayer = setup<{ 
@@ -434,7 +434,7 @@ export const VideoPlayer = setup<{
 ```
 
 ```tsx
-import { setup, type Bindable } from '@anchorlib/solid';
+import { setup, type Bindable } from '@airlib/solid';
 import type { JSX } from 'solid-js';
 
 // System Event (Declarative DOM)
@@ -462,7 +462,7 @@ export const Accordion = setup<{
 ```
 
 ```tsx
-import { mutable, setup, effect, type Bindable } from '@anchorlib/solid';
+import { mutable, setup, effect, type Bindable } from '@airlib/solid';
 import type { JSX } from 'solid-js';
 
 // System Event (Reactive JSX)
@@ -491,7 +491,7 @@ export const Reveal = setup<{ visible?: Bindable<boolean>, threshold?: number, c
 ```
 
 ```tsx
-import { setup, mutable, $bind } from '@anchorlib/solid';
+import { setup, mutable, $bind } from '@airlib/solid';
 
 // The Parent Consumer
 export const Settings = setup(() => {
@@ -515,7 +515,7 @@ Forward reactive component `props` to child elements safely by extracting them e
 Use `props.$omit()` to forward all native props except those managed internally:
 
 ```tsx
-import { setup, type Bindable } from '@anchorlib/solid';
+import { setup, type Bindable } from '@airlib/solid';
 import type { JSX } from 'solid-js';
 
 interface InputProps extends JSX.InputHTMLAttributes<HTMLInputElement> {
@@ -543,7 +543,7 @@ export const InputField = setup<InputProps>((props) => {
 Use `props.$pick()` to explicitly select and forward only specific props:
 
 ```tsx
-import { setup } from '@anchorlib/solid';
+import { setup } from '@airlib/solid';
 import type { JSX } from 'solid-js';
 
 interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -566,7 +566,7 @@ export const Button = setup<ButtonProps>((props) => {
 When you need to frequently update an element's attributes, classes, or styles based on state changes (e.g., animations, drag-and-drop, or toggling visibility of a heavy container), use `nodeRef()`.
 
 ```tsx
-import { setup, mutable, nodeRef } from '@anchorlib/solid';
+import { setup, mutable, nodeRef } from '@airlib/solid';
 
 export const AnimatedBox = setup(() => {
   const state = mutable({ x: 0, y: 0, active: false });
@@ -598,7 +598,7 @@ A component's lifecycle is bound to its initialization scope (`setup()`), which 
 For one-time initialization of static elements, use a standard local variable and a `ref` callback.
 
 ```tsx
-import { setup, onMount } from '@anchorlib/solid';
+import { setup, onMount } from '@airlib/solid';
 
 export const CanvasElement = setup(() => {
   // One-time use variable.
@@ -623,7 +623,7 @@ You can conditionally execute side-effects (e.g., attaching listeners, starting 
 Use `onCleanup` to register a teardown function to the current scope, guaranteeing it is destroyed when the component is removed.
 
 ```tsx
-import { setup, onCleanup } from '@anchorlib/solid';
+import { setup, onCleanup } from '@airlib/solid';
 
 export const GlobalShortcut = setup(() => {
   // We can attach listeners directly in the component body based on conditions.
@@ -646,7 +646,7 @@ export const GlobalShortcut = setup(() => {
 A self-governing component discovers its own environment — parent elements, scroll containers, form contexts, intersection boundaries — and attaches its own behavior without the parent orchestrating it. The parent doesn't need to know what the component does internally; the component handles its own concerns.
 
 ```tsx
-import { setup, mutable, effect } from '@anchorlib/solid';
+import { setup, mutable, effect } from '@airlib/solid';
 import { popover } from './popover'; // Headless utility
 
 export const Tooltip = setup<{ text: string, x?: PopX, y?: PopY }>((props) => {
@@ -679,7 +679,7 @@ A user interface pattern for immediate feedback. AI can implement this using dif
 It applies mutations instantly using `undoable()` and provides an `undo` function to rollback if the network request fails.
 
 ```tsx
-import { setup, undoable } from '@anchorlib/solid';
+import { setup, undoable } from '@airlib/solid';
 
 export const LikeButton = setup<{ post: any }>((props) => {
   const toggleLike = async () => {
@@ -702,7 +702,7 @@ export const LikeButton = setup<{ post: any }>((props) => {
 Manually saving the previous state before applying mutations, and manually restoring it if the operation fails. Use this when you need to perform sequential state mutations separated by asynchronous boundaries (`await`), where the rollback itself requires manual, asynchronous orchestration.
 
 ```tsx
-import { setup } from '@anchorlib/solid';
+import { setup } from '@airlib/solid';
 
 export const Checkout = setup<{ cart: any }>((props) => {
   const processCheckout = async () => {
@@ -738,7 +738,7 @@ export const Checkout = setup<{ cart: any }>((props) => {
 Using the workflow engine where each step handles its own isolated optimistic updates and rollback logic. This is ideal for complex, multi-stage pipelines because it prevents massive centralized error handlers.
 
 ```tsx
-import { setup, plan, undoable, mutable } from '@anchorlib/solid';
+import { setup, plan, undoable, mutable } from '@airlib/solid';
 
 export const Checkout = setup(() => {
   const cart = mutable({ id: 'cart_123', status: 'idle' });

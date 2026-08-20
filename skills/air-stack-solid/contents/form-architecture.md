@@ -7,7 +7,7 @@ For standalone fields, the component owns its own state mutations internally and
 
 ```tsx
 import type { JSX } from 'solid-js';
-import { setup, type Bindable } from '@anchorlib/solid';
+import { setup, type Bindable } from '@airlib/solid';
 
 // Single-purpose autonomous wrapper
 export const InputField = setup<{ 
@@ -35,7 +35,7 @@ For specialized inputs (e.g., number, date), use a local `mutable` state to buff
 
 ```tsx
 import type { JSX } from 'solid-js';
-import { setup, mutable, effect, type Bindable } from '@anchorlib/solid';
+import { setup, mutable, effect, type Bindable } from '@airlib/solid';
 
 export const NumberInput = setup<{ 
   value?: Bindable<number>, 
@@ -92,10 +92,10 @@ export const NumberInput = setup<{
 When multiple inputs must be validated and submitted together, use a `Form` component as the State Owner, coordinating state via Context.
 
 ```tsx
-import { setup, createContext, form, snapshot, type Bindable } from '@anchorlib/solid';
+import { setup, createContext, form, snapshot, type Bindable } from '@airlib/solid';
 import type { JSX } from 'solid-js';
 import type { ZodType } from 'zod';
-import type { ExceptionMap } from '@anchorlib/solid';
+import type { ExceptionMap } from '@airlib/solid';
 
 // Define explicit context shapes
 export type FormContext = {
@@ -237,7 +237,7 @@ export const SubmitButton = setup<{ disabled?: boolean, children?: JSX.Element }
 To enforce type safety on field names (`name` prop matching schema keys), graduate to a Form Factory function.
 
 ```tsx
-import { setup, createContext, form, derived, snapshot } from '@anchorlib/solid';
+import { setup, createContext, form, derived, snapshot } from '@airlib/solid';
 import type { JSX } from 'solid-js';
 import { z, type ZodType } from 'zod';
 

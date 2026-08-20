@@ -1,4 +1,4 @@
-## Browser Utilities (`@anchorlib/solid/browser`)
+## Browser Utilities (`@airlib/solid/browser`)
 
 Reactive browser primitives that convert low-level DOM events into fine-grained reactive state. All primitives defer internal listener registration until hydration completes via `acceptInteractions()`.
 
@@ -8,7 +8,7 @@ Invoke `acceptInteractions()` after client mount or hydration to activate all de
 
 ```tsx
 import { hydrate } from 'solid-js/web';
-import { acceptInteractions } from '@anchorlib/solid/browser';
+import { acceptInteractions } from '@airlib/solid/browser';
 import App from './App.js';
 
 hydrate(() => <App />, document.getElementById('root')!);
@@ -18,7 +18,7 @@ acceptInteractions();
 Use `onInteractive()` to register handlers that execute once interactions are accepted. Handlers registered before `acceptInteractions()` are queued; handlers registered after run immediately.
 
 ```tsx
-import { onInteractive } from '@anchorlib/solid/browser';
+import { onInteractive } from '@airlib/solid/browser';
 
 onInteractive(() => {
   const media = window.matchMedia('(max-width: 768px)');
@@ -36,7 +36,7 @@ Read global state singletons directly inside `<Show>` or `effect()` boundaries. 
 All built-in utilities (`LIVE_KEYBOARD`, `LIVE_DND`, etc.) follow the same internal pattern that you can reuse to create custom reactive wrappers around any browser API:
 
 ```tsx
-import { onInteractive } from '@anchorlib/solid/browser';
+import { onInteractive } from '@airlib/solid/browser';
 
 // The singleton uses a lazy getter: listeners are NOT registered at import time.
 // They're deferred until acceptInteractions() is called after hydration.
@@ -68,8 +68,8 @@ const LIVE_MY_API = new Proxy({} as MyApiState, {
 ### `LIVE_KEYBOARD` — Keyboard Shortcuts & Input Detection
 
 ```tsx
-import { setup, effect } from '@anchorlib/solid';
-import { LIVE_KEYBOARD } from '@anchorlib/solid/browser';
+import { setup, effect } from '@airlib/solid';
+import { LIVE_KEYBOARD } from '@airlib/solid/browser';
 
 export const UsersList = setup(() => {
   // Declarative shortcut combined with business logic state
@@ -100,8 +100,8 @@ export const UsersList = setup(() => {
 - **`keyboardRef(element?)`**: Creates a scoped keyboard tracker for a specific element. Pass as `ref` prop directly.
 
 ```tsx
-import { setup } from '@anchorlib/solid';
-import { keyboardRef } from '@anchorlib/solid/browser';
+import { setup } from '@airlib/solid';
+import { keyboardRef } from '@airlib/solid/browser';
 
 export const InputTracker = setup(() => {
   const tracker = keyboardRef();
@@ -115,8 +115,8 @@ export const InputTracker = setup(() => {
 ### `LIVE_CLIPBOARD` — Clipboard Read & Write
 
 ```tsx
-import { setup, effect } from '@anchorlib/solid';
-import { LIVE_CLIPBOARD } from '@anchorlib/solid/browser';
+import { setup, effect } from '@airlib/solid';
+import { LIVE_CLIPBOARD } from '@airlib/solid/browser';
 
 export const SearchBox = setup(() => {
   // Intercept pasted text inside component scope
@@ -149,8 +149,8 @@ export const SearchBox = setup(() => {
 ### `LIVE_DND` — Drag & Drop
 
 ```tsx
-import { setup, Show, effect, mutable } from '@anchorlib/solid';
-import { LIVE_DND } from '@anchorlib/solid/browser';
+import { setup, Show, effect, mutable } from '@airlib/solid';
+import { LIVE_DND } from '@airlib/solid/browser';
 
 export const MultiDomainDnD = setup(() => {
   const box = mutable<{ current: HTMLDivElement | null }>({ current: null });
@@ -209,8 +209,8 @@ const handleExternalDrop = (e: DragEvent) => {
 ### `LIVE_CURSOR` — Pointer Position & Device Type
 
 ```tsx
-import { setup, Show } from '@anchorlib/solid';
-import { LIVE_CURSOR, cursorRef } from '@anchorlib/solid/browser';
+import { setup, Show } from '@airlib/solid';
+import { LIVE_CURSOR, cursorRef } from '@airlib/solid/browser';
 
 export const CursorDisplay = setup(() => {
   const boxCursor = cursorRef();
@@ -249,8 +249,8 @@ Modifier key constants (for type-safe modifier checks):
 - **`MOUSE_MODIFIERS.shift`**: `'shift'`
 
 ```tsx
-import { setup, effect } from '@anchorlib/solid';
-import { LIVE_CURSOR, MOUSE_BUTTON, MOUSE_MODIFIERS } from '@anchorlib/solid/browser';
+import { setup, effect } from '@airlib/solid';
+import { LIVE_CURSOR, MOUSE_BUTTON, MOUSE_MODIFIERS } from '@airlib/solid/browser';
 
 export const RightClickHandler = setup(() => {
   effect(() => {
@@ -269,8 +269,8 @@ export const RightClickHandler = setup(() => {
 ### `LIVE_SCROLL` — Scroll Position & Direction
 
 ```tsx
-import { setup } from '@anchorlib/solid';
-import { LIVE_SCROLL } from '@anchorlib/solid/browser';
+import { setup } from '@airlib/solid';
+import { LIVE_SCROLL } from '@airlib/solid/browser';
 
 // Sticky header with shadow on scroll — a common real-world pattern
 export const AppHeader = setup(() => {
@@ -289,8 +289,8 @@ export const AppHeader = setup(() => {
 ### `LIVE_SELECTION` — Text Selection & Highlight Overlay
 
 ```tsx
-import { setup, Show, effect } from '@anchorlib/solid';
-import { LIVE_SELECTION } from '@anchorlib/solid/browser';
+import { setup, Show, effect } from '@airlib/solid';
+import { LIVE_SELECTION } from '@airlib/solid/browser';
 
 export const SelectionOverlay = setup(() => {
   // React to selection changes
@@ -325,8 +325,8 @@ export const SelectionOverlay = setup(() => {
 ### `LIVE_MEDIA` — Media Query State
 
 ```tsx
-import { setup, Show, effect } from '@anchorlib/solid';
-import { LIVE_MEDIA, mediaQuery } from '@anchorlib/solid/browser';
+import { setup, Show, effect } from '@airlib/solid';
+import { LIVE_MEDIA, mediaQuery } from '@airlib/solid/browser';
 
 export const ResponsiveHeader = setup(() => {
   const isWide = mediaQuery('(min-width: 1400px)');
@@ -367,8 +367,8 @@ Predefined queries:
 ### `LIVE_WINDOW` — Window Dimensions & Activity
 
 ```tsx
-import { setup, Show, effect } from '@anchorlib/solid';
-import { LIVE_WINDOW } from '@anchorlib/solid/browser';
+import { setup, Show, effect } from '@airlib/solid';
+import { LIVE_WINDOW } from '@airlib/solid/browser';
 
 export const IdleMonitor = setup(() => {
   // Configure idle timeout on mount
@@ -399,8 +399,8 @@ export const IdleMonitor = setup(() => {
 ### `LIVE_NETWORK` — Connection Status & Type
 
 ```tsx
-import { setup, Show, effect, mutable } from '@anchorlib/solid';
-import { LIVE_NETWORK } from '@anchorlib/solid/browser';
+import { setup, Show, effect, mutable } from '@airlib/solid';
+import { LIVE_NETWORK } from '@airlib/solid/browser';
 
 export const SyncManager = setup(() => {
   const queue = mutable([]);
@@ -436,9 +436,9 @@ export const SyncManager = setup(() => {
 ### `LIVE_GEO` — Geolocation Tracking
 
 ```tsx
-import { setup, effect } from '@anchorlib/solid';
+import { setup, effect } from '@airlib/solid';
 import type { JSX } from 'solid-js';
-import { LIVE_GEO } from '@anchorlib/solid/browser';
+import { LIVE_GEO } from '@airlib/solid/browser';
 
 // Global effects belong inside a root-level component
 export const RootLayout = setup<{ children?: JSX.Element }>((props) => {
@@ -465,9 +465,9 @@ Geolocation tracking starts automatically on first read via `navigator.geolocati
 ### `LIVE_LOCATION` — Browser URL State
 
 ```tsx
-import { setup, effect } from '@anchorlib/solid';
+import { setup, effect } from '@airlib/solid';
 import type { JSX } from 'solid-js';
-import { LIVE_LOCATION } from '@anchorlib/solid/browser';
+import { LIVE_LOCATION } from '@airlib/solid/browser';
 
 // Global effects belong inside a root-level component
 export const RootLayout = setup<{ children?: JSX.Element }>((props) => {
@@ -495,8 +495,8 @@ export const RootLayout = setup<{ children?: JSX.Element }>((props) => {
 Tracks URL changes via `popstate` and `hashchange` events.
 
 ```tsx
-import { setup, effect, mutable } from '@anchorlib/solid';
-import { LIVE_LOCATION } from '@anchorlib/solid/browser';
+import { setup, effect, mutable } from '@airlib/solid';
+import { LIVE_LOCATION } from '@airlib/solid/browser';
 
 export const SearchParamsReader = setup(() => {
   const params = mutable({ page: '1', filter: '' });
@@ -522,8 +522,8 @@ export const SearchParamsReader = setup(() => {
 ### `reframe()` — Animation Frame Scheduling
 
 ```tsx
-import { setup } from '@anchorlib/solid';
-import { reframe } from '@anchorlib/solid/browser';
+import { setup } from '@airlib/solid';
+import { reframe } from '@airlib/solid/browser';
 
 export const CanvasRenderer = setup(() => {
   const [scheduleFrame, cancelFrame] = reframe();

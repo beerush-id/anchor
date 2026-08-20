@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import path from 'node:path';
-import type { CookieJar } from '@anchorlib/core';
+import type { CookieJar } from '@airlib/core';
 import type { HTTPTransport } from '@irpclib/http';
 import type { HTTPRouter } from '@irpclib/http/router';
 import type { WebSocketTransport } from '@irpclib/ws';
@@ -115,7 +115,7 @@ export function airSSR(options: ViteSSROptions): Plugin {
       if (!userConfig.ssr) userConfig.ssr = {};
 
       const noExternal = userConfig.ssr.noExternal;
-      const airModules = [/^@airlib\//, /^@anchorlib\//, /^@irpclib\//];
+      const airModules = [/^@airlib\//, /^@airlib\//, /^@irpclib\//];
 
       // biome-ignore lint/suspicious/noExplicitAny: Expect any.
       let mergedNoExternal: any;
@@ -258,7 +258,7 @@ async function resolveSSR({ server, req, res, options }: SSRResolveOptions): Pro
   let ssrResult: SSROutput;
 
   if (router) {
-    const { decodeCookies, setCookieContext } = await server.ssrLoadModule('@anchorlib/core');
+    const { decodeCookies, setCookieContext } = await server.ssrLoadModule('@airlib/core');
     const cookieJar = decodeCookies(cookie);
 
     ssrResult = await router.isolate(
@@ -392,7 +392,7 @@ async function initWsRouter(
     }
 
     const { WebSocketRouter } = await server.ssrLoadModule('@irpclib/ws/router');
-    const { decodeCookies, getContext, setCookieContext } = await server.ssrLoadModule('@anchorlib/core');
+    const { decodeCookies, getContext, setCookieContext } = await server.ssrLoadModule('@airlib/core');
     const wsRouter = new WebSocketRouter(wsTransport) as WebSocketRouter;
 
     wsRouter.use(() => {

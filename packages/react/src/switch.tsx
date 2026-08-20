@@ -1,4 +1,4 @@
-import { getContext, setContext } from '@anchorlib/core';
+import { getContext, setContext } from '@airlib/core';
 import type { ReactNode } from 'react';
 import { render, setup, snippet } from './hoc.js';
 

@@ -22,7 +22,7 @@ if "%VERSION%"=="" (
 
 echo Updating packages to version %VERSION%...
 
-bpkg info set dependencies.@anchorlib/core="%VERSION%" -f ^
+bpkg info set dependencies.@airlib/core="%VERSION%" -f ^
   packages/storage ^
   packages/react ^
   packages/router ^
@@ -32,34 +32,34 @@ bpkg info set dependencies.@anchorlib/core="%VERSION%" -f ^
   irpclib/irpc ^
   irpclib/http ^
   packages/ssr ^
-  packages/vite-ssr
+  packages/vite
 
-bpkg info set dependencies.@anchorlib/router="%VERSION%" -f ^
+bpkg info set dependencies.@airlib/router="%VERSION%" -f ^
   packages/react ^
   packages/solid ^
   packages/ssr
 
-bpkg info set dependencies.@anchorlib/storage="%VERSION%" -f ^
+bpkg info set dependencies.@airlib/storage="%VERSION%" -f ^
   packages/react ^
   packages/solid ^
   packages/svelte ^
   packages/vue
 
-bpkg info set dependencies.@anchorlib/ssr="%VERSION%" -f ^
+bpkg info set dependencies.@airlib/ssr="%VERSION%" -f ^
   packages/react ^
   packages/solid
 
 bpkg info set dependencies.@irpclib/http="%VERSION%" -f ^
-  packages/vite-ssr
+  packages/vite
 
 bpkg info set dependencies.@irpclib/irpc="%VERSION%" -f ^
   irpclib/http ^
   irpclib/ws ^
   irpclib/broadcast ^
-  packages/vite-ssr
+  packages/vite
 
 bpkg info set dependencies.@irpclib/ws="%VERSION%" -f ^
-  packages/vite-ssr
+  packages/vite
 
 bpkg info set optionalDependencies.@irpclib/http="%VERSION%" -f ^
   packages/ssr

@@ -1,4 +1,4 @@
-import { createLifecycle, type ObjLike } from '@anchorlib/core';
+import { createLifecycle, type ObjLike } from '@airlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushStorageCache, session, SessionStorage, STORAGE_SYNC_DELAY } from '../src/index.js';
 

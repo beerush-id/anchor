@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { getScope, isBrowser, setReactive } from '@anchorlib/core';
+import { getScope, isBrowser, setReactive } from '@airlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('Server Module', () => {

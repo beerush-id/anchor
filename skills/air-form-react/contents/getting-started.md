@@ -3,7 +3,7 @@
 ## Installation
 
 ```bash
-bun add @anchorlib/core @airlib/form @airlib/react-form zod
+bun add @airlib/core @airlib/form @airlib/react-form zod
 ```
 
 ## Defining Schema and Form Factory
@@ -30,7 +30,7 @@ const SignUpForm = createForm(signUpSchema);
 ## New Form (e.g., Sign Up)
 
 ```tsx
-import { setup, render, navigate } from '@anchorlib/react';
+import { setup, render, navigate } from '@airlib/react';
 import { TextInput, EmailInput, PasswordInput, FormSubmit } from '@airlib/react-form';
 
 export const SignUp = setup(() => {
@@ -73,7 +73,7 @@ export const SignUp = setup(() => {
 ```tsx
 import { z } from 'zod';
 import { createForm } from '@airlib/react-form';
-import { template } from '@anchorlib/react';
+import { template } from '@airlib/react';
 import { TextInput, EmailInput, NumberInput, FormSubmit } from '@airlib/react-form';
 
 const profileSchema = z.object({

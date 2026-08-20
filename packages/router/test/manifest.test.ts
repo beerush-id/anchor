@@ -1,4 +1,4 @@
-import { type AnyType, setReactive } from '@anchorlib/core';
+import { type AnyType, setReactive } from '@airlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRouteManifest, RouteManifest } from '../src/manifest.js';
 import { createRouter } from '../src/router.js';

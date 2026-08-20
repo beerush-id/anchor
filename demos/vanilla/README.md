@@ -4,8 +4,8 @@ This is a vanilla JavaScript/TypeScript implementation of a Todo application usi
 
 ## Features
 
-- Reactive state management using `@anchorlib/core`
-- IndexedDB storage using `@anchorlib/storage`
+- Reactive state management using `@airlib/core`
+- IndexedDB storage using `@airlib/storage`
 - Real-time UI updates with the `effect()` API
 - Todo CRUD operations (Create, Read, Update, Delete)
 - Task statistics tracking (total, active, completed)

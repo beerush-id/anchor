@@ -95,13 +95,13 @@ describe('route manifest — manifests are generated', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/blogs/page.tsx': '' });
 
     app = makeApp(dir);
-    const first = fs.statSync(fixturePath(dir, '.airstack/manifest/index.ts')).mtimeMs;
+    const first = fs.statSync(fixturePath(dir, '.airlib/manifest/index.ts')).mtimeMs;
 
     // A second boot over the same tree must not touch the generated file.
     // (Do not destroy the second app — ManifestNode.destroy unlinks the index.)
     makeApp(dir);
 
-    const second = fs.statSync(fixturePath(dir, '.airstack/manifest/index.ts')).mtimeMs;
+    const second = fs.statSync(fixturePath(dir, '.airlib/manifest/index.ts')).mtimeMs;
     expect(second).toBe(first);
     expect(readManifest(dir)).toContain("{ path: '/blogs', route: blogsRoute },");
   });

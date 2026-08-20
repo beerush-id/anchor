@@ -1,4 +1,4 @@
-import type { AnyType } from '@anchorlib/core';
+import type { AnyType } from '@airlib/core';
 import { createRenderer } from './renderer.js';
 import type { CoreAppOptions, SSRRenderView } from './types.js';
 import { createFullWorker, createWorker } from './worker.js';

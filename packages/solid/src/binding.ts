@@ -1,4 +1,4 @@
-import { isMutableRef, type MutableRef } from '@anchorlib/core';
+import { isMutableRef, type MutableRef } from '@airlib/core';
 import type { Bindable } from './types.js';
 
 /**

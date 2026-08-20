@@ -1,4 +1,4 @@
-import type { AnyType } from '@anchorlib/core';
+import type { AnyType } from '@airlib/core';
 import type { ComponentProps, JSX, JSXElementConstructor, ReactNode } from 'react';
 
 /**

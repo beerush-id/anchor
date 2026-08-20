@@ -1,4 +1,4 @@
-import { $symbol, anchor, getScope, globalRun, isBrowser, mutable, setScope, untrack } from '@anchorlib/core';
+import { $symbol, anchor, getScope, globalRun, isBrowser, mutable, setScope, untrack } from '@airlib/core';
 
 export const ROUTER_STORE_KEY = $symbol('router-store');
 

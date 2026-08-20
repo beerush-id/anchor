@@ -1,10 +1,10 @@
-## 4. Router (`@anchorlib/router`)
+## 4. Router (`@airlib/router`)
 Anchor Router provides type-safe routing, out-of-band data fetching (providers), and access control (guards) in a single unified route chain.
 
 ### Router: API Signatures
 ```tsx
-import { createRouter, page, modal, Show, For, redirect, MAX_AGE } from '@anchorlib/solid';
-import { NotFoundError, GuardError, ProviderError } from '@anchorlib/solid';
+import { createRouter, page, modal, Show, For, redirect, MAX_AGE } from '@airlib/solid';
+import { NotFoundError, GuardError, ProviderError } from '@airlib/solid';
 import type { JSX } from 'solid-js';
 
 // Router creation
@@ -99,14 +99,14 @@ Create the router instance. The options object is entirely optional.
 
 ```tsx
 // Basic Initialization
-import { createRouter, UIRouter } from '@anchorlib/solid';
+import { createRouter, UIRouter } from '@airlib/solid';
 
 export const router = createRouter();
 ```
 
 ```tsx
 // Initialization with Options
-import { createRouter, UIRouter, MAX_AGE } from '@anchorlib/solid';
+import { createRouter, UIRouter, MAX_AGE } from '@airlib/solid';
 
 export const router = createRouter({ 
   maxAge: MAX_AGE.DAY,
@@ -115,7 +115,7 @@ export const router = createRouter({
 
 // Global Fallback Error Boundary (Optional)
 // Catches any unhandled RouteError (NotFoundError, GuardError, ProviderError, etc.)
-import { NotFoundError, GuardError } from '@anchorlib/solid';
+import { NotFoundError, GuardError } from '@airlib/solid';
 
 router.catch(({ error }) => {
   if (error instanceof NotFoundError) return <h1>404 - Page Not Found</h1>;
@@ -219,7 +219,7 @@ export const searchRoute = rootRoute
 Multiple `.guard()` calls on a single route execute in parallel. Guards are inherently reactive. If a guard reads from any reactive state, it automatically re-evaluates when that state changes, ejecting the user immediately if access is revoked in the background.
 
 ```tsx
-import { mutable, redirect } from '@anchorlib/solid';
+import { mutable, redirect } from '@airlib/solid';
 import { checkRole } from '../services/auth.js';
 
 export const systemState = mutable({ inMaintenance: false });
@@ -241,7 +241,7 @@ export const dashboardRoute = rootRoute
 To bounce a user, throw `redirect()`. It accepts route objects or page components. If you throw a standard `Error` (or specific `RouteError` like `GuardError` or `ProviderError`), navigation halts and the error surfaces to `state.error` for in-place rendering.
 
 ```tsx
-import { redirect, GuardError } from '@anchorlib/solid';
+import { redirect, GuardError } from '@airlib/solid';
 
 export const settingsRoute = dashboardRoute
   .route('/settings')
@@ -326,7 +326,7 @@ The `.render()` function binds the route to a UI component. Layouts receive `chi
 
 ```tsx
 // routes/users/layout.tsx
-import { page } from '@anchorlib/solid';
+import { page } from '@airlib/solid';
 import { usersRoute } from './route.js';
 
 export const UsersLayout = page(usersRoute).render(({ children }) => (
@@ -340,7 +340,7 @@ export const UsersLayout = page(usersRoute).render(({ children }) => (
 
 ```tsx
 // routes/users/[user_id]/page.tsx
-import { page, Show } from '@anchorlib/solid';
+import { page, Show } from '@airlib/solid';
 import { profileRoute } from './route.js';
 
 export const ProfilePage = page(profileRoute).render(({ state }) => (
@@ -373,7 +373,7 @@ Use `.renderAsync()` to lazily load the component's JavaScript bundle. The route
 
 ```tsx
 // routes/users/[user_id]/page.tsx
-import { page } from '@anchorlib/solid';
+import { page } from '@airlib/solid';
 import { profileRoute } from './route.js';
 
 export const ProfilePage = page(profileRoute).renderAsync(
@@ -396,7 +396,7 @@ export const ProfilePage = page(profileRoute).renderAsync(
 Pass a route component or route object to `<Link>`. TypeScript enforces required arguments. When a link matches the active route, it automatically receives the `aria-current="page"` attribute for native CSS styling.
 
 ```tsx
-import { Link } from '@anchorlib/solid';
+import { Link } from '@airlib/solid';
 import { UsersPage } from './routes/users/page.js';
 import { ProfilePage } from './routes/users/[user_id]/page.js';
 
@@ -432,7 +432,7 @@ export function Navigation() {
 Use `navigate()` in event handlers, or generate a raw URL string using `.url()`.
 
 ```tsx
-import { navigate } from '@anchorlib/solid';
+import { navigate } from '@airlib/solid';
 import { profileRoute } from './routes/users/[user_id]/route.js';
 import { ProfilePage } from './routes/users/[user_id]/page.js';
 
@@ -459,7 +459,7 @@ function getShareUrl(userId: string) {
 Observe the router's global `state` to build app-wide progress bars during navigation.
 
 ```tsx
-import { Show } from '@anchorlib/solid';
+import { Show } from '@airlib/solid';
 import { router } from '../lib/router.js';
 
 export function GlobalProgress() {
@@ -491,7 +491,7 @@ export const UsersIndexPage = page(usersIndexRoute).render(() => (
 ));
 
 // Modal Route
-import { modal } from '@anchorlib/solid';
+import { modal } from '@airlib/solid';
 
 export const userInviteRoute = usersRoute.route('/invite');
 export const UserInviteModal = modal(userInviteRoute).render(() => (
@@ -515,7 +515,7 @@ export const signinRoute = authRoute.route('/signin');
 The `.render()` callback provides both `state` (local to this exact segment) and `context` (merged across the entire active tree).
 
 ```tsx
-import { page } from '@anchorlib/solid';
+import { page } from '@airlib/solid';
 
 export const ProfilePage = page(profileRoute).render(({ state, context, children }) => {
   // state.status: 'idle' | 'pending' | 'success' | 'error'

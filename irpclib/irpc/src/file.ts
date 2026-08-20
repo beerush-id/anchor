@@ -1,4 +1,4 @@
-import { mutable, onCleanup } from '@anchorlib/core';
+import { mutable, onCleanup } from '@airlib/core';
 import { IRPC_FILE_STATUS, IRPC_STATUS } from './enum.js';
 import { IRPC_STORE } from './store.js';
 

@@ -9,7 +9,7 @@ import {
   type StateUnsubscribe,
   subscribe,
   uuid,
-} from '@anchorlib/core';
+} from '@airlib/core';
 
 /**
  * A callback function that receives state changes from a durable source.

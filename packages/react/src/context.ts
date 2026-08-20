@@ -1,4 +1,4 @@
-import { AsyncStore } from '@anchorlib/core';
+import { AsyncStore } from '@airlib/core';
 
 export class RenderContext extends AsyncStore {
   constructor(

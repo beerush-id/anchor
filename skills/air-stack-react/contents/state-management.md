@@ -86,7 +86,7 @@ export function query<T>(
 The reactivity system supports standard JavaScript primitives and complex data structures natively. Primitives use a `.value` reference, while Objects, Arrays, Sets, and Maps are wrapped in transparent proxies that intercept standard JavaScript methods.
 
 ```tsx
-import { mutable } from '@anchorlib/react';
+import { mutable } from '@airlib/react';
 
 // Primitives
 const count = mutable(0);
@@ -113,7 +113,7 @@ cache.set('key', 'value'); // Native Map methods trigger reactive updates
 Derived logic is written natively using standard JavaScript Getters. The proxy automatically tracks dependencies and re-evaluates only when underlying data changes.
 
 ```typescript
-import { mutable } from '@anchorlib/react';
+import { mutable } from '@airlib/react';
 
 export const cart = mutable({
   price: 10,
@@ -133,7 +133,7 @@ cart.price = 20; // Automatically invalidates and updates 'total'
 When a computed value depends on multiple *independent* state sources that do not share a common parent object, use `derived()`.
 
 ```typescript
-import { mutable, derived } from '@anchorlib/react';
+import { mutable, derived } from '@airlib/react';
 
 const todos = mutable([{ text: 'Buy milk', done: false }]);
 const filter = mutable('SHOW_COMPLETED');
@@ -152,7 +152,7 @@ console.log(visibleTodos.value);
 When maintaining sorted lists in a reactive system, calling `array.sort()` on every update triggers a full O(N log N) re-evaluation. The `ordered()` primitive solves this by maintaining a reactive sorted view using **binary search insertion**. When the source array updates, it computes the exact index to insert the new items in O(log N) time, preventing expensive full array re-sorts.
 
 ```typescript
-import { mutable, ordered } from '@anchorlib/react';
+import { mutable, ordered } from '@airlib/react';
 
 const state = mutable({
   movies: [{ title: 'Zoolander' }, { title: 'Alien' }]
@@ -169,7 +169,7 @@ console.log(sortedMovies); // [{ title: 'Alien' }, { title: 'Zoolander' }]
 When sharing fragile state (whether it is a global store or a parent passing state down to children), enforce a One-Way Data Flow by separating the read interface from the write interface. Use `immutable` for the public/shared state and `writable` for restricted mutations.
 
 ```typescript
-import { immutable, writable } from '@anchorlib/react';
+import { immutable, writable } from '@airlib/react';
 
 // Public Read-Only View
 // Can be a global store OR a local state passed down to children
@@ -192,7 +192,7 @@ statusControl.status = 'busy'; // Works natively
 The `form` primitive combines deeply reactive state with zero-boilerplate Zod validation. The `$bind` utility safely wires the state directly to input fields for two-way data binding. For form coordinators, field bridges, parse buffers, and type-safe form factories, see **Form Architecture**.
 
 ```tsx
-import { setup, render, form, $use, $bind } from '@anchorlib/react';
+import { setup, render, form, $use, $bind } from '@airlib/react';
 import { z } from 'zod';
 import { InputField } from './components/InputField.js';
 
@@ -218,7 +218,7 @@ Effects run immediately and automatically re-run whenever synchronously accessed
 
 **Standard Synchronous Effect**
 ```typescript
-import { mutable, effect } from '@anchorlib/react';
+import { mutable, effect } from '@airlib/react';
 
 const state = mutable({ count: 0 });
 
@@ -232,7 +232,7 @@ effect(() => {
 Effects that access browser APIs (`window`, `document`) require execution limits for SSR compatibility. Use `effect.client()` or gate a standard effect with `if (isBrowser)`.
 
 ```typescript
-import { mutable, effect } from '@anchorlib/react';
+import { mutable, effect } from '@airlib/react';
 
 const state = mutable({ query: '(max-width: 768px)', matches: false });
 
@@ -250,7 +250,7 @@ effect.client(() => {
 ```
 
 ```typescript
-import { mutable, effect } from '@anchorlib/react';
+import { mutable, effect } from '@airlib/react';
 
 const state = mutable({ query: '(max-width: 768px)', matches: false });
 
@@ -273,7 +273,7 @@ if (typeof window !== 'undefined') {
 Anchor tracks every property read inside an effect. Avoid over-subscribing when performing reads (like `JSON.stringify()`) that shouldn't trigger updates.
 
 ```tsx
-import { effect, untrack, snapshot, stringify } from '@anchorlib/react';
+import { effect, untrack, snapshot, stringify } from '@airlib/react';
 
 effect(() => {
   const trigger = state.trigger; // Explicitly track this to trigger the effect
@@ -293,7 +293,7 @@ effect(() => {
 To monitor an entire state tree for any mutations (e.g., for global persistence or logging) without manually accessing every property, use `subscribe` instead of `effect`.
 
 ```typescript
-import { subscribe } from '@anchorlib/react';
+import { subscribe } from '@airlib/react';
 
 // Triggers on ANY change to 'user' or its nested children
 subscribe(userState, (val, event) => {
@@ -305,7 +305,7 @@ subscribe(userState, (val, event) => {
 The `query` primitive creates a reactive container for **any async operation** (e.g., 3rd-party SDKs, Web Workers, external fetch) with built-in status tracking and `AbortSignal` support.
 
 ```tsx
-import { setup, render, query } from '@anchorlib/react';
+import { setup, render, query } from '@airlib/react';
 import { stripe } from '../stripe.js'; // 3rd-party SDK
 
 export const DashboardWidget = setup(() => {
@@ -340,7 +340,7 @@ export const DashboardWidget = setup(() => {
 Queries executing side-effects or mutations should be deferred so they only run when explicitly triggered by an event.
 
 ```tsx
-import { setup, render, mutable, query } from '@anchorlib/react';
+import { setup, render, mutable, query } from '@airlib/react';
 import { stripe } from '../stripe.js'; // 3rd-party SDK
 
 export const CreateUserForm = setup(() => {
@@ -375,7 +375,7 @@ export const CreateUserForm = setup(() => {
 Queries expose a `.promise` property that perfectly bridges the reactive system with standard async/await flows. This is essential for Server-Side Rendering (SSR) route loaders or IRPC handlers that must wait for data before responding.
 
 ```typescript
-import { query } from '@anchorlib/react';
+import { query } from '@airlib/react';
 
 // E.g., inside a Route Provider or IRPC Handler
 export async function loadUserData() {
@@ -410,7 +410,7 @@ export const appConfig = { version: '1.0', apiUrl: 'https://api.example.com' };
 For strictly Client-Side Rendered (CSR) applications without SSR capabilities, module-level state acts as a safe global singleton.
 
 ```typescript
-import { mutable } from '@anchorlib/react';
+import { mutable } from '@airlib/react';
 
 export const uiState = mutable({ sidebarOpen: false });
 ```
@@ -419,7 +419,7 @@ export const uiState = mutable({ sidebarOpen: false });
 For Server-Side Rendered (SSR) applications, state must be isolated per-request. Inject the state at the root layout and retrieve it where needed using the Context API.
 
 ```tsx
-import { createContext, mutable } from '@anchorlib/react';
+import { createContext, mutable } from '@airlib/react';
 
 // Define the scope
 export function createAppState() {
@@ -445,7 +445,7 @@ export const ThemeToggle = setup(() => {
 State created inside a component `setup` is automatically garbage collected when the component's scope is disposed. It is natively SSR-safe and completely isolated.
 
 ```tsx
-import { setup, render, mutable } from '@anchorlib/react';
+import { setup, render, mutable } from '@airlib/react';
 
 export const LocalCounter = setup(() => {
   const local = mutable({ count: 0 });
@@ -468,7 +468,7 @@ const signIn = irpc.declare('auth.signIn', () => ({ token: '', user: null }), { 
 
 ```ts
 // Handler — setting auth token after login
-import { cookies } from '@anchorlib/react';
+import { cookies } from '@airlib/react';
 
 irpc.construct(signIn, async (credentials) => {
   const auth = cookies('auth', { token: '' });

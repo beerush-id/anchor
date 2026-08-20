@@ -1,4 +1,4 @@
-import type { PreloadMode } from '@anchorlib/router';
+import type { PreloadMode } from '@airlib/router';
 import type { HTMLAttributes, ReactNode } from 'react';
 import { classx, render, Show, Snippet, setup } from '../index.js';
 import { mdxCtx } from './context.js';

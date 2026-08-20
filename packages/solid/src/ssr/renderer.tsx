@@ -1,4 +1,4 @@
-import type { Router } from '@anchorlib/router';
+import type { Router } from '@airlib/router';
 import {
   createRenderer as createBaseRenderer,
   type RouterOptions,
@@ -6,7 +6,7 @@ import {
   type SSROptions,
   type SSRRenderer,
   type SSRRenderOptions,
-} from '@anchorlib/ssr';
+} from '@airlib/ssr';
 import { generateHydrationScript, renderToString } from 'solid-js/web';
 import { type AnyRoute, headings, type RouteComponent, UIRouter } from '../router/index.js';
 import type { AppShell } from './types.js';

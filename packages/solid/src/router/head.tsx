@@ -1,4 +1,4 @@
-import { $symbol, getScope, isBrowser, onCleanup, setScope } from '@anchorlib/core';
+import { $symbol, getScope, isBrowser, onCleanup, setScope } from '@airlib/core';
 import type { Component, JSX } from 'solid-js';
 
 const HEADING_SET_CLOSURE = $symbol('head-map-closure');

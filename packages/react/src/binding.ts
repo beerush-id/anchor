@@ -1,4 +1,4 @@
-import { createObserver, isMutableRef, mutable, type MutableRef, type StateOptions } from '@anchorlib/core';
+import { createObserver, isMutableRef, mutable, type MutableRef, type StateOptions } from '@airlib/core';
 import type { RefObject } from 'react';
 import type { Bindable, Linked, RefToArg } from './types.js';
 

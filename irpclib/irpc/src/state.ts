@@ -7,7 +7,7 @@ import {
   type StateSubscriber,
   type StateUnsubscribe,
   subscribe,
-} from '@anchorlib/core';
+} from '@airlib/core';
 import { getAbortSignal } from './context.js';
 import { IRPC_STATUS } from './enum.js';
 import { IRPC_ERROR_TYPE, IRPCError } from './error.js';

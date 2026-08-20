@@ -19,7 +19,7 @@ export default defineConfig({
 
 ```ts
 // test/setup.ts
-import { anchor } from '@anchorlib/solid';
+import { anchor } from '@airlib/solid';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 beforeEach(() => {
@@ -110,7 +110,7 @@ describe('getProfile', () => {
 
 ```ts
 // src/state/cart.ts (your state)
-import { mutable } from '@anchorlib/solid';
+import { mutable } from '@airlib/solid';
 
 export function createCart() {
   return mutable({ 
@@ -147,7 +147,7 @@ Effects track reactive reads and re-run when those values change. State is synch
 
 ```ts
 import { describe, expect, it, vi } from 'vitest';
-import { mutable, effect } from '@anchorlib/solid';
+import { mutable, effect } from '@airlib/solid';
 
 describe('Effect tracking', () => {
   it('should re-run when tracked state changes', () => {
@@ -186,7 +186,7 @@ Guards are plain functions. Call them directly or test through the route.
 
 ```ts
 // src/routes/dashboard/route.ts (your guard)
-import { cookies, redirect } from '@anchorlib/solid';
+import { cookies, redirect } from '@airlib/solid';
 import { loginRoute } from '../auth/route.js';
 
 export function requireAuth() {
@@ -198,7 +198,7 @@ export function requireAuth() {
 ```ts
 // test/guards.test.ts
 import { describe, expect, it } from 'vitest';
-import { Redirect } from '@anchorlib/router';
+import { Redirect } from '@airlib/router';
 import { requireAuth } from '../src/routes/dashboard/route.js';
 
 describe('requireAuth', () => {
@@ -269,7 +269,7 @@ Some APIs require a browser environment (`effect.client`, `.once()`, `.with()`).
 
 ```ts
 import { describe, expect, it, vi } from 'vitest';
-import { effect } from '@anchorlib/solid';
+import { effect } from '@airlib/solid';
 
 describe('Browser-only', () => {
   it('should skip effect.client on server', () => {
@@ -296,10 +296,10 @@ Use `setCookieContext(decodeCookies(...))` to seed the cookie store. Wrap in `wi
 
 ```ts
 import { describe, expect, it } from 'vitest';
-import { withIsolation } from '@anchorlib/solid';
-import { decodeCookies, setCookieContext, cookies } from '@anchorlib/solid';
+import { withIsolation } from '@airlib/solid';
+import { decodeCookies, setCookieContext, cookies } from '@airlib/solid';
 import { requireAuth } from '../src/routes/dashboard/route.js';
-import { Redirect } from '@anchorlib/router';
+import { Redirect } from '@airlib/router';
 
 describe('Auth guard with cookies', () => {
   it('should redirect when cookie has no token', async () => {

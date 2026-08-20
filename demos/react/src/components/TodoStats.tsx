@@ -1,4 +1,4 @@
-import { derived, render, setup } from '@anchorlib/react';
+import { derived, render, setup } from '@airlib/react';
 import type { TodoRec } from '../utils/todos';
 
 interface TodoStatsProps {

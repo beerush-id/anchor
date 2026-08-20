@@ -1,4 +1,4 @@
-import { createLifecycle, setReactive } from '@anchorlib/core';
+import { createLifecycle, setReactive } from '@airlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RENDER_MODE, ROUTE_TYPE } from '../src/enum.js';
 import { RouteError } from '../src/error.js';

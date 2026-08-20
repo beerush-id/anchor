@@ -1,4 +1,4 @@
-# @anchorlib/react
+# @airlib/react
 
 The next-generation React component architecture, featuring stable components and fine-grained reactivity.
 
@@ -12,7 +12,7 @@ The next-generation React component architecture, featuring stable components an
 ## Installation
 
 ```bash
-npm install @anchorlib/react
+npm install @airlib/react
 ```
 
 ## Setup
@@ -21,7 +21,7 @@ To enable reactivity, you must initialize the binding in your client entry file 
 
 ```tsx
 // app/layout.tsx or client entry
-import '@anchorlib/react/client';
+import '@airlib/react/client';
 
 export default function RootLayout({ children }) {
   return (
@@ -39,7 +39,7 @@ export default function RootLayout({ children }) {
 Use `setup` and `template` to separate logic from rendering, ensuring components are stable and only re-render when necessary.
 
 ```tsx
-import { setup, template, mutable } from '@anchorlib/react';
+import { setup, template, mutable } from '@airlib/react';
 
 // 1. Define the logic (runs once per component instance)
 const Counter = setup(() => {
@@ -71,10 +71,10 @@ The `Counter` component is a universal component that works safely in both Serve
 To keep your existing code working, install the classic package and update your imports:
 
 ```bash
-npm install @anchorlib/react-classic
+npm install @airlib/react-classic
 ```
 
-Then replace all imports from `@anchorlib/react` to `@anchorlib/react-classic` in your project.
+Then replace all imports from `@airlib/react` to `@airlib/react-classic` in your project.
 
 For migration guide to the new API, see the [documentation](https://anchorlib.dev).
 

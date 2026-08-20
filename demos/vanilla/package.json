@@ -15,7 +15,7 @@
     "vite": "catalog:"
   },
   "dependencies": {
-    "@anchorlib/core": "workspace:*",
-    "@anchorlib/storage": "workspace:*"
+    "@airlib/core": "workspace:*",
+    "@airlib/storage": "workspace:*"
   }
 }

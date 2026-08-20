@@ -1,4 +1,4 @@
-# @anchorlib/core
+# @airlib/core
 
 Reactive State Management for JavaScript with a focus on simplicity and developer experience.
 
@@ -16,7 +16,7 @@ Reactive State Management for JavaScript with a focus on simplicity and develope
 ## Installation
 
 ```bash
-npm install @anchorlib/core
+npm install @airlib/core
 ```
 
 ## Documentation
@@ -26,7 +26,7 @@ For full documentation, visit [Anchor Core Documentation](https://airlib.dev/ove
 ## Quick Start
 
 ```javascript
-import { anchor, derive } from '@anchorlib/core';
+import { anchor, derive } from '@airlib/core';
 
 // Create a reactive state object
 const state = anchor({

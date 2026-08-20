@@ -1,4 +1,4 @@
-## 6. User Interface (`@anchorlib/react`)
+## 6. User Interface (`@airlib/react`)
 Anchor UI components are autonomous. They own their own behaviors and mutations rather than relying on their parents to micromanage them via massive callback props.
 
 ### Styling Patterns
@@ -16,7 +16,7 @@ export const BillingHeader = () => (
 ```
 
 #### Core Styling Utilities (`classx` & `stylex`)
-Use the `@anchorlib/react` utilities as the primary convention for **dynamic styles and classes**.
+Use the `@airlib/react` utilities as the primary convention for **dynamic styles and classes**.
 
 > **⚠️ CRITICAL: `.use()` Required for Anchor Components**
 >
@@ -27,7 +27,7 @@ Use the `@anchorlib/react` utilities as the primary convention for **dynamic sty
 
 **ClassX (`classx`)**: Joins class names based on strings, arrays, or object maps.
 ```tsx
-import { classx } from '@anchorlib/react';
+import { classx } from '@airlib/react';
 import { InvoiceBadge } from './InvoiceBadge.js'; // Example Anchor Component
 
 export const Badge = ({ status, isActive, isOld }) => (
@@ -54,7 +54,7 @@ export const Badge = ({ status, isActive, isOld }) => (
 > `stylex()` → native elements. `stylex.use(() => ...)` → anchor components.
 
 ```tsx
-import { stylex, $unit } from '@anchorlib/react';
+import { stylex, $unit } from '@airlib/react';
 import { ScrollView } from './ScrollView.js'; // Example Anchor Component
 
 export const VirtualList = ({ height, scrollY, tenantColor, progress }) => (
@@ -80,7 +80,7 @@ When a class combination is repeated in the *same file*, extract it to a local v
 *Note: Define styling helpers below your components so the primary UI logic isn't buried.*
 
 ```tsx
-import { For, classx } from '@anchorlib/react';
+import { For, classx } from '@airlib/react';
 
 export const InvoiceList = ({ invoices }) => (
   <div className="flex flex-col gap-4">
@@ -155,7 +155,7 @@ When passing state down to a custom Component or View, you **must use a binding*
 When passing state directly into native HTML elements (e.g., `<div>{state.value}</div>`), the surrounding block **must be wrapped in a reactive boundary** (like `render(() => ...)` or `<Show>`). In this scenario, the wrapper itself *is* the binding that tracks the read.
 
 ```tsx
-import { setup, render, template, $use, $bind } from '@anchorlib/react';
+import { setup, render, template, $use, $bind } from '@airlib/react';
 import { metricsContext, appStateContext } from './contexts.js';
 
 export const SettingsPanel = setup(() => {
@@ -206,7 +206,7 @@ export const ProfilePage = page(profileRoute).render(({ state }) => (
 If a structure is repeated multiple times on the *same page*, extract it to a local static structure in the *same file*.
 
 ```tsx
-import { For, $use } from '@anchorlib/react';
+import { For, $use } from '@airlib/react';
 
 export const ProfilePage = page(profileRoute).render(({ state }) => (
   <div className="grid">
@@ -239,7 +239,7 @@ export const ProfileCard = ({ profile }) => (
 );
 
 // AnyOtherPage.tsx
-import { page } from '@anchorlib/react';
+import { page } from '@airlib/react';
 import { otherRoute } from './route.js';
 import { ProfileCard } from '@/lib/components/ProfileCard';
 
@@ -279,7 +279,7 @@ export const Toggle = setup<{ value?: Bindable<boolean> }>((props) => {
 Example — a form with many fields should NOT use `render()` around the whole body. Each field lives in its own component (`<InputField>`) or `<Snippet>` boundary, while the form body remains static:
 
 ```tsx
-import { setup, mutable, $bind } from '@anchorlib/react';
+import { setup, mutable, $bind } from '@airlib/react';
 
 export const ProfileForm = setup(() => {
   const state = mutable({ name: '', email: '' });
@@ -299,7 +299,7 @@ export const ProfileForm = setup(() => {
 Use `snippet()` to create a named, reusable reactive boundary inside a component. Snippets inherit the parent closure naturally — they read the same variables the parent has access to.
 
 ```tsx
-import { setup, snippet } from '@anchorlib/react';
+import { setup, snippet } from '@airlib/react';
 import { metricsContext } from './contexts.js';
 
 export const Dashboard = setup(() => {
@@ -324,7 +324,7 @@ export const Dashboard = setup(() => {
 `<Show>` is both a conditional gate and a rendering boundary. The `when` prop guarantees safety: when falsy, children never render. When truthy, destructuring inside the children function is safe — the data is guaranteed non-null.
 
 ```tsx
-import { Show } from '@anchorlib/react';
+import { Show } from '@airlib/react';
 
 // Safe: Show gates on condition before destructuring
 <Show when={() => user.data}>
@@ -339,7 +339,7 @@ Use `<Show>` when you need **flow control** (show/hide) AND rendering isolation 
 `<Snippet>` creates an inline rendering boundary WITHOUT a conditional gate. The user is responsible for handling nullish values — the data is passed through as-is.
 
 ```tsx
-import { Snippet } from '@anchorlib/react';
+import { Snippet } from '@airlib/react';
 
 // No gate: user handles nullish themselves
 <Snippet data={metrics}>
@@ -361,7 +361,7 @@ Use `<Snippet>` when you need **rendering isolation only** and the element is al
 Use `template()` to create a standalone, reusable reactive View. Unlike a snippet, a template requires explicit props and can be extracted to a different file.
 
 ```tsx
-import { template } from '@anchorlib/react';
+import { template } from '@airlib/react';
 
 // A highly optimized, standalone reactive boundary
 export const FeatureCard = template<{ title: string, description: string, theme: Theme }>(
@@ -387,7 +387,7 @@ If it only presents data, it is a **Static UI** (standard function) or a **View*
 Use `setup` to create a Component. To track reactive state reads in JSX, use `render(() => ...)`.
 
 ```tsx
-import { setup, render, mutable, onMount, onCleanup, $use, createContext } from '@anchorlib/react';
+import { setup, render, mutable, onMount, onCleanup, $use, createContext } from '@airlib/react';
 import type { ReactNode } from 'react';
 
 // A component with reactive JSX
@@ -423,7 +423,7 @@ In the AIR Stack, `props` is reactive state and the **source of truth** of your 
 Create a separate internal `mutable()` state only for data that belongs strictly to the component itself (e.g., local loading status, intermediate buffering, or internal toggles).
 
 ```tsx
-import { setup, render } from '@anchorlib/react';
+import { setup, render } from '@airlib/react';
 
 export const Counter = setup<{ count?: number }>((props) => {
   // Initialize missing props
@@ -443,7 +443,7 @@ export const Counter = setup<{ count?: number }>((props) => {
 When a component needs to sync internal mutations back to its parent, it should type the prop as `Bindable<T>`. The component directly mutates this prop (`props.value = ...`), and the binding automatically propagates the state change. The component must also dispatch the associated native events back to the parent to maintain full composability.
 
 ```tsx
-import { setup, render, type Bindable } from '@anchorlib/react';
+import { setup, render, type Bindable } from '@airlib/react';
 
 // User Interaction (Reactive JSX)
 export const Toggle = setup<{ 
@@ -464,7 +464,7 @@ export const Toggle = setup<{
 ```
 
 ```tsx
-import { mutable, setup, render, type Bindable } from '@anchorlib/react';
+import { mutable, setup, render, type Bindable } from '@airlib/react';
 
 // System Event (Imperative API)
 export const VideoPlayer = setup<{ 
@@ -502,7 +502,7 @@ export const VideoPlayer = setup<{
 ```
 
 ```tsx
-import { setup, render, type Bindable } from '@anchorlib/react';
+import { setup, render, type Bindable } from '@airlib/react';
 import type { ReactNode } from 'react';
 
 // System Event (Declarative DOM)
@@ -530,7 +530,7 @@ export const Accordion = setup<{
 ```
 
 ```tsx
-import { mutable, setup, render, effect, type Bindable } from '@anchorlib/react';
+import { mutable, setup, render, effect, type Bindable } from '@airlib/react';
 import type { ReactNode } from 'react';
 
 // System Event (Reactive JSX)
@@ -559,7 +559,7 @@ export const Reveal = setup<{ visible?: Bindable<boolean>, threshold?: number, c
 ```
 
 ```tsx
-import { setup, mutable, $bind } from '@anchorlib/react';
+import { setup, mutable, $bind } from '@airlib/react';
 
 // The Parent Consumer
 export const Settings = setup(() => {
@@ -583,7 +583,7 @@ Forward reactive component `props` to child elements safely by extracting them e
 Use `props.$omit()` to forward all native props except those managed internally:
 
 ```tsx
-import { setup, render, type Bindable } from '@anchorlib/react';
+import { setup, render, type Bindable } from '@airlib/react';
 import type { InputHTMLAttributes } from 'react';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -611,7 +611,7 @@ export const InputField = setup<InputProps>((props) => {
 Use `props.$pick()` to explicitly select and forward only specific props:
 
 ```tsx
-import { setup, render } from '@anchorlib/react';
+import { setup, render } from '@airlib/react';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -634,7 +634,7 @@ export const Button = setup<ButtonProps>((props) => {
 When you need to frequently update an element's attributes, classes, or styles based on state changes (e.g., animations, drag-and-drop, or toggling visibility of a heavy container), use `nodeRef()`.
 
 ```tsx
-import { setup, render, mutable, nodeRef } from '@anchorlib/react';
+import { setup, render, mutable, nodeRef } from '@airlib/react';
 
 export const AnimatedBox = setup(() => {
   const state = mutable({ x: 0, y: 0, active: false });
@@ -666,7 +666,7 @@ A component's lifecycle is bound to its initialization scope (`setup()`), which 
 For one-time initialization of static elements, use a standard local variable and a `ref` callback.
 
 ```tsx
-import { setup, render, onMount } from '@anchorlib/react';
+import { setup, render, onMount } from '@airlib/react';
 
 export const CanvasElement = setup(() => {
   // One-time use variable.
@@ -691,7 +691,7 @@ You can conditionally execute side-effects (e.g., attaching listeners, starting 
 Use `onCleanup` to register a teardown function to the current scope, guaranteeing it is destroyed when the component is removed.
 
 ```tsx
-import { setup, render, onCleanup } from '@anchorlib/react';
+import { setup, render, onCleanup } from '@airlib/react';
 
 export const GlobalShortcut = setup(() => {
   // We can attach listeners directly in the component body based on conditions.
@@ -714,7 +714,7 @@ export const GlobalShortcut = setup(() => {
 A self-governing component discovers its own environment — parent elements, scroll containers, form contexts, intersection boundaries — and attaches its own behavior without the parent orchestrating it. The parent doesn't need to know what the component does internally; the component handles its own concerns.
 
 ```tsx
-import { setup, render, mutable, effect } from '@anchorlib/react';
+import { setup, render, mutable, effect } from '@airlib/react';
 import { popover } from './popover'; // Headless utility
 
 export const Tooltip = setup<{ text: string, x?: PopX, y?: PopY }>((props) => {
@@ -747,7 +747,7 @@ A user interface pattern for immediate feedback. AI can implement this using dif
 It applies mutations instantly using `undoable()` and provides an `undo` function to rollback if the network request fails.
 
 ```tsx
-import { setup, render, undoable } from '@anchorlib/react';
+import { setup, render, undoable } from '@airlib/react';
 
 export const LikeButton = setup<{ post: any }>((props) => {
   const toggleLike = async () => {
@@ -770,7 +770,7 @@ export const LikeButton = setup<{ post: any }>((props) => {
 Manually saving the previous state before applying mutations, and manually restoring it if the operation fails. Use this when you need to perform sequential state mutations separated by asynchronous boundaries (`await`), where the rollback itself requires manual, asynchronous orchestration.
 
 ```tsx
-import { setup, render } from '@anchorlib/react';
+import { setup, render } from '@airlib/react';
 
 export const Checkout = setup<{ cart: any }>((props) => {
   const processCheckout = async () => {
@@ -806,7 +806,7 @@ export const Checkout = setup<{ cart: any }>((props) => {
 Using the workflow engine where each step handles its own isolated optimistic updates and rollback logic. This is ideal for complex, multi-stage pipelines because it prevents massive centralized error handlers.
 
 ```tsx
-import { setup, render, plan, undoable, mutable } from '@anchorlib/react';
+import { setup, render, plan, undoable, mutable } from '@airlib/react';
 
 export const Checkout = setup(() => {
   const cart = mutable({ id: 'cart_123', status: 'idle' });

@@ -26,7 +26,7 @@ This file covers only Solid-specific UI binding patterns.
 Executes immediately when the component mounts. Solid's native JSX reactivity tracks reads automatically — no `render()` wrapper needed.
 
 ```tsx
-import { setup, Show } from '@anchorlib/solid';
+import { setup, Show } from '@airlib/solid';
 import { getUser } from './function.js';
 
 export const UserCard = setup<{ id: string }>((props) => {
@@ -46,7 +46,7 @@ export const UserCard = setup<{ id: string }>((props) => {
 Tracks the arguments getter and re-executes when arguments change. Solid's reactivity handles tracking natively in JSX.
 
 ```tsx
-import { setup, mutable } from '@anchorlib/solid';
+import { setup, mutable } from '@airlib/solid';
 import { searchUsers } from './function.js';
 
 export const UserSearch = setup(() => {
@@ -87,7 +87,7 @@ return (
 For streaming functions, `effect()` handles reactive updates to stream data:
 
 ```tsx
-import { setup, effect } from '@anchorlib/solid';
+import { setup, effect } from '@airlib/solid';
 import { watchPrice } from './function.js';
 
 export const PriceDisplay = setup<{ symbol: string }>((props) => {

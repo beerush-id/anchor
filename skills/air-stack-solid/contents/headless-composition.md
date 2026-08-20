@@ -6,7 +6,7 @@ Abstracting logic outside of the component tree enables strict separation of con
 Use Headless State to manage complex data structures and mutations independent of any UI representation.
 
 ```typescript
-import { mutable, effect } from '@anchorlib/solid';
+import { mutable, effect } from '@airlib/solid';
 
 // Optional Shape
 export function createFilterState(init?: { query?: string; category?: string }) {
@@ -26,7 +26,7 @@ export function createFilterState(init?: { query?: string; category?: string }) 
 ```
 
 ```typescript
-import { mutable } from '@anchorlib/solid';
+import { mutable } from '@airlib/solid';
 
 // Guaranteed Shape
 export function createStrictUserForm({ name = '', email = '' } = {}) {
@@ -44,7 +44,7 @@ export function createStrictUserForm({ name = '', email = '' } = {}) {
 Use Headless Logic (like classes) to model pure domain logic or state machines independently.
 
 ```typescript
-import { mutable } from '@anchorlib/solid';
+import { mutable } from '@airlib/solid';
 
 export class TabState {
   public active: string;
@@ -61,7 +61,7 @@ export function createTab(init: string = 'home') {
 Use Headless Actions to compose reusable, highly-optimized DOM side effects. The action encapsulates both the reactive reference and the side-effect logic, returning a clean binding target for the UI.
 
 ```typescript
-import { mutable, effect } from '@anchorlib/solid';
+import { mutable, effect } from '@airlib/solid';
 
 export function createKeyPress(key: string, handler: () => void) {
   const ref = mutable<{ current: HTMLElement | null }>({ current: null });
@@ -118,10 +118,10 @@ export function popover(el: HTMLElement, x: PopX = 'center', y: PopY = 'above') 
 ```
 
 ### Framework Agnostic Logic
-If you want to share the same logic to non-react framework, import from `@anchorlib/core` instead of `@anchorlib/solid`.
+If you want to share the same logic to non-react framework, import from `@airlib/core` instead of `@airlib/solid`.
 
 ```ts
-import { mutable } from '@anchorlib/core';
+import { mutable } from '@airlib/core';
 
 export function createAccordion() {
   return mutable({ active: '', open: false });

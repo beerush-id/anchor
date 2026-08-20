@@ -1,4 +1,4 @@
-import { setup, snippet } from '@anchorlib/react';
+import { setup, snippet } from '@airlib/react';
 import { type TodoRec, todoTable } from '../utils/todos';
 
 interface TodoItemProps {

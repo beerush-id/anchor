@@ -1,5 +1,5 @@
-export * from '@anchorlib/storage';
-export * from '@anchorlib/storage/db';
+export * from '@airlib/storage';
+export * from '@airlib/storage/db';
 
 export * from './kv.js';
 export * from './persistent.js';

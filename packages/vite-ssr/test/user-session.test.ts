@@ -107,12 +107,12 @@ describe('one dev session — start, work, stop', () => {
     expect(readFixture(dir, 'pages/about/page.tsx')).toBe('// about\n');
   });
 
-  it('the user stops the dev server — airstack files are cleaned up, user files remain', () => {
+  it('the user stops the dev server — airlib files are cleaned up, user files remain', () => {
     app?.destroy();
     app = undefined;
 
-    expect(fixtureExists(dir, '.airstack/manifest/index.ts')).toBe(false);
-    expect(fixtureExists(dir, '.airstack/metadata/docs/page.ts')).toBe(false);
+    expect(fixtureExists(dir, '.airlib/manifest/index.ts')).toBe(false);
+    expect(fixtureExists(dir, '.airlib/metadata/docs/page.ts')).toBe(false);
     expect(fixtureExists(dir, 'pages/about/page.tsx')).toBe(true);
     expect(fixtureExists(dir, 'pages/blogs/[slug]/route.ts')).toBe(true);
 

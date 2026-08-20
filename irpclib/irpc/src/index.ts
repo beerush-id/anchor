@@ -1,4 +1,4 @@
-export { plan } from '@anchorlib/core';
+export { plan } from '@airlib/core';
 
 export * from './adapter.js';
 export * from './cache.js';

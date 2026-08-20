@@ -99,12 +99,12 @@ describe('watcher sync — folder edits stay in sync', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/guide/page.mdx': '---\ntitle: "Guide"\n---\n# Guide\n' });
 
     app = makeApp(dir);
-    expect(fixtureExists(dir, '.airstack/metadata/guide/page.ts')).toBe(true);
+    expect(fixtureExists(dir, '.airlib/metadata/guide/page.ts')).toBe(true);
 
     writeFixture(dir, { 'pages/guide/page.mdx': '---\ntitle: "Updated Guide"\n---\n# Guide\n' });
     app.rootFolder.children.get('guide')?.handleFileChanged('page.mdx');
 
-    expect(readFixture(dir, '.airstack/metadata/guide/page.ts')).toContain('Updated Guide');
+    expect(readFixture(dir, '.airlib/metadata/guide/page.ts')).toContain('Updated Guide');
   });
 
   it('updates the manifest when a page folder is added', () => {

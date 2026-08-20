@@ -1,5 +1,5 @@
-import { safeRun, sleep } from '@anchorlib/core';
-import { createRouter } from '@anchorlib/router';
+import { safeRun, sleep } from '@airlib/core';
+import { createRouter } from '@airlib/router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createFullWorker,
@@ -334,7 +334,7 @@ describe('createWorker', () => {
   });
 
   it('suppresses console.error in browser environment on error', async () => {
-    const core = await import('@anchorlib/core');
+    const core = await import('@airlib/core');
     const spy = vi.spyOn(core, 'isBrowser').mockReturnValue(true);
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const renderer = vi.fn(async () => {
@@ -734,7 +734,7 @@ describe('createFullWorker', () => {
   });
 
   it('suppresses console.error in browser environment on error', async () => {
-    const core = await import('@anchorlib/core');
+    const core = await import('@airlib/core');
     const spy = vi.spyOn(core, 'isBrowser').mockReturnValue(true);
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const renderer = createMockRenderer();
@@ -794,12 +794,12 @@ describe('createFullWorker', () => {
   });
 
   it('encodes cookies from the cookie jar in SSR response', async () => {
-    const { decodeCookies } = await import('@anchorlib/core');
+    const { decodeCookies } = await import('@airlib/core');
     const mockJar = decodeCookies('');
     vi.spyOn(mockJar, 'encode').mockReturnValue(['session=abc; Path=/']);
 
-    await import('@anchorlib/ssr');
-    const decodeSpy = vi.spyOn(await import('@anchorlib/core'), 'decodeCookies').mockReturnValue(mockJar);
+    await import('@airlib/ssr');
+    const decodeSpy = vi.spyOn(await import('@airlib/core'), 'decodeCookies').mockReturnValue(mockJar);
 
     const renderer = createMockRenderer();
     const router = createMockRouter();

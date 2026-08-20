@@ -7,7 +7,7 @@ import {
   onGlobalCleanup,
   setCleanUpHandler,
   setTracker,
-} from '@anchorlib/core';
+} from '@airlib/core';
 import { onDestroy } from 'svelte';
 import { createSubscriber } from 'svelte/reactivity';
 

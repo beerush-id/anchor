@@ -1,4 +1,4 @@
-import type { AnyType } from '@anchorlib/core';
+import type { AnyType } from '@airlib/core';
 import type { AppWorkerOptions, AssetResolver, CacheControl, CacheControlInit } from './types.js';
 
 export function createAssetResolver<E = AnyType>(options: AppWorkerOptions<E>): AssetResolver<E> {

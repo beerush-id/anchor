@@ -5,7 +5,7 @@ import {
   microbatch,
   microtask,
   type StateMetadata,
-} from '@anchorlib/core';
+} from '@airlib/core';
 import { StateMap } from './map.js';
 import { StateNode } from './node.js';
 

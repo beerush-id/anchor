@@ -8,7 +8,7 @@ import {
   type MutableRef,
   setScope,
   untrack,
-} from '@anchorlib/core';
+} from '@airlib/core';
 import { type BindingRef, isBinding } from './binding.js';
 import type { BindableComponentProps } from './types.js';
 

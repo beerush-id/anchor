@@ -1,4 +1,4 @@
-import { createRecord, createTable, type InferList, type InferRow } from '@anchorlib/react/storage';
+import { createRecord, createTable, type InferList, type InferRow } from '@airlib/react/storage';
 
 export type Todo = {
   text: string;

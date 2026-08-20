@@ -1,1 +1,1 @@
-export * from '@anchorlib/core/common';
+export * from '@airlib/core/common';

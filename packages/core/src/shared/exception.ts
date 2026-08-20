@@ -235,7 +235,7 @@ export const captureStack = {
     },
     derivation(body: string, error: Error, ...excludedStacks: unknown[]) {
       const message = generator.generalViolation('Derivation violation detected:', body, [
-        'This error is caused by providing a non-reactive state to the derivation call. If you think this is a bug, please report it at https://github.com/beerush-id/airstack/issues',
+        'This error is caused by providing a non-reactive state to the derivation call. If you think this is a bug, please report it at https://github.com/beerush-id/airlib/issues',
       ]);
       shiftStack(error, captureStack.violation.derivation, excludedStacks);
 

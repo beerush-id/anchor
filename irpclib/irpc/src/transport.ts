@@ -1,4 +1,4 @@
-import { onCleanup, uuid } from '@anchorlib/core';
+import { onCleanup, uuid } from '@airlib/core';
 import { IRPCCall } from './call.js';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from './enum.js';
 import { TransportError } from './error.js';

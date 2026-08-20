@@ -5,8 +5,8 @@ State that survives page navigation, browser restart, or exceeds cookie/localSto
 ### Package
 
 ```
-@anchorlib/storage      → session(), persistent()
-@anchorlib/storage/db   → kv(), createTable()
+@airlib/storage      → session(), persistent()
+@airlib/storage/db   → kv(), createTable()
 ```
 
 ### Session: API Signatures
@@ -14,7 +14,7 @@ State that survives page navigation, browser restart, or exceeds cookie/localSto
 Syncs with `sessionStorage`. Data persists within the browser tab — closing the tab clears it.
 
 ```typescript
-import { session } from '@anchorlib/storage';
+import { session } from '@airlib/storage';
 
 function session<T>(name: string, init: T, options?: StateOptions): T;
 function session.leave<T>(state: T): void;
@@ -23,7 +23,7 @@ function session.leave<T>(state: T): void;
 ### Session: Usage
 
 ```typescript
-import { session } from '@anchorlib/storage';
+import { session } from '@airlib/storage';
 
 // User composing an email — survives page refresh, gone when tab closes
 const draft = session('email-draft', {
@@ -46,7 +46,7 @@ session.leave(draft);
 Syncs with `localStorage`. Data persists across browser sessions. ~5MB limit per origin.
 
 ```typescript
-import { persistent } from '@anchorlib/storage';
+import { persistent } from '@airlib/storage';
 
 function persistent<T>(name: string, init: T, options?: StateOptions): T;
 function persistent.leave<T>(state: T): void;
@@ -55,7 +55,7 @@ function persistent.leave<T>(state: T): void;
 ### Persistent: Usage
 
 ```typescript
-import { persistent } from '@anchorlib/storage';
+import { persistent } from '@airlib/storage';
 
 // Track what the user searched for — survives browser restart
 const recentSearches = persistent('recent-searches', {
@@ -77,7 +77,7 @@ persistent.leave(recentSearches);
 Backed by IndexedDB. For data that exceeds localStorage limits or needs structured values.
 
 ```typescript
-import { kv } from '@anchorlib/storage/db';
+import { kv } from '@airlib/storage/db';
 
 interface KVFn {
   <T>(key: string, init?: T): KVState<T>;
@@ -96,7 +96,7 @@ type KVState<T> = {
 ### KV Store: Usage
 
 ```typescript
-import { kv } from '@anchorlib/storage/db';
+import { kv } from '@airlib/storage/db';
 
 // Notes app — content can be large, localStorage can't hold it
 const note = kv('meeting-notes-2024', {
@@ -125,7 +125,7 @@ kv.remove('meeting-notes-2024');
 Structured records with auto-generated `id`, `created_at`, `updated_at`.
 
 ```typescript
-import { createTable } from '@anchorlib/storage/db';
+import { createTable } from '@airlib/storage/db';
 
 function createTable<T, R extends Row<T> = Row<T>>(
   name: string,
@@ -166,7 +166,7 @@ interface ReactiveTable<T, R> {
 ### Reactive Table: Usage
 
 ```typescript
-import { createTable } from '@anchorlib/storage/db';
+import { createTable } from '@airlib/storage/db';
 
 type Task = {
   title: string;

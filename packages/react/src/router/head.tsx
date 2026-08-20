@@ -1,4 +1,4 @@
-import { $symbol, getScope, isBrowser, onCleanup, setScope } from '@anchorlib/core';
+import { $symbol, getScope, isBrowser, onCleanup, setScope } from '@airlib/core';
 import type { FC, HTMLAttributes, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 

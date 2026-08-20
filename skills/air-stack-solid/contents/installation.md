@@ -25,7 +25,7 @@ Combines both the frontend UI (SSR and Client Hydration) and the execution logic
 
 **Template**
 ```bash
-bunx degit beerush-id/airstack/templates/air-solid my-air-app
+bunx degit beerush-id/airlib/templates/air-solid my-air-app
 cd my-air-app
 bun install
 bun run dev
@@ -33,7 +33,7 @@ bun run dev
 
 **Manual Installation**
 ```bash
-bun add @anchorlib/core @anchorlib/router @irpclib/irpc @irpclib/http @anchorlib/solid
+bun add @airlib/core @airlib/router @irpclib/irpc @irpclib/http @airlib/solid
 ```
 
 **Structure**
@@ -69,7 +69,7 @@ A strict SSR SolidJS application. Used when your UI requires server-side renderi
 
 **Template**
 ```bash
-bunx degit beerush-id/airstack/templates/solid-ssr my-ssr-app
+bunx degit beerush-id/airlib/templates/solid-ssr my-ssr-app
 cd my-ssr-app
 bun install
 bun run dev
@@ -77,7 +77,7 @@ bun run dev
 
 **Manual Installation**
 ```bash
-bun add @anchorlib/core @anchorlib/router @anchorlib/solid
+bun add @airlib/core @airlib/router @airlib/solid
 ```
 
 **Structure**
@@ -116,7 +116,7 @@ bun run dev
 
 **Manual Installation**
 ```bash
-bun add @anchorlib/core @anchorlib/router @anchorlib/solid
+bun add @airlib/core @airlib/router @airlib/solid
 ```
 
 **Structure**
@@ -145,7 +145,7 @@ A dedicated service providing universal IRPC endpoints for external clients to c
 
 **Template**
 ```bash
-bunx degit beerush-id/airstack/templates/irpc-bun-starter my-api
+bunx degit beerush-id/airlib/templates/irpc-bun-starter my-api
 cd my-api
 bun install
 bun run dev

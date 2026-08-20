@@ -3,7 +3,7 @@
 ## Installation
 
 ```bash
-bun add @anchorlib/core @airlib/form @airlib/solid-form zod
+bun add @airlib/core @airlib/form @airlib/solid-form zod
 ```
 
 ## Defining Schema and Form Factory
@@ -30,7 +30,7 @@ const SignUpForm = createForm(signUpSchema);
 ## New Form (e.g., Sign Up)
 
 ```tsx
-import { setup, navigate } from '@anchorlib/solid';
+import { setup, navigate } from '@airlib/solid';
 import { TextInput, EmailInput, PasswordInput, FormSubmit } from '@airlib/solid-form';
 
 export const SignUp = setup(() => {
@@ -73,7 +73,7 @@ export const SignUp = setup(() => {
 ```tsx
 import { z } from 'zod';
 import { createForm } from '@airlib/solid-form';
-import { template } from '@anchorlib/solid';
+import { template } from '@airlib/solid';
 import { TextInput, EmailInput, NumberInput, FormSubmit } from '@airlib/solid-form';
 
 const profileSchema = z.object({

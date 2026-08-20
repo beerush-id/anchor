@@ -1,6 +1,6 @@
 /** @jsxImportSource solid-js */
 
-import { createLifecycle } from '@anchorlib/core';
+import { createLifecycle } from '@airlib/core';
 import { render } from '@solidjs/testing-library';
 import { createRoot } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -144,7 +144,7 @@ describe('Anchor Solid - Head Components', () => {
     let isBrowserSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(async () => {
-      const core = await import('@anchorlib/core');
+      const core = await import('@airlib/core');
       isBrowserSpy = vi.spyOn(core, 'isBrowser').mockReturnValue(false);
     });
 
@@ -342,7 +342,7 @@ describe('Anchor Solid - Head Components', () => {
             },
             twitter: {
               card: 'summary_large_image',
-              site: '@airstack',
+              site: '@airlib',
               creator: '@creator',
               title: 'Twitter Title',
               description: 'Twitter Description',

@@ -1,6 +1,6 @@
 <script lang="ts">
   import '../../../src/index.js';
-  import { mutable } from '@anchorlib/core';
+  import { mutable } from '@airlib/core';
 
   const initialValue = { count: 42, name: 'test' };
   const state = mutable(initialValue);

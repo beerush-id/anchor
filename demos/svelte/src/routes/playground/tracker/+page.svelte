@@ -1,5 +1,5 @@
 <script lang="ts">
-  import '@anchorlib/svelte/client';
+  import '@airlib/svelte/client';
   import { counter } from '$lib/todos.js';
   import CounterA from './CounterA.svelte';
   import CounterB from './CounterB.svelte';

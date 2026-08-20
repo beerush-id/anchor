@@ -1,6 +1,6 @@
 /** @jsxImportSource solid-js */
 
-import { mutable } from '@anchorlib/core';
+import { mutable } from '@airlib/core';
 import { render } from '@solidjs/testing-library';
 import { describe, expect, it } from 'vitest';
 import { Show, Snippet } from '../src/index.js';

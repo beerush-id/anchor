@@ -1,4 +1,4 @@
-import { $symbol, getContext } from '@anchorlib/core';
+import { $symbol, getContext } from '@airlib/core';
 
 export const SSR_ENV_KEY = $symbol('ssr-env');
 

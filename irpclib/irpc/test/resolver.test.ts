@@ -1,4 +1,4 @@
-import { sleep } from '@anchorlib/core';
+import { sleep } from '@airlib/core';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { IRPC_STATUS, type IRPCHandler, IRPCRouter, IRPCTransport } from '../src/index.js';

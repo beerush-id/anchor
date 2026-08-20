@@ -1,6 +1,6 @@
-import { mutable } from '@anchorlib/svelte';
-import type { InferList, InferRow } from '@anchorlib/svelte/storage';
-import { createRecord, createTable } from '@anchorlib/svelte/storage';
+import { mutable } from '@airlib/svelte';
+import type { InferList, InferRow } from '@airlib/svelte/storage';
+import { createRecord, createTable } from '@airlib/svelte/storage';
 
 export type Todo = {
   text: string;

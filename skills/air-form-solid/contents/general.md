@@ -9,7 +9,7 @@ For dynamic forms built from server responses, JSON schemas, or user configurati
 The general `<Form>` component takes the schema and initial value as props. It creates the reactive form state and provides it to all child fields.
 
 ```tsx
-import { setup, mutable } from '@anchorlib/solid';
+import { setup, mutable } from '@airlib/solid';
 import { z } from 'zod';
 import { Form, Field, TextInput, FormSubmit } from '@airlib/solid-form';
 
@@ -46,7 +46,7 @@ export const DynamicForm = setup(() => {
 The general `<Field>` component accepts any `string` as its `name` prop. It functions exactly like a typed field — providing label association, error rendering, and context for nested inputs.
 
 ```tsx
-import { setup } from '@anchorlib/solid';
+import { setup } from '@airlib/solid';
 import { For } from 'solid-js';
 
 const RenderDynamicField = setup<{ name: string; label: string; type: string }>((props) => {

@@ -43,7 +43,7 @@ describe('mdx pages — MDX files are pages', () => {
     dir = makeFixture({ 'pages/docs/getting-started/page.mdx': '' });
     const snippet = await attach(dir, 'pages/docs/getting-started/page.mdx');
 
-    expect(snippet).toContain("import { page as __airPage } from '@anchorlib/react';");
+    expect(snippet).toContain("import { page as __airPage } from '@airlib/react';");
     expect(snippet).toContain("import { gettingStartedRoute as __airRoute } from './route.ts';");
     expect(snippet).toContain('export default __airPage(__airRoute).renderAsync(async () => {');
     expect(snippet).toContain("await import('./page.mdx?chunk')");
@@ -85,7 +85,7 @@ describe('mdx pages — MDX files are pages', () => {
     dir = makeFixture({ 'pages/docs/getting-started/page.mdx': '' });
     const snippet = await attach(dir, 'pages/docs/getting-started/page.mdx', 'solid');
 
-    expect(snippet).toContain("import { page as __airPage } from '@anchorlib/solid';");
+    expect(snippet).toContain("import { page as __airPage } from '@airlib/solid';");
   });
 
   it('attaches nothing outside the pages directory', async () => {

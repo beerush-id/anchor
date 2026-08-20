@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { historyRef } from '../../src/history.js';
 import { anchorRef } from '../../src/anchor.js';
-import type { HistoryState } from '@anchorlib/core';
+import type { HistoryState } from '@airlib/core';
 
 describe('Anchor Vue - History', () => {
   describe('historyRef', () => {

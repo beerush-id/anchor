@@ -1,4 +1,4 @@
-import { createLifecycle } from '@anchorlib/core';
+import { createLifecycle } from '@airlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearIndexedDBMock, mockIndexedDB } from '../../mocks/indexeddb-mock.js';
 import { createRecord, createTable, DB_SYNC_DELAY, type Rec } from '../../src/db/index.js';

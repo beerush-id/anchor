@@ -3,7 +3,7 @@ import type { Framework } from '../modules/env.js';
 export function wrapJsx(framework: Framework, head: string, body: string): string {
   if (framework === 'react') {
     return `
-import { getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink } from '@anchorlib/react';
+import { getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink } from '@airlib/react';
 
 ${head}
 
@@ -31,7 +31,7 @@ ${body}
 
   if (framework === 'solid') {
     return `
-import { getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink } from '@anchorlib/solid';
+import { getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink } from '@airlib/solid';
 
 ${head}
 

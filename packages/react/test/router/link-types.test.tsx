@@ -1,5 +1,5 @@
 import '../../src/client/index';
-import { createRouter } from '@anchorlib/router';
+import { createRouter } from '@airlib/router';
 import { describe, it } from 'vitest';
 import { Link } from '../../src/router/link.js';
 import { page } from '../../src/router/router.js';

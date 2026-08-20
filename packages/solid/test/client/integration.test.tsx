@@ -1,6 +1,6 @@
 /** @jsxImportSource solid-js */
 
-import { mutable, onCleanup } from '@anchorlib/core';
+import { mutable, onCleanup } from '@airlib/core';
 import { render } from '@solidjs/testing-library';
 import userEvent from '@testing-library/user-event';
 import type { JSX } from 'solid-js';
