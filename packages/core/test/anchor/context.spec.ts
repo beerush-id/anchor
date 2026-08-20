@@ -614,5 +614,13 @@ describe('Anchor - Async Scope', () => {
       expect(ctxA.get()).toBe('A');
       expect(ctxB.get()).toBe('B');
     });
+
+    it('should support reversed arguments', () => {
+      const ctxA = createContext(Symbol('a'));
+      const ctxB = createContext(Symbol('b'), 'b' as never);
+
+      expect(ctxA.get()).toBeUndefined();
+      expect(ctxB.get()).toBe('b');
+    });
   });
 });

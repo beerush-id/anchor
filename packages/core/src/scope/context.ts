@@ -279,24 +279,27 @@ export function clearContextStore() {
 /**
  * Creates a context reader/writer object for a specific key.
  *
- * @returns {ContextReader<T | undefined>}
+ * @returns ContextReader instance
  */
-export function createContext<T>(): ContextReader<T | undefined>;
+export function createContext<T>(key?: symbol): ContextReader<T | undefined>;
 /**
  * Creates a context reader/writer object for a specific key with a fallback value.
  *
- * @param {T} fallback - The value to return if the context is not set.
- * @param {symbol} [key] - Optional custom symbol key for the context.
- * @returns {ContextReader<T>}
+ * @param fallback - The value to return if the context is not set.
+ * @param [key] - Optional custom symbol key for the context.
+ * @returns ContextReader instance
  */
 export function createContext<T>(fallback: T, key?: symbol): ContextReader<T>;
-export function createContext<T>(fallback?: T, key = Symbol('--anchor-context')) {
+export function createContext<T>(keyOrValue?: T, valueOrKey?: symbol) {
+  const ctxKey = typeof keyOrValue === 'symbol' ? keyOrValue : (valueOrKey ?? Symbol('--anchor-context'));
+  const ctxFallback = typeof keyOrValue === 'symbol' ? valueOrKey : keyOrValue;
+
   return {
     get() {
-      return getContext(key, fallback);
+      return getContext(ctxKey, ctxFallback);
     },
     set(value: T) {
-      setContext(key, value);
+      setContext(ctxKey, value);
     },
   };
 }
