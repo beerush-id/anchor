@@ -9,7 +9,7 @@ import type { RouterOptions } from './types.js';
  * Can be modified using the {@link configure} function.
  */
 export const DEFAULT_CONFIG: RouterOptions = {
-  baseUrl: 'http://localhost',
+  baseUrl: typeof location !== 'undefined' ? location.origin : 'http://localhost',
 
   maxAge: 0,
   keepAlive: false,

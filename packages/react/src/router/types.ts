@@ -124,8 +124,9 @@ export type RouteStacks = Map<UnknownRoute, FC>;
  */
 export type UIRouterProps = {
   router: Router<ReactNode>;
-  root: RouteComponent<AnyRoute>;
   url?: string;
+  root?: RouteComponent<AnyRoute>;
   headless?: boolean;
   resetScroll?: boolean | 'smooth' | 'auto' | 'instant';
+  children?: ReactNode;
 };

@@ -1,9 +1,11 @@
 import { $symbol, type AnyType, createContext, isBrowser, setContext, sleep, untrack } from '@anchorlib/core';
 import {
   createRouter as createAppRouter,
+  DEFAULT_CONFIG,
   getRenderProps,
   type MatchedRoute,
   Redirect,
+  type RouteContext,
   type RouteExceptionRenderer,
   type RouteRegistry,
   type RouteRenderer,
@@ -23,7 +25,6 @@ import { navigate } from './navigate.js';
 import type { AnyRoute, RouteComponent, RouteStacks, UIRouterProps } from './types.js';
 
 const STACK_REGISTRY = new WeakSet<UnknownRoute>();
-export const uiRouterCtx = createContext<UIRouterProps>();
 
 /**
  * A reactive snippet that renders the view for a given route and its children.
@@ -159,13 +160,16 @@ export function RouteRendererComponent({
 
 RouteRendererComponent.displayName = 'Definition(Route)';
 
+const ROUTER_CTX = $symbol('router-context');
+export const uiRouterCtx = createContext<UIRouterProps>(ROUTER_CTX);
+
 /**
  * The root router component that mounts the application route tree to React.
  */
 export function UIRouter(props: UIRouterProps) {
   uiRouterCtx.set(props);
 
-  const { router, resetScroll, url, headless = true } = props;
+  const { router, resetScroll, url, headless = true, children } = props;
   const stacks = createRef(new Map()).current;
   const activate = async (e?: PopStateEvent) => {
     const behavior = typeof resetScroll === 'string' ? resetScroll : 'smooth';
@@ -197,7 +201,7 @@ export function UIRouter(props: UIRouterProps) {
   };
 
   if (!headless) {
-    // activate();
+    void activate();
   }
 
   createEffect(() => {
@@ -216,6 +220,7 @@ export function UIRouter(props: UIRouterProps) {
     <>
       {routes}
       <StackRenderer stacks={stacks} />
+      {children}
     </>
   );
 }
@@ -282,6 +287,7 @@ export function modal<T>(routeNode: RouteTarget<T>): RouteComponent<T> {
 
 const ROUTE_CTX = $symbol('route-context');
 const ROUTE_KEY = 'status' as RouteStatus;
+export const routeCtx = createContext<RouteContext<AnyType, AnyType, AnyType>>(ROUTE_CTX);
 
 const createRenderer = <TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>(
   route: UnknownRoute,
@@ -344,4 +350,9 @@ if (isBrowser()) {
  */
 export function createRouter<V = ReactNode>(options?: RouterOptions) {
   return createAppRouter<V>(options);
+}
+
+export function getCurrentUrl() {
+  const ctx = uiRouterCtx.get();
+  return ctx?.router.context.url ?? (typeof location !== 'undefined' ? location.href : DEFAULT_CONFIG.baseUrl!);
 }

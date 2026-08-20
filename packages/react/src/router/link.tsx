@@ -1,10 +1,10 @@
 import { classx, derived, untrack } from '@anchorlib/core';
 import { Route } from '@anchorlib/router';
 import type { MouseEventHandler, ReactNode, RefObject } from 'react';
-import { onMount } from 'src/lifecycle.ts';
 import { render, setup } from '../hoc.js';
+import { onMount } from '../lifecycle.js';
 import type { ComponentProps } from '../types.js';
-import { uiRouterCtx } from './router.tsx';
+import { getCurrentUrl, uiRouterCtx } from './router.tsx';
 import type { AnyRoute, LinkProps, RouteComponent } from './types.js';
 
 type LinkComponent = <T>(props: LinkProps<T>) => ReactNode;
@@ -35,47 +35,43 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
     'children',
     'fullMatch',
     'keepVisible',
+    'resetScroll',
     'ref',
   ]);
 
   const ctx = uiRouterCtx.get();
-  if (!ctx) {
-    return <div>[Link Error: Link rendered outside of UIRouter]</div>;
-  }
-
   const router = ctx?.router;
   const state = derived.as(() => {
     const { href, params, query } = $props;
+
     let route: AnyRoute | undefined;
     let target = href;
-    const hash = target?.split('#')[1];
-    const currentUrl = untrack(() => new URL(router.context.url!));
 
-    if (target?.startsWith('#')) {
-      target = `${currentUrl.pathname}${target}`;
-    }
+    const activeUrl = untrack(() => new URL(getCurrentUrl()));
+    if (target?.startsWith('#')) target = `${activeUrl.pathname}${target}`;
 
     if (props.to) {
       route = props.to instanceof Route ? props.to : (props.to as RouteComponent<AnyRoute>).route;
       target = untrack(() => route!.url(params, query));
-    } else if (target) {
+    } else if (router && target) {
       route = untrack(() => router.find(target!, true)?.route);
     }
 
-    const nextUrl = new URL(target ?? '/', currentUrl.origin);
-    if (nextUrl.pathname.endsWith('/')) {
-      nextUrl.pathname = nextUrl.pathname.replace(/\/$/, '');
+    const url = new URL(target ?? '/', activeUrl.origin);
+    if (url.pathname !== '/' && url.pathname.endsWith('/')) {
+      url.pathname = url.pathname.replace(/\/$/, '');
     }
 
     return {
-      hash,
+      url,
       route,
       query,
       params,
-      url: nextUrl,
-      href: nextUrl.href,
-      search: nextUrl.search,
-      pathname: nextUrl.pathname,
+      href: url.href,
+      hash: url.hash.substring(1),
+      search: url.search,
+      pathname: url.pathname,
+      fullPath: url.pathname + url.search,
     };
   });
 
@@ -100,25 +96,21 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
 
     e.preventDefault();
 
-    if (state.href === location.href) {
-      return;
-    }
+    if (state.href !== location.href) {
+      dispatchUrl();
+      const behavior = typeof props.resetScroll === 'string' ? props.resetScroll : 'auto';
 
-    dispatchUrl();
-
-    const behavior = typeof props.resetScroll === 'string' ? props.resetScroll : 'auto';
-
-    if (!ctx?.resetScroll && props.resetScroll) {
-      document.body.scrollTo({ left: 0, top: 0, behavior });
+      if (!ctx?.resetScroll && props.resetScroll) {
+        document.body.scrollTo({ left: 0, top: 0, behavior });
+      }
     }
 
     $props.onClick?.(e);
   };
 
   const handleHover: MouseEventHandler<HTMLAnchorElement> = (e) => {
-    if (!state.route) return;
-    if (props.preload === 'hover' || state.route.options.preloadMode === 'hover') {
-      void state.route.router.preload(state.href);
+    if (state.route && (props.preload === 'hover' || state.route.options.preloadMode === 'hover')) {
+      void state.route.router.preload(state.fullPath);
     }
 
     $props.onMouseEnter?.(e);
@@ -156,7 +148,7 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
       <a
         {...restProps}
         ref={assignRef}
-        href={state.href}
+        href={state.fullPath}
         onClick={handleClick}
         onMouseEnter={handleHover}
         aria-current={state.route?.active ? 'page' : undefined}
