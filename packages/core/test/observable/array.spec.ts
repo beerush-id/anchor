@@ -74,14 +74,16 @@ describe('Anchor Core - Observable Array', () => {
 
     it('should track various array mutations', () => {
       const state = anchor([1, 2, 3], { observable: true });
-      const onChange = vi.fn();
+      const onChange = vi.fn().mockImplementation(() => trackChanges());
 
       const observer = createObserver(onChange);
-      observer.run(() => {
-        // Access array to track it
-        const length = state.length;
-        expect(length).toBe(3);
-      });
+      const trackChanges = () => {
+        observer.run(() => {
+          // Access array to track it
+          void state.length;
+        });
+      };
+      trackChanges();
 
       // Test various array mutations
       state.push(4); // [1, 2, 3, 4]

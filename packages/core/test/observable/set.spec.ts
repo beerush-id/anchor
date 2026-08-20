@@ -51,14 +51,15 @@ describe('Anchor Core - Observable Set', () => {
 
     it('should track various set mutations', () => {
       const state = anchor(new Set([1, 2, 3]), { observable: true });
-      const onChange = vi.fn();
+      const onChange = vi.fn().mockImplementation(() => trackChanges());
 
       const observer = createObserver(onChange);
-      observer.run(() => {
-        // Access set to track it
-        const size = state.size;
-        expect(size).toBe(3);
-      });
+      const trackChanges = () => {
+        observer.run(() => {
+          void state.size;
+        });
+      };
+      trackChanges();
 
       // Test various set mutations
       state.add(4);
@@ -89,19 +90,20 @@ describe('Anchor Core - Observable Set', () => {
       const obj1 = { a: 1 };
       const obj2 = { b: 2 };
       const state = anchor(new Set([obj1, obj2]), { observable: true, recursive: true });
-      const onChange = vi.fn();
+      const onChange = vi.fn().mockImplementation(() => trackChanges());
 
       const observer = createObserver(onChange);
 
       let values: any;
-
-      observer.run(() => {
-        // Access set to track it
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        values = Array.from(state.values()) as any[];
-        const value1 = values[0].a;
-        expect(value1).toBe(1);
-      });
+      const trackChanges = () => {
+        observer.run(() => {
+          // Access set to track it
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          values = Array.from(state.values()) as any[];
+          void values[0].a;
+        });
+      };
+      trackChanges();
 
       // Mutate nested object
       values[0].a = 3;

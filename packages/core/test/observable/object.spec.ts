@@ -56,18 +56,23 @@ describe('Anchor Core - Observable Object', () => {
     });
 
     it('should trigger observer onChange when tracked properties change', () => {
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const state = anchor({ a: 1, b: 2 }, { observable: true });
-      const onChange = vi.fn();
+      const onChange = vi.fn().mockImplementation(() => {
+        // Trigger deprecation warning to .reset() method.
+        observer.reset();
+        recordChanges();
+      });
 
       const observer = createObserver(onChange);
-      observer.run(() => {
-        // Access property to track it
-        const valueA = state.a;
-        const valueB = state.b;
-
-        expect(valueA).toBe(1);
-        expect(valueB).toBe(2);
-      });
+      const recordChanges = () => {
+        observer.run(() => {
+          void state.a;
+          void state.b;
+        });
+      };
+      recordChanges();
+      expect(warnSpy).not.toHaveBeenCalled();
 
       state.a = 3;
 
@@ -79,6 +84,7 @@ describe('Anchor Core - Observable Object', () => {
         prev: 1,
         value: 3,
       });
+      expect(warnSpy).toHaveBeenCalledTimes(1);
 
       delete (state as { b?: number }).b;
 
@@ -89,21 +95,25 @@ describe('Anchor Core - Observable Object', () => {
         keys: ['b'],
         prev: 2,
       });
+      expect(warnSpy).toHaveBeenCalledTimes(2);
 
       anchor.assign(state, { a: 1, b: 2 });
 
       expect(state.a).toBe(1);
       expect(state.b).toBe(2);
       expect(onChange).toHaveBeenCalledTimes(3);
+      expect(warnSpy).toHaveBeenCalledTimes(3);
 
       anchor.remove(state, 'b');
 
       expect(state.b).toBeUndefined();
       expect(onChange).toHaveBeenCalledTimes(4);
+      expect(warnSpy).toHaveBeenCalledTimes(4);
 
       anchor.clear(state);
       expect(state).toEqual({});
       expect(onChange).toHaveBeenCalledTimes(5);
+      expect(warnSpy).toHaveBeenCalledTimes(5);
     });
 
     it('should track nested object properties', () => {

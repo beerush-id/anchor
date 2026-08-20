@@ -90,14 +90,16 @@ describe('Anchor Core - Observable Map', () => {
         ]),
         { observable: true }
       );
-      const onChange = vi.fn();
+      const onChange = vi.fn().mockImplementation(() => trackChanges());
 
       const observer = createObserver(onChange);
-      observer.run(() => {
-        // Access map to track it
-        const size = state.size;
-        expect(size).toBe(2);
-      });
+      const trackChanges = () => {
+        observer.run(() => {
+          // Access map to track it
+          void state.size;
+        });
+      };
+      trackChanges();
 
       // Test various map mutations
       state.set('c', 3);
