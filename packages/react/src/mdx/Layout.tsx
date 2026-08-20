@@ -1,4 +1,4 @@
-import type { PreloadMode, RouterContext, TRec } from '@anchorlib/router';
+import type { PreloadMode } from '@anchorlib/router';
 import type { HTMLAttributes, ReactNode } from 'react';
 import { classx, render, Show, Snippet, setup } from '../index.js';
 import { mdxCtx } from './context.js';
@@ -8,7 +8,6 @@ import { TableOfContent } from './TableOfContent.js';
 
 export interface LayoutProps extends HTMLAttributes<HTMLElement> {
   nav: NavItem[];
-  context?: RouterContext<TRec, TRec, TRec>;
   children?: ReactNode;
   disableTOC?: boolean;
   disablePagination?: boolean;
@@ -18,7 +17,6 @@ export interface LayoutProps extends HTMLAttributes<HTMLElement> {
 export const Layout = setup<LayoutProps>((props) => {
   const $restProps = props.$omit([
     'nav',
-    'context',
     'children',
     'disableTOC',
     'disablePagination',

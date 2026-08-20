@@ -1,10 +1,20 @@
 import '../../src/client/index.js';
-import { type AnyType, mutable } from '@anchorlib/core';
-import type { UnknownRoute } from '@anchorlib/router';
+import { type AnyType, clearContextStore, mutable } from '@anchorlib/core';
+import { DEFAULT_CONFIG, Redirect, type UnknownRoute } from '@anchorlib/router';
 import { act, render, screen } from '@testing-library/react';
 import type { FC, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createRouter, modal, page, redirect, RouteRendererComponent, RouteViewer, UIRouter } from '../../src/index.js';
+import {
+  createRouter,
+  getCurrentUrl,
+  modal,
+  page,
+  redirect,
+  route,
+  RouteRendererComponent,
+  RouteViewer,
+  UIRouter,
+} from '../../src/index.js';
 
 describe('Anchor React - UIRouter & RouteViewer Components', () => {
   let addEventListenerSpy: ReturnType<typeof vi.spyOn>;
@@ -57,6 +67,18 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
 
       expect(renderAsyncSpy).toHaveBeenCalledWith(loader, fallback);
       expect(result).toBe(UiPage);
+    });
+  });
+
+  describe('route() deprecated factory', () => {
+    it('delegates to page() and exposes the same RouteComponent surface', () => {
+      const router = createRouter<ReactNode>();
+      const rawRoute = router.route('/legacy');
+      const UiRoute = route(rawRoute as never);
+
+      expect(UiRoute.route).toBe(rawRoute);
+      expect(typeof UiRoute.render).toBe('function');
+      expect(typeof UiRoute.renderAsync).toBe('function');
     });
   });
 
@@ -607,6 +629,176 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       });
 
       expect(scrollToSpy).not.toHaveBeenCalled();
+    });
+
+    const mountHashTarget = (id: string) => {
+      const target = document.createElement('section');
+      target.id = id;
+      const scrollSpy = vi.fn();
+      target.scrollIntoView = scrollSpy;
+      document.body.appendChild(target);
+
+      return { target, scrollSpy };
+    };
+
+    const dispatchPopState = (state: Record<string, unknown>) => {
+      window.dispatchEvent(new PopStateEvent('popstate', { state } as PopStateEventInit));
+    };
+
+    it('scrolls to same-path hash targets without reactivating the route', async () => {
+      const router = createRouter<ReactNode>();
+      const rootUi = page(router.rootRoute);
+      const activateSpy = vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
+      const { target, scrollSpy } = mountHashTarget('setup');
+
+      render(<UIRouter router={router} root={rootUi} />);
+
+      await act(async () => {
+        dispatchPopState({ from: { path: '/docs' }, to: { path: '/docs', hash: 'setup' } });
+        await activateSpy.mock.results[0]?.value;
+      });
+
+      await Promise.resolve();
+
+      expect(scrollSpy).toHaveBeenCalledWith({ block: 'start', inline: 'start', behavior: 'smooth' });
+      expect(activateSpy).not.toHaveBeenCalled();
+      target.remove();
+    });
+
+    it('uses the string resetScroll value as the hash scroll behavior', async () => {
+      const router = createRouter<ReactNode>();
+      const rootUi = page(router.rootRoute);
+      const activateSpy = vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
+      const { target, scrollSpy } = mountHashTarget('setup');
+
+      render(<UIRouter router={router} root={rootUi} resetScroll="instant" />);
+
+      await act(async () => {
+        dispatchPopState({ from: { path: '/docs' }, to: { path: '/docs', hash: 'setup' } });
+        await activateSpy.mock.results[0]?.value;
+      });
+
+      await Promise.resolve();
+
+      expect(scrollSpy).toHaveBeenCalledWith({ block: 'start', inline: 'start', behavior: 'instant' });
+      target.remove();
+    });
+
+    it('ignores hash targets that are missing from the document', async () => {
+      const router = createRouter<ReactNode>();
+      const rootUi = page(router.rootRoute);
+      const activateSpy = vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
+
+      render(<UIRouter router={router} root={rootUi} />);
+
+      await act(async () => {
+        dispatchPopState({ from: { path: '/docs' }, to: { path: '/docs', hash: 'missing' } });
+        await activateSpy.mock.results[0]?.value;
+      });
+
+      // No element to scroll and no reactivation, without throwing.
+      expect(activateSpy).not.toHaveBeenCalled();
+    });
+
+    it('scrolls to hash targets after activating a different path', async () => {
+      const router = createRouter<ReactNode>();
+      const rootUi = page(router.rootRoute);
+      const activateSpy = vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
+      const { target, scrollSpy } = mountHashTarget('setup');
+      const href = `${location.origin}/docs#setup`;
+
+      render(<UIRouter router={router} root={rootUi} />);
+
+      await act(async () => {
+        dispatchPopState({ from: { path: '/' }, to: { path: '/docs', hash: 'setup', href } });
+        await activateSpy.mock.results[0]?.value;
+        // The hash scroll settles 100ms after activation completes.
+        await new Promise((r) => setTimeout(r, 150));
+      });
+
+      await Promise.resolve();
+
+      expect(activateSpy).toHaveBeenCalledWith(href);
+      expect(scrollSpy).toHaveBeenCalledWith({ block: 'start', inline: 'start', behavior: 'smooth' });
+      target.remove();
+    });
+
+    it('logs unexpected activation errors and halts', async () => {
+      const router = createRouter<ReactNode>();
+      const rootUi = page(router.rootRoute);
+      const error = new Error('activation failed');
+      vi.spyOn(router, 'activate').mockImplementation((async () => {
+        throw error;
+      }) as never);
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      render(<UIRouter router={router} root={rootUi} headless={false} />);
+
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0));
+      });
+
+      expect(consoleSpy).toHaveBeenCalledWith(error);
+      consoleSpy.mockRestore();
+    });
+
+    it('halts silently when activation is interrupted by a Redirect', async () => {
+      const router = createRouter<ReactNode>();
+      const rootUi = page(router.rootRoute);
+      vi.spyOn(router, 'activate').mockImplementation((async () => {
+        throw new Redirect('/login');
+      }) as never);
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      render(<UIRouter router={router} root={rootUi} headless={false} />);
+
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0));
+      });
+
+      expect(consoleSpy).not.toHaveBeenCalled();
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('getCurrentUrl', () => {
+    // The router context lives in a shared store that survives tests; clear it so
+    // stale `uiRouterCtx` values never leak between cases.
+    beforeEach(() => {
+      clearContextStore();
+    });
+
+    it('falls back to the current location outside of a router context', () => {
+      expect(getCurrentUrl()).toBe(location.href);
+    });
+
+    it('resolves the router context url inside UIRouter', () => {
+      const router = createRouter<ReactNode>();
+      router.context.url = 'https://anchor.dev/docs';
+
+      let resolved: string | undefined;
+      const Probe: FC = () => {
+        resolved = getCurrentUrl();
+        return null;
+      };
+
+      render(
+        <UIRouter router={router}>
+          <Probe />
+        </UIRouter>
+      );
+
+      expect(resolved).toBe('https://anchor.dev/docs');
+    });
+
+    it('falls back to the configured base url when location does not exist', () => {
+      vi.stubGlobal('location', undefined);
+
+      try {
+        expect(getCurrentUrl()).toBe(DEFAULT_CONFIG.baseUrl);
+      } finally {
+        vi.unstubAllGlobals();
+      }
     });
   });
 

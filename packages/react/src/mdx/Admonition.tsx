@@ -17,7 +17,7 @@ export interface AdmonitionProps extends HTMLAttributes<HTMLDivElement | HTMLDet
   title?: string;
   icon?: ReactNode;
   children?: ReactNode;
-  collapsible?: string;
+  collapsible?: string | boolean;
 }
 
 export const Admonition = template<AdmonitionProps>(
