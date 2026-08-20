@@ -510,8 +510,12 @@
     gap: 0.5rem;
     padding-block: 0.25rem;
     padding-inline: 0.75rem;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--air-mdx-text);
+
+    .air-mdx-sidebar-item {
+      font-weight: 500;
+    }
   }
 
   .air-mdx-sidebar-text {
@@ -571,7 +575,6 @@
     border-radius: 4px;
     background: transparent;
     color: var(--air-mdx-text-2);
-    font-weight: 600;
     transition:
       color 0.2s,
       background-color 0.2s;

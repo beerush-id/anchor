@@ -1,6 +1,19 @@
 import type { PreloadMode } from '@airlib/router';
 import type { HTMLAttributes, ReactNode } from 'react';
-import { type AnyType, classx, derived, For, Link, mutable, render, setup, Show, template, uIndex } from '../index.js';
+import {
+  type AnyType,
+  classx,
+  effect,
+  For,
+  Link,
+  mutable,
+  render,
+  setup,
+  Show,
+  template,
+  uIndex,
+  uiRouterCtx,
+} from '../index.js';
 
 const SIDEBAR_NODE_INDEX = Symbol.for('air.mdx.sidebar.node');
 
@@ -38,10 +51,31 @@ export interface SidebarNodeProps extends HTMLAttributes<HTMLElement> {
 
 export const SidebarNode = setup<SidebarNodeProps>((props) => {
   const $restProps = props.$omit(['item', 'className', 'level', 'preload', 'collapsible']);
+
+  const ctx = uiRouterCtx.get();
   const collapsible = props.collapsible ?? false;
   const collapsed = mutable(collapsible && (props.item.collapsed ?? false));
-  const effectiveCollapsed = derived(() => collapsed.value && !hasActiveRoute(props.item));
   const childrenId = `sbn-${uIndex(SIDEBAR_NODE_INDEX)}`;
+
+  const toggleCollapsed = () => {
+    collapsed.value = !collapsed.value;
+  };
+
+  const hasActiveRoute = (item: NavItem) => {
+    if (item.route?.active) return true;
+
+    if (item.href && ctx?.router?.context.url) {
+      const url = new URL(ctx.router.context.url);
+      if (url.pathname + url.search === item.href) return true;
+    }
+
+    if (item.items) return item.items.some(hasActiveRoute);
+  };
+
+  effect(() => {
+    const hasActive = hasActiveRoute(props.item);
+    if (hasActive) collapsed.value = false;
+  });
 
   return render(() => {
     const { item, className, level, preload } = props;
@@ -65,16 +99,12 @@ export const SidebarNode = setup<SidebarNodeProps>((props) => {
         </svg>
       );
 
-      const toggleCollapsed = () => {
-        collapsed.value = !collapsed.value;
-      };
-
       return (
         <div
           {...$restProps}
           role="group"
           aria-label={item.text}
-          className={classx('air-mdx-sidebar-group-container', { collapsed: effectiveCollapsed.value }, className)}
+          className={classx('air-mdx-sidebar-group-container', { collapsed: collapsed.value }, className)}
           style={{ '--air-nav-level': `${level ?? 0}` } as Record<string, string>}
         >
           <Show when={() => item.text}>
@@ -95,7 +125,7 @@ export const SidebarNode = setup<SidebarNodeProps>((props) => {
                       <button
                         type="button"
                         className="air-mdx-sidebar-toggle"
-                        aria-expanded={!effectiveCollapsed.value}
+                        aria-expanded={!collapsed.value}
                         aria-controls={childrenId}
                         aria-label={item.text}
                         onClick={toggleCollapsed}
@@ -109,7 +139,7 @@ export const SidebarNode = setup<SidebarNodeProps>((props) => {
                 <button
                   type="button"
                   className="air-mdx-sidebar-group air-mdx-sidebar-group-toggle"
-                  aria-expanded={!effectiveCollapsed.value}
+                  aria-expanded={!collapsed.value}
                   aria-controls={childrenId}
                   onClick={toggleCollapsed}
                 >
@@ -123,7 +153,7 @@ export const SidebarNode = setup<SidebarNodeProps>((props) => {
               )
             }
           </Show>
-          <div id={childrenId} className="air-mdx-sidebar-children" hidden={effectiveCollapsed.value}>
+          <div id={childrenId} className="air-mdx-sidebar-children" hidden={collapsed.value}>
             <For each={() => item.items!}>
               {(child) => (
                 <SidebarNode
@@ -184,8 +214,3 @@ const SidebarItem = template<{ icon?: () => ReactNode; text?: string }>(
   ),
   'SidebarItem'
 );
-
-function hasActiveRoute(item: NavItem): boolean {
-  if ((item.route as AnyType)?.active) return true;
-  return item.items?.some(hasActiveRoute) ?? false;
-}
