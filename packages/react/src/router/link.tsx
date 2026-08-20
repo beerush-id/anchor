@@ -55,6 +55,7 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
       target = untrack(() => route!.url(params, query));
     } else if (router && target) {
       route = untrack(() => router.find(target!, true)?.route);
+      if (route?.index) route = route.index as unknown as AnyRoute;
     }
 
     const url = new URL(target ?? '/', activeUrl.origin);

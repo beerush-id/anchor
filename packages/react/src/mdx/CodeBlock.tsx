@@ -25,7 +25,11 @@ export const CodeBlock = template<CodeBlockProps>(({ children, className, hideCo
 
 function getTitle(node: JSX.Element): { lang: string; title: string } | undefined {
   if (Array.isArray(node)) {
-    return node.find((child) => getTitle(child));
+    for (const child of node) {
+      const match = getTitle(child);
+      if (match) return match;
+    }
+    return undefined;
   }
 
   if (node) {

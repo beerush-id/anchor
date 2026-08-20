@@ -15,14 +15,7 @@ export interface LayoutProps extends HTMLAttributes<HTMLElement> {
 }
 
 export const Layout = setup<LayoutProps>((props) => {
-  const $restProps = props.$omit([
-    'nav',
-    'children',
-    'disableTOC',
-    'disablePagination',
-    'className',
-    'preload',
-  ]);
+  const $restProps = props.$omit(['nav', 'children', 'disableTOC', 'disablePagination', 'className', 'preload']);
   mdxCtx.set();
 
   return render(
@@ -30,7 +23,7 @@ export const Layout = setup<LayoutProps>((props) => {
       <main {...$restProps} className={classx('air-mdx air-mdx-container', props.className)}>
         <div className="air-mdx-layout">
           <aside className="air-mdx-aside-left" aria-label="Documentation navigation">
-            <Show when={() => props.nav}>{(nav) => <Sidebar nav={nav} preload={props.preload} />}</Show>
+            <Show when={() => props.nav}>{(nav) => <Sidebar nav={nav} preload={props.preload} collapsible />}</Show>
           </aside>
 
           <div className="air-mdx-main">

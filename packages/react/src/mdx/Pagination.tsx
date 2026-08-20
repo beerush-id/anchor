@@ -7,6 +7,8 @@ import type { NavItem } from './Sidebar.js';
 export interface PaginationProps extends HTMLAttributes<HTMLElement> {
   nav: NavItem[];
   preload?: PreloadMode;
+  previousText?: string;
+  nextText?: string;
 }
 
 export type NavigableItem = NavItem & { route: AnyType };
@@ -17,7 +19,7 @@ export interface PaginationLinks {
 }
 
 export const Pagination = setup<PaginationProps>((props) => {
-  const $restProps = props.$omit(['nav', 'className', 'preload']);
+  const $restProps = props.$omit(['nav', 'className', 'preload', 'previousText', 'nextText']);
   const ctx = mdxCtx.get();
   const flatLinks = derived(() => flatten(props.nav));
 
@@ -47,11 +49,11 @@ export const Pagination = setup<PaginationProps>((props) => {
               <Link
                 to={p.route as AnyType}
                 className="air-mdx-pagination-link"
-                aria-label={`Previous: ${p.text}`}
+                aria-label={`${props.previousText ?? 'Previous'}: ${p.text}`}
                 rel="prev"
                 preload={props.preload}
               >
-                <span>Previous</span>
+                <span>{props.previousText ?? 'Previous'}</span>
                 <strong>{p.text}</strong>
               </Link>
             )}
@@ -64,11 +66,11 @@ export const Pagination = setup<PaginationProps>((props) => {
               <Link
                 to={n.route as AnyType}
                 className="air-mdx-pagination-link"
-                aria-label={`Next: ${n.text}`}
+                aria-label={`${props.nextText ?? 'Next'}: ${n.text}`}
                 rel="next"
                 preload={props.preload}
               >
-                <span>Next</span>
+                <span>{props.nextText ?? 'Next'}</span>
                 <strong>{n.text}</strong>
               </Link>
             )}

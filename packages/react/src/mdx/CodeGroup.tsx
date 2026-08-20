@@ -5,10 +5,11 @@ const CODE_GROUP_INDEX = Symbol.for('air.mdx.codegroup');
 
 export interface CodeGroupProps extends HTMLAttributes<HTMLDivElement> {
   children?: ReactNode;
+  tablistLabel?: string;
 }
 
 export const CodeGroup = setup<CodeGroupProps>((props) => {
-  const $restProps = props.$omit(['children', 'className', 'id']);
+  const $restProps = props.$omit(['children', 'className', 'id', 'tablistLabel']);
   const state = mutable({ activeIndex: 0 });
   const groupId = props.id ?? `cg-${uIndex(CODE_GROUP_INDEX)}`;
 
@@ -16,9 +17,8 @@ export const CodeGroup = setup<CodeGroupProps>((props) => {
     (c): c is ReactElement => typeof c === 'object' && c !== null && 'props' in c
   );
 
-  const codeNodes = findCode(nodes);
-  const tabs = nodes.map((_, i) => {
-    const code = codeNodes[i];
+  const tabs = nodes.map((node, i) => {
+    const code = findCode([node])[0];
     const dataTitle = (code?.props as AnyType)?.['data-title'];
     const dataLang = (code?.props as AnyType)?.['data-language'];
     return {
@@ -27,26 +27,32 @@ export const CodeGroup = setup<CodeGroupProps>((props) => {
     };
   });
 
+  const activateTab = (index: number) => {
+    state.activeIndex = index;
+    // Move focus to keep it in sync with the roving tabindex (WAI-ARIA tabs pattern).
+    document.getElementById(`tab-${groupId}-${index}`)?.focus();
+  };
+
   const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
     if (e.key === 'ArrowRight') {
       e.preventDefault();
-      state.activeIndex = (index + 1) % tabs.length;
+      activateTab((index + 1) % tabs.length);
     } else if (e.key === 'ArrowLeft') {
       e.preventDefault();
-      state.activeIndex = (index - 1 + tabs.length) % tabs.length;
+      activateTab((index - 1 + tabs.length) % tabs.length);
     } else if (e.key === 'Home') {
       e.preventDefault();
-      state.activeIndex = 0;
+      activateTab(0);
     } else if (e.key === 'End') {
       e.preventDefault();
-      state.activeIndex = tabs.length - 1;
+      activateTab(tabs.length - 1);
     }
   };
 
   return render(
     () => (
       <div {...$restProps} className={classx('air-mdx-codegroup', props.className)}>
-        <div className="air-mdx-codegroup-tabs" role="tablist" aria-label="Code examples">
+        <div className="air-mdx-codegroup-tabs" role="tablist" aria-label={props.tablistLabel ?? 'Code examples'}>
           <For each={() => tabs}>
             {(tab) => (
               <button
@@ -92,20 +98,4 @@ function findCode(nodes: ReactElement[]): ReactElement[] {
   });
 
   return codes;
-}
-
-function extractText(node: ReactNode): string {
-  if (typeof node === 'string' || typeof node === 'number') {
-    return String(node);
-  }
-  if (!node || typeof node !== 'object') {
-    return '';
-  }
-  if (Array.isArray(node)) {
-    return node.map(extractText).join('');
-  }
-  if ('props' in node && (node.props as AnyType)?.children) {
-    return extractText((node.props as AnyType).children);
-  }
-  return '';
 }

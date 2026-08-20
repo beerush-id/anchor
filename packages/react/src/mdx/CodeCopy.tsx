@@ -3,10 +3,12 @@ import { classx, mutable, onCleanup, render, setup } from '../index.js';
 
 export interface CodeCopyProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   getText?: () => string | null | undefined;
+  copyLabel?: string;
+  copiedLabel?: string;
 }
 
 export const CodeCopy = setup<CodeCopyProps>((props) => {
-  const $restProps = props.$omit(['getText', 'className', 'onClick']);
+  const $restProps = props.$omit(['getText', 'className', 'onClick', 'copyLabel', 'copiedLabel']);
   const copied = mutable(false);
   const ref = { current: null } as { current: HTMLButtonElement | null };
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -41,11 +43,16 @@ export const CodeCopy = setup<CodeCopyProps>((props) => {
         type="button"
         {...$restProps}
         className={classx('air-mdx-copy-btn', props.className)}
-        aria-label={props['aria-label'] ?? (copied.value ? 'Copied code to clipboard' : 'Copy code to clipboard')}
+        aria-label={
+          props['aria-label'] ??
+          (copied.value
+            ? (props.copiedLabel ?? 'Copied code to clipboard')
+            : (props.copyLabel ?? 'Copy code to clipboard'))
+        }
         onClick={handleClick}
       >
         <span className="sr-only" aria-live="polite">
-          {copied.value ? 'Copied code to clipboard' : ''}
+          {copied.value ? (props.copiedLabel ?? 'Copied code to clipboard') : ''}
         </span>
         {copied.value ? (
           <svg

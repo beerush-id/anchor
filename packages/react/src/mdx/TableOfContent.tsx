@@ -23,8 +23,22 @@ export const TableOfContent = setup<TableOfContentProps>((props) => {
       },
       { rootMargin: '-10% 0px -90% 0px' }
     );
+
+    // Fallback: the top-10% band can never intersect headings near the end of
+    // the page, so force the last heading active when scrolled to the bottom.
+    const handleScroll = () => {
+      const doc = document.documentElement;
+      const headings = ctx?.headings;
+      const scrollable = doc.scrollHeight > window.innerHeight + 2;
+      if (scrollable && headings?.length && window.innerHeight + window.scrollY >= doc.scrollHeight - 2) {
+        activeId.value = headings[headings.length - 1].id;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
     onCleanup(() => {
       observer!.disconnect();
+      window.removeEventListener('scroll', handleScroll);
     });
   }
 

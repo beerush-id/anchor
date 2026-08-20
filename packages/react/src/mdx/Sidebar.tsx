@@ -1,99 +1,178 @@
 import type { PreloadMode } from '@anchorlib/router';
 import type { HTMLAttributes, ReactNode } from 'react';
-import { type AnyType, classx, For, Link, Show, template } from '../index.js';
+import { type AnyType, classx, derived, For, Link, mutable, render, setup, Show, template, uIndex } from '../index.js';
+
+const SIDEBAR_NODE_INDEX = Symbol.for('air.mdx.sidebar.node');
 
 export interface NavItem {
   text?: string;
+  href?: string;
   route?: AnyType;
   items?: NavItem[];
   icon?: () => ReactNode;
   separator?: boolean;
+  collapsed?: boolean;
 }
 
 export interface SidebarProps extends HTMLAttributes<HTMLElement> {
   nav: NavItem[];
   preload?: PreloadMode;
+  collapsible?: boolean;
 }
 
 export const Sidebar = template<SidebarProps>(
-  ({ nav, className, preload, ...restProps }) => (
+  ({ nav, className, preload, collapsible, ...restProps }) => (
     <nav {...restProps} className={classx('air-mdx-sidebar-nav', className)}>
-      <For each={() => nav}>{(item) => <SidebarNode item={item} preload={preload} />}</For>
+      <For each={() => nav}>{(item) => <SidebarNode item={item} preload={preload} collapsible={collapsible} />}</For>
     </nav>
   ),
-  'DocsSidebar'
+  'Sidebar'
 );
 
 export interface SidebarNodeProps extends HTMLAttributes<HTMLElement> {
   item: NavItem;
   level?: number;
   preload?: PreloadMode;
+  collapsible?: boolean;
 }
 
-export const SidebarNode = template<SidebarNodeProps>(({ item, className, level, preload, ...restProps }) => {
-  if (item.separator) {
-    return <div {...restProps} className={classx('air-mdx-sidebar-separator', className)} />;
-  }
+export const SidebarNode = setup<SidebarNodeProps>((props) => {
+  const $restProps = props.$omit(['item', 'className', 'level', 'preload', 'collapsible']);
+  const collapsible = props.collapsible ?? false;
+  const collapsed = mutable(collapsible && (props.item.collapsed ?? false));
+  const effectiveCollapsed = derived(() => collapsed.value && !hasActiveRoute(props.item));
+  const childrenId = `sbn-${uIndex(SIDEBAR_NODE_INDEX)}`;
 
-  if (item.items && item.items.length > 0) {
-    return (
-      <div
-        {...restProps}
-        role="group"
-        aria-label={item.text}
-        className={classx('air-mdx-sidebar-group-container', className)}
-        style={{ '--air-nav-level': `${level ?? 0}` } as Record<string, string>}
-      >
-        <Show when={() => item.text}>
-          {() =>
-            item.route ? (
-              <Link
-                to={item.route as AnyType}
-                className="air-mdx-sidebar-link"
-                activeClass="active"
-                preload={preload}
-                keepVisible
-              >
-                <SidebarItem icon={item.icon} text={item.text} />
-              </Link>
-            ) : (
-              <div className="air-mdx-sidebar-group" aria-hidden="true">
-                <SidebarItem icon={item.icon} text={item.text} />
-              </div>
-            )
-          }
-        </Show>
-        <div className="air-mdx-sidebar-children">
-          <For each={() => item.items!}>
-            {(child) => (
-              <SidebarNode item={child} preload={preload} level={typeof level === 'number' ? level + 1 : level} />
-            )}
-          </For>
+  return render(() => {
+    const { item, className, level, preload } = props;
+
+    if (item.separator) {
+      return <hr {...$restProps} className={classx('air-mdx-sidebar-separator', className)} />;
+    }
+
+    if (item.items && item.items.length > 0) {
+      const chevron = (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          height="16px"
+          viewBox="0 -960 960 960"
+          width="16px"
+          fill="currentColor"
+          aria-hidden="true"
+          className="air-mdx-sidebar-chevron"
+        >
+          <path d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z" />
+        </svg>
+      );
+
+      const toggleCollapsed = () => {
+        collapsed.value = !collapsed.value;
+      };
+
+      return (
+        <div
+          {...$restProps}
+          role="group"
+          aria-label={item.text}
+          className={classx('air-mdx-sidebar-group-container', { collapsed: effectiveCollapsed.value }, className)}
+          style={{ '--air-nav-level': `${level ?? 0}` } as Record<string, string>}
+        >
+          <Show when={() => item.text}>
+            {() =>
+              item.route ? (
+                <div className="air-mdx-sidebar-group-header">
+                  <Link
+                    to={item.route as AnyType}
+                    className="air-mdx-sidebar-link"
+                    activeClass="active"
+                    preload={preload}
+                    keepVisible
+                  >
+                    <SidebarItem icon={item.icon} text={item.text} />
+                  </Link>
+                  <Show when={() => collapsible}>
+                    {() => (
+                      <button
+                        type="button"
+                        className="air-mdx-sidebar-toggle"
+                        aria-expanded={!effectiveCollapsed.value}
+                        aria-controls={childrenId}
+                        aria-label={item.text}
+                        onClick={toggleCollapsed}
+                      >
+                        {chevron}
+                      </button>
+                    )}
+                  </Show>
+                </div>
+              ) : collapsible ? (
+                <button
+                  type="button"
+                  className="air-mdx-sidebar-group air-mdx-sidebar-group-toggle"
+                  aria-expanded={!effectiveCollapsed.value}
+                  aria-controls={childrenId}
+                  onClick={toggleCollapsed}
+                >
+                  <SidebarItem icon={item.icon} text={item.text} />
+                  {chevron}
+                </button>
+              ) : (
+                <div className="air-mdx-sidebar-group" aria-hidden="true">
+                  <SidebarItem icon={item.icon} text={item.text} />
+                </div>
+              )
+            }
+          </Show>
+          <div id={childrenId} className="air-mdx-sidebar-children" hidden={effectiveCollapsed.value}>
+            <For each={() => item.items!}>
+              {(child) => (
+                <SidebarNode
+                  item={child}
+                  preload={preload}
+                  collapsible={collapsible}
+                  level={typeof level === 'number' ? level + 1 : level}
+                />
+              )}
+            </For>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (item.route) {
+    if (item.route) {
+      return (
+        <Link
+          {...($restProps as AnyType)}
+          to={item.route as AnyType}
+          className={classx('air-mdx-sidebar-link', className)}
+          activeClass="active"
+          preload={preload}
+          keepVisible
+        >
+          <SidebarItem icon={item.icon} text={item.text} />
+        </Link>
+      );
+    } else if (item.href) {
+      return (
+        <Link
+          {...($restProps as AnyType)}
+          href={item.href}
+          className={classx('air-mdx-sidebar-link', className)}
+          activeClass="active"
+          preload={preload}
+          keepVisible
+        >
+          <SidebarItem icon={item.icon} text={item.text} />
+        </Link>
+      );
+    }
+
     return (
-      <Link
-        {...(restProps as AnyType)}
-        to={item.route as AnyType}
-        className={classx('air-mdx-sidebar-link', className)}
-        activeClass="active"
-        preload={preload}
-        keepVisible
-      >
+      <span {...$restProps} className={classx('air-mdx-sidebar-text', className)}>
         <SidebarItem icon={item.icon} text={item.text} />
-      </Link>
+      </span>
     );
-  }
-
-  return (
-    <span {...restProps} className={classx('air-mdx-sidebar-text', className)}>
-      <SidebarItem icon={item.icon} text={item.text} />
-    </span>
-  );
+  }, 'SidebarNode');
 }, 'SidebarNode');
 
 const SidebarItem = template<{ icon?: () => ReactNode; text?: string }>(
@@ -105,3 +184,8 @@ const SidebarItem = template<{ icon?: () => ReactNode; text?: string }>(
   ),
   'SidebarItem'
 );
+
+function hasActiveRoute(item: NavItem): boolean {
+  if ((item.route as AnyType)?.active) return true;
+  return item.items?.some(hasActiveRoute) ?? false;
+}

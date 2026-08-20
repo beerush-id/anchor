@@ -500,6 +500,8 @@
 
   .air-mdx-sidebar-separator {
     height: 1.5rem;
+    margin: 0;
+    border: none;
   }
 
   .air-mdx-sidebar-group {
@@ -535,6 +537,66 @@
       inset-inline-start: 1.3125rem;
       border-inline-start: 1px solid var(--air-mdx-border);
     }
+  }
+
+  .air-mdx-sidebar-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.25rem;
+
+    .air-mdx-sidebar-link {
+      flex: 1 1 auto;
+      min-inline-size: 0;
+    }
+  }
+
+  button.air-mdx-sidebar-group {
+    inline-size: 100%;
+    border: none;
+    background: transparent;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .air-mdx-sidebar-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    inline-size: 1.5rem;
+    block-size: 1.5rem;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--air-mdx-text-2);
+    font-weight: 600;
+    transition:
+      color 0.2s,
+      background-color 0.2s;
+
+    &:hover {
+      color: var(--air-mdx-text);
+      background-color: var(--air-mdx-bg-soft);
+    }
+  }
+
+  .air-mdx-sidebar-chevron {
+    margin-inline-start: auto;
+    transition: transform 0.2s;
+  }
+
+  .air-mdx-sidebar-toggle .air-mdx-sidebar-chevron {
+    margin-inline-start: 0;
+  }
+
+  .air-mdx-sidebar-group-container.collapsed .air-mdx-sidebar-chevron {
+    transform: rotate(-90deg);
+  }
+
+  .air-mdx-sidebar-children[hidden] {
+    display: none;
   }
 
   .air-mdx-sidebar-link {
@@ -793,7 +855,7 @@
     flex-shrink: 0;
   }
 
-  .air-mdx-admonition.tip {
+  .air-mdx-admonition-tip {
     border-color: color-mix(in srgb, var(--air-mdx-tip) 35%, transparent);
     background: color-mix(in srgb, var(--air-mdx-tip) 8%, transparent);
 
@@ -802,8 +864,8 @@
     }
   }
 
-  .air-mdx-admonition.info,
-  .air-mdx-admonition.note {
+  .air-mdx-admonition-info,
+  .air-mdx-admonition-note {
     border-color: color-mix(in srgb, var(--air-mdx-info) 35%, transparent);
     background: color-mix(in srgb, var(--air-mdx-info) 8%, transparent);
 
@@ -812,8 +874,8 @@
     }
   }
 
-  .air-mdx-admonition.warning,
-  .air-mdx-admonition.caution {
+  .air-mdx-admonition-warning,
+  .air-mdx-admonition-caution {
     border-color: color-mix(in srgb, var(--air-mdx-warning) 35%, transparent);
     background: color-mix(in srgb, var(--air-mdx-warning) 8%, transparent);
 
@@ -822,8 +884,8 @@
     }
   }
 
-  .air-mdx-admonition.danger,
-  .air-mdx-admonition.important {
+  .air-mdx-admonition-danger,
+  .air-mdx-admonition-important {
     border-color: color-mix(in srgb, var(--air-mdx-danger) 35%, transparent);
     background: color-mix(in srgb, var(--air-mdx-danger) 8%, transparent);
 
@@ -832,36 +894,36 @@
     }
   }
 
-  .air-mdx-admonition.tip .air-mdx-admonition-header,
-  .air-mdx-admonition.tip .air-mdx-admonition-title,
-  .air-mdx-admonition.tip .air-mdx-admonition-heading {
+  .air-mdx-admonition-tip .air-mdx-admonition-header,
+  .air-mdx-admonition-tip .air-mdx-admonition-title,
+  .air-mdx-admonition-tip .air-mdx-admonition-heading {
     color: var(--air-mdx-tip);
   }
 
-  .air-mdx-admonition.info .air-mdx-admonition-header,
-  .air-mdx-admonition.info .air-mdx-admonition-title,
-  .air-mdx-admonition.info .air-mdx-admonition-heading,
-  .air-mdx-admonition.note .air-mdx-admonition-header,
-  .air-mdx-admonition.note .air-mdx-admonition-title,
-  .air-mdx-admonition.note .air-mdx-admonition-heading {
+  .air-mdx-admonition-info .air-mdx-admonition-header,
+  .air-mdx-admonition-info .air-mdx-admonition-title,
+  .air-mdx-admonition-info .air-mdx-admonition-heading,
+  .air-mdx-admonition-note .air-mdx-admonition-header,
+  .air-mdx-admonition-note .air-mdx-admonition-title,
+  .air-mdx-admonition-note .air-mdx-admonition-heading {
     color: var(--air-mdx-info);
   }
 
-  .air-mdx-admonition.warning .air-mdx-admonition-header,
-  .air-mdx-admonition.warning .air-mdx-admonition-title,
-  .air-mdx-admonition.warning .air-mdx-admonition-heading,
-  .air-mdx-admonition.caution .air-mdx-admonition-header,
-  .air-mdx-admonition.caution .air-mdx-admonition-title,
-  .air-mdx-admonition.caution .air-mdx-admonition-heading {
+  .air-mdx-admonition-warning .air-mdx-admonition-header,
+  .air-mdx-admonition-warning .air-mdx-admonition-title,
+  .air-mdx-admonition-warning .air-mdx-admonition-heading,
+  .air-mdx-admonition-caution .air-mdx-admonition-header,
+  .air-mdx-admonition-caution .air-mdx-admonition-title,
+  .air-mdx-admonition-caution .air-mdx-admonition-heading {
     color: var(--air-mdx-warning);
   }
 
-  .air-mdx-admonition.danger .air-mdx-admonition-header,
-  .air-mdx-admonition.danger .air-mdx-admonition-title,
-  .air-mdx-admonition.danger .air-mdx-admonition-heading,
-  .air-mdx-admonition.important .air-mdx-admonition-header,
-  .air-mdx-admonition.important .air-mdx-admonition-title,
-  .air-mdx-admonition.important .air-mdx-admonition-heading {
+  .air-mdx-admonition-danger .air-mdx-admonition-header,
+  .air-mdx-admonition-danger .air-mdx-admonition-title,
+  .air-mdx-admonition-danger .air-mdx-admonition-heading,
+  .air-mdx-admonition-important .air-mdx-admonition-header,
+  .air-mdx-admonition-important .air-mdx-admonition-title,
+  .air-mdx-admonition-important .air-mdx-admonition-heading {
     color: var(--air-mdx-danger);
   }
 

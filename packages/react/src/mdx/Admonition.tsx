@@ -18,17 +18,22 @@ export interface AdmonitionProps extends HTMLAttributes<HTMLDivElement | HTMLDet
   icon?: ReactNode;
   children?: ReactNode;
   collapsible?: string | boolean;
+  titles?: Partial<Record<AdmonitionType, string>>;
 }
 
 export const Admonition = template<AdmonitionProps>(
-  ({ type = 'note', title, icon, className, children, role, collapsible, ...restProps }) => {
+  ({ type = 'note', title, titles, icon, className, children, role, collapsible, ...restProps }) => {
     const isAlert = type === 'warning' || type === 'danger' || type === 'caution';
-    const heading = title ?? defaultTitles[type];
+    const heading = title ?? titles?.[type] ?? defaultTitles[type];
     const visualIcon = icon ?? defaultIcons[type];
 
-    if (type === 'details' || (typeof collapsible !== 'undefined' && collapsible !== 'false')) {
+    if (type === 'details' || (collapsible !== undefined && collapsible !== false && collapsible !== 'false')) {
       return (
-        <details {...restProps} className={classx('air-mdx-admonition', type, className)}>
+        <details
+          role={role ?? (isAlert ? 'alert' : 'note')}
+          {...restProps}
+          className={classx('air-mdx-admonition', `air-mdx-admonition-${type}`, className)}
+        >
           {(heading || visualIcon) && (
             <summary className="air-mdx-admonition-header">
               {visualIcon && (
@@ -48,7 +53,7 @@ export const Admonition = template<AdmonitionProps>(
       <div
         role={role ?? (isAlert ? 'alert' : 'note')}
         {...restProps}
-        className={classx('air-mdx-admonition', type, className)}
+        className={classx('air-mdx-admonition', `air-mdx-admonition-${type}`, className)}
       >
         {(heading || visualIcon) && (
           <div className="air-mdx-admonition-header">
