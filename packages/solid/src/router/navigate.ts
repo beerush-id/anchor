@@ -53,7 +53,7 @@ export function navigate<T>(
  * @param options - Optional redirect options.
  */
 export function redirect<T>(route: RouteTarget<T> | RouteComponent<T>, options?: RedirectOptions<T>): Redirect<T> {
-  if (route instanceof Route) {
+  if (typeof route === 'string' || route instanceof Route) {
     return redirectTo(route as never, options?.params, options?.query) as never;
   }
 

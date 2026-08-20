@@ -1,5 +1,5 @@
 import { $symbol, getScope, microtask, setScope } from '@anchorlib/core';
-import type { InferParams, InferQuery, RouteTarget, UnknownRedirect } from './types.js';
+import type { AnyRoute, InferParams, InferQuery, RouteTarget, UnknownRedirect } from './types.js';
 import { createUrl } from './url.js';
 
 const REDIRECT_HANDLER = $symbol('redirect-handler');
@@ -36,6 +36,17 @@ export function setRedirectHandler(handler: (redirect: UnknownRedirect) => void)
  * @template TData - The route data type
  */
 export class Redirect<T> {
+  public url?: string;
+  public route?: RouteTarget<T>;
+  public params?: InferParams<T>;
+  public query?: InferQuery<T>;
+
+  /**
+   * Creates a new Redirect instance.
+   *
+   * @param url - The URL to redirect to
+   */
+  constructor(url: string);
   /**
    * Creates a new Redirect instance.
    *
@@ -43,11 +54,13 @@ export class Redirect<T> {
    * @param params - Optional route parameters
    * @param query - Optional query parameters
    */
-  constructor(
-    public route: RouteTarget<T>,
-    public params?: InferParams<T>,
-    public query?: InferQuery<T>
-  ) {}
+  constructor(route: RouteTarget<T>, params?: InferParams<T>, query?: InferQuery<T>);
+  constructor(route: RouteTarget<T> | string, params?: InferParams<T>, query?: InferQuery<T>) {
+    this.url = typeof route === 'string' ? route : (undefined as string | undefined);
+    this.route = typeof route === 'string' ? undefined : (route as RouteTarget<T>);
+    this.query = query;
+    this.params = params;
+  }
 }
 
 const [schedule] = microtask(0);
@@ -68,8 +81,12 @@ const [schedule] = microtask(0);
  * @param query - Optional query parameters
  * @returns A Redirect object
  */
-export function redirect<T>(route: RouteTarget<T>, params?: InferParams<T>, query?: InferQuery<T>): Redirect<T> {
-  const redirect = new Redirect(route, params, query);
+export function redirect<T>(
+  route: string | RouteTarget<T>,
+  params?: InferParams<T>,
+  query?: InferQuery<T>
+): Redirect<T> {
+  const redirect = new Redirect(route as RouteTarget<T>, params, query);
   const redirectTo = getRedirectHandler();
 
   schedule(() => redirectTo?.(redirect as UnknownRedirect));
@@ -85,5 +102,6 @@ export function redirect<T>(route: RouteTarget<T>, params?: InferParams<T>, quer
  * @returns The full URL string for the redirect
  */
 export function redirectUrl(redirect: UnknownRedirect): string {
-  return createUrl(redirect.route.path, redirect.params, redirect.query);
+  if (typeof redirect.url === 'string') return redirect.url;
+  return createUrl((redirect.route as AnyRoute).path, redirect.params, redirect.query);
 }

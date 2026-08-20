@@ -1,4 +1,4 @@
-import type { RetriableOptions, StateObserver } from '@anchorlib/core';
+import type { AnyType, RetriableOptions, StateObserver } from '@anchorlib/core';
 import type { RouteCache, URLCache } from './cache.js';
 import type { RouterContext } from './context.js';
 import type { ERROR_TYPE, PRELOAD_MODE, RENDER_MODE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
@@ -95,6 +95,7 @@ export type GuardBlocker = RouteError | UnknownRedirect;
 
 /** Context passed to guard functions */
 export type GuardContext<TParams, TQueryParams> = {
+  url?: string;
   query: TQueryParams;
   params: TParams;
 };
@@ -241,8 +242,8 @@ export type UnknownQueryParams = ExtractQueryParams<''>;
 export type UnknownRoute = Route<RoutePath, UnknownParams, UnknownQueryParams>;
 /** Any Route type */
 export type AnyRoute =
-  | Route<RoutePath, UnknownParams, UnknownQueryParams>
-  | IndexRoute<RoutePath, UnknownParams, UnknownQueryParams>;
+  | Route<AnyType, AnyType, AnyType, AnyType, AnyType, AnyType, AnyType, AnyType, AnyType>
+  | IndexRoute<AnyType, AnyType, AnyType, AnyType, AnyType, AnyType, AnyType, AnyType, AnyType>;
 /** Unknown provider type */
 export type UnknownProvider = (ctx: RouteContext<TRec, TRec, TRec>) => Promise<unknown> | unknown;
 /** Unknown redirect type */

@@ -62,7 +62,6 @@
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
     "@zod/core": "catalog:",
-    "benny": "catalog:",
     "jsdom": "catalog:",
     "publint": "catalog:",
     "rimraf": "catalog:",

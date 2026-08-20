@@ -3,6 +3,7 @@ import {
   createRouter as createAppRouter,
   getRenderProps,
   type MatchedRoute,
+  Redirect,
   type RouteExceptionRenderer,
   type RouteRegistry,
   type RouteRenderer,
@@ -180,7 +181,14 @@ export function UIRouter(props: UIRouterProps) {
       window.scrollTo({ top: 0, left: 0, behavior });
     }
 
-    await router.activate(to?.href ?? location.href);
+    try {
+      await router.activate(to?.href ?? location.href);
+    } catch (error) {
+      if (!(error instanceof Redirect)) {
+        console.error(error);
+      }
+      return;
+    }
 
     if (to?.hash) {
       await sleep(100);
@@ -317,7 +325,7 @@ if (isBrowser()) {
   }
 
   setRedirectHandler((redirect) => {
-    navigate((redirect as AnyType).route, {
+    navigate(redirect.url ?? (redirect as AnyType).route, {
       query: redirect.query,
       params: redirect.params,
       redirect: location.href,

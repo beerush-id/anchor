@@ -4,7 +4,7 @@ import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from './constan
 import { RouterContext } from './context.js';
 import { ERROR_TYPE, RENDER_MODE, ROUTE_TYPE } from './enum.js';
 import { RouteError } from './error.js';
-import { Redirect } from './redirect.js';
+import { Redirect, redirect } from './redirect.js';
 import { RouteRegistry } from './registry.js';
 import { createRouteEntry, getExceptionRendererFactory, type IndexRoute, Route } from './route.js';
 import { generateSitemap } from './sitemap.js';
@@ -374,6 +374,18 @@ export class Router<Output = any> {
     if (!match) return snapshots;
 
     if (storage.activeUrl === url.href) return snapshots;
+
+    const rewrite = match.segments.find((s) => s.route.target);
+    if (rewrite) {
+      const urlSegments = url.pathname.split('/').slice(1);
+      const segmentInex = match.segments.indexOf(rewrite);
+      const rewriteUrl = urlSegments.map((s, i) => {
+        if (i === segmentInex) return rewrite.route.target!.name;
+        return s;
+      });
+      this.finish();
+      throw redirect(`/${rewriteUrl.join('/')}`);
+    }
 
     const { segments, exception } = match;
     storage.context.exception = exception;

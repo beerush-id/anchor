@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createDevTool } from '../../mocks/devtool.js';
 import { anchor, createObserver, getDevTool, OBSERVER_KEYS, setDevTool, subscribe } from '../../src/index.js';
+import { createDevTool } from '../mocks/devtool.js';
 
 describe('Anchor Dev Tool', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;

@@ -9,6 +9,7 @@ import type { Router } from './router.js';
 import { generateSitemap } from './sitemap.js';
 import { createState, getStore, safeRead } from './store.js';
 import type {
+  AnyRoute,
   ExtractParams,
   ExtractQueryParams,
   GuardBlocker,
@@ -92,6 +93,7 @@ export class Route<
   public readonly type: RouteType;
   public readonly options: RouteOptions<Path, Params, QueryParams>;
   public closed = false;
+  public target?: AnyRoute;
 
   // biome-ignore lint/suspicious/noExplicitAny: Expect any.
   private loadRenderer?: () => Promise<RouteRenderer<any, any, any, any, any, any, any, any>>;
@@ -581,6 +583,17 @@ export class Route<
     } as ProviderMap);
 
     return this as never;
+  }
+
+  /**
+   * Rewrites this route to a different route.
+   *
+   * @param route - The route to rewrite to
+   * @returns This route for chaining
+   */
+  public rewrite<T extends AnyRoute>(route: T) {
+    this.target = route;
+    return this;
   }
 
   /**

@@ -3,6 +3,7 @@ import {
   createRouter as createAppRouter,
   getRenderProps,
   type MatchedRoute,
+  Redirect,
   type RouteExceptionRenderer,
   type RouteRegistry,
   type RouteRenderer,
@@ -136,7 +137,14 @@ export function UIRouter(props: UIRouterProps): JSX.Element {
       });
     }
 
-    await props.router.activate(url);
+    try {
+      await props.router.activate(url);
+    } catch (error) {
+      if (!(error instanceof Redirect)) {
+        console.error(error);
+      }
+      return;
+    }
   };
 
   if (!props.headless) {
@@ -215,7 +223,7 @@ if (isBrowser()) {
   }
 
   setRedirectHandler((redirect) => {
-    navigate((redirect as AnyType).route, {
+    navigate(redirect.url ?? (redirect as AnyType).route, {
       query: redirect.query,
       params: redirect.params,
       redirect: location.href,
