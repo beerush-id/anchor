@@ -16,9 +16,7 @@ export type CSSProperties = {
  * Represents an input for styles, combining standard CSS properties and custom CSS variables (e.g., `--my-var`).
  */
 export type StyleInput = CSSProperties & Record<`--${string}`, UnitMeta['value'] | undefined | UnitMeta>;
-export type StyleOutput = {
-  [K in keyof StyleInput]: string | number;
-};
+export type StyleOutput = Record<string, string | number>;
 
 /**
  * A function that provides style input dynamically.

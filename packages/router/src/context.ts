@@ -1,10 +1,11 @@
 import type { RouteError } from './error.js';
 import { createState } from './store.js';
 import type { RouteContext, TRec } from './types.js';
+import { DEFAULT_CONFIG } from './constant.js';
 
 export class RouterContext<TParams, TQueryParams, TData> {
   private sources: RouteContext<TRec, TRec, TRec>[] = [];
-  private urlState = createState<string | undefined>(undefined);
+  private urlState = createState<{ href?: string; url?: URL }>({}, { recursive: false });
   private exceptionState = createState<RouteError | undefined>(undefined);
 
   public get exception() {
@@ -15,10 +16,27 @@ export class RouterContext<TParams, TQueryParams, TData> {
   }
 
   public get url() {
-    return this.urlState.value;
+    return this.urlState.href;
   }
   public set url(value: string | undefined) {
-    this.urlState.value = value;
+    const url = typeof value === 'string' ? new URL(value) : value;
+    this.urlState.url = url;
+    this.urlState.href = url?.href ?? value;
+  }
+  public get hash() {
+    return this.urlState.url?.hash;
+  }
+  public get origin() {
+    return this.urlState.url?.origin ?? DEFAULT_CONFIG.baseUrl;
+  }
+  public get search() {
+    return this.urlState.url?.search ?? '';
+  }
+  public get pathname() {
+    return this.urlState.url?.pathname ?? '';
+  }
+  public get fullPath() {
+    return this.urlState.url ? this.urlState.url?.pathname + this.urlState.url?.search : '/';
   }
 
   public params = new Proxy(

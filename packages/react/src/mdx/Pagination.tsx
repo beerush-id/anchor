@@ -1,7 +1,6 @@
 import type { PreloadMode } from '@airlib/router';
 import type { HTMLAttributes } from 'react';
-import { type AnyType, classx, derived, Link, render, Show, setup, untrack } from '../index.js';
-import { mdxCtx } from './context.js';
+import { type AnyType, classx, derived, Link, render, setup, Show, uiRouterCtx, untrack } from '../index.js';
 import type { NavItem } from './Sidebar.js';
 
 export interface PaginationProps extends HTMLAttributes<HTMLElement> {
@@ -20,15 +19,18 @@ export interface PaginationLinks {
 
 export const Pagination = setup<PaginationProps>((props) => {
   const $restProps = props.$omit(['nav', 'className', 'preload', 'previousText', 'nextText']);
-  const ctx = mdxCtx.get();
+  const ctx = uiRouterCtx.get();
   const flatLinks = derived(() => flatten(props.nav));
 
   const links = derived.as(() => {
-    if (!ctx?.url) return {};
+    if (!ctx?.router) return {};
 
     const items = flatLinks.value;
+    const fullPath = ctx.router.context.fullPath;
     return untrack(() => {
-      const currentIndex = items.findIndex((l) => l.route.active);
+      const currentIndex = items.findIndex((item) => {
+        return item.route?.active || item.href === fullPath;
+      });
       if (currentIndex === -1) return {};
 
       const prev = items[currentIndex - 1];
@@ -48,13 +50,14 @@ export const Pagination = setup<PaginationProps>((props) => {
             {(p) => (
               <Link
                 to={p.route as AnyType}
+                href={p.href}
                 className="air-mdx-pagination-link"
                 aria-label={`${props.previousText ?? 'Previous'}: ${p.text}`}
                 rel="prev"
                 preload={props.preload}
               >
                 <span>{props.previousText ?? 'Previous'}</span>
-                <strong>{p.text}</strong>
+                <strong>{p.title || p.text}</strong>
               </Link>
             )}
           </Show>
@@ -65,13 +68,14 @@ export const Pagination = setup<PaginationProps>((props) => {
             {(n) => (
               <Link
                 to={n.route as AnyType}
+                href={n.href}
                 className="air-mdx-pagination-link"
                 aria-label={`${props.nextText ?? 'Next'}: ${n.text}`}
                 rel="next"
                 preload={props.preload}
               >
                 <span>{props.nextText ?? 'Next'}</span>
-                <strong>{n.text}</strong>
+                <strong>{n.title || n.text}</strong>
               </Link>
             )}
           </Show>
@@ -84,6 +88,6 @@ export const Pagination = setup<PaginationProps>((props) => {
 function flatten(items: NavItem[] = []): NavigableItem[] {
   return items.flatMap((item) => {
     const children = item.items ? flatten(item.items) : [];
-    return item.route ? [item as NavigableItem, ...children] : children;
+    return item.route || item.href ? [item as NavigableItem, ...children] : children;
   });
 }

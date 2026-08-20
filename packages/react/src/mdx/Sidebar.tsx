@@ -20,9 +20,10 @@ const SIDEBAR_NODE_INDEX = Symbol.for('air.mdx.sidebar.node');
 export interface NavItem {
   text?: string;
   href?: string;
+  icon?: () => ReactNode;
   route?: AnyType;
   items?: NavItem[];
-  icon?: () => ReactNode;
+  title?: string;
   separator?: boolean;
   collapsed?: boolean;
 }
@@ -64,9 +65,8 @@ export const SidebarNode = setup<SidebarNodeProps>((props) => {
   const hasActiveRoute = (item: NavItem) => {
     if (item.route?.active) return true;
 
-    if (item.href && ctx?.router?.context.url) {
-      const url = new URL(ctx.router.context.url);
-      if (url.pathname + url.search === item.href) return true;
+    if (item.href && ctx?.router) {
+      if (ctx.router.context.fullPath === item.href) return true;
     }
 
     if (item.items) return item.items.some(hasActiveRoute);
