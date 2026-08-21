@@ -59,3 +59,14 @@ declare module '*.mdx' {
   const Component: ComponentType<Record<string, unknown>>;
   export default Component;
 }
+
+/**
+ * Ambient declaration for code files imported with `?highlight` suffix.
+ * Wrapped in markdown and compiled via MDX pipeline into a component.
+ */
+declare module '*?highlight' {
+  import type { ComponentType } from 'react';
+
+  const Component: ComponentType<Record<string, unknown>>;
+  export default Component;
+}

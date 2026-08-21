@@ -669,8 +669,7 @@ export function airMdxRehype(module?: MdxModule) {
       }
 
       if (node.tagName === 'code' && data.meta) {
-        const [meta] = data.meta.match(/[\w\d\s\-_.]+/gi) ?? [];
-        props['data-title'] = meta;
+        props['data-title'] = data.meta.replace(/\[/, '').replace(/\]/, '');
       }
     });
 

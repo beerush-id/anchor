@@ -5,6 +5,7 @@ import type { Plugin } from 'vite';
 import { color, setLogLevel, taggedLogger } from '../logger.js';
 import { AIR_ENV, initEnv } from '../modules/env.js';
 import { MDX_DEFAULT_OPTIONS, type MdxModuleOptions, mdxEntryWrapper, mdxFile } from '../modules/markdown.js';
+import { hashBlock } from '../utils/hash.js';
 
 const log = taggedLogger('air-markdown');
 
@@ -48,6 +49,18 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
         pagesRoot = path.resolve(config.root, AIR_ENV.pagesDir);
       },
       transform(code, id) {
+        if (isHighlightAsset(code)) {
+          const transformed = stripAndEncodeImportAttributes(code);
+          if (transformed !== code) {
+            log.verbose(
+              color.event('Rewrote'),
+              'highlight import attributes for',
+              color.file(path.relative(AIR_ENV.viteRoot, id.split('?')[0]))
+            );
+            return { code: transformed, map: null };
+          }
+        }
+
         if (!isMdxFile(id)) return;
         if (!CHUNK_ENTRIES.has(id)) {
           CHUNK_ENTRIES.set(id, { id, code });
@@ -104,6 +117,27 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
       name: 'air-pages:mdx:chunk',
       enforce: 'pre',
       async resolveId(id, importer) {
+        if (isChunkFile(id)) return id;
+
+        if (isHighlightAsset(id)) {
+          const [rawFile, query] = id.split('?');
+          const resolution = await this.resolve(rawFile, importer, { skipSelf: true });
+          const file = resolution ? resolution.id : path.resolve(path.dirname(importer ?? ''), rawFile);
+
+          const markdown = buildHighlightMarkdown(file, query);
+          const chunkFile = `${file}${CHUNK_SUFFIX}&h=${hashBlock(markdown)}`;
+
+          CHUNK_ENTRIES.set(chunkFile, {
+            id: chunkFile,
+            code: markdown,
+            source: file,
+            query,
+          });
+
+          log.verbose(color.event('Resolved'), 'highlight for', color.file(path.relative(AIR_ENV.viteRoot, file)));
+          return chunkFile;
+        }
+
         if (!isChunkAlias(id)) return;
 
         const [file] = id.split('?');
@@ -124,10 +158,11 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
           return chunk.body;
         }
 
-        const src = id.replace(CHUNK_SUFFIX, '');
+        const [src] = id.split(CHUNK_SUFFIX);
         const entry = CHUNK_ENTRIES.get(src);
-        const text = entry?.code ?? fs.readFileSync(src, 'utf-8');
+        const text = chunk?.code ?? entry?.code ?? fs.readFileSync(src, 'utf-8');
         const { code } = await mdxFile(src, text, $options);
+        if (chunk) chunk.body = code;
         if (entry) entry.body = code;
         return code;
       },
@@ -146,11 +181,28 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
         return chunk.entry ?? chunk.body;
       },
       handleHotUpdate({ file, server, modules }) {
-        if (!isMdxFile(file)) return;
+        const updates = [...modules];
+
+        for (const [chunkId, chunk] of CHUNK_ENTRIES) {
+          if (chunk.source !== file) continue;
+
+          chunk.code = buildHighlightMarkdown(file, chunk.query);
+          chunk.body = undefined;
+
+          const highlight = server.moduleGraph.getModuleById(chunkId);
+
+          if (highlight) {
+            server.moduleGraph.invalidateModule(highlight);
+            updates.push(highlight);
+          }
+        }
+
+        if (!isMdxFile(file)) {
+          return updates.length > modules.length ? updates : undefined;
+        }
 
         log.debug(color.event('HMR:'), color.file(relFile(file)), 'changed — recompiling');
         const entry = CHUNK_ENTRIES.get(file);
-        const updates = [...modules];
 
         if (entry?.chunk) {
           CHUNK_ENTRIES.delete(entry.chunk);
@@ -181,6 +233,8 @@ type AirChunkEntry = {
   body?: string;
   entry?: string;
   chunk?: string;
+  source?: string;
+  query?: string;
 };
 
 const CHUNK_ALIAS = '?chunk';
@@ -189,8 +243,86 @@ const CHUNK_ENTRIES = new Map<string, AirChunkEntry>();
 
 let pagesRoot = '';
 
+function isHighlightAsset(str: string): boolean {
+  return str.includes('?highlight') || str.includes('&highlight');
+}
+
+function stripAndEncodeImportAttributes(code: string): string {
+  const attrRegex = /(['"])([^'"]*(?:\?|&)(?:highlight)[^'"]*)\1\s*(?:with|assert)\s*\{([^}]+)\}/g;
+
+  return code.replace(attrRegex, (_match, quote, source: string, attributes: string) => {
+    const queryParams: string[] = [];
+    const pairRegex = /(?:['"]?([a-zA-Z0-9_-]+)['"]?)\s*:\s*(?:['"]([^'"]*)['"]|([0-9]+|true|false))/g;
+
+    let pairMatch: RegExpExecArray | null;
+    while ((pairMatch = pairRegex.exec(attributes)) !== null) {
+      const key = pairMatch[1];
+      const value = pairMatch[2] ?? pairMatch[3];
+      if (key && value !== undefined) {
+        queryParams.push(`${key}=${value}`);
+      }
+    }
+
+    if (queryParams.length === 0) {
+      return `${quote}${source}${quote}`;
+    }
+
+    const separator = source.includes('?') ? '&' : '?';
+    const rewrittenSource = `${source}${separator}${queryParams.join('&')}`;
+
+    return `${quote}${rewrittenSource}${quote}`;
+  });
+}
+
+function buildHighlightMarkdown(file: string, query?: string): string {
+  const params = new URLSearchParams(query);
+  const lang = params.get('lang') || path.extname(file).replace(/^\./, '');
+  const title = params.get('title') || `/${path.relative(AIR_ENV.viteRoot, file)}`;
+  const meta = params.get('meta') || '';
+  const lines = params.get('lines') || '';
+
+  const rawSource = fs.readFileSync(file, 'utf-8');
+  return wrapMarkdownCode(sliceLines(rawSource, lines), lang, title, meta);
+}
+
+function sliceLines(source: string, query?: string): string {
+  if (!query) return source;
+
+  const allLines = source.split('\n');
+  const ranges = query
+    .split(',')
+    .map((r) => r.trim())
+    .filter(Boolean);
+  if (ranges.length === 0) return source;
+
+  const chunks: string[] = [];
+  for (const range of ranges) {
+    if (range.includes(':')) {
+      const [startStr, endStr] = range.split(':');
+      const start = Math.max(1, parseInt(startStr, 10) || 1);
+      const end = endStr ? Math.min(allLines.length, parseInt(endStr, 10)) : allLines.length;
+      chunks.push(allLines.slice(start - 1, end).join('\n'));
+    } else {
+      const start = Math.max(1, parseInt(range, 10) || 1);
+      const end = ranges.length === 1 ? allLines.length : start;
+      chunks.push(allLines.slice(start - 1, end).join('\n'));
+    }
+  }
+
+  return chunks.join('\n\n');
+}
+
+function wrapMarkdownCode(code: string, lang: string, title?: string, meta?: string): string {
+  const backticks = code.match(/`{3,}/g);
+  const maxBackticks = backticks ? Math.max(...backticks.map((b) => b.length)) : 2;
+  const fence = '`'.repeat(Math.max(3, maxBackticks + 1));
+  const titlePart = title ? ` [${title}]` : '';
+  const metaPart = meta ? ` ${meta}` : '';
+  return `${fence}${lang}${titlePart}${metaPart}\n${code}\n${fence}\n`;
+}
+
 function isChunkFile(id: string) {
-  return id.endsWith(CHUNK_SUFFIX);
+  return id.includes(CHUNK_SUFFIX);
 }
 
 /** The id relative to the pages directory, for log identifiers. */
