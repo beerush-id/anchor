@@ -37,7 +37,7 @@ describe('one dev session — start, work, stop', () => {
     app.rootFolder.watch();
 
     // First boot: the page is a route, listed in the manifest, content untouched.
-    expect(readFixture(dir, 'pages/about/route.ts')).toContain("export const aboutRoute = rootRoute.route('/about');");
+    expect(readFixture(dir, 'pages/about/route.ts')).toContain('export const aboutRoute = route;');
     expect(readManifest(dir)).toContain("{ path: '/about', route: aboutRoute },");
     expect(readFixture(dir, 'pages/about/page.tsx')).toBe('// about\n');
   });
@@ -48,7 +48,7 @@ describe('one dev session — start, work, stop', () => {
     emit('addDir', 'pages/blogs');
     emit('add', 'pages/blogs/page.tsx');
 
-    expect(readFixture(dir, 'pages/blogs/route.ts')).toContain("export const blogsRoute = rootRoute.route('/blogs');");
+    expect(readFixture(dir, 'pages/blogs/route.ts')).toContain('export const blogsRoute = route;');
     expect(readManifest(dir)).toContain("'/blogs'");
     expect(readFixture(dir, 'pages/blogs/page.tsx')).toContain('<h1>Blogs</h1>');
   });
@@ -59,9 +59,7 @@ describe('one dev session — start, work, stop', () => {
     emit('addDir', 'pages/blogs/[slug]');
     emit('add', 'pages/blogs/[slug]/page.tsx');
 
-    expect(readFixture(dir, 'pages/blogs/[slug]/route.ts')).toContain(
-      "export const DynamicRoute = blogsRoute.route('/:slug');"
-    );
+    expect(readFixture(dir, 'pages/blogs/[slug]/route.ts')).toContain('export const DynamicRoute = route;');
     expect(readManifest(dir, 'blogs/index.ts')).toContain('/blogs/:slug');
   });
 

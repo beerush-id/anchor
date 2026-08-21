@@ -37,6 +37,7 @@ export type RouteDeclaration = {
   end: number;
   initEnd?: number;
   initText?: string;
+  isExported?: boolean;
   binding?: RouteBinding;
 };
 
@@ -50,12 +51,19 @@ export type RouteImport = {
   end: number;
 };
 
+export type RouteManagedBlock = {
+  start: number;
+  end: number;
+  insertPos: number;
+};
+
 export type RouteExports = {
   names: string[];
   defaultName?: string;
   defaultStart?: number;
   /** Insertion point before the default export (before its marker comment when present). */
   defaultInsertStart?: number;
+  managedBlock?: RouteManagedBlock;
   declarations: RouteDeclaration[];
   imports: RouteImport[];
 };
@@ -70,7 +78,7 @@ export interface UIIdentifier {
 
 /**
  * Parses a route.ts file with oxc-parser: exported names, declarations with
- * their registrations, import statements, and the default export position.
+ * their registrations, import statements, managed block boundary, and default export position.
  * Returns `undefined` when the file has syntax errors, in which case
  * maintenance is skipped entirely.
  */
@@ -132,7 +140,8 @@ export function parseRouteExports(content: string): RouteExports | undefined {
           start: node.start!,
           end: node.end!,
           initEnd: decl.init?.end,
-          initText: content.slice(decl.init!.start!, decl.init!.end!),
+          initText: decl.init ? content.slice(decl.init.start!, decl.init.end!) : undefined,
+          isExported: true,
           binding: routeBinding(decl.init),
         });
       }
@@ -144,7 +153,8 @@ export function parseRouteExports(content: string): RouteExports | undefined {
           start: node.start!,
           end: node.end!,
           initEnd: decl.init?.end,
-          initText: content.slice(decl.init!.start!, decl.init!.end!),
+          initText: decl.init ? content.slice(decl.init.start!, decl.init.end!) : undefined,
+          isExported: false,
           binding: routeBinding(decl.init),
         });
       }
@@ -168,7 +178,26 @@ export function parseRouteExports(content: string): RouteExports | undefined {
     }
   }
 
-  return { names, defaultName, defaultStart, defaultInsertStart, declarations, imports };
+  const managedComments = comments.filter((c) => isManagedMarkerComment(c.value));
+  let managedBlock: RouteManagedBlock | undefined;
+  if (managedComments.length >= 2) {
+    const first = managedComments[0];
+    const second = managedComments[1];
+    managedBlock = {
+      start: first.start,
+      end: second.end,
+      insertPos: second.start,
+    };
+  } else if (managedComments.length === 1) {
+    const first = managedComments[0];
+    managedBlock = {
+      start: first.start,
+      end: first.end,
+      insertPos: first.end,
+    };
+  }
+
+  return { names, defaultName, defaultStart, defaultInsertStart, managedBlock, declarations, imports };
 }
 
 /**
@@ -271,4 +300,9 @@ export function markerLineStart(content: string, at: number): number | undefined
 export function isDefaultMarkerComment(value: string): boolean {
   const trimmed = value.trim();
   return trimmed === MARKER_DEFAULT.slice(2).trim() || trimmed === LEGACY_DEFAULT_MARKER.slice(2).trim();
+}
+
+/** Whether a comment is the AirLib managed block marker. */
+export function isManagedMarkerComment(value: string): boolean {
+  return value.includes('AirLib managed');
 }

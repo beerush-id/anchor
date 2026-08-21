@@ -44,7 +44,8 @@ describe('coverage tests for unreached branches', () => {
 
       const route = readFixture(dir, 'pages/(dashboard)/route.ts');
       expect(route).toContain("import router from '../../router.js';");
-      expect(route).toContain("export const dashboardRoute = router.add('/dashboard');");
+      expect(route).toContain("const route = router.add('/dashboard');");
+      expect(route).toContain('export const dashboardRoute = route;');
     });
 
     it('generates a root route without an index when the root has only a layout', () => {
@@ -53,7 +54,8 @@ describe('coverage tests for unreached branches', () => {
       app = makeApp(dir);
 
       const route = readFixture(dir, 'pages/route.ts');
-      expect(route).toContain('export const rootRoute = router.route();');
+      expect(route).toContain('const route = router.route();');
+      expect(route).toContain('export const rootRoute = route;');
       expect(route).not.toContain('indexRoute');
     });
 
@@ -64,20 +66,24 @@ describe('coverage tests for unreached branches', () => {
       const events: Array<[string, string]> = [];
       app.on('change', (file, kind) => events.push([file, kind]));
 
+      writeFixture(dir, { 'pages/blogs/route.ts': '// updated hand-written\n' });
       app.rootFolder.children.get('blogs')?.handleFileChanged('route.ts');
 
-      // The route reload bubbles once, and each manifest level on the chain
-      // also re-generates (blogs + root) — so one reload plus updates.
-      const reload = events.find(([file, kind]) => kind === 'reload' && file.includes('route.ts'));
-      expect(reload).toBeDefined();
-      expect(events.length).toBeGreaterThanOrEqual(1);
+      expect(events.some(([file, kind]) => file.endsWith('pages/blogs/route.ts') && kind === 'reload')).toBe(true);
     });
 
     it('warns but never rewrites a default export that does not reference the folder route', () => {
       dir = makeFixture({
         'pages/blogs/page.tsx': '',
         'pages/blogs/route.ts': [
-          "export const blogsRoute = rootRoute.route('/blogs');",
+          "import parentRoute from '../route.js';",
+          '',
+          '/** AirLib managed */',
+          "const route = parentRoute.route('/blogs');",
+          '/** AirLib managed */',
+          '',
+          'export const blogsRoute = route;',
+          '',
           'export default somethingElse;',
           '',
         ].join('\n'),
@@ -90,6 +96,7 @@ describe('coverage tests for unreached branches', () => {
 
     it('normalizes a child route file that imports its parent by name', () => {
       dir = makeFixture({
+        'pages/blogs/page.tsx': '',
         'pages/blogs/[slug]/page.tsx': '',
         'pages/blogs/[slug]/route.ts': [
           "import { blogsRoute } from '../route.js';",
@@ -101,7 +108,7 @@ describe('coverage tests for unreached branches', () => {
       app = makeApp(dir);
 
       const content = readFixture(dir, 'pages/blogs/[slug]/route.ts');
-      expect(content).toContain("import blogsRoute from '../route.js';");
+      expect(content).toContain("import parentRoute from '../route.js';");
       expect(content).not.toContain('{ blogsRoute }');
     });
 
@@ -119,7 +126,7 @@ describe('coverage tests for unreached branches', () => {
       app = makeApp(dir);
 
       const content = readFixture(dir, 'pages/blogs/route.ts');
-      expect(content).toContain("blogsIndexRoute = blogsRoute.route('/wrong')");
+      expect(content).toContain("export const blogsIndexRoute = blogsRoute.route('/wrong');");
     });
 
     it('tolerates non-route declarations in a hand-written route file', () => {
@@ -535,7 +542,7 @@ describe('coverage tests for unreached branches', () => {
       expect(readFixture(dir, 'router.ts')).toContain('export default router;');
       expect(readFixture(dir, 'pages/layout.tsx')).toContain('page(rootRoute).render(');
       expect(readFixture(dir, 'pages/page.tsx')).toContain('<h1>Home</h1>');
-      expect(readFixture(dir, 'pages/route.ts')).toContain("export const indexRoute = rootRoute.route('/');");
+      expect(readFixture(dir, 'pages/route.ts')).toContain('export const rootIndexRoute = indexRoute;');
     });
   });
 
@@ -561,9 +568,7 @@ describe('coverage tests for unreached branches', () => {
       emit('addDir', 'pages/blogs');
       emit('add', 'pages/blogs/page.tsx');
 
-      expect(readFixture(dir, 'pages/blogs/route.ts')).toContain(
-        "export const blogsRoute = rootRoute.route('/blogs');"
-      );
+      expect(readFixture(dir, 'pages/blogs/route.ts')).toContain('export const blogsRoute = route;');
     });
 
     it('reacts to a file added to an existing folder', () => {
@@ -644,7 +649,7 @@ describe('coverage tests for unreached branches', () => {
       app.rootFolder.children.get('projects')?.handleFileAdded('layout.tsx');
 
       const route = readFixture(dir, 'pages/projects/route.ts');
-      expect(route).toContain("export const projectsIndexRoute = projectsRoute.route('/');");
+      expect(route).toContain('export const projectsIndexRoute = indexRoute;');
     });
 
     it('removes the index route when the page is removed from a page+layout folder', () => {

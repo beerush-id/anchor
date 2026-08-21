@@ -41,8 +41,10 @@ describe('route generation — folders define URLs', () => {
     boot({ 'pages/blogs/page.tsx': '' });
 
     const content = route('blogs');
-    expect(content).toContain("import rootRoute from '../route.js';");
-    expect(content).toContain("export const blogsRoute = rootRoute.route('/blogs');");
+    expect(content).toContain("import parentRoute from '../route.js';");
+    expect(content).toContain('/** AirLib managed */');
+    expect(content).toContain("const route = parentRoute.route('/blogs');");
+    expect(content).toContain('export const blogsRoute = route;');
     expect(content).toContain('export default blogsRoute;');
     expect(content).not.toContain('IndexRoute');
   });
@@ -51,21 +53,26 @@ describe('route generation — folders define URLs', () => {
     boot({ 'pages/about/page.tsx': '', 'pages/about/layout.tsx': '' });
 
     const content = route('about');
-    expect(content).toContain("export const aboutRoute = rootRoute.route('/about');");
-    expect(content).toContain("export const aboutIndexRoute = aboutRoute.route('/');");
+    expect(content).toContain("const route = parentRoute.route('/about');");
+    expect(content).toContain("const indexRoute = route.route('/');");
+    expect(content).toContain('export const aboutRoute = route;');
+    expect(content).toContain('export const aboutIndexRoute = indexRoute;');
   });
 
   it('auto-scaffolds a layout when a page folder has children and adds an index route', () => {
     boot({ 'pages/blogs/page.tsx': '', 'pages/blogs/[slug]/page.tsx': '' });
 
     const blogs = route('blogs');
-    expect(blogs).toContain("export const blogsRoute = rootRoute.route('/blogs');");
-    expect(blogs).toContain("export const blogsIndexRoute = blogsRoute.route('/');");
+    expect(blogs).toContain("const route = parentRoute.route('/blogs');");
+    expect(blogs).toContain("const indexRoute = route.route('/');");
+    expect(blogs).toContain('export const blogsRoute = route;');
+    expect(blogs).toContain('export const blogsIndexRoute = indexRoute;');
     expect(fixtureExists(dir, 'pages/blogs/layout.tsx')).toBe(true);
 
     const detail = route('blogs/[slug]');
-    expect(detail).toContain("import blogsRoute from '../route.js';");
-    expect(detail).toContain("export const DynamicRoute = blogsRoute.route('/:slug');");
+    expect(detail).toContain("import parentRoute from '../route.js';");
+    expect(detail).toContain("const route = parentRoute.route('/:slug');");
+    expect(detail).toContain('export const DynamicRoute = route;');
     expect(detail).not.toContain('IndexRoute');
   });
 
@@ -73,7 +80,8 @@ describe('route generation — folders define URLs', () => {
     boot({ 'pages/admin/layout.tsx': '' });
 
     const content = route('admin');
-    expect(content).toContain("export const adminRoute = rootRoute.route('/admin');");
+    expect(content).toContain("const route = parentRoute.route('/admin');");
+    expect(content).toContain('export const adminRoute = route;');
     expect(content).not.toContain('IndexRoute');
   });
 
@@ -81,30 +89,35 @@ describe('route generation — folders define URLs', () => {
     boot({ 'pages/docs/getting-started/page.tsx': '' });
 
     const docs = route('docs');
-    expect(docs).toContain("export const docsRoute = rootRoute.route('/docs');");
+    expect(docs).toContain("const route = parentRoute.route('/docs');");
+    expect(docs).toContain('export const docsRoute = route;');
     expect(docs).not.toContain('IndexRoute');
 
     const started = route('docs/getting-started');
-    expect(started).toContain("import docsRoute from '../route.js';");
-    expect(started).toContain("export const gettingStartedRoute = docsRoute.route('/getting-started');");
+    expect(started).toContain("import parentRoute from '../route.js';");
+    expect(started).toContain("const route = parentRoute.route('/getting-started');");
+    expect(started).toContain('export const gettingStartedRoute = route;');
   });
 
   it('derives dynamic segments, recursing through nested dynamics', () => {
     boot({ 'pages/blogs/[slug]/[tab]/page.tsx': '' });
 
     const slug = route('blogs/[slug]');
-    expect(slug).toContain("export const DynamicRoute = blogsRoute.route('/:slug');");
+    expect(slug).toContain("const route = parentRoute.route('/:slug');");
+    expect(slug).toContain('export const DynamicRoute = route;');
 
     const tab = route('blogs/[slug]/[tab]');
-    expect(tab).toContain("import DynamicRoute from '../route.js';");
-    expect(tab).toContain("export const DynamicRoute = DynamicRoute.route('/:tab');");
+    expect(tab).toContain("import parentRoute from '../route.js';");
+    expect(tab).toContain("const route = parentRoute.route('/:tab');");
+    expect(tab).toContain('export const DynamicRoute = route;');
   });
 
   it('derives a wildcard segment for catch-all folders', () => {
     boot({ 'pages/[...rest]/page.tsx': '' });
 
     const content = route('[...rest]');
-    expect(content).toContain("export const DynamicRoute = rootRoute.route('/*rest');");
+    expect(content).toContain("const route = parentRoute.route('/*rest');");
+    expect(content).toContain('export const DynamicRoute = route;');
   });
 
   it('binds a root page to rootRoute when no root layout exists', () => {
@@ -112,16 +125,19 @@ describe('route generation — folders define URLs', () => {
 
     const content = route('');
     expect(content).toContain("import router from '../router.js';");
-    expect(content).toContain('export const rootRoute = router.route();');
-    expect(content).not.toContain('indexRoute');
+    expect(content).toContain('const route = router.route();');
+    expect(content).toContain('export const rootRoute = route;');
+    expect(content).not.toContain('IndexRoute');
   });
 
   it('binds a root page to indexRoute when a root layout exists', () => {
     boot({ 'pages/page.tsx': '', 'pages/layout.tsx': '' });
 
     const content = route('');
-    expect(content).toContain('export const rootRoute = router.route();');
-    expect(content).toContain("export const indexRoute = rootRoute.route('/');");
+    expect(content).toContain('const route = router.route();');
+    expect(content).toContain("const indexRoute = route.route('/');");
+    expect(content).toContain('export const rootRoute = route;');
+    expect(content).toContain('export const rootIndexRoute = indexRoute;');
   });
 
   it('emits a root route file even when the root has no page', () => {
@@ -129,12 +145,13 @@ describe('route generation — folders define URLs', () => {
 
     const root = route('');
     expect(root).toContain("import router from '../router.js';");
-    expect(root).toContain('export const rootRoute = router.route();');
+    expect(root).toContain('const route = router.route();');
+    expect(root).toContain('export const rootRoute = route;');
     expect(root).toContain('export default rootRoute;');
-    expect(root).not.toContain('indexRoute');
+    expect(root).not.toContain('IndexRoute');
 
     const blogs = route('blogs');
-    expect(blogs).toContain("import rootRoute from '../route.js';");
+    expect(blogs).toContain("import parentRoute from '../route.js';");
   });
 
   it('ignores folders that only contain non-page files', () => {
@@ -159,12 +176,16 @@ describe('route generation — folders define URLs', () => {
     });
 
     const root = route('');
-    expect(root).toContain("export const v1Route = rootRoute.route('/v1');");
-    expect(root).toContain("export const v2Route = rootRoute.route('/v2');");
+    expect(root).toContain("const v1Route = route.route('/v1');");
+    expect(root).toContain("const v2Route = route.route('/v2');");
+    expect(root).toContain('export const rootV1Route = v1Route;');
+    expect(root).toContain('export const rootV2Route = v2Route;');
 
     const api = route('api');
-    expect(api).toContain("export const apiV1Route = apiRoute.route('/v1');");
-    expect(api).toContain("export const apiV2Route = apiRoute.route('/v2');");
+    expect(api).toContain("const v1Route = route.route('/v1');");
+    expect(api).toContain("const v2Route = route.route('/v2');");
+    expect(api).toContain('export const apiV1Route = v1Route;');
+    expect(api).toContain('export const apiV2Route = v2Route;');
   });
 
   it('derives named routes from a custom file map', () => {
@@ -181,9 +202,11 @@ describe('route generation — folders define URLs', () => {
     });
 
     const content = route('');
-    expect(content).toContain("export const teamsRoute = rootRoute.route('/teams');");
-    expect(content).toContain("export const teamRoute = rootRoute.route('/team');");
-    expect(content).not.toContain("export const pageRoute = rootRoute.route('/page');");
+    expect(content).toContain("const teamsRoute = route.route('/teams');");
+    expect(content).toContain("const teamRoute = route.route('/team');");
+    expect(content).toContain('export const rootTeamsRoute = teamsRoute;');
+    expect(content).toContain('export const rootTeamRoute = teamRoute;');
+    expect(content).not.toContain('pageRoute');
   });
 
   it('removes named routes when named pages are removed', () => {
@@ -192,12 +215,12 @@ describe('route generation — folders define URLs', () => {
     });
 
     const root = route('');
-    expect(root).toContain("export const v1Route = rootRoute.route('/v1');");
+    expect(root).toContain('export const rootV1Route = v1Route;');
 
     app?.rootFolder.handleFileRemoved('v1.page.tsx');
 
     const newRoot = route('');
-    expect(newRoot).not.toContain("export const v1Route = rootRoute.route('/v1');");
+    expect(newRoot).not.toContain('export const rootV1Route');
   });
 
   it('adds named routes when named pages are dynamically added', () => {
@@ -206,12 +229,12 @@ describe('route generation — folders define URLs', () => {
     });
 
     const root = route('');
-    expect(root).not.toContain("export const v1Route = rootRoute.route('/v1');");
+    expect(root).not.toContain('export const rootV1Route');
 
     app?.rootFolder.handleFileAdded('v1.page.tsx');
 
     const newRoot = route('');
-    expect(newRoot).toContain("export const v1Route = rootRoute.route('/v1');");
+    expect(newRoot).toContain('export const rootV1Route = v1Route;');
   });
 
   it('fails gracefully when adding or removing a named page without a route file', async () => {
@@ -244,7 +267,7 @@ describe('route generation — folders define URLs', () => {
     // 1. A named page added while running gets its route export.
     apiFolder?.handleFileAdded('v1.page.tsx');
     let content = fs.readFileSync(routeFilePath, 'utf-8');
-    expect(content).toContain("export const apiV1Route = apiRoute.route('/v1');");
+    expect(content).toContain('export const apiV1Route = v1Route;');
 
     // 2. Adding the same named page again is a no-op — no duplicate export.
     apiFolder?.handleFileAdded('v1.page.tsx');
@@ -256,13 +279,12 @@ describe('route generation — folders define URLs', () => {
     content = fs.readFileSync(routeFilePath, 'utf-8');
     expect(content).not.toContain('export const apiV1Route');
 
-    // 4. A corrupted (markerless) route file still gets maintained — user code
-    //    survives, the contract export is filled, and the events never crash.
+    // 4. User code survives and export is filled
     fs.writeFileSync(routeFilePath, 'export const somethingElse = {};');
     expect(() => apiFolder?.handleFileAdded('v2.page.tsx')).not.toThrow();
     const after = fs.readFileSync(routeFilePath, 'utf-8');
     expect(after).toContain('export const somethingElse = {};');
-    expect(after).toContain("export const apiV2Route = apiRoute.route('/v2');");
+    expect(after).toContain('export const apiV2Route = v2Route;');
   });
 
   it('executes the generated tree against a real router', { timeout: 20000 }, async () => {
@@ -311,8 +333,8 @@ describe('route generation — folders define URLs', () => {
 
     await withIsolation(() => {
       // Route.path composes an index route as `<parent>/` — trailing slash.
-      expect(root.indexRoute).toBeInstanceOf(Route);
-      expect(root.indexRoute.path).toBe('/');
+      expect(root.rootIndexRoute).toBeInstanceOf(Route);
+      expect(root.rootIndexRoute.path).toBe('/');
       expect(blogs.blogsIndexRoute.path).toBe('/blogs/');
       expect(detail.DynamicRoute.path).toBe('/blogs/:slug');
       expect(about.aboutIndexRoute.path).toBe('/about/');
@@ -322,7 +344,7 @@ describe('route generation — folders define URLs', () => {
 
       const last = (url: string) => router.find(url)?.segments.at(-1)?.route;
 
-      expect(last('/')).toBe(root.indexRoute);
+      expect(last('/')).toBe(root.rootIndexRoute);
       expect(last('/blogs')).toBe(blogs.blogsIndexRoute);
       expect(last('/about')).toBe(about.aboutIndexRoute);
       expect(last('/admin/users')).toBe(users.usersRoute);

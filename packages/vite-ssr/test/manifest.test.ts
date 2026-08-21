@@ -80,7 +80,7 @@ describe('route manifest — manifests are generated', () => {
 
     app = makeApp(dir);
 
-    expect(readManifest(dir)).toContain("{ path: '/', route: indexRoute },");
+    expect(readManifest(dir)).toContain("{ path: '/', route: rootIndexRoute },");
   });
 
   it('imports route entries from their generated modules', () => {
@@ -130,7 +130,7 @@ describe('route manifest — manifests are generated', () => {
 
     // root manifest
     const rootContent = readManifest(dir);
-    expect(rootContent).toContain("{ path: '/v1', route: v1Route },");
+    expect(rootContent).toContain("{ path: '/v1', route: rootV1Route },");
     expect(rootContent).not.toContain('releaseV1Route');
 
     // release manifest

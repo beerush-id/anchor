@@ -57,20 +57,13 @@ export function scaffoldForFile(opts: {
   }
 
   if (base === files.layout) {
-    if (!folder.rel) return scaffoldLayoutTsx({ framework, files });
     return scaffoldLayoutTsx({ framework, rel: folder.rel, routeExport: deriveRouteName(folder.segment), files });
   }
 
   if (base === files.page) {
     const hasPage = folder.files.has(files.page) || folder.files.has(files.pageMdx);
     const hasLayout = folder.files.has(files.layout) || folder.files.has(files.layoutMdx);
-    const routeExport = !folder.rel
-      ? hasPage && hasLayout
-        ? 'indexRoute'
-        : 'rootRoute'
-      : hasPage && hasLayout
-        ? deriveIndexName(folder.segment)
-        : deriveRouteName(folder.segment);
+    const routeExport = hasPage && hasLayout ? deriveIndexName(folder.segment) : deriveRouteName(folder.segment);
 
     return scaffoldPageTsx({ framework, rel: folder.rel, routeExport, files });
   }
@@ -177,9 +170,9 @@ export function scaffoldPageTsx(opts: {
   const pkg = FRAMEWORK_PACKAGE[opts.framework];
   const files = opts.files;
   const routeMod = `./${files.route.replace(/\.[^.]+$/, '.js')}`;
-  const name = opts.routeExport === 'indexRoute' ? 'Home' : humanizeSegment(opts.rel.split('/').pop() || '');
-  const isFolderRoute =
-    opts.routeExport === 'rootRoute' || opts.routeExport === deriveRouteName(opts.rel.split('/').pop() || '');
+  const leaf = opts.rel.split('/').pop() || '';
+  const name = opts.routeExport === deriveIndexName(leaf) && !opts.rel ? 'Home' : humanizeSegment(leaf);
+  const isFolderRoute = opts.routeExport === deriveRouteName(leaf);
   const importLine = isFolderRoute
     ? `import ${opts.routeExport} from '${routeMod}';`
     : `import { ${opts.routeExport} } from '${routeMod}';`;
@@ -207,19 +200,12 @@ export function scaffoldLayoutTsx(opts: {
   const pkg = FRAMEWORK_PACKAGE[opts.framework];
   const files = opts.files;
   const routeMod = `./${files.route.replace(/\.[^.]+$/, '.js')}`;
-
-  if (!opts.rel) {
-    return `import { page } from '${pkg}';
-import rootRoute from '${routeMod}';
-
-export default page(rootRoute).render(({ children }) => children);
-`;
-  }
+  const routeExport = opts.routeExport || deriveRouteName(opts.rel ? opts.rel.split('/').pop() || '' : '');
 
   return `import { page } from '${pkg}';
-import ${opts.routeExport} from '${routeMod}';
+import ${routeExport} from '${routeMod}';
 
-export default page(${opts.routeExport}).render(({ children }) => children);
+export default page(${routeExport}).render(({ children }) => children);
 `;
 }
 

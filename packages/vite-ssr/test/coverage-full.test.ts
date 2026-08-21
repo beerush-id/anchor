@@ -272,18 +272,29 @@ describe('route generation — resilience', () => {
   });
 
   it('leaves a hand-written route file untouched when the index export is absent', () => {
+    const initialRoute = [
+      "import parentRoute from '../route.js';",
+      '',
+      '/** AirLib managed */',
+      "const route = parentRoute.route('/blogs');",
+      '/** AirLib managed */',
+      '',
+      'export const blogsRoute = route;',
+      '',
+      'export default blogsRoute;',
+      '',
+    ].join('\n');
+
     dir = makeFixture({
       'router.ts': '',
-      'pages/blogs/route.ts': '// custom\n',
+      'pages/blogs/route.ts': initialRoute,
       'pages/blogs/page.tsx': '',
-      'pages/blogs/layout.tsx': '',
     });
     app = makeApp(dir);
 
-    removeFixture(dir, 'pages/blogs/layout.tsx');
     app.rootFolder.children.get('blogs')?.handleFileRemoved('layout.tsx');
 
-    expect(readFixture(dir, 'pages/blogs/route.ts')).toBe('// custom\n');
+    expect(readFixture(dir, 'pages/blogs/route.ts')).toBe(initialRoute);
   });
 });
 
@@ -473,7 +484,7 @@ describe('route node — mdx-first adoption and root index lifecycle', () => {
     blogs.handleFileAdded('page.mdx');
 
     expect(app.rootRoute!.children.get('blogs')?.page).toBe('mdx');
-    expect(readFixture(dir, 'pages/blogs/route.ts')).toContain("export const blogsRoute = rootRoute.route('/blogs');");
+    expect(readFixture(dir, 'pages/blogs/route.ts')).toContain('export const blogsRoute = route;');
     expect(events).toContain('reload');
   });
 
@@ -506,19 +517,19 @@ describe('route node — mdx-first adoption and root index lifecycle', () => {
     writeFixture(dir, { 'pages/page.tsx': '' });
     app.rootFolder.handleFileAdded('page.tsx');
 
-    expect(readFixture(dir, 'pages/route.ts')).toContain("export const indexRoute = rootRoute.route('/');");
+    expect(readFixture(dir, 'pages/route.ts')).toContain('export const rootIndexRoute = indexRoute;');
   });
 
   it('removes the root index export when the root layout disappears', () => {
     dir = makeFixture({ 'router.ts': '', 'pages/page.tsx': '', 'pages/layout.tsx': '' });
     app = makeApp(dir);
 
-    expect(readFixture(dir, 'pages/route.ts')).toContain("export const indexRoute = rootRoute.route('/');");
+    expect(readFixture(dir, 'pages/route.ts')).toContain('export const rootIndexRoute = indexRoute;');
 
     removeFixture(dir, 'pages/layout.tsx');
     app.rootFolder.handleFileRemoved('layout.tsx');
 
-    expect(readFixture(dir, 'pages/route.ts')).not.toContain('export const indexRoute');
+    expect(readFixture(dir, 'pages/route.ts')).not.toContain('export const rootIndexRoute');
   });
 });
 

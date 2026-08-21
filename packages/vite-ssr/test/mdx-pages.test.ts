@@ -71,7 +71,7 @@ describe('mdx pages — MDX files are pages', () => {
     dir = makeFixture({ 'pages/page.mdx': '', 'pages/layout.tsx': '', 'pages/about/page.tsx': '' });
     const snippet = await attach(dir, 'pages/page.mdx');
 
-    expect(snippet).toContain("import { indexRoute as __airRoute } from './route.ts';");
+    expect(snippet).toContain("import { rootIndexRoute as __airRoute } from './route.ts';");
   });
 
   it('attaches an index-case mdx page to the index route', async () => {
@@ -134,6 +134,6 @@ describe('mdx pages — MDX files are pages', () => {
     dir = makeFixture({ 'pages/v1.page.mdx': '' });
     const snippet = await attach(dir, 'pages/v1.page.mdx');
 
-    expect(snippet).toContain("import { v1Route as __airRoute } from './route.ts';");
+    expect(snippet).toContain("import { rootV1Route as __airRoute } from './route.ts';");
   });
 });

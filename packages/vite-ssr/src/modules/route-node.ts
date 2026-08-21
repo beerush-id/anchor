@@ -59,8 +59,8 @@ export class RouteNode extends EventEmitter {
 
     this.rel = folderNode.rel;
     this.routePath = deriveSegment(folderNode.segment);
-    this.routeName = !this.rel ? 'rootRoute' : deriveRouteName(folderNode.segment);
-    this.indexName = !this.rel ? 'indexRoute' : deriveIndexName(folderNode.segment);
+    this.routeName = deriveRouteName(folderNode.segment);
+    this.indexName = deriveIndexName(folderNode.segment);
 
     if (folderNode.files.has(fileMap.page)) {
       this.page = 'tsx';

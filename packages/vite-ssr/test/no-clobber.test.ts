@@ -28,8 +28,6 @@ describe('no-clobber — existing route.ts is never overwritten', () => {
     // The user's lines survive — the assistant only fills the contract.
     expect(content).toContain("import router from '../router.js';");
     expect(content).toContain("export const blogsRoute = router.route('/blogs');");
-    // The maintenance contract adds markers + the default export.
-    expect(content).toContain('// @generated - do not edit the variable name');
     expect(content).toContain('export default blogsRoute;');
     // The child route.ts is generated since it didn't exist.
     expect(fixtureExists(dir, 'pages/blogs/[slug]/route.ts')).toBe(true);
@@ -50,8 +48,38 @@ describe('no-clobber — existing route.ts is never overwritten', () => {
 
     const content = readFixture(dir, 'pages/blogs/route.ts');
     expect(content).toContain('// custom');
-    expect(content).toContain('// @generated - do not edit the variable name');
-    expect(content).toContain("export const blogsIndexRoute = blogsRoute.route('/');");
+    expect(content).toContain('export const blogsIndexRoute = indexRoute;');
+  });
+
+  it('preserves user route decorations (.guard, .provide) across live sync events', () => {
+    dir = makeFixture({
+      'router.ts': '',
+      'pages/docs/page.tsx': '',
+      'pages/docs/route.ts': [
+        "import parentRoute from '../route.js';",
+        '',
+        '/** AirLib managed */',
+        "const route = parentRoute.route('/docs');",
+        '/** AirLib managed */',
+        '',
+        'export const docsRoute = route.guard(async () => ({ user: { id: 1 } }));',
+        '',
+        'export default docsRoute;',
+      ].join('\n'),
+    });
+
+    app = makeApp(dir);
+
+    // Dynamic addition of a named page
+    writeFixture(dir, { 'pages/docs/guide.page.tsx': '' });
+    app.rootFolder.children.get('docs')?.handleFileAdded('guide.page.tsx');
+
+    const content = readFixture(dir, 'pages/docs/route.ts');
+    // User guard must be completely intact
+    expect(content).toContain('export const docsRoute = route.guard(async () => ({ user: { id: 1 } }));');
+    expect(content).toContain("const guideRoute = route.route('/guide');");
+    expect(content).toContain('export const docsGuideRoute = guideRoute;');
+    expect(content).toContain('export default docsRoute;');
   });
 
   it('does not delete route files when pages are removed', () => {

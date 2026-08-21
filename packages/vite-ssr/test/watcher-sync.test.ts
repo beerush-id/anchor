@@ -31,7 +31,7 @@ describe('watcher sync — folder edits stay in sync', () => {
     fs.writeFileSync(fixturePath(dir, 'pages/blogs/page.tsx'), '');
     app.rootFolder.handleChildAdded('blogs', blogsDir);
 
-    expect(readFixture(dir, 'pages/blogs/route.ts')).toContain("export const blogsRoute = rootRoute.route('/blogs');");
+    expect(readFixture(dir, 'pages/blogs/route.ts')).toContain('export const blogsRoute = route;');
   });
 
   it('leaves untouched folders byte-identical when a sibling is added', () => {
@@ -69,14 +69,14 @@ describe('watcher sync — folder edits stay in sync', () => {
     app = makeApp(dir);
 
     const initialRoute = readFixture(dir, 'pages/projects/route.ts');
-    expect(initialRoute).toContain("export const projectsRoute = rootRoute.route('/projects');");
+    expect(initialRoute).toContain('export const projectsRoute = route;');
     expect(initialRoute).not.toContain('projectsIndexRoute');
 
     writeFixture(dir, { 'pages/projects/page.tsx': '' });
     app.rootFolder.children.get('projects')?.handleFileAdded('page.tsx');
 
     const updatedRoute = readFixture(dir, 'pages/projects/route.ts');
-    expect(updatedRoute).toContain("export const projectsIndexRoute = projectsRoute.route('/');");
+    expect(updatedRoute).toContain('export const projectsIndexRoute = indexRoute;');
     // The injected export sits right after the base route export.
     expect(updatedRoute.indexOf('export const projectsRoute')).toBeLessThan(
       updatedRoute.indexOf('export const projectsIndexRoute')

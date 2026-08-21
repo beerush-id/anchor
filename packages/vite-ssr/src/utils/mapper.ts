@@ -5,6 +5,7 @@ export type { Framework };
 
 /** Header marker written on top of every generated file. */
 export const GENERATED_MARKER = '// @generated';
+export const MARKER_MANAGED = '/** AirLib managed */';
 export const MARKER_VARIABLE_NAME = '// @generated - do not edit the variable name';
 export const MARKER_DEFAULT = '// @generated - do not edit';
 
@@ -70,26 +71,38 @@ export function derivePrefix(rel: string): string {
   return prefix;
 }
 
+export const ROOT_NAME = 'root';
+export const ROUTE_SUFFIX = 'Route';
+export const INDEX_SUFFIX = 'IndexRoute';
+export const META_SUFFIX = 'Meta';
+
 /**
  * The route export name for a leaf segment (`members` → `membersRoute`,
- * `[slug]` → `DynamicRoute`). Generated names are short and local, never
+ * `[slug]` → `DynamicRoute`, root → `rootRoute`). Generated names are short and local, never
  * accumulated from the full folder path.
  */
-export function deriveRouteName(segment: string): string {
-  return `${camelizeSegment(segment)}Route`;
+export function deriveRouteName(segment: string, suffix = ROUTE_SUFFIX): string {
+  return `${camelizeSegment(segment || ROOT_NAME)}${suffix}`;
 }
 
-/** The index route export name for a leaf segment (`members` → `membersIndexRoute`). */
-export function deriveIndexName(segment: string): string {
-  return `${camelizeSegment(segment)}IndexRoute`;
+/** The index route export name for a leaf segment (`members` → `membersIndexRoute`, root → `rootIndexRoute`). */
+export function deriveIndexName(segment: string, suffix = INDEX_SUFFIX): string {
+  return `${camelizeSegment(segment || ROOT_NAME)}${suffix}`;
 }
 
 /**
  * The route export name for a named page (`teams.page.tsx` inside
- * `about/company` → `companyTeamsRoute`). A named page has no folder of its
- * own, so the name chains the parent folder's leaf segment with the page name
- * — the same leaf-derived style as the folder's own route name.
+ * `about/company` → `companyTeamsRoute`, root `v1.page.tsx` → `rootV1Route`).
  */
+export function deriveNamedRouteName(folderSegment: string, pageName: string, suffix = ROUTE_SUFFIX): string {
+  const rel = folderSegment ? `${folderSegment}/${pageName}` : `${ROOT_NAME}/${pageName}`;
+  return `${derivePrefix(rel)}${suffix}`;
+}
+
+export function deriveLocalRouteName(pageName: string, suffix = ROUTE_SUFFIX): string {
+  return `${camelizeSegment(pageName)}${suffix}`;
+}
+
 /**
  * Whether a file is a named page: a custom name before the configured page
  * base (`teams.page.tsx` when pages are `page.tsx`). The plain page base
@@ -109,27 +122,22 @@ export function namedPageName(file: string, fileMap: FileMap): string {
   return file;
 }
 
-export function deriveNamedRouteName(folderSegment: string, pageName: string): string {
-  const rel = folderSegment ? `${folderSegment}/${pageName}` : pageName;
-  return `${derivePrefix(rel)}Route`;
-}
-
 /**
  * The meta import variable name for a folder route segment:
  * `members` → `membersMeta`, `docs` → `docsMeta`, root → `pageMeta`.
  */
-export function deriveMetaName(segment: string): string {
-  if (!segment) return 'pageMeta';
-  return `${camelizeSegment(segment)}Meta`;
+export function deriveMetaName(segment: string, suffix = META_SUFFIX): string {
+  if (!segment) return `page${suffix}`;
+  return `${camelizeSegment(segment)}${suffix}`;
 }
 
 /**
  * The meta import variable name for an index route segment:
  * `members` → `membersIndexMeta`, `docs` → `docsIndexMeta`, root → `pageMeta`.
  */
-export function deriveIndexMetaName(segment: string): string {
-  if (!segment) return 'pageMeta';
-  return `${camelizeSegment(segment)}IndexMeta`;
+export function deriveIndexMetaName(segment: string, suffix = META_SUFFIX): string {
+  if (!segment) return `page${suffix}`;
+  return `${camelizeSegment(segment)}Index${suffix}`;
 }
 
 /**
@@ -138,9 +146,9 @@ export function deriveIndexMetaName(segment: string): string {
  * `docs` + `getting-started` → `docsGettingStartedMeta`,
  * root + `guide` → `guideMeta`.
  */
-export function deriveNamedMetaName(folderSegment: string, pageName: string): string {
+export function deriveNamedMetaName(folderSegment: string, pageName: string, suffix = META_SUFFIX): string {
   const rel = folderSegment ? `${folderSegment}/${pageName}` : pageName;
-  return `${derivePrefix(rel) || 'root'}Meta`;
+  return `${derivePrefix(rel) || ROOT_NAME}${suffix}`;
 }
 
 /** Camel-cases a single folder segment into an identifier prefix. */
