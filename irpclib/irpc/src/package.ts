@@ -1,6 +1,6 @@
 import {
-  type AnyType,
   anchor,
+  type AnyType,
   captureStack,
   createObserver,
   isBrowser,
@@ -289,7 +289,7 @@ export class IRPCPackage<K extends string = 'id'> {
         };
 
         const observer = createObserver(() => {
-          observer.reset();
+          // observer.reset();
           dispatch();
         });
         const [schedule, cancel] = microtask(debounce);
@@ -326,16 +326,36 @@ export class IRPCPackage<K extends string = 'id'> {
     }
 
     function resolveTo(reader: IRPCReader<IRPCData>, args: unknown[]) {
-      const source = resolve(args, true);
-      source.pipeTo(reader);
+      let source = resolve(args, true);
+      void source.pipeTo(reader);
+
+      let off: (() => void) | undefined;
+
+      /* v8 ignore start - Dev-only HMR signal handler */
+      if (import.meta.hot) {
+        const onInvalidate = (e: AnyType) => {
+          if (e?.type !== 'irpc:invalidate-handler') return;
+
+          source.close();
+          source = resolve(args, true, true);
+          void source.pipeTo(reader);
+        };
+
+        import.meta.hot.on('custom', onInvalidate as AnyType);
+        off = () => import.meta.hot?.off('custom', onInvalidate as AnyType);
+      }
+      /* v8 ignore stop */
+
       return () => {
+        /* v8 ignore next */
+        off?.();
         source.close();
       };
     }
 
-    function resolve(args: unknown[], dispatch?: boolean) {
+    function resolve(args: unknown[], dispatch?: boolean, force?: boolean) {
       const callKey = JSON.stringify(args);
-      const cached = caches.get(callKey);
+      const cached = !force && caches.get(callKey);
 
       if (cached) return cached.value!;
       if (spec.coalesce !== false && calls.has(callKey)) return calls.get(callKey)!;

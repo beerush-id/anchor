@@ -24,10 +24,10 @@
     "access": "public"
   },
   "dependencies": {
-    "@airlib/core": "workspace:*",
     "@irpclib/irpc": "workspace:*"
   },
   "devDependencies": {
+    "@airlib/core": "workspace:*",
     "@biomejs/biome": "catalog:",
     "@types/bun": "catalog:",
     "@vitest/coverage-v8": "catalog:",

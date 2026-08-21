@@ -129,6 +129,20 @@ export class WebSocketTransport extends IRPCTransport {
    */
   constructor(public config: WebSocketTransportConfig) {
     super(config);
+
+    /* v8 ignore start - Dev-only HMR signal handler */
+    if (import.meta.hot) {
+      // biome-ignore lint/suspicious/noExplicitAny: Detected as Bun's hot, not Vite's.
+      const hot = import.meta.hot as any;
+
+      hot.on('custom', (e: { type?: string }) => {
+        if (e?.type !== 'irpc:invalidate-handler') return;
+        if (this.isOpen || this.state === WebSocketState.CONNECTING) {
+          void this.reconnect();
+        }
+      });
+    }
+    /* v8 ignore stop */
   }
 
   /**
@@ -423,7 +437,9 @@ export class WebSocketTransport extends IRPCTransport {
    * Forces a reconnection.
    */
   public async reconnect(): Promise<void> {
+    const autoReconnect = this.config.autoReconnect;
     this.close();
+    this.config.autoReconnect = autoReconnect;
     this.reconnectAttempts = 0;
     await this.connect();
   }
