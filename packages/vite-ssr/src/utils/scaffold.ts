@@ -1,10 +1,11 @@
+import path from 'node:path';
 import type { FolderNode } from '../modules/folder-node.js';
 import {
   deriveIndexName,
   deriveRouteName,
   type FileMap,
-  type Framework,
   FRAMEWORK_PACKAGE,
+  type Framework,
   humanizeSegment,
 } from './mapper.js';
 
@@ -20,17 +21,21 @@ import {
  * @param opts.folder The folder the file belongs to; required for page/layout/mdx files.
  * @param opts.framework Target UI framework for the scaffolded imports.
  * @param opts.files Resolved file name map (defaults merged with user overrides).
+ * @param opts.srcDir Source directory relative to project root.
+ * @param opts.pagesDir Pages directory relative to project root.
  */
 export function scaffoldForFile(opts: {
   base: string;
   folder?: FolderNode;
   framework: Framework;
   files: FileMap;
+  srcDir?: string;
+  pagesDir?: string;
 }): string | undefined {
-  const { base, folder, framework, files } = opts;
+  const { base, folder, framework, files, srcDir = 'src', pagesDir = 'pages' } = opts;
 
   if (base === files.entry) {
-    return scaffoldAppTsx({ framework, files });
+    return scaffoldAppTsx({ framework, files, srcDir, pagesDir });
   }
 
   if (base === files.client) {
@@ -76,10 +81,19 @@ export function scaffoldForFile(opts: {
 /**
  * Scaffolds an `app.tsx` entry module.
  */
-export function scaffoldAppTsx(opts: { framework: Framework; files: FileMap }): string {
+export function scaffoldAppTsx(opts: {
+  framework: Framework;
+  files: FileMap;
+  srcDir?: string;
+  pagesDir?: string;
+}): string {
   const pkg = FRAMEWORK_PACKAGE[opts.framework];
   const files = opts.files;
-  const layoutMod = `./pages/${files.layout.replace(/\.[^.]+$/, '.js')}`;
+  const srcDir = opts.srcDir ?? 'src';
+  const pagesDir = opts.pagesDir ?? 'pages';
+  const relPages = path.relative(srcDir, pagesDir).replace(/\\/g, '/');
+  const relPrefix = relPages.startsWith('.') ? relPages : `./${relPages}`;
+  const layoutMod = `${relPrefix}/${files.layout.replace(/\.[^.]+$/, '.js')}`;
   return `import { type AppEntry, UIRouter } from '${pkg}';
 import RootLayout from '${layoutMod}';
 import router from './router.js';

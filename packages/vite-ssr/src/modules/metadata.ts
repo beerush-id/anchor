@@ -7,6 +7,7 @@ import { matchFrontmatter, parseFrontmatterBlock } from '../utils/frontmatter.js
 import { hashBlock } from '../utils/hash.js';
 import { GENERATED_MARKER, importSpecifier } from '../utils/mapper.js';
 import { bootPackage, ensureSymlink, writeIfChanged } from '../utils/sync.js';
+import { AIR_ENV } from './env.js';
 import type { FolderNode } from './folder-node.js';
 import { MarkdownNode } from './markdown-node.js';
 
@@ -38,7 +39,7 @@ export class MetadataNode extends EventEmitter {
     private readonly pagesDir: string
   ) {
     super();
-    this.metadataDir = path.join(viteRoot, '.airlib', 'metadata');
+    this.metadataDir = path.join(viteRoot, AIR_ENV.cacheDir, 'metadata');
 
     folderNode.on('childAdded', this.handleChildAdded);
     folderNode.on('childRemoved', this.handleChildRemoved);
@@ -84,12 +85,12 @@ export class MetadataNode extends EventEmitter {
    */
   private ensureInstalled() {
     if (this.parent) return;
-    bootPackage(this.metadataDir, '@airlib-cache/metadata', {
+    bootPackage(this.metadataDir, `${AIR_ENV.cacheScope}/metadata`, {
       '.': './index.ts',
       './*': './*.ts',
       './*.js': './*.ts',
     });
-    ensureSymlink(this.viteRoot);
+    ensureSymlink(this.viteRoot, AIR_ENV.cacheDir, AIR_ENV.cacheScope);
   }
 
   private handleChildAdded = (childFolder: FolderNode) => {

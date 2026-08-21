@@ -126,6 +126,8 @@ export class AppNode extends EventEmitter {
       framework: this.opts.framework,
       files: this.fileMap,
       folder: undefined,
+      srcDir: path.relative(this.opts.root, this.opts.appDir) || 'src',
+      pagesDir: path.relative(this.opts.root, this.opts.pagesDir) || 'pages',
     });
 
     if (content) {

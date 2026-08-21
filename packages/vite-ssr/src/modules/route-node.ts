@@ -21,6 +21,7 @@ import { type MetadataImportDescriptor, type NamedPageDescriptor, renderRouteFil
 import { fillMissingRouteExports, resolveRouteExportNames } from '../utils/route-sync.js';
 import { type UIFileType, wireUIFileContent } from '../utils/route-wiring.js';
 import { scaffoldForFile, scaffoldLayoutTsx } from '../utils/scaffold.js';
+import { AIR_ENV } from './env.js';
 import type { FolderNode } from './folder-node.js';
 
 const log = taggedLogger('air-route');
@@ -382,7 +383,7 @@ export class RouteNode extends EventEmitter {
     pageName: string
   ): { varName: string; source: string } {
     const relPath = this.rel ? `${this.rel}/${pageName}` : pageName;
-    const source = `@airlib-cache/metadata/${relPath}.js`;
+    const source = `${AIR_ENV.cacheScope}/metadata/${relPath}.js`;
     let varName: string;
     if (kind === 'folder') {
       varName = deriveMetaName(this.folderNode.segment);

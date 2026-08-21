@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { AIR_ENV } from '../src/modules/env.js';
 import { airRecmaPlugin, MDX_DEFAULT_OPTIONS, mdxFile, mdxMatcher, relToPages } from '../src/modules/markdown.js';
 import { wrapJsx } from '../src/utils/jsx.js';
 import { cleanFixture, fixturePath, makeFixture } from './fixture.js';
@@ -123,7 +124,7 @@ describe('mdx docs mode — extended plugins enrich markdown', () => {
 
     const { code } = await mdxFile(id, '# Elsewhere\n', PLAIN_OPTIONS);
 
-    expect(code).toContain('export function AirMdxPage');
+    expect(code).toContain('export default function AirMdxPage');
   });
 
   it('enables docs mode with a bare flag', async () => {
@@ -204,7 +205,9 @@ describe('mdx headings — ids normalize and depth is configurable', () => {
 
 describe('mdx log identifiers — sources stay project-relative', () => {
   it('names files inside the pages directory by their relative path', () => {
-    const pagesRoot = path.resolve(process.cwd(), 'src/pages');
+    AIR_ENV.viteRoot = process.cwd();
+    AIR_ENV.pagesDir = 'pages';
+    const pagesRoot = path.resolve(process.cwd(), 'pages');
     expect(relToPages(path.join(pagesRoot, 'docs', 'page.mdx'))).toBe('docs/page.mdx');
   });
 

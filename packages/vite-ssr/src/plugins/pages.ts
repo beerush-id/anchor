@@ -4,13 +4,12 @@ import type { LogLevel } from '@beerush/logger';
 import type { Plugin, PluginOption, ResolvedConfig } from 'vite';
 import { color, setLogLevel, taggedLogger } from '../logger.js';
 import { AppNode } from '../modules/app-node.js';
-import { AIR_ENV, type Framework } from '../modules/env.js';
+import { AIR_ENV, type Framework, initEnv } from '../modules/env.js';
 import type { MdxExtendedOptions } from '../modules/markdown.js';
 import type { FileMap } from '../utils/mapper.js';
-import { airWorker, type AirWorkerOptions, resolveWorkerEntry } from '../worker.js';
-import { airEnv } from './env.js';
-import { airImage, type AirImageOptions } from './image.js';
-import { airMarkdown, type AirMarkdownOptions } from './markdown.js';
+import { type AirWorkerOptions, airWorker, resolveWorkerEntry } from '../worker.js';
+import { type AirImageOptions, airImage } from './image.js';
+import { type AirMarkdownOptions, airMarkdown } from './markdown.js';
 import { airPreprocess } from './preprocess.js';
 import { airSearch, type MdxSearchOptions } from './search.js';
 
@@ -18,17 +17,35 @@ const log = taggedLogger('air-pages');
 
 export type AirPagesOptions = {
   /**
+   * Source entry files directory, relative to the Vite root.
+   * Defaults to 'src'.
+   */
+  srcDir?: string;
+
+  /**
    * Pages directory, relative to the Vite root.
-   * Defaults to 'src/pages'.
+   * Defaults to 'pages'.
    */
   pagesDir?: string;
 
   /**
    * Router file exporting `rootRoute`, relative to the Vite root.
    * First-level generated `route.ts` files import `rootRoute` from here.
-   * Defaults to 'src/router.ts'.
+   * Defaults to `${srcDir}/router.ts` ('src/router.ts').
    */
   routerFile?: string;
+
+  /**
+   * Cache directory name relative to the Vite root.
+   * Defaults to '.airlib'.
+   */
+  cacheDir?: string;
+
+  /**
+   * Virtual package scope for the node_modules symlink.
+   * Defaults to '@airlib-cache'.
+   */
+  cacheScope?: string;
 
   /**
    * UI framework for scaffolds and MDX pages.
@@ -144,13 +161,20 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
   const corePlugin: Plugin = {
     name: 'air-pages',
 
-    config() {
+    config(userConfig) {
+      const manifestId = `${AIR_ENV.cacheScope}/manifest`;
+      const metadataId = `${AIR_ENV.cacheScope}/metadata`;
       return {
+        resolve: {
+          alias: {
+            '@': userConfig.root || process.cwd(),
+          },
+        },
         optimizeDeps: {
-          exclude: ['@airlib-cache/manifest', '@airlib-cache/metadata'],
+          exclude: [manifestId, metadataId],
         },
         ssr: {
-          noExternal: ['@airlib-cache/manifest', '@airlib-cache/metadata'],
+          noExternal: [manifestId, metadataId],
         },
       };
     },
@@ -159,13 +183,23 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
       config = resolved;
       setLogLevel(options.logLevel);
 
-      const routerFile = options.routerFile ?? 'src/router.ts';
+      initEnv(resolved, {
+        srcDir: options.srcDir,
+        pagesDir: options.pagesDir,
+        cacheDir: options.cacheDir,
+        cacheScope: options.cacheScope,
+        framework: options.framework,
+        files: options.files ? { ...AIR_ENV.files, ...options.files } : undefined,
+        linkMetadata: options.linkMetadata,
+      });
+
+      const routerFile = options.routerFile ?? `${AIR_ENV.srcDir}/router.ts`;
       const workerFile = resolveWorkerEntry(typeof options.worker === 'object' ? options.worker : {});
 
       absPagesDir = path.resolve(config.root, AIR_ENV.pagesDir);
       absAppDir = path.dirname(path.resolve(config.root, routerFile));
 
-      absClientFile = path.resolve(config.root, AIR_ENV.rootDir, AIR_ENV.files.client);
+      absClientFile = path.resolve(config.root, AIR_ENV.srcDir, AIR_ENV.files.client);
       absWorkerFile = path.resolve(config.root, workerFile);
 
       if (irpcEnabled === undefined && fs.existsSync(absWorkerFile)) {
@@ -274,7 +308,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
     },
   };
 
-  const plugins: Plugin[] = [airEnv(options)];
+  const plugins: Plugin[] = [];
   const mdOptions = {
     extended: options.extended,
     ...(typeof options.markdown === 'object' ? options.markdown : {}),

@@ -2,7 +2,7 @@ import type { LogLevel } from '@beerush/logger';
 import MagicString from 'magic-string';
 import type { Plugin } from 'vite';
 import { color, setLogLevel, taggedLogger } from '../logger.js';
-import { AIR_ENV } from '../modules/env.js';
+import { AIR_ENV, initEnv } from '../modules/env.js';
 import type { AirMarkdownOptions } from './markdown.js';
 
 const log = taggedLogger('air-markdown');
@@ -23,7 +23,8 @@ export function airPreprocess(options: Partial<AirPreprocessOptions> = {}) {
     {
       name: 'air-pages:preprocess:react-side-effect',
       enforce: 'pre',
-      configResolved() {
+      configResolved(config) {
+        initEnv(config);
         setLogLevel(options.logLevel);
       },
       transform(code) {

@@ -375,10 +375,10 @@ describe('symlink — windows platforms', () => {
     Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
 
     try {
-      expect(() => ensureSymlink(dir)).not.toThrow();
+      expect(() => ensureSymlink(dir, '.airlib', '@airlib-cache')).not.toThrow();
       expect(symlinkSpy).toHaveBeenCalledWith(
         fixturePath(dir, '.airlib'),
-        fixturePath(dir, 'node_modules/@airlib'),
+        fixturePath(dir, 'node_modules/@airlib-cache'),
         'junction'
       );
     } finally {
@@ -390,7 +390,7 @@ describe('symlink — windows platforms', () => {
   it('repairs a stale symlink with junction links on win32', () => {
     dir = makeFixture({});
 
-    const target = fixturePath(dir, 'node_modules/@airlib');
+    const target = fixturePath(dir, 'node_modules/@airlib-cache');
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.symlinkSync(fixturePath(dir, 'wrong-target'), target, 'dir');
 
@@ -399,7 +399,7 @@ describe('symlink — windows platforms', () => {
     Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
 
     try {
-      expect(() => ensureSymlink(dir)).not.toThrow();
+      expect(() => ensureSymlink(dir, '.airlib', '@airlib-cache')).not.toThrow();
       expect(symlinkSpy).toHaveBeenCalledWith(fixturePath(dir, '.airlib'), target, 'junction');
       expect(symlinkSpy).toHaveBeenCalledTimes(1);
     } finally {

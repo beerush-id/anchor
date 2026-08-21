@@ -3,8 +3,8 @@ import path from 'node:path';
 import type { LogLevel } from '@beerush/logger';
 import type { Plugin } from 'vite';
 import { color, setLogLevel, taggedLogger } from '../logger.js';
-import { AIR_ENV } from '../modules/env.js';
-import { MDX_DEFAULT_OPTIONS, mdxEntryWrapper, mdxFile, type MdxModuleOptions } from '../modules/markdown.js';
+import { AIR_ENV, initEnv } from '../modules/env.js';
+import { MDX_DEFAULT_OPTIONS, type MdxModuleOptions, mdxEntryWrapper, mdxFile } from '../modules/markdown.js';
 
 const log = taggedLogger('air-markdown');
 
@@ -43,6 +43,7 @@ export function airMarkdown(options: Partial<AirMarkdownOptions> = {}) {
       name: 'air-pages:mdx:init',
       enforce: 'pre',
       configResolved(config) {
+        initEnv(config);
         setLogLevel(options.logLevel);
         pagesRoot = path.resolve(config.root, AIR_ENV.pagesDir);
       },

@@ -4,7 +4,7 @@ import { performance } from 'node:perf_hooks';
 import type { LogLevel } from '@beerush/logger';
 import type { HtmlTagDescriptor, IndexHtmlTransformContext, Plugin, ResolvedConfig } from 'vite';
 import { color, setLogLevel, taggedLogger } from './logger.js';
-import { AIR_ENV } from './modules/env.js';
+import { AIR_ENV, initEnv } from './modules/env.js';
 import { sendWebResponse, toWebRequest } from './utils.js';
 
 const log = taggedLogger('air-worker');
@@ -12,7 +12,7 @@ const log = taggedLogger('air-worker');
 export type AirWorkerOptions = {
   /**
    * Path to the worker entry module.
-   * Defaults to 'src/worker.ts'.
+   * Defaults to `${srcDir}/worker.ts` ('src/worker.ts').
    */
   entry?: string;
 
@@ -129,6 +129,7 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
     },
 
     configResolved(config) {
+      initEnv(config);
       setLogLevel(options.logLevel);
       resolvedConfig = config;
     },
@@ -311,7 +312,7 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
  * `entry` option, or the configured worker entry under the source root.
  */
 export function resolveWorkerEntry(options: AirWorkerOptions): string {
-  return (options.entry ?? join(AIR_ENV.rootDir, AIR_ENV.files.workerEntry)).replace(/^\.\//, '');
+  return (options.entry ?? join(AIR_ENV.srcDir, AIR_ENV.files.workerEntry)).replace(/^\.\//, '');
 }
 
 async function runSsrWorkerSsg(config: ResolvedConfig): Promise<void> {

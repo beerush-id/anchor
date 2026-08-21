@@ -10,6 +10,7 @@ import {
   namedPageName,
 } from '../utils/mapper.js';
 import { bootPackage, ensureSymlink, writeIfChanged } from '../utils/sync.js';
+import { AIR_ENV } from './env.js';
 import type { FolderNode } from './folder-node.js';
 import type { RouteNode } from './route-node.js';
 
@@ -43,7 +44,7 @@ export class ManifestNode extends EventEmitter {
     private readonly routeFile: string
   ) {
     super();
-    this.manifestDir = path.join(viteRoot, '.airlib', 'manifest');
+    this.manifestDir = path.join(viteRoot, AIR_ENV.cacheDir, 'manifest');
 
     folderNode.on('childAdded', this.handleChildAdded);
     folderNode.on('childRemoved', this.handleChildRemoved);
@@ -111,12 +112,12 @@ export class ManifestNode extends EventEmitter {
    */
   private ensureInstalled() {
     if (this.parent) return;
-    bootPackage(this.manifestDir, '@airlib-cache/manifest', {
+    bootPackage(this.manifestDir, `${AIR_ENV.cacheScope}/manifest`, {
       '.': './index.ts',
       './*': './*.ts',
       './*.js': './*.ts',
     });
-    ensureSymlink(this.viteRoot);
+    ensureSymlink(this.viteRoot, AIR_ENV.cacheDir, AIR_ENV.cacheScope);
   }
 
   private updateEntries() {

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { AIR_ENV } from '../modules/env.js';
 
 export function writeIfChanged(filePath: string, content: string): boolean {
   try {
@@ -11,10 +12,14 @@ export function writeIfChanged(filePath: string, content: string): boolean {
   return true;
 }
 
-export function ensureSymlink(viteRoot: string): void {
-  const absAirStackDir = path.join(viteRoot, '.airlib');
+export function ensureSymlink(
+  viteRoot: string,
+  cacheDir: string = AIR_ENV.cacheDir,
+  cacheScope: string = AIR_ENV.cacheScope
+): void {
+  const absAirStackDir = path.join(viteRoot, cacheDir);
   const nodeModulesDir = path.join(viteRoot, 'node_modules');
-  const target = path.join(nodeModulesDir, '@airlib-cache');
+  const target = path.join(nodeModulesDir, cacheScope);
   fs.mkdirSync(nodeModulesDir, { recursive: true });
 
   const isWin32 = process.platform === 'win32';

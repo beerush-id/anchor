@@ -64,7 +64,7 @@ describe('mdx pages — MDX files are pages', () => {
     expect(file.metadata.title).toBe('Docs');
     expect(file.metadata.description).toBe('AIR docs');
     expect(code).toContain('<AirHtmlHead meta={airMdxMeta} />');
-    expect(code).toContain('export function AirMdxPage');
+    expect(code).toContain('export default function AirMdxPage');
   });
 
   it('attaches a root mdx page with a root layout to indexRoute', async () => {

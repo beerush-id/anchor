@@ -4,7 +4,7 @@ import { performance } from 'node:perf_hooks';
 import type { LogLevel } from '@beerush/logger';
 import type { Plugin } from 'vite';
 import { color, setLogLevel, taggedLogger } from '../logger.js';
-import { AIR_ENV } from '../modules/env.js';
+import { AIR_ENV, initEnv } from '../modules/env.js';
 import { META_STORE } from '../modules/metadata.js';
 
 const log = taggedLogger('air-search');
@@ -81,6 +81,9 @@ export function airSearch(options: Partial<MdxSearchOptions> = {}): Plugin {
   return {
     name: 'air-pages:search',
     configResolved(config) {
+      initEnv(config, {
+        pagesDir: options.pagesDir,
+      });
       setLogLevel(options.logLevel);
       searchRoot = config.root;
       searchPagesDir = path.resolve(config.root, options.pagesDir ?? AIR_ENV.pagesDir);

@@ -149,10 +149,53 @@ describe('scaffolding — empty files become working pages', () => {
 
     app = makeApp(dir);
 
+    expect(readFixture(dir, 'src/app.tsx')).toContain("import RootLayout from '../pages/layout.js';");
     expect(readFixture(dir, 'src/app.tsx')).toContain('export default (({ url }) =>');
     expect(readFixture(dir, 'src/client.tsx')).toContain("import '@airlib/react/client';");
     expect(readFixture(dir, 'src/worker.ts')).toContain("import { createApp } from '@airlib/react/ssr';");
     expect(readFixture(dir, 'src/global.d.ts')).toContain('interface AirRouteMeta');
+  });
+
+  it('dynamically computes layout import relative paths across various directory layouts', () => {
+    expect(
+      scaffoldForFile({
+        base: 'app.tsx',
+        framework: 'react',
+        files: DEFAULT_FILE_MAP,
+        srcDir: 'src',
+        pagesDir: 'pages',
+      })
+    ).toContain("import RootLayout from '../pages/layout.js';");
+
+    expect(
+      scaffoldForFile({
+        base: 'app.tsx',
+        framework: 'react',
+        files: DEFAULT_FILE_MAP,
+        srcDir: 'src',
+        pagesDir: 'src/pages',
+      })
+    ).toContain("import RootLayout from './pages/layout.js';");
+
+    expect(
+      scaffoldForFile({
+        base: 'app.tsx',
+        framework: 'react',
+        files: DEFAULT_FILE_MAP,
+        srcDir: 'app',
+        pagesDir: 'routes',
+      })
+    ).toContain("import RootLayout from '../routes/layout.js';");
+
+    expect(
+      scaffoldForFile({
+        base: 'app.tsx',
+        framework: 'react',
+        files: DEFAULT_FILE_MAP,
+        srcDir: 'src',
+        pagesDir: 'src/routes',
+      })
+    ).toContain("import RootLayout from './routes/layout.js';");
   });
 
   it('scaffolds client.tsx with solid hydration when framework is solid', () => {

@@ -340,12 +340,17 @@ export function airRecmaPlugin(cb?: (e: { hasLink: boolean }) => void) {
  */
 export function mdxEntryWrapper(opts: {
   file: string;
-  route: RouteResolution;
+  route?: RouteResolution;
   framework: Framework;
   files: FileMap;
   chunkName: string;
-}): string {
-  const { route, framework, files, chunkName } = opts;
+}): string | undefined {
+  const { file, route, framework, files, chunkName } = opts;
+  if (!file.endsWith('.mdx') || !route) return undefined;
+  if (route.node.page === 'tsx' && path.basename(file) === files.pageMdx) {
+    return undefined;
+  }
+
   const routeName = route.exportName;
   const routePath = `./${files.route}`;
 
@@ -511,7 +516,7 @@ export function airMdxRemark(module?: MdxModule) {
           };
         }
 
-        if (node.name === 'interactive') {
+        if (node.name === 'interactive' || node.name === 'script') {
           const source: MarkdownNode[] = [];
           const render: MarkdownNode[] = [];
 
@@ -546,7 +551,7 @@ export function airMdxRemark(module?: MdxModule) {
             }
           }
 
-          if (node.attributes?.rendered !== 'false') {
+          if (node.name === 'interactive' && node.attributes?.rendered !== 'false') {
             const firstChild = source[0] as AnyType;
             let title: string | undefined = node.attributes?.title;
 

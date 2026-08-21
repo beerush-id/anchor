@@ -450,7 +450,7 @@ describe('coverage tests for unreached branches', () => {
       });
 
       expect(file.metadata).toEqual({});
-      expect(code).toContain('export function AirMdxPage');
+      expect(code).toContain('export default function AirMdxPage');
     });
   });
 
@@ -518,7 +518,7 @@ describe('coverage tests for unreached branches', () => {
       expect(exportsMap).toEqual({ '.': './index.ts' });
     });
 
-    it('is idempotent when creating the @airlib symlink', () => {
+    it('is idempotent when creating the @airlib-cache symlink', () => {
       dir = makeFixture({});
 
       expect(() => ensureSymlink(dir)).not.toThrow();
@@ -594,25 +594,34 @@ describe('coverage tests for unreached branches', () => {
   });
 
   describe('symlink & write helpers', () => {
-    it('creates the @airlib symlink when node_modules is missing', () => {
+    it('creates the @airlib-cache symlink when node_modules is missing', () => {
       dir = makeFixture({});
 
       expect(fs.existsSync(fixturePath(dir, 'node_modules'))).toBe(false);
-      ensureSymlink(dir);
+      ensureSymlink(dir, '.airlib', '@airlib-cache');
 
-      expect(fs.lstatSync(fixturePath(dir, 'node_modules/@airlib')).isSymbolicLink()).toBe(true);
+      expect(fs.lstatSync(fixturePath(dir, 'node_modules/@airlib-cache')).isSymbolicLink()).toBe(true);
     });
 
-    it('repairs a stale @airlib symlink target', () => {
+    it('repairs a stale @airlib-cache symlink target', () => {
       dir = makeFixture({});
-      fs.mkdirSync(fixturePath(dir, 'node_modules/@airlib'), { recursive: true });
-      fs.writeFileSync(fixturePath(dir, 'node_modules/@airlib/stale.txt'), 'x');
+      fs.mkdirSync(fixturePath(dir, 'node_modules/@airlib-cache'), { recursive: true });
+      fs.writeFileSync(fixturePath(dir, 'node_modules/@airlib-cache/stale.txt'), 'x');
 
-      ensureSymlink(dir);
+      ensureSymlink(dir, '.airlib', '@airlib-cache');
 
-      const stat = fs.lstatSync(fixturePath(dir, 'node_modules/@airlib'));
+      const stat = fs.lstatSync(fixturePath(dir, 'node_modules/@airlib-cache'));
       expect(stat.isSymbolicLink()).toBe(true);
-      expect(fs.readlinkSync(fixturePath(dir, 'node_modules/@airlib'))).toBe('../.airlib');
+      expect(fs.readlinkSync(fixturePath(dir, 'node_modules/@airlib-cache'))).toBe('../.airlib');
+    });
+
+    it('creates custom cache symlink when custom cacheDir and cacheScope are provided', () => {
+      dir = makeFixture({});
+      ensureSymlink(dir, '.my-cache', '@my-scope');
+
+      const stat = fs.lstatSync(fixturePath(dir, 'node_modules/@my-scope'));
+      expect(stat.isSymbolicLink()).toBe(true);
+      expect(fs.readlinkSync(fixturePath(dir, 'node_modules/@my-scope'))).toBe('../.my-cache');
     });
 
     it('writeIfChanged creates missing parent directories', () => {

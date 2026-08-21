@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import type { ResolvedConfig } from 'vite';
 import { DEFAULT_FILE_MAP, type FileMap } from '../utils/mapper.js';
 import { ImageStore } from './image-store.js';
 import { META_STORE, type MetadataStore } from './metadata.js';
@@ -14,21 +17,31 @@ export type AirEnv = {
   images: ImageStore;
   /**
    * Vite root (`config.root`) — the absolute project root. Base for every
-   * relative identifier in logs and for resolving `rootDir`/`pagesDir`.
+   * relative identifier in logs and for resolving `srcDir`/`pagesDir`.
    */
   viteRoot: string;
   /**
-   * Source root — where entry/client/worker files live — relative to the Vite
-   * root. Not the pages directory; see `pagesDir`.
+   * Source entry files directory — where entry/client/worker/router files live —
+   * relative to the Vite root.
    * @default 'src'
    */
-  rootDir: string;
+  srcDir: string;
   /**
    * Pages directory — the routing root where the file-tree scan starts —
-   * relative to the Vite root. Not the source root; see `rootDir`.
-   * @default 'src/pages'
+   * relative to the Vite root.
+   * @default 'pages'
    */
   pagesDir: string;
+  /**
+   * Cache directory name relative to the Vite root.
+   * @default '.airlib'
+   */
+  cacheDir: string;
+  /**
+   * Virtual package scope for the node_modules symlink.
+   * @default '@airlib-cache'
+   */
+  cacheScope: string;
   /** UI framework for scaffolds, MDX pages, and generated code. */
   framework: Framework;
   /** Resolved file name map (defaults merged with user overrides). */
@@ -41,18 +54,56 @@ export type AirEnv = {
 
 /**
  * Shared environment state for the whole file-routing pipeline. Resolved once
- * during the Vite `configResolved` hook by the `airEnv` plugin (see
- * `plugins/env.ts`), then read by every downstream module — no local closure
- * merges or guesswork anywhere.
+ * during the Vite `configResolved` hook by the `initEnv` helper, then read by
+ * every downstream module.
  */
 export const AIR_ENV: AirEnv = {
   meta: META_STORE,
   routes: new RouteStore(),
   images: new ImageStore(),
   viteRoot: '',
-  rootDir: 'src',
-  pagesDir: 'src/pages',
+  srcDir: 'src',
+  pagesDir: 'pages',
+  cacheDir: '.airlib',
+  cacheScope: '@airlib-cache',
   framework: 'react',
   files: DEFAULT_FILE_MAP,
   linkMetadata: false,
 };
+
+/**
+ * Initializes and merges the shared `AIR_ENV` state during Vite's `configResolved`.
+ * Safe to be called by multiple plugins — idempotent for `viteRoot` and merges
+ * caller-specific overrides.
+ */
+export function initEnv(config: ResolvedConfig, overrides?: Partial<AirEnv>): void {
+  AIR_ENV.viteRoot = config.root;
+
+  if (overrides) {
+    for (const [key, value] of Object.entries(overrides)) {
+      if (value !== undefined) {
+        // biome-ignore lint/suspicious/noExplicitAny: Generic assignment to AIR_ENV
+        (AIR_ENV as any)[key] = value;
+      }
+    }
+  }
+
+  if (!overrides?.framework) {
+    AIR_ENV.framework = detectFramework(config.root);
+  }
+}
+
+/**
+ * Detects UI framework from `package.json` dependencies.
+ */
+export function detectFramework(root: string): Framework {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf-8'));
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+
+    if (deps['@airlib/solid']) return 'solid';
+    if (deps['@airlib/react']) return 'react';
+  } catch {}
+
+  return 'react';
+}

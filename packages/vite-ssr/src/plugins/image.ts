@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { Plugin } from 'vite';
 import { color, setLogLevel, taggedLogger } from '../logger.js';
-import { AIR_ENV } from '../modules/env.js';
+import { AIR_ENV, initEnv } from '../modules/env.js';
 import {
   type AirImageOptions,
   type ImageMeta,
@@ -34,6 +34,7 @@ export function airImage(options: AirImageOptions = {}): Plugin {
     name: 'air-pages:image',
     enforce: 'pre',
     configResolved(config) {
+      initEnv(config);
       setLogLevel(options.logLevel);
       isBuild = config.command === 'build';
       AIR_ENV.images = new ImageStore({ ...options }, config.root);
