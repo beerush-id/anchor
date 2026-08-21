@@ -1,19 +1,22 @@
 import MagicString from 'magic-string';
+import type { FileMap } from '../modules/env.js';
 import {
   deriveLocalRouteName,
   deriveNamedRouteName,
+  deriveRouterImport,
   deriveSegment,
-  type FileMap,
+  INDEX_SUFFIX,
   importSpecifier,
   namedPageName,
   type PageKind,
+  ROUTE_SUFFIX,
 } from './mapper.js';
 import { parseRouteExports, type RouteExports } from './route-parser.js';
 
 export type FillRouteExportsOptions = {
   content: string;
   routeFilePath: string;
-  routerFile: string;
+  routerImport?: string;
   parentRouteFile?: string;
   parentRouteName?: string;
   routeName: string;
@@ -45,7 +48,6 @@ export function fillMissingRouteExports(options: FillRouteExportsOptions): FillR
   const {
     content,
     routeFilePath,
-    routerFile,
     parentRouteFile,
     parentRouteName,
     routeName,
@@ -81,11 +83,12 @@ export function fillMissingRouteExports(options: FillRouteExportsOptions): FillR
   let changed = false;
 
   // 1. Parent import normalization
+  const routerImport = options.routerImport ?? deriveRouterImport();
   const expectedImportSource = parentRouteFile
     ? isTopLevel
-      ? importSpecifier(routeFilePath, routerFile)
+      ? routerImport
       : importSpecifier(routeFilePath, parentRouteFile)
-    : importSpecifier(routeFilePath, routerFile);
+    : routerImport;
   const routeImport = exports.imports.find((i) => i.source === expectedImportSource);
 
   if (routeImport) {
@@ -96,7 +99,7 @@ export function fillMissingRouteExports(options: FillRouteExportsOptions): FillR
         magic.overwrite(routeImport.start, routeImport.end, replacement);
         changed = true;
         warn?.(
-          `${displayPath}route.ts: normalized \`${found}\` to \`${replacement}\` — child folders import the parent's default export so the route chain stays predictable.`
+          `${displayPath}${fileMap.route}: normalized \`${found}\` to \`${replacement}\` — child folders import the parent's default export so the route chain stays predictable.`
         );
       }
     }
@@ -275,7 +278,7 @@ export function fillMissingRouteExports(options: FillRouteExportsOptions): FillR
       decl.isExported &&
       decl.name !== routeName &&
       decl.name !== indexName &&
-      decl.name.endsWith('Route') &&
+      decl.name.endsWith(ROUTE_SUFFIX) &&
       !activeNamedRouteNames.has(decl.name)
     ) {
       if (decl.initText && !decl.initText.includes('.guard') && !decl.initText.includes('.provide')) {
@@ -292,7 +295,7 @@ export function fillMissingRouteExports(options: FillRouteExportsOptions): FillR
     exports.defaultName ??
     (existingExportNames.has(routeName)
       ? routeName
-      : (exports.names.find((n) => n.endsWith('Route') && !n.endsWith('IndexRoute')) ?? routeName));
+      : (exports.names.find((n) => n.endsWith(ROUTE_SUFFIX) && !n.endsWith(INDEX_SUFFIX)) ?? routeName));
 
   if (!exports.defaultName) {
     exportAdditions.push(`export default ${primaryExportName};`);
@@ -348,7 +351,7 @@ export function validateRouteWiring(exports: RouteExports, options: ValidateRout
 
   if (exports.defaultName && exports.defaultName !== routeName && !exports.names.includes(exports.defaultName)) {
     warn?.(
-      `${displayPath}route.ts: the default export \`${exports.defaultName}\` is not exported by this file. Adjust the wiring, or remove the export and the generator will re-create it.`
+      `${displayPath}${options.fileMap.route}: the default export \`${exports.defaultName}\` is not exported by this file. Adjust the wiring, or remove the export and the generator will re-create it.`
     );
   }
 }
@@ -364,8 +367,9 @@ export function resolveRouteExportNames(content: string): { routeName?: string; 
   const routeName =
     defaultName && defaultName !== 'default' && names.includes(defaultName)
       ? defaultName
-      : (names.find((n) => n.endsWith('Route') && !n.endsWith('IndexRoute')) ?? names.find((n) => n.endsWith('Route')));
-  const indexName = names.find((n) => n.endsWith('IndexRoute'));
+      : (names.find((n) => n.endsWith(ROUTE_SUFFIX) && !n.endsWith(INDEX_SUFFIX)) ??
+        names.find((n) => n.endsWith(ROUTE_SUFFIX)));
+  const indexName = names.find((n) => n.endsWith(INDEX_SUFFIX));
 
   return { routeName, indexName };
 }

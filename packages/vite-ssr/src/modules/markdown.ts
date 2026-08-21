@@ -14,9 +14,8 @@ import { color, taggedLogger } from '../logger.js';
 import { stripFrontmatter } from '../utils/frontmatter.js';
 import { hashBlock } from '../utils/hash.js';
 import { wrapJsx } from '../utils/jsx.js';
-import type { FileMap } from '../utils/mapper.js';
 import { createMatcher } from '../utils/matcher.js';
-import { AIR_ENV, type Framework } from './env.js';
+import { AIR_ENV, type FileMap, type Framework } from './env.js';
 import { META_STORE } from './metadata.js';
 import type { RouteResolution } from './route-store.js';
 

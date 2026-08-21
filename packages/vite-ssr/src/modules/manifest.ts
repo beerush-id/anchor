@@ -5,8 +5,8 @@ import { color, taggedLogger } from '../logger.js';
 import {
   canonicalPath,
   deriveNamedRouteName,
+  deriveRootImport,
   GENERATED_MARKER,
-  importSpecifier,
   namedPageName,
 } from '../utils/mapper.js';
 import { bootPackage, ensureSymlink, writeIfChanged } from '../utils/sync.js';
@@ -143,12 +143,13 @@ export class ManifestNode extends EventEmitter {
   }
 
   private addEntryForRoute(route: RouteNode) {
+    const relRoute = route.rel
+      ? `${AIR_ENV.pagesDir}/${route.rel}/${this.routeFile}`
+      : `${AIR_ENV.pagesDir}/${this.routeFile}`;
+    const fromPath = deriveRootImport(relRoute);
+
     if (route.page || route.layout) {
       const name = route.page && route.layout ? route.indexName : route.routeName;
-
-      const manifestFilePath = path.join(this.manifestDir, this.folderNode.rel, 'index.ts');
-      const routeFilePath = path.join(route.folderNode.dir, this.routeFile);
-      const fromPath = importSpecifier(manifestFilePath, routeFilePath);
 
       this.entries.set(route.rel, {
         path: canonicalPath(route.rel).replace(/\(|\)/g, ''),
@@ -162,10 +163,6 @@ export class ManifestNode extends EventEmitter {
         const pageName = namedPageName(namedPage, route.fileMap);
         const namedRel = route.rel ? `${route.rel}/${pageName}` : pageName;
         const name = deriveNamedRouteName(route.folderNode.segment, pageName);
-
-        const manifestFilePath = path.join(this.manifestDir, this.folderNode.rel, 'index.ts');
-        const routeFilePath = path.join(route.folderNode.dir, this.routeFile);
-        const fromPath = importSpecifier(manifestFilePath, routeFilePath);
 
         this.entries.set(namedRel, {
           path: canonicalPath(namedRel).replace(/\(|\)/g, ''),

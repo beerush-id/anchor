@@ -1,11 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { AIR_ENV } from '../src/modules/env.js';
+import { AIR_ENV, DEFAULT_FILE_MAP } from '../src/modules/env.js';
 import { MDX_DEFAULT_OPTIONS, mdxEntryWrapper, mdxFile } from '../src/modules/markdown.js';
 import {
   canonicalPath,
-  DEFAULT_FILE_MAP,
   derivePrefix,
   deriveRouteName,
   deriveSegment,
@@ -43,7 +42,7 @@ describe('coverage tests for unreached branches', () => {
       app = makeApp(dir);
 
       const route = readFixture(dir, 'pages/(dashboard)/route.ts');
-      expect(route).toContain("import router from '../../router.js';");
+      expect(route).toContain("import router from '@/src/router.js';");
       expect(route).toContain("const route = router.add('/dashboard');");
       expect(route).toContain('export const dashboardRoute = route;');
     });

@@ -1,4 +1,4 @@
-import { deriveLocalRouteName, importSpecifier, MARKER_MANAGED } from './mapper.js';
+import { deriveLocalRouteName, deriveRouterImport, importSpecifier, MARKER_MANAGED } from './mapper.js';
 
 export type MetadataImportDescriptor = {
   varName: string;
@@ -15,6 +15,7 @@ export type NamedPageDescriptor = {
 export type RouteScaffoldOptions = {
   routeFilePath: string;
   routerFile: string;
+  routerImport?: string;
   parentRouteFile?: string;
   parentRouteName?: string;
   routeName: string;
@@ -49,7 +50,7 @@ export function renderRouteFile(options: RouteScaffoldOptions): string {
 
     if (isTopLevel) {
       segment = segment.replace(/\(|\)/g, '');
-      const routerImport = importSpecifier(options.routeFilePath, options.routerFile);
+      const routerImport = options.routerImport ?? deriveRouterImport();
       lines.push(`import router from '${routerImport}';`);
       managedLines.push(`const route = router.add('/${segment}')${options.routeModifier || ''};`);
     } else {
@@ -57,7 +58,7 @@ export function renderRouteFile(options: RouteScaffoldOptions): string {
       managedLines.push(`const route = parentRoute.route('/${segment}')${options.routeModifier || ''};`);
     }
   } else {
-    const routerImport = importSpecifier(options.routeFilePath, options.routerFile);
+    const routerImport = options.routerImport ?? deriveRouterImport();
     lines.push(`import router from '${routerImport}';`);
     managedLines.push(`const route = router.route()${options.routeModifier || ''};`);
   }

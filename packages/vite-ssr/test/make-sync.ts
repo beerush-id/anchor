@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { AppNode } from '../src/modules/app-node.js';
+import { DEFAULT_FILE_MAP, type FileMap, type Framework } from '../src/modules/env.js';
 import type { FolderNode } from '../src/modules/folder-node.js';
-import { DEFAULT_FILE_MAP, type FileMap, type Framework } from '../src/utils/mapper.js';
 import { fixturePath, readFixture } from './fixture.js';
 
 export type MakeAppOptions = {
@@ -19,8 +19,7 @@ export type MakeAppOptions = {
 };
 
 /**
- * Boots an AppNode over a fixture directory. The router file lives at the
- * fixture root so generated first-level route files import `../router.js`.
+ * Boots an AppNode over a fixture directory.
  */
 export function makeApp(dir: string, extra: MakeAppOptions = {}) {
   return new AppNode({

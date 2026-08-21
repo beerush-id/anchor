@@ -4,9 +4,8 @@ import type { LogLevel } from '@beerush/logger';
 import type { Plugin, PluginOption, ResolvedConfig } from 'vite';
 import { color, setLogLevel, taggedLogger } from '../logger.js';
 import { AppNode } from '../modules/app-node.js';
-import { AIR_ENV, type Framework, initEnv } from '../modules/env.js';
+import { AIR_ENV, type FileMap, type Framework, initEnv } from '../modules/env.js';
 import type { MdxExtendedOptions } from '../modules/markdown.js';
-import type { FileMap } from '../utils/mapper.js';
 import { type AirWorkerOptions, airWorker, resolveWorkerEntry } from '../worker.js';
 import { type AirImageOptions, airImage } from './image.js';
 import { type AirMarkdownOptions, airMarkdown } from './markdown.js';
@@ -27,6 +26,12 @@ export type AirPagesOptions = {
    * Defaults to 'pages'.
    */
   pagesDir?: string;
+
+  /**
+   * Root path alias prefix for project-relative imports.
+   * Defaults to '@'.
+   */
+  rootAlias?: string;
 
   /**
    * Router file exporting `rootRoute`, relative to the Vite root.
@@ -164,10 +169,11 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
     config(userConfig) {
       const manifestId = `${AIR_ENV.cacheScope}/manifest`;
       const metadataId = `${AIR_ENV.cacheScope}/metadata`;
+      const rootAlias = options.rootAlias ?? AIR_ENV.rootAlias;
       return {
         resolve: {
           alias: {
-            '@': userConfig.root || process.cwd(),
+            [rootAlias]: userConfig.root || process.cwd(),
           },
         },
         optimizeDeps: {
@@ -184,6 +190,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
       setLogLevel(options.logLevel);
 
       initEnv(resolved, {
+        rootAlias: options.rootAlias,
         srcDir: options.srcDir,
         pagesDir: options.pagesDir,
         cacheDir: options.cacheDir,
@@ -193,7 +200,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
         linkMetadata: options.linkMetadata,
       });
 
-      const routerFile = options.routerFile ?? `${AIR_ENV.srcDir}/router.ts`;
+      const routerFile = options.routerFile ?? `${AIR_ENV.srcDir}/${AIR_ENV.files.router}`;
       const workerFile = resolveWorkerEntry(typeof options.worker === 'object' ? options.worker : {});
 
       absPagesDir = path.resolve(config.root, AIR_ENV.pagesDir);

@@ -88,7 +88,7 @@ describe('route manifest — manifests are generated', () => {
 
     app = makeApp(dir);
 
-    expect(readManifest(dir)).toContain("import { blogsRoute } from '../../pages/blogs/route.js';");
+    expect(readManifest(dir)).toContain("import { blogsRoute } from '@/pages/blogs/route.js';");
   });
 
   it('does not rewrite the manifest when nothing changed', () => {

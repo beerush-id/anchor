@@ -1,7 +1,5 @@
 import path from 'node:path';
-import type { Framework } from '../modules/env.js';
-
-export type { Framework };
+import { AIR_ENV, type FileMap, type Framework } from '../modules/env.js';
 
 /** Header marker written on top of every generated file. */
 export const GENERATED_MARKER = '// @generated';
@@ -15,32 +13,6 @@ export const LEGACY_DEFAULT_MARKER = '// @generated — do not edit';
 export const FRAMEWORK_PACKAGE: Record<Framework, string> = {
   react: '@airlib/react',
   solid: '@airlib/solid',
-};
-
-export type FileMap = {
-  page: string;
-  pageMdx: string;
-  layout: string;
-  layoutMdx: string;
-  route: string;
-  constructor: string;
-  entry: string;
-  client: string;
-  workerEntry: string;
-  ambient: string;
-};
-
-export const DEFAULT_FILE_MAP: FileMap = {
-  page: 'page.tsx',
-  pageMdx: 'page.mdx',
-  layout: 'layout.tsx',
-  layoutMdx: 'layout.mdx',
-  route: 'route.ts',
-  constructor: 'constructor.ts',
-  entry: 'app.tsx',
-  client: 'client.tsx',
-  workerEntry: 'worker.ts',
-  ambient: 'global.d.ts',
 };
 
 export type PageKind = 'tsx' | 'mdx';
@@ -177,6 +149,33 @@ export function humanizeSegment(segment: string): string {
   const words = clean.split(/[^a-zA-Z0-9]+/).filter(Boolean);
   if (!words.length) return 'Home';
   return words.map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+}
+
+/** Derives a project-root alias import for a relative file path. */
+export function deriveRootImport(subPath: string, env = AIR_ENV): string {
+  const mod = subPath
+    .replace(/\\/g, '/')
+    .replace(/^\.?\//, '')
+    .replace(/\.[^./]+$/, '.js');
+  return `${env.rootAlias}/${mod}`;
+}
+
+/** Derives the router import specifier from the environment. */
+export function deriveRouterImport(env = AIR_ENV): string {
+  const router = env.files.router.replace(/\.[^./]+$/, '.js');
+  return env.srcDir ? `${env.rootAlias}/${env.srcDir}/${router}` : `${env.rootAlias}/${router}`;
+}
+
+/** Derives the root layout import specifier from the environment. */
+export function deriveLayoutImport(env = AIR_ENV): string {
+  const layout = env.files.layout.replace(/\.[^./]+$/, '.js');
+  return env.pagesDir ? `${env.rootAlias}/${env.pagesDir}/${layout}` : `${env.rootAlias}/${layout}`;
+}
+
+/** Derives the app entry import specifier from the environment. */
+export function deriveEntryImport(env = AIR_ENV): string {
+  const entry = env.files.entry.replace(/\.[^./]+$/, '.js');
+  return env.srcDir ? `${env.rootAlias}/${env.srcDir}/${entry}` : `${env.rootAlias}/${entry}`;
 }
 
 /** Posix relative import specifier from one file to another, without extension, suffixed with `.js`. */

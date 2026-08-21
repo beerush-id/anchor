@@ -1,12 +1,13 @@
-import path from 'node:path';
+import type { FileMap, Framework } from '../modules/env.js';
 import type { FolderNode } from '../modules/folder-node.js';
 import {
+  deriveEntryImport,
   deriveIndexName,
+  deriveLayoutImport,
   deriveNamedRouteName,
   deriveRouteName,
-  type FileMap,
+  deriveRouterImport,
   FRAMEWORK_PACKAGE,
-  type Framework,
   humanizeSegment,
   isNamedPage,
   namedPageName,
@@ -24,29 +25,25 @@ import {
  * @param opts.folder The folder the file belongs to; required for page/layout/mdx files.
  * @param opts.framework Target UI framework for the scaffolded imports.
  * @param opts.files Resolved file name map (defaults merged with user overrides).
- * @param opts.srcDir Source directory relative to project root.
- * @param opts.pagesDir Pages directory relative to project root.
  */
 export function scaffoldForFile(opts: {
   base: string;
   folder?: FolderNode;
   framework: Framework;
   files: FileMap;
-  srcDir?: string;
-  pagesDir?: string;
 }): string | undefined {
-  const { base, folder, framework, files, srcDir = 'src', pagesDir = 'pages' } = opts;
+  const { base, folder, framework, files } = opts;
 
   if (base === files.entry) {
-    return scaffoldAppTsx({ framework, files, srcDir, pagesDir });
+    return scaffoldAppTsx({ framework });
   }
 
   if (base === files.client) {
-    return scaffoldClientTsx({ framework, files });
+    return scaffoldClientTsx({ framework });
   }
 
   if (base === files.workerEntry) {
-    return scaffoldWorkerTs({ framework, files });
+    return scaffoldWorkerTs({ framework });
   }
 
   if (base === files.ambient) {
@@ -91,22 +88,14 @@ export function scaffoldForFile(opts: {
 /**
  * Scaffolds an `app.tsx` entry module.
  */
-export function scaffoldAppTsx(opts: {
-  framework: Framework;
-  files: FileMap;
-  srcDir?: string;
-  pagesDir?: string;
-}): string {
+export function scaffoldAppTsx(opts: { framework: Framework }): string {
   const pkg = FRAMEWORK_PACKAGE[opts.framework];
-  const files = opts.files;
-  const srcDir = opts.srcDir ?? 'src';
-  const pagesDir = opts.pagesDir ?? 'pages';
-  const relPages = path.relative(srcDir, pagesDir).replace(/\\/g, '/');
-  const relPrefix = relPages.startsWith('.') ? relPages : `./${relPages}`;
-  const layoutMod = `${relPrefix}/${files.layout.replace(/\.[^.]+$/, '.js')}`;
+  const layoutImport = deriveLayoutImport();
+  const routerImport = deriveRouterImport();
+
   return `import { type AppEntry, UIRouter } from '${pkg}';
-import RootLayout from '${layoutMod}';
-import router from './router.js';
+import RootLayout from '${layoutImport}';
+import router from '${routerImport}';
 
 export default (({ url }) => <UIRouter router={router} root={RootLayout} url={url} />) satisfies AppEntry;
 `;
@@ -115,14 +104,14 @@ export default (({ url }) => <UIRouter router={router} root={RootLayout} url={ur
 /**
  * Scaffolds a `client.tsx` client hydration module.
  */
-export function scaffoldClientTsx(opts: { framework: Framework; files: FileMap }): string {
-  const files = opts.files;
-  const appMod = `./${files.entry.replace(/\.[^.]+$/, '.js')}`;
+export function scaffoldClientTsx(opts: { framework: Framework }): string {
+  const appImport = deriveEntryImport();
+  const routerImport = deriveRouterImport();
 
   if (opts.framework === 'solid') {
     return `import { hydrate } from 'solid-js/web';
-import App from '${appMod}';
-import router from './router.js';
+import App from '${appImport}';
+import router from '${routerImport}';
 
 router
   .activate(window.location.href)
@@ -133,8 +122,8 @@ router
   }
 
   return `import { hydrateRoot } from 'react-dom/client';
-import App from '${appMod}';
-import router from './router.js';
+import App from '${appImport}';
+import router from '${routerImport}';
 
 router
   .activate(window.location.href)
@@ -147,13 +136,14 @@ router
 /**
  * Scaffolds a `worker.ts` server rendering entry module.
  */
-export function scaffoldWorkerTs(opts: { framework: Framework; files: FileMap }): string {
+export function scaffoldWorkerTs(opts: { framework: Framework }): string {
   const pkg = FRAMEWORK_PACKAGE[opts.framework];
-  const files = opts.files;
-  const appMod = `./${files.entry.replace(/\.[^.]+$/, '.js')}`;
+  const appImport = deriveEntryImport();
+  const routerImport = deriveRouterImport();
+
   return `import { createApp } from '${pkg}/ssr';
-import App from '${appMod}';
-import router from './router.js';
+import App from '${appImport}';
+import router from '${routerImport}';
 
 export default createApp(router, App);
 `;

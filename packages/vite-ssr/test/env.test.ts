@@ -1,13 +1,12 @@
 import fs from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { AIR_ENV, detectFramework, initEnv } from '../src/modules/env.js';
+import { AIR_ENV, DEFAULT_FILE_MAP, detectFramework, initEnv } from '../src/modules/env.js';
 import { airEnvConfig } from '../src/plugins/env.js';
 import { airImage } from '../src/plugins/image.js';
 import { airMarkdown } from '../src/plugins/markdown.js';
 import { airPages } from '../src/plugins/pages.js';
 import { airPreprocess } from '../src/plugins/preprocess.js';
 import { airSearch } from '../src/plugins/search.js';
-import { DEFAULT_FILE_MAP } from '../src/utils/mapper.js';
 import { airWorker, resolveWorkerEntry } from '../src/worker.js';
 import { cleanFixture, fixturePath, makeFixture, readFixture } from './fixture.js';
 import { makeApp } from './make-sync.js';

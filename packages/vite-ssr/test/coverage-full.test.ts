@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppNode } from '../src/modules/app-node.js';
-import { AIR_ENV, detectFramework } from '../src/modules/env.js';
+import { AIR_ENV, DEFAULT_FILE_MAP, detectFramework } from '../src/modules/env.js';
 import { FolderNode } from '../src/modules/folder-node.js';
 import { ManifestNode } from '../src/modules/manifest.js';
 import { mdxEntryWrapper } from '../src/modules/markdown.js';
@@ -10,7 +10,7 @@ import { MarkdownNode } from '../src/modules/markdown-node.js';
 import { RouteNode } from '../src/modules/route-node.js';
 import type { AnyType } from '../src/types.js';
 import { matchFrontmatter, parseFrontmatterBlock } from '../src/utils/frontmatter.js';
-import { DEFAULT_FILE_MAP } from '../src/utils/mapper.js';
+import { deriveEntryImport, deriveLayoutImport, deriveRootImport, deriveRouterImport } from '../src/utils/mapper.js';
 import {
   hasMarkerAbove,
   isDefaultMarkerComment,
@@ -18,6 +18,7 @@ import {
   markerLineStart,
   parseRouteExports,
 } from '../src/utils/route-parser.js';
+import { renderRouteFile } from '../src/utils/route-scaffold.js';
 import { fillMissingRouteExports } from '../src/utils/route-sync.js';
 import { wireUIFileContent } from '../src/utils/route-wiring.js';
 import { scaffoldAppTsx, scaffoldForFile, scaffoldLayoutTsx } from '../src/utils/scaffold.js';
@@ -848,8 +849,9 @@ describe('mdx attach & metadata names — edge cases', () => {
     expect(parsed?.declarations[0].initText).toBeUndefined();
     expect(parsed?.declarations[1].initText).toBeUndefined();
 
-    const appCode = scaffoldAppTsx({ framework: 'react', files: DEFAULT_FILE_MAP });
-    expect(appCode).toContain("from '../pages/layout.js'");
+    const appCode = scaffoldAppTsx({ framework: 'react' });
+    expect(appCode).toContain("from '@/pages/layout.js'");
+    expect(appCode).toContain("from '@/src/router.js'");
 
     const bareLayoutCode = scaffoldLayoutTsx({
       framework: 'react',
@@ -896,9 +898,9 @@ describe('mdx attach & metadata names — edge cases', () => {
 
   it('covers sync route pruning and export fallback branches', () => {
     const eofResult = fillMissingRouteExports({
-      content: "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\nconst indexRoute = route.route('/');\n/** AirLib managed */",
+      content:
+        "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\nconst indexRoute = route.route('/');\n/** AirLib managed */",
       routeFilePath: '/src/pages/docs/route.ts',
-      routerFile: '/src/router.ts',
       parentRouteFile: undefined,
       parentRouteName: undefined,
       routeName: 'docsRoute',
@@ -918,9 +920,9 @@ describe('mdx attach & metadata names — edge cases', () => {
     expect(eofResult?.output).not.toContain('const indexRoute');
 
     const eofNoNewlineResult = fillMissingRouteExports({
-      content: "/** AirLib managed */\nconst route = router.route('/docs');\nconst indexRoute = route.route('/');/** AirLib managed */",
+      content:
+        "/** AirLib managed */\nconst route = router.route('/docs');\nconst indexRoute = route.route('/');/** AirLib managed */",
       routeFilePath: '/src/pages/docs/route.ts',
-      routerFile: '/src/router.ts',
       parentRouteFile: undefined,
       parentRouteName: undefined,
       routeName: 'docsRoute',
@@ -939,9 +941,9 @@ describe('mdx attach & metadata names — edge cases', () => {
     expect(eofNoNewlineResult?.changed).toBe(true);
 
     const staleNamedResult = fillMissingRouteExports({
-      content: "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\nconst guideRoute = route.route('/guide');\n/** AirLib managed */",
+      content:
+        "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\nconst guideRoute = route.route('/guide');\n/** AirLib managed */",
       routeFilePath: '/src/pages/docs/route.ts',
-      routerFile: '/src/router.ts',
       parentRouteFile: undefined,
       parentRouteName: undefined,
       routeName: 'docsRoute',
@@ -961,9 +963,9 @@ describe('mdx attach & metadata names — edge cases', () => {
     expect(staleNamedResult?.output).not.toContain('const guideRoute');
 
     const staleNamedNoNewline = fillMissingRouteExports({
-      content: "/** AirLib managed */\nconst route = router.route('/docs');\nconst oldRoute = route.route('/old');/** AirLib managed */",
+      content:
+        "/** AirLib managed */\nconst route = router.route('/docs');\nconst oldRoute = route.route('/old');/** AirLib managed */",
       routeFilePath: '/src/pages/docs/route.ts',
-      routerFile: '/src/router.ts',
       parentRouteFile: undefined,
       parentRouteName: undefined,
       routeName: 'docsRoute',
@@ -982,9 +984,9 @@ describe('mdx attach & metadata names — edge cases', () => {
     expect(staleNamedNoNewline?.changed).toBe(true);
 
     const routeAliasPrune = fillMissingRouteExports({
-      content: "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport const docsIndexRoute = route;",
+      content:
+        "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport const docsIndexRoute = route;",
       routeFilePath: '/src/pages/docs/route.ts',
-      routerFile: '/src/router.ts',
       parentRouteFile: undefined,
       parentRouteName: undefined,
       routeName: 'docsRoute',
@@ -1004,9 +1006,9 @@ describe('mdx attach & metadata names — edge cases', () => {
     expect(routeAliasPrune?.output).not.toContain('export const docsIndexRoute = route;');
 
     const customExportDefault = fillMissingRouteExports({
-      content: "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\n/** AirLib managed */\n\nexport const customDocsRoute = route;",
+      content:
+        "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\n/** AirLib managed */\n\nexport const customDocsRoute = route;",
       routeFilePath: '/src/pages/docs/route.ts',
-      routerFile: '/src/router.ts',
       parentRouteFile: undefined,
       parentRouteName: undefined,
       routeName: 'docsRoute',
@@ -1026,9 +1028,9 @@ describe('mdx attach & metadata names — edge cases', () => {
     expect(customExportDefault?.output).toContain('export default customDocsRoute;');
 
     const exportedNamedMdx = fillMissingRouteExports({
-      content: "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport const docsGuideRoute = route.route('/guide');\nexport default docsRoute;",
+      content:
+        "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport const docsGuideRoute = route.route('/guide');\nexport default docsRoute;",
       routeFilePath: '/src/pages/docs/route.ts',
-      routerFile: '/src/router.ts',
       parentRouteFile: undefined,
       parentRouteName: undefined,
       routeName: 'docsRoute',
@@ -1048,9 +1050,9 @@ describe('mdx attach & metadata names — edge cases', () => {
     expect(exportedNamedMdx?.output).toContain('import guideMeta from');
 
     const localNamedMdx = fillMissingRouteExports({
-      content: "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\nconst guideRoute = route.route('/guide');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport default docsRoute;",
+      content:
+        "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\nconst guideRoute = route.route('/guide');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport default docsRoute;",
       routeFilePath: '/src/pages/docs/route.ts',
-      routerFile: '/src/router.ts',
       parentRouteFile: undefined,
       parentRouteName: undefined,
       routeName: 'docsRoute',
@@ -1070,9 +1072,9 @@ describe('mdx attach & metadata names — edge cases', () => {
     expect(localNamedMdx?.output).toContain("const guideRoute = route.route('/guide').meta(guideMeta);");
 
     const alreadyHasMetaMdx = fillMissingRouteExports({
-      content: "import guideMeta from './guide.meta.js';\nimport rootRoute from '../route.js';\n\n/** AirLib managed */\nconst route = rootRoute.route('/docs');\nconst guideRoute = route.route('/guide').meta(guideMeta);\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport const docsGuideRoute = guideRoute;\nexport default docsRoute;\n",
+      content:
+        "import guideMeta from './guide.meta.js';\nimport rootRoute from '../route.js';\n\n/** AirLib managed */\nconst route = rootRoute.route('/docs');\nconst guideRoute = route.route('/guide').meta(guideMeta);\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport const docsGuideRoute = guideRoute;\nexport default docsRoute;\n",
       routeFilePath: '/src/pages/docs/route.ts',
-      routerFile: '/src/router.ts',
       parentRouteFile: '/src/pages/route.ts',
       parentRouteName: 'rootRoute',
       routeName: 'docsRoute',
@@ -1091,9 +1093,9 @@ describe('mdx attach & metadata names — edge cases', () => {
     expect(alreadyHasMetaMdx).toBeDefined();
 
     const exportedLocalNameMdx = fillMissingRouteExports({
-      content: "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport const guideRoute = route.route('/guide');\nexport default docsRoute;",
+      content:
+        "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport const guideRoute = route.route('/guide');\nexport default docsRoute;",
       routeFilePath: '/src/pages/docs/route.ts',
-      routerFile: '/src/router.ts',
       parentRouteFile: undefined,
       parentRouteName: undefined,
       routeName: 'docsRoute',
@@ -1112,9 +1114,9 @@ describe('mdx attach & metadata names — edge cases', () => {
     expect(exportedLocalNameMdx?.changed).toBe(true);
 
     const localNamedRouteNameMdx = fillMissingRouteExports({
-      content: "import rootRoute from '../route.js';\n\n/** AirLib managed */\nconst route = rootRoute.route('/docs');\nconst docsGuideRoute = route.route('/guide');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport default docsRoute;",
+      content:
+        "import rootRoute from '../route.js';\n\n/** AirLib managed */\nconst route = rootRoute.route('/docs');\nconst docsGuideRoute = route.route('/guide');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport default docsRoute;",
       routeFilePath: '/src/pages/docs/route.ts',
-      routerFile: '/src/router.ts',
       parentRouteFile: '/src/pages/route.ts',
       parentRouteName: 'rootRoute',
       routeName: 'docsRoute',
@@ -1133,9 +1135,9 @@ describe('mdx attach & metadata names — edge cases', () => {
     expect(localNamedRouteNameMdx?.changed).toBe(true);
 
     const bothExportedNamedMdx = fillMissingRouteExports({
-      content: "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport const guideRoute = route.route('/guide');\nexport const rootGuideRoute = route.route('/guide');\nexport default docsRoute;",
+      content:
+        "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport const guideRoute = route.route('/guide');\nexport const rootGuideRoute = route.route('/guide');\nexport default docsRoute;",
       routeFilePath: '/src/pages/docs/route.ts',
-      routerFile: '/src/router.ts',
       parentRouteFile: undefined,
       parentRouteName: undefined,
       routeName: 'docsRoute',
@@ -1152,5 +1154,77 @@ describe('mdx attach & metadata names — edge cases', () => {
     });
 
     expect(bothExportedNamedMdx?.changed).toBe(true);
+  });
+
+  it('derives router import using AIR_ENV rootAlias and srcDir', () => {
+    const defaultImport = deriveRouterImport();
+    expect(defaultImport).toBe('@/src/router.js');
+
+    const customEnv = {
+      ...AIR_ENV,
+      rootAlias: '$',
+      srcDir: 'app',
+      files: { ...DEFAULT_FILE_MAP, router: 'routes.ts' },
+    };
+    expect(deriveRouterImport(customEnv)).toBe('$/app/routes.js');
+
+    const emptySrcEnv = {
+      ...AIR_ENV,
+      rootAlias: '~',
+      srcDir: '',
+      files: { ...DEFAULT_FILE_MAP, router: 'router.ts' },
+    };
+    expect(deriveRouterImport(emptySrcEnv)).toBe('~/router.js');
+  });
+
+  it('derives root, layout, and entry imports from environment without magic strings', () => {
+    expect(deriveRootImport('pages/blogs/route.ts')).toBe('@/pages/blogs/route.js');
+    expect(deriveLayoutImport()).toBe('@/pages/layout.js');
+    expect(deriveEntryImport()).toBe('@/src/app.js');
+
+    const customEnv = {
+      ...AIR_ENV,
+      rootAlias: '$',
+      srcDir: 'src_custom',
+      pagesDir: 'routes_custom',
+      files: {
+        ...DEFAULT_FILE_MAP,
+        layout: 'root.layout.tsx',
+        entry: 'main.tsx',
+      },
+    };
+
+    expect(deriveRootImport('routes_custom/blogs/route.ts', customEnv)).toBe('$/routes_custom/blogs/route.js');
+    expect(deriveLayoutImport(customEnv)).toBe('$/routes_custom/root.layout.js');
+    expect(deriveEntryImport(customEnv)).toBe('$/src_custom/main.js');
+
+    const emptyEnv = {
+      ...AIR_ENV,
+      rootAlias: '~',
+      srcDir: '',
+      pagesDir: '',
+      files: DEFAULT_FILE_MAP,
+    };
+    expect(deriveLayoutImport(emptyEnv)).toBe('~/layout.js');
+    expect(deriveEntryImport(emptyEnv)).toBe('~/app.js');
+  });
+
+  it('renders route file with alias-based router import', () => {
+    const output = renderRouteFile({
+      routeFilePath: '/test/pages/route.ts',
+      routerFile: '/test/src/router.ts',
+      routeName: 'rootRoute',
+      indexName: 'rootIndexRoute',
+      routePath: '/',
+      isTopLevel: false,
+      hasPage: true,
+      hasLayout: true,
+      metaImports: [],
+      namedPages: [],
+    });
+
+    expect(output).toContain("import router from '@/src/router.js';");
+    expect(output).toContain('export const rootRoute = route;');
+    expect(output).toContain('export const rootIndexRoute = indexRoute;');
   });
 });

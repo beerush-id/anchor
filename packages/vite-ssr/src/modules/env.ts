@@ -1,12 +1,39 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { ResolvedConfig } from 'vite';
-import { DEFAULT_FILE_MAP, type FileMap } from '../utils/mapper.js';
 import { ImageStore } from './image-store.js';
 import { META_STORE, type MetadataStore } from './metadata.js';
 import { RouteStore } from './route-store.js';
 
 export type Framework = 'react' | 'solid';
+
+export type FileMap = {
+  page: string;
+  pageMdx: string;
+  layout: string;
+  layoutMdx: string;
+  route: string;
+  router: string;
+  constructor: string;
+  entry: string;
+  client: string;
+  workerEntry: string;
+  ambient: string;
+};
+
+export const DEFAULT_FILE_MAP: FileMap = {
+  page: 'page.tsx',
+  pageMdx: 'page.mdx',
+  layout: 'layout.tsx',
+  layoutMdx: 'layout.mdx',
+  route: 'route.ts',
+  router: 'router.ts',
+  constructor: 'constructor.ts',
+  entry: 'app.tsx',
+  client: 'client.tsx',
+  workerEntry: 'worker.ts',
+  ambient: 'global.d.ts',
+};
 
 export type AirEnv = {
   /** In-memory metadata store keyed by absolute file path. */
@@ -42,6 +69,11 @@ export type AirEnv = {
    * @default '@airlib-cache'
    */
   cacheScope: string;
+  /**
+   * Root path alias prefix for project-relative imports.
+   * @default '@'
+   */
+  rootAlias: string;
   /** UI framework for scaffolds, MDX pages, and generated code. */
   framework: Framework;
   /** Resolved file name map (defaults merged with user overrides). */
@@ -66,6 +98,7 @@ export const AIR_ENV: AirEnv = {
   pagesDir: 'pages',
   cacheDir: '.airlib',
   cacheScope: '@airlib-cache',
+  rootAlias: '@',
   framework: 'react',
   files: DEFAULT_FILE_MAP,
   linkMetadata: false,

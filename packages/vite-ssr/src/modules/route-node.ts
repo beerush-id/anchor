@@ -11,8 +11,6 @@ import {
   deriveNamedRouteName,
   deriveRouteName,
   deriveSegment,
-  type FileMap,
-  type Framework,
   isNamedPage,
   namedPageName,
   type PageKind,
@@ -21,7 +19,7 @@ import { type MetadataImportDescriptor, type NamedPageDescriptor, renderRouteFil
 import { fillMissingRouteExports, resolveRouteExportNames } from '../utils/route-sync.js';
 import { type UIFileType, wireUIFileContent } from '../utils/route-wiring.js';
 import { scaffoldForFile, scaffoldLayoutTsx } from '../utils/scaffold.js';
-import { AIR_ENV } from './env.js';
+import { AIR_ENV, type FileMap, type Framework } from './env.js';
 import type { FolderNode } from './folder-node.js';
 
 const log = taggedLogger('air-route');
@@ -177,7 +175,7 @@ export class RouteNode extends EventEmitter {
     if (routeName) this.routeName = routeName;
     if (indexName) this.indexName = indexName;
     if (routeChanged || indexChanged) {
-      log.verbose(color.event('Adopted'), 'export names from', color.file(`${this.displayPath}route.ts`));
+      log.verbose(color.event('Adopted'), 'export names from', color.file(`${this.displayPath}${this.fileMap.route}`));
     }
   }
 
@@ -232,7 +230,6 @@ export class RouteNode extends EventEmitter {
     const result = fillMissingRouteExports({
       content,
       routeFilePath,
-      routerFile: this.routerFile,
       parentRouteFile,
       parentRouteName: this.parent?.routeName,
       routeName: this.routeName,
@@ -251,11 +248,11 @@ export class RouteNode extends EventEmitter {
 
     if (!result) return;
 
-    log.verbose(color.event('Validated route exports'), color.file(`${this.displayPath}route.ts`));
+    log.verbose(color.event('Validated route exports'), color.file(`${this.displayPath}${this.fileMap.route}`));
 
     if (result.changed && result.output !== content) {
       fs.writeFileSync(routeFilePath, result.output);
-      log.debug(color.event('Regenerated'), color.file(`${this.displayPath}route.ts`));
+      log.debug(color.event('Regenerated'), color.file(`${this.displayPath}${this.fileMap.route}`));
       this.emitChange('reload');
     }
   }
@@ -368,7 +365,7 @@ export class RouteNode extends EventEmitter {
 
     fs.mkdirSync(path.dirname(routeFilePath), { recursive: true });
     fs.writeFileSync(routeFilePath, output);
-    log.debug(color.event('Generated'), color.file(`${this.displayPath}route.ts`));
+    log.debug(color.event('Generated'), color.file(`${this.displayPath}${this.fileMap.route}`));
     this.route = true;
     this.emitChange('reload');
     return true;

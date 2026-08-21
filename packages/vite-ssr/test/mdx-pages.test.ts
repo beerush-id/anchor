@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { AIR_ENV } from '../src/modules/env.js';
+import { AIR_ENV, DEFAULT_FILE_MAP } from '../src/modules/env.js';
 import { MDX_DEFAULT_OPTIONS, mdxEntryWrapper, mdxFile } from '../src/modules/markdown.js';
-import { DEFAULT_FILE_MAP } from '../src/utils/mapper.js';
 import { cleanFixture, fixtureExists, fixturePath, makeFixture } from './fixture.js';
 import { makeApp } from './make-sync.js';
 

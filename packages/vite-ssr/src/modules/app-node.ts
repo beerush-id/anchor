@@ -3,9 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { color, taggedLogger } from '../logger.js';
 import type { AnyType } from '../types.js';
-import type { FileMap, Framework } from '../utils/mapper.js';
 import { scaffoldForFile } from '../utils/scaffold.js';
-import { AIR_ENV } from './env.js';
+import { AIR_ENV, type FileMap, type Framework } from './env.js';
 import { FolderNode } from './folder-node.js';
 import { ManifestNode } from './manifest.js';
 import { MetadataNode } from './metadata.js';
@@ -126,8 +125,6 @@ export class AppNode extends EventEmitter {
       framework: this.opts.framework,
       files: this.fileMap,
       folder: undefined,
-      srcDir: path.relative(this.opts.root, this.opts.appDir) || 'src',
-      pagesDir: path.relative(this.opts.root, this.opts.pagesDir) || 'pages',
     });
 
     if (content) {

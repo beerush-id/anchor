@@ -3,7 +3,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { withIsolation } from '@airlib/core';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Route } from '../../router/src/index.js';
-import { DEFAULT_FILE_MAP, importSpecifier } from '../src/utils/mapper.js';
+import { DEFAULT_FILE_MAP } from '../src/modules/env.js';
+import { importSpecifier } from '../src/utils/mapper.js';
 import {
   cleanFixture,
   fixtureExists,
@@ -15,6 +16,7 @@ import {
 } from './fixture.js';
 import { makeApp } from './make-sync.js';
 
+// @ts-expect-error
 const here = path.dirname(fileURLToPath(import.meta.url));
 
 describe('route generation — folders define URLs', () => {
@@ -124,7 +126,7 @@ describe('route generation — folders define URLs', () => {
     boot({ 'pages/page.tsx': '' });
 
     const content = route('');
-    expect(content).toContain("import router from '../router.js';");
+    expect(content).toContain("import router from '@/src/router.js';");
     expect(content).toContain('const route = router.route();');
     expect(content).toContain('export const rootRoute = route;');
     expect(content).not.toContain('IndexRoute');
@@ -144,7 +146,7 @@ describe('route generation — folders define URLs', () => {
     boot({ 'pages/blogs/page.tsx': '' });
 
     const root = route('');
-    expect(root).toContain("import router from '../router.js';");
+    expect(root).toContain("import router from '@/src/router.js';");
     expect(root).toContain('const route = router.route();');
     expect(root).toContain('export const rootRoute = route;');
     expect(root).toContain('export default rootRoute;');
@@ -306,10 +308,10 @@ describe('route generation — folders define URLs', () => {
     );
 
     // The fixture imports the router SOURCE (the package dist may not exist).
-    const routerFile = fixturePath(dir, 'router.ts');
+    const routerFile = fixturePath(dir, 'src/router.ts');
     const routerSrc = path.resolve(here, '../../router/src/index.ts');
     writeFixture(dir, {
-      'router.ts': [
+      'src/router.ts': [
         `import { createRouter } from '${importSpecifier(routerFile, routerSrc)}';`,
         '',
         'export const router = createRouter<unknown>();',
@@ -322,7 +324,7 @@ describe('route generation — folders define URLs', () => {
 
     const load = (rel: string) => import(pathToFileURL(fixturePath(dir, rel)).href);
 
-    const { router } = await load('router.ts');
+    const { router } = await load('src/router.ts');
     const root = await load('pages/route.ts');
     const blogs = await load('pages/blogs/route.ts');
     const detail = await load('pages/blogs/[slug]/route.ts');
