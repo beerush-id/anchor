@@ -63,16 +63,17 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
       url.pathname = url.pathname.replace(/\/$/, '');
     }
 
+    const hash = url.hash.substring(1);
     return {
       url,
+      hash,
       route,
       query,
       params,
       href: url.href,
-      hash: url.hash.substring(1),
       search: url.search,
       pathname: url.pathname,
-      fullPath: url.pathname + url.search,
+      fullPath: url.pathname + (url.hash ? url.hash : '') + url.search,
     };
   });
 
