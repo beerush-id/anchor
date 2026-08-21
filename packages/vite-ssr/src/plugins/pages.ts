@@ -6,9 +6,9 @@ import { color, setLogLevel, taggedLogger } from '../logger.js';
 import { AppNode } from '../modules/app-node.js';
 import { AIR_ENV, type FileMap, type Framework, initEnv } from '../modules/env.js';
 import type { MdxExtendedOptions } from '../modules/markdown.js';
-import { type AirWorkerOptions, airWorker, resolveWorkerEntry } from '../worker.js';
-import { type AirImageOptions, airImage } from './image.js';
-import { type AirMarkdownOptions, airMarkdown } from './markdown.js';
+import { airWorker, type AirWorkerOptions, resolveWorkerEntry } from '../worker.js';
+import { airImage, type AirImageOptions } from './image.js';
+import { airMarkdown, type AirMarkdownOptions } from './markdown.js';
 import { airPreprocess } from './preprocess.js';
 import { airSearch, type MdxSearchOptions } from './search.js';
 

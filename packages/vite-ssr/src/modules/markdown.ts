@@ -1,10 +1,10 @@
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { compile, type CompileOptions as MdxOptions } from '@mdx-js/mdx';
-import type { Node } from 'mdast';
+import type { RehypeShikiOptions } from '@shikijs/rehype';
+import type { Code, Node, Root } from 'mdast';
 import { parseSync } from 'oxc-parser';
 import rehypeAutolinkHeadings, { type Options as RehypeAutolinkHeadingsOptions } from 'rehype-autolink-headings';
-import type { Options as RehypePrettyCodeOptions } from 'rehype-pretty-code';
 import rehypeSlug from 'rehype-slug';
 import type { Options as RemarkGfmOptions } from 'remark-gfm';
 import type { AnyType } from 'src/types.ts';
@@ -16,6 +16,7 @@ import { hashBlock } from '../utils/hash.js';
 import { wrapJsx } from '../utils/jsx.js';
 import { createMatcher } from '../utils/matcher.js';
 import { AIR_ENV, type FileMap, type Framework } from './env.js';
+import { getAirTransformers, getHighlighterSingleton } from './highlight.js';
 import { META_STORE } from './metadata.js';
 import type { RouteResolution } from './route-store.js';
 
@@ -46,7 +47,7 @@ export type MdxHeading = {
 export type MdxExtendedOptions = {
   search?: boolean | { include?: string[]; exclude?: string[] };
   remarkGfm?: RemarkGfmOptions;
-  rehypePrettyCode?: RehypePrettyCodeOptions;
+  shiki?: RehypeShikiOptions;
 };
 
 /**
@@ -387,8 +388,7 @@ export const importExtended = (): Promise<AnyType> => {
     extendedImportPromise = Promise.all([
       import('remark-gfm'),
       import('remark-directive'),
-      import('rehype-pretty-code'),
-      import('@shikijs/transformers'),
+      import('@shikijs/rehype/core'),
     ])
       .then((plugins) => {
         log.debug(
@@ -404,7 +404,7 @@ export const importExtended = (): Promise<AnyType> => {
             `Please ensure the following plugins are in your plugin catalog and installed:\n\n` +
             `  - remark-gfm\n` +
             `  - remark-directive\n` +
-            `  - rehype-pretty-code\n\n`
+            `  - @shikijs/rehype\n\n`
         );
       });
   }
@@ -423,31 +423,47 @@ export async function loadExtendedPlugins(module: MdxModule) {
   const { extended } = module.options;
   const options = (typeof extended === 'object' && extended ? extended : {}) as MdxExtendedOptions;
 
-  const [gfm, directive, prettyCode, transformers] = await importExtended();
+  const [gfm, directive, rehypeShiki] = await importExtended();
+
+  // Inject the shared Shiki highlighter singleton to avoid re-initializing WASM per file
+  const highlighter = await getHighlighterSingleton();
+  const sharedTransformers = await getAirTransformers();
+
+  // Remark plugin to dynamically load missing Shiki languages on-demand
+  // since the singleton is initialized empty to save memory.
+  const remarkLoadShikiLangs: Plugin<[], Root> = () => async (tree) => {
+    const langs = new Set<string>();
+    visit(tree, 'code', (node: Code) => {
+      if (node.lang) langs.add(node.lang);
+    });
+
+    const missing = Array.from(langs).filter((lang) => !highlighter.getLoadedLanguages().includes(lang));
+    if (missing.length > 0) {
+      log.debug(color.event('Loading Shiki languages:'), missing.join(', '));
+      // @ts-expect-error - dynamic language loading
+      await Promise.all(missing.map((lang) => highlighter.loadLanguage(lang).catch(() => {})));
+    }
+  };
 
   const remarkPlugins: PluggableList = [
     [gfm.default as Plugin, { ...options.remarkGfm }],
     [directive.default as Plugin, {}],
+    remarkLoadShikiLangs,
     [airMdxRemark, module],
   ];
 
-  const shikiTheme = { light: 'catppuccin-latte', dark: 'catppuccin-mocha' };
   const shikiOptions = {
-    theme: shikiTheme,
-    transformers: [
-      transformers.transformerNotationDiff,
-      transformers.transformerNotationHighlight,
-      transformers.transformerNotationWordHighlight,
-      transformers.transformerNotationFocus,
-      transformers.transformerNotationErrorLevel,
-    ],
-    ...options.rehypePrettyCode,
+    themes: { light: 'catppuccin-latte', dark: 'catppuccin-mocha' },
+    defaultColor: false,
+    transformers: sharedTransformers,
+    ...options.shiki,
   };
 
-  const rehypePlugins: PluggableList = [
-    [prettyCode.default as Plugin, shikiOptions],
-    [airMdxRehype, module],
-  ];
+  const airShikiPlugin: Plugin = () => {
+    return rehypeShiki.default(highlighter, shikiOptions);
+  };
+
+  const rehypePlugins: PluggableList = [airShikiPlugin, [airMdxRehype, module]];
 
   return { remarkPlugins, rehypePlugins };
 }

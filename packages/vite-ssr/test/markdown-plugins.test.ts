@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 // The docs-mode plugins are optional dependencies; when one is absent the
 // compiler must surface a clear error instead of failing cryptically.
-vi.mock('rehype-pretty-code', () => {
-  throw new Error('Cannot find module rehype-pretty-code');
+vi.mock('@shikijs/rehype/core', () => {
+  throw new Error('Cannot find module @shikijs/rehype/core');
 });
 
 import { importExtended } from '../src/modules/markdown.js';
