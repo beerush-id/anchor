@@ -162,6 +162,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
   let absWorkerFile = '';
   let app: AppNode;
   let shouldReload = false;
+  const workerOptions: AirWorkerOptions = { noscript: options.noscript, ssg: options.ssg, ...options.worker };
 
   const corePlugin: Plugin = {
     name: 'air-pages',
@@ -199,6 +200,10 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
         files: options.files ? { ...AIR_ENV.files, ...options.files } : undefined,
         linkMetadata: options.linkMetadata,
       });
+
+      if (!workerOptions.hotExtensions) {
+        workerOptions.hotExtensions = [AIR_ENV.files.constructor, AIR_ENV.files.function];
+      }
 
       const routerFile = options.routerFile ?? `${AIR_ENV.srcDir}/${AIR_ENV.files.router}`;
       const workerFile = resolveWorkerEntry(typeof options.worker === 'object' ? options.worker : {});
@@ -278,6 +283,10 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
         }
       }
 
+      if (normalizedId === absWorkerFile && !code.includes('import.meta.hot')) {
+        code += '\nif (import.meta.hot) import.meta.hot.accept();\n';
+      }
+
       return { code, map: null };
     },
 
@@ -332,7 +341,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
   }
 
   if (options.worker !== false) {
-    plugins.push(airWorker({ noscript: options.noscript, ssg: options.ssg, ...options.worker }));
+    plugins.push(airWorker(workerOptions));
   }
 
   if (options.image !== false) {

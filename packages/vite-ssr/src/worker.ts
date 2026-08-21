@@ -45,6 +45,15 @@ export type AirWorkerOptions = {
    * @default LogLevel.INFO
    */
   logLevel?: LogLevel;
+
+  /**
+   * File suffixes that close live app sockets on change, so reconnecting
+   * clients rebind to fresh SSR handler snapshots. Accepts extensions
+   * ('.ts') or full file names ('constructor.ts').
+   * Defaults to `['.ts']`; `airPages` narrows it to the IRPC conventions
+   * (constructor/function files).
+   */
+  hotExtensions?: string[];
 };
 
 /**
@@ -188,28 +197,10 @@ export function airWorker(options: AirWorkerOptions = {}): Plugin {
       const activeSockets = new Set<any>();
 
       server.watcher.on('change', (file) => {
-        const mods = server.moduleGraph.getModulesByFile(file);
+        const hotExtensions = options.hotExtensions ?? ['.ts'];
+        if (!hotExtensions.some((suffix) => file.endsWith(suffix))) return;
 
-        if (mods && mods.size > 0) {
-          let isBackend = false;
-
-          for (const mod of mods) {
-            if (mod.url.match(/\.(css|scss|sass|less|styl|pcss|postcss)($|\?)/)) {
-              continue;
-            }
-            if (mod.ssrModule || mod.ssrTransformResult || mod.ssrError) {
-              isBackend = true;
-              break;
-            }
-          }
-
-          if (!isBackend) return;
-        }
-
-        for (const ws of activeSockets) {
-          ws.close(1001, 'Vite HMR Restart');
-        }
-        activeSockets.clear();
+        server.ws.send('custom', { type: 'irpc:invalidate-handler' });
       });
 
       server.httpServer?.on('upgrade', async (req, socket, head) => {

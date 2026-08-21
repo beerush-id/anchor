@@ -15,6 +15,7 @@ export type FileMap = {
   route: string;
   router: string;
   constructor: string;
+  function: string;
   entry: string;
   client: string;
   workerEntry: string;
@@ -29,6 +30,7 @@ export const DEFAULT_FILE_MAP: FileMap = {
   route: 'route.ts',
   router: 'router.ts',
   constructor: 'constructor.ts',
+  function: 'function.ts',
   entry: 'app.tsx',
   client: 'client.tsx',
   workerEntry: 'worker.ts',
