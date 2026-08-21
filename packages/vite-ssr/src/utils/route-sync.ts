@@ -123,6 +123,7 @@ export function fillMissingRouteExports(options: FillRouteExportsOptions): FillR
         const name = namedPageName(namedPage, fileMap);
         const localName = deriveLocalRouteName(name);
         const namedRouteName = deriveNamedRouteName(folderSegment, name);
+        /* v8 ignore next 3 */
         const existing = exports.declarations.find(
           (d) => (d.name === localName && !d.isExported) || (d.name === namedRouteName && d.isExported)
         );

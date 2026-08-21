@@ -1,16 +1,26 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { AnyType } from '@airlib/core';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { AIR_ENV } from '../src/modules/env.js';
+import { AppNode } from '../src/modules/app-node.js';
+import { AIR_ENV, detectFramework } from '../src/modules/env.js';
 import { FolderNode } from '../src/modules/folder-node.js';
 import { ManifestNode } from '../src/modules/manifest.js';
 import { mdxEntryWrapper } from '../src/modules/markdown.js';
 import { MarkdownNode } from '../src/modules/markdown-node.js';
 import { RouteNode } from '../src/modules/route-node.js';
+import type { AnyType } from '../src/types.js';
 import { matchFrontmatter, parseFrontmatterBlock } from '../src/utils/frontmatter.js';
 import { DEFAULT_FILE_MAP } from '../src/utils/mapper.js';
-import { scaffoldForFile } from '../src/utils/scaffold.js';
+import {
+  hasMarkerAbove,
+  isDefaultMarkerComment,
+  isManagedMarkerComment,
+  markerLineStart,
+  parseRouteExports,
+} from '../src/utils/route-parser.js';
+import { fillMissingRouteExports } from '../src/utils/route-sync.js';
+import { wireUIFileContent } from '../src/utils/route-wiring.js';
+import { scaffoldAppTsx, scaffoldForFile, scaffoldLayoutTsx } from '../src/utils/scaffold.js';
 import { ensureSymlink } from '../src/utils/sync.js';
 import { chokidarState } from './chokidar.js';
 import {
@@ -753,5 +763,394 @@ describe('mdx attach & metadata names — edge cases', () => {
       fixturePath(dir, 'meta')
     );
     expect(node.varName).toBe('rootMeta');
+  });
+
+  it('detects react framework when @airlib/react is present in package.json', () => {
+    dir = makeFixture({
+      'package.json': JSON.stringify({ dependencies: { '@airlib/react': '^1.0.0' } }),
+    });
+    expect(detectFramework(dir)).toBe('react');
+  });
+
+  it('scaffolds named MDX pages with frontmatter', () => {
+    dir = makeFixture({});
+    const folder = new FolderNode(fixturePath(dir, 'pages/docs'));
+    expect(
+      scaffoldForFile({
+        base: 'guide.page.mdx',
+        folder,
+        framework: 'react',
+        files: DEFAULT_FILE_MAP,
+      })
+    ).toContain('title: Guide');
+  });
+
+  it('evaluates marker comment helpers in route-parser correctly', () => {
+    expect(hasMarkerAbove('/** @generated */\nexport default route;', 18, '/** @generated */')).toBe(true);
+    expect(markerLineStart('/** @generated */\nexport default route;', 18)).toBe(0);
+    expect(markerLineStart('const x = 1;\nexport default route;', 13)).toBeUndefined();
+    expect(isDefaultMarkerComment('@generated - do not edit')).toBe(true);
+    expect(isManagedMarkerComment('/* AirLib managed */')).toBe(true);
+
+    const parsed = parseRouteExports('/* AirLib managed */\nconst x = 1;');
+    expect(parsed?.managedBlock).toBeDefined();
+    expect(parsed?.managedBlock?.start).toBe(0);
+  });
+
+  it('scaffolds root named page and layout without explicit routeExport', () => {
+    dir = makeFixture({});
+    const rootFolder = new FolderNode(fixturePath(dir, 'pages'));
+    expect(
+      scaffoldForFile({
+        base: 'v1.page.tsx',
+        folder: rootFolder,
+        framework: 'react',
+        files: DEFAULT_FILE_MAP,
+      })
+    ).toContain('export default page(rootV1Route)');
+
+    expect(
+      scaffoldLayoutTsx({
+        framework: 'react',
+        rel: 'docs',
+        files: DEFAULT_FILE_MAP,
+      })
+    ).toContain('import docsRoute from');
+
+    expect(
+      scaffoldLayoutTsx({
+        framework: 'react',
+        rel: '',
+        files: DEFAULT_FILE_MAP,
+      })
+    ).toContain('import rootRoute from');
+  });
+
+  it('scaffolds app files when appDir and pagesDir are root', () => {
+    dir = makeFixture({});
+    new AppNode({
+      root: dir,
+      appDir: dir,
+      pagesDir: dir,
+      routerFile: fixturePath(dir, 'router.ts'),
+      framework: 'react',
+      fileMap: DEFAULT_FILE_MAP,
+    });
+
+    expect(fixtureExists(dir, 'app.tsx')).toBe(true);
+    expect(fixtureExists(dir, 'client.tsx')).toBe(true);
+    expect(fixtureExists(dir, 'worker.ts')).toBe(true);
+  });
+
+  it('covers parser and scaffold branch edge cases', () => {
+    const parsed = parseRouteExports('export let x;\nlet y;');
+    expect(parsed?.declarations.length).toBe(2);
+    expect(parsed?.declarations[0].initText).toBeUndefined();
+    expect(parsed?.declarations[1].initText).toBeUndefined();
+
+    const appCode = scaffoldAppTsx({ framework: 'react', files: DEFAULT_FILE_MAP });
+    expect(appCode).toContain("from '../pages/layout.js'");
+
+    const bareLayoutCode = scaffoldLayoutTsx({
+      framework: 'react',
+      files: DEFAULT_FILE_MAP,
+    });
+    expect(bareLayoutCode).toContain('import rootRoute from');
+
+    const emptyRelLayoutCode = scaffoldLayoutTsx({
+      framework: 'react',
+      rel: '',
+      files: DEFAULT_FILE_MAP,
+    });
+    expect(emptyRelLayoutCode).toContain('import rootRoute from');
+
+    const trailingSlashRelLayoutCode = scaffoldLayoutTsx({
+      framework: 'react',
+      rel: 'docs/',
+      files: DEFAULT_FILE_MAP,
+    });
+    expect(trailingSlashRelLayoutCode).toContain('import rootRoute from');
+
+    const customExportLayoutCode = scaffoldLayoutTsx({
+      framework: 'react',
+      routeExport: 'customDocsRoute',
+      files: DEFAULT_FILE_MAP,
+    });
+    expect(customExportLayoutCode).toContain('import customDocsRoute from');
+  });
+
+  it('covers wiring keepDefault branch when default import does not match page binding', () => {
+    const wired = wireUIFileContent({
+      content: "import otherDefault, { docsRoute } from './route.ts';\nexport default page(docsRoute);",
+      filePath: '/src/pages/docs/page.tsx',
+      displayPath: 'pages/docs/page.tsx',
+      targetRouteName: 'docsIndexRoute',
+      routeName: 'docsRoute',
+      routeFileName: 'route.ts',
+      name: 'page.tsx',
+    });
+
+    expect(wired?.changed).toBe(true);
+    expect(wired?.output).toContain("import otherDefault, { docsIndexRoute, docsRoute } from './route.ts';");
+  });
+
+  it('covers sync route pruning and export fallback branches', () => {
+    const eofResult = fillMissingRouteExports({
+      content: "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\nconst indexRoute = route.route('/');\n/** AirLib managed */",
+      routeFilePath: '/src/pages/docs/route.ts',
+      routerFile: '/src/router.ts',
+      parentRouteFile: undefined,
+      parentRouteName: undefined,
+      routeName: 'docsRoute',
+      indexName: 'docsIndexRoute',
+      isTopLevel: true,
+      pageKind: undefined,
+      hasLayout: false,
+      namedPages: new Set(),
+      fileMap: DEFAULT_FILE_MAP,
+      displayPath: 'pages/docs/route.ts',
+      folderSegment: 'docs',
+      linkMetadata: false,
+      resolveMetadataImport: () => ({ varName: '', source: '' }),
+    });
+
+    expect(eofResult?.changed).toBe(true);
+    expect(eofResult?.output).not.toContain('const indexRoute');
+
+    const eofNoNewlineResult = fillMissingRouteExports({
+      content: "/** AirLib managed */\nconst route = router.route('/docs');\nconst indexRoute = route.route('/');/** AirLib managed */",
+      routeFilePath: '/src/pages/docs/route.ts',
+      routerFile: '/src/router.ts',
+      parentRouteFile: undefined,
+      parentRouteName: undefined,
+      routeName: 'docsRoute',
+      indexName: 'docsIndexRoute',
+      isTopLevel: true,
+      pageKind: undefined,
+      hasLayout: false,
+      namedPages: new Set(),
+      fileMap: DEFAULT_FILE_MAP,
+      displayPath: 'pages/docs/route.ts',
+      folderSegment: 'docs',
+      linkMetadata: false,
+      resolveMetadataImport: () => ({ varName: '', source: '' }),
+    });
+
+    expect(eofNoNewlineResult?.changed).toBe(true);
+
+    const staleNamedResult = fillMissingRouteExports({
+      content: "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\nconst guideRoute = route.route('/guide');\n/** AirLib managed */",
+      routeFilePath: '/src/pages/docs/route.ts',
+      routerFile: '/src/router.ts',
+      parentRouteFile: undefined,
+      parentRouteName: undefined,
+      routeName: 'docsRoute',
+      indexName: 'docsIndexRoute',
+      isTopLevel: true,
+      pageKind: undefined,
+      hasLayout: false,
+      namedPages: new Set(),
+      fileMap: DEFAULT_FILE_MAP,
+      displayPath: 'pages/docs/route.ts',
+      folderSegment: 'docs',
+      linkMetadata: false,
+      resolveMetadataImport: () => ({ varName: '', source: '' }),
+    });
+
+    expect(staleNamedResult?.changed).toBe(true);
+    expect(staleNamedResult?.output).not.toContain('const guideRoute');
+
+    const staleNamedNoNewline = fillMissingRouteExports({
+      content: "/** AirLib managed */\nconst route = router.route('/docs');\nconst oldRoute = route.route('/old');/** AirLib managed */",
+      routeFilePath: '/src/pages/docs/route.ts',
+      routerFile: '/src/router.ts',
+      parentRouteFile: undefined,
+      parentRouteName: undefined,
+      routeName: 'docsRoute',
+      indexName: 'docsIndexRoute',
+      isTopLevel: true,
+      pageKind: undefined,
+      hasLayout: false,
+      namedPages: new Set(),
+      fileMap: DEFAULT_FILE_MAP,
+      displayPath: 'pages/docs/route.ts',
+      folderSegment: 'docs',
+      linkMetadata: false,
+      resolveMetadataImport: () => ({ varName: '', source: '' }),
+    });
+
+    expect(staleNamedNoNewline?.changed).toBe(true);
+
+    const routeAliasPrune = fillMissingRouteExports({
+      content: "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport const docsIndexRoute = route;",
+      routeFilePath: '/src/pages/docs/route.ts',
+      routerFile: '/src/router.ts',
+      parentRouteFile: undefined,
+      parentRouteName: undefined,
+      routeName: 'docsRoute',
+      indexName: 'docsIndexRoute',
+      isTopLevel: true,
+      pageKind: undefined,
+      hasLayout: false,
+      namedPages: new Set(),
+      fileMap: DEFAULT_FILE_MAP,
+      displayPath: 'pages/docs/route.ts',
+      folderSegment: 'docs',
+      linkMetadata: false,
+      resolveMetadataImport: () => ({ varName: '', source: '' }),
+    });
+
+    expect(routeAliasPrune?.changed).toBe(true);
+    expect(routeAliasPrune?.output).not.toContain('export const docsIndexRoute = route;');
+
+    const customExportDefault = fillMissingRouteExports({
+      content: "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\n/** AirLib managed */\n\nexport const customDocsRoute = route;",
+      routeFilePath: '/src/pages/docs/route.ts',
+      routerFile: '/src/router.ts',
+      parentRouteFile: undefined,
+      parentRouteName: undefined,
+      routeName: 'docsRoute',
+      indexName: 'docsIndexRoute',
+      isTopLevel: true,
+      pageKind: undefined,
+      hasLayout: false,
+      namedPages: new Set(),
+      fileMap: DEFAULT_FILE_MAP,
+      displayPath: 'pages/docs/route.ts',
+      folderSegment: 'docs',
+      linkMetadata: false,
+      resolveMetadataImport: () => ({ varName: '', source: '' }),
+    });
+
+    expect(customExportDefault?.changed).toBe(true);
+    expect(customExportDefault?.output).toContain('export default customDocsRoute;');
+
+    const exportedNamedMdx = fillMissingRouteExports({
+      content: "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport const docsGuideRoute = route.route('/guide');\nexport default docsRoute;",
+      routeFilePath: '/src/pages/docs/route.ts',
+      routerFile: '/src/router.ts',
+      parentRouteFile: undefined,
+      parentRouteName: undefined,
+      routeName: 'docsRoute',
+      indexName: 'docsIndexRoute',
+      isTopLevel: true,
+      pageKind: undefined,
+      hasLayout: false,
+      namedPages: new Set(['guide.page.mdx']),
+      fileMap: DEFAULT_FILE_MAP,
+      displayPath: 'pages/docs/route.ts',
+      folderSegment: 'docs',
+      linkMetadata: true,
+      resolveMetadataImport: () => ({ varName: 'guideMeta', source: './guide.meta.js' }),
+    });
+
+    expect(exportedNamedMdx?.changed).toBe(true);
+    expect(exportedNamedMdx?.output).toContain('import guideMeta from');
+
+    const localNamedMdx = fillMissingRouteExports({
+      content: "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\nconst guideRoute = route.route('/guide');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport default docsRoute;",
+      routeFilePath: '/src/pages/docs/route.ts',
+      routerFile: '/src/router.ts',
+      parentRouteFile: undefined,
+      parentRouteName: undefined,
+      routeName: 'docsRoute',
+      indexName: 'docsIndexRoute',
+      isTopLevel: true,
+      pageKind: undefined,
+      hasLayout: false,
+      namedPages: new Set(['guide.page.mdx']),
+      fileMap: DEFAULT_FILE_MAP,
+      displayPath: 'pages/docs/route.ts',
+      folderSegment: 'docs',
+      linkMetadata: true,
+      resolveMetadataImport: () => ({ varName: 'guideMeta', source: './guide.meta.js' }),
+    });
+
+    expect(localNamedMdx?.changed).toBe(true);
+    expect(localNamedMdx?.output).toContain("const guideRoute = route.route('/guide').meta(guideMeta);");
+
+    const alreadyHasMetaMdx = fillMissingRouteExports({
+      content: "import guideMeta from './guide.meta.js';\nimport rootRoute from '../route.js';\n\n/** AirLib managed */\nconst route = rootRoute.route('/docs');\nconst guideRoute = route.route('/guide').meta(guideMeta);\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport const docsGuideRoute = guideRoute;\nexport default docsRoute;\n",
+      routeFilePath: '/src/pages/docs/route.ts',
+      routerFile: '/src/router.ts',
+      parentRouteFile: '/src/pages/route.ts',
+      parentRouteName: 'rootRoute',
+      routeName: 'docsRoute',
+      indexName: 'docsIndexRoute',
+      isTopLevel: false,
+      pageKind: undefined,
+      hasLayout: false,
+      namedPages: new Set(['guide.page.mdx']),
+      fileMap: DEFAULT_FILE_MAP,
+      displayPath: 'pages/docs/route.ts',
+      folderSegment: 'docs',
+      linkMetadata: true,
+      resolveMetadataImport: () => ({ varName: 'guideMeta', source: './guide.meta.js' }),
+    });
+
+    expect(alreadyHasMetaMdx).toBeDefined();
+
+    const exportedLocalNameMdx = fillMissingRouteExports({
+      content: "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport const guideRoute = route.route('/guide');\nexport default docsRoute;",
+      routeFilePath: '/src/pages/docs/route.ts',
+      routerFile: '/src/router.ts',
+      parentRouteFile: undefined,
+      parentRouteName: undefined,
+      routeName: 'docsRoute',
+      indexName: 'docsIndexRoute',
+      isTopLevel: true,
+      pageKind: undefined,
+      hasLayout: false,
+      namedPages: new Set(['guide.page.mdx']),
+      fileMap: DEFAULT_FILE_MAP,
+      displayPath: 'pages/docs/route.ts',
+      folderSegment: 'docs',
+      linkMetadata: true,
+      resolveMetadataImport: () => ({ varName: 'guideMeta', source: './guide.meta.js' }),
+    });
+
+    expect(exportedLocalNameMdx?.changed).toBe(true);
+
+    const localNamedRouteNameMdx = fillMissingRouteExports({
+      content: "import rootRoute from '../route.js';\n\n/** AirLib managed */\nconst route = rootRoute.route('/docs');\nconst docsGuideRoute = route.route('/guide');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport default docsRoute;",
+      routeFilePath: '/src/pages/docs/route.ts',
+      routerFile: '/src/router.ts',
+      parentRouteFile: '/src/pages/route.ts',
+      parentRouteName: 'rootRoute',
+      routeName: 'docsRoute',
+      indexName: 'docsIndexRoute',
+      isTopLevel: false,
+      pageKind: undefined,
+      hasLayout: false,
+      namedPages: new Set(['guide.page.mdx']),
+      fileMap: DEFAULT_FILE_MAP,
+      displayPath: 'pages/docs/route.ts',
+      folderSegment: 'docs',
+      linkMetadata: true,
+      resolveMetadataImport: () => ({ varName: 'guideMeta', source: './guide.meta.js' }),
+    });
+
+    expect(localNamedRouteNameMdx?.changed).toBe(true);
+
+    const bothExportedNamedMdx = fillMissingRouteExports({
+      content: "import router from '../../router.ts';\n\n/** AirLib managed */\nconst route = router.route('/docs');\n/** AirLib managed */\n\nexport const docsRoute = route;\nexport const guideRoute = route.route('/guide');\nexport const rootGuideRoute = route.route('/guide');\nexport default docsRoute;",
+      routeFilePath: '/src/pages/docs/route.ts',
+      routerFile: '/src/router.ts',
+      parentRouteFile: undefined,
+      parentRouteName: undefined,
+      routeName: 'docsRoute',
+      indexName: 'docsIndexRoute',
+      isTopLevel: true,
+      pageKind: undefined,
+      hasLayout: false,
+      namedPages: new Set(['guide.page.mdx']),
+      fileMap: DEFAULT_FILE_MAP,
+      displayPath: 'pages/docs/route.ts',
+      folderSegment: 'docs',
+      linkMetadata: true,
+      resolveMetadataImport: () => ({ varName: 'guideMeta', source: './guide.meta.js' }),
+    });
+
+    expect(bothExportedNamedMdx?.changed).toBe(true);
   });
 });

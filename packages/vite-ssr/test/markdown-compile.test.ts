@@ -118,6 +118,92 @@ describe('mdx docs mode — extended plugins enrich markdown', () => {
     expect(file.locals.join('\n')).not.toContain('print("skipped")');
   });
 
+  it('transforms labeled admonitions, badges, and interactive directives', async () => {
+    dir = makeFixture({ 'pages/docs/page.mdx': '' });
+    const id = fixturePath(dir, 'pages/docs/page.mdx');
+
+    const source = [
+      '---',
+      'title: Directives',
+      '---',
+      ':::tip[Custom Title]',
+      'Tip content',
+      ':::',
+      '',
+      ':::tip[]{title="Fallback Tip"}',
+      'Fallback content',
+      ':::',
+      '',
+      ':::badge[v2.0]{type="success"}',
+      ':::',
+      '',
+      ':::badge[]{type="warning"}',
+      ':::',
+      '',
+      ':::badge',
+      'Container Text',
+      ':::',
+      '',
+      ':::badge',
+      ':::',
+      '',
+      ':badge{text="Text Only"}',
+      '',
+      ':::interactive[Demo View]{rendered="true"}',
+      '',
+      '```tsx',
+      'export default function Demo() { return <div>Demo</div>; }',
+      '```',
+      '',
+      '<Demo />',
+      '',
+      ':::',
+      '',
+      ':::interactive{title="Attribute Title"}',
+      '',
+      '```tsx',
+      'export default function AttrDemo() { return <div>Attr</div>; }',
+      '```',
+      '',
+      '<AttrDemo />',
+      '',
+      ':::',
+      '',
+      ':::interactive[]{title="Empty Label"}',
+      '',
+      '```tsx',
+      'export default function EmptyDemo() { return <div>Empty</div>; }',
+      '```',
+      '',
+      '<EmptyDemo />',
+      '',
+      ':::',
+      '',
+      ':::interactive{rendered="false"}',
+      '',
+      '```tsx',
+      'const hidden = true;',
+      '```',
+      '',
+      ':::',
+    ].join('\n');
+
+    const { code } = await mdxFile(id, source, {
+      include: MDX_DEFAULT_OPTIONS.include,
+      extended: true,
+      headingDepth: 3,
+    });
+
+    expect(code).toContain('<AirAdmonition title="Custom Title"');
+    expect(code).toContain('<AirAdmonition title="Attribute Title"');
+    expect(code).toContain('<AirAdmonition title="Empty Label"');
+    expect(code).toContain('<AirBadge variant="success"');
+    expect(code).toContain('<AirBadge variant="neutral"');
+    expect(code).toContain('children="Text Only"');
+    expect(code).toContain('air-mdx-interactive-source');
+    expect(code).toContain('air-mdx-interactive-render');
+  });
+
   it('compiles markdown sources from outside the pages directory', async () => {
     dir = makeFixture({ 'elsewhere/page.mdx': '' });
     const id = fixturePath(dir, 'elsewhere/page.mdx');
@@ -276,5 +362,89 @@ describe('mdx matcher — markdown extensions decide what compiles', () => {
 
     expect(match('/src/pages/docs/page.mdx')).toBe(true);
     expect(match('/src/pages/docs/page.md')).toBe(false);
+  });
+});
+
+describe('mdx compilation pipe — import deduplication and structure', () => {
+  let dir = '';
+  afterEach(() => cleanFixture(dir));
+
+  it('compiles MDX files containing diverse import patterns through the full pipeline', async () => {
+    dir = makeFixture({ 'pages/guide/page.mdx': '' });
+    const id = fixturePath(dir, 'pages/guide/page.mdx');
+    const source = [
+      '---',
+      'title: Guide',
+      '---',
+      ':::script',
+      '',
+      '```js module',
+      "import './styles.css';",
+      "import '';",
+      "import React from 'react';",
+      "import * as ReactNS from 'react';",
+      "import { useState, useState as myState } from 'react';",
+      "import type { ReactNode } from 'react';",
+      "import { type FC as ReactFC } from 'react';",
+      "import { 'custom-slot' as CustomSlot } from 'react';",
+      '```',
+      '',
+      ':::',
+      '',
+      '# Guide',
+      '',
+      '<div className="content">Hello</div>',
+    ].join('\n');
+
+    const { code } = await mdxFile(id, source, { ...PLAIN_OPTIONS, extended: true });
+    expect(code).toBeDefined();
+    expect(code).toContain(
+      "import React, * as ReactNS, { useState, useState as myState, type ReactNode, type FC as ReactFC, custom-slot as CustomSlot } from 'react';"
+    );
+    expect(code).toContain("import './styles.css';");
+  });
+
+  it('handles script blocks with syntax anomalies by falling back to regex extraction', async () => {
+    dir = makeFixture({ 'pages/guide/page.mdx': '' });
+    const id = fixturePath(dir, 'pages/guide/page.mdx');
+    const source = [
+      '---',
+      'title: Guide',
+      '---',
+      ':::script',
+      '',
+      '```js module',
+      "import './reset.css';",
+      'const x: invalid = ;',
+      '```',
+      '',
+      ':::',
+      '',
+      '# Guide',
+    ].join('\n');
+
+    const { code } = await mdxFile(id, source, { ...PLAIN_OPTIONS, extended: true });
+    expect(code).toBeDefined();
+    expect(code).toContain("import './reset.css';");
+  });
+
+  it('covers recma statement filters for destructured components', () => {
+    const plugin = airRecmaPlugin();
+    const tree = {
+      type: 'Program',
+      body: [
+        {
+          type: 'VariableDeclaration',
+          declarations: [
+            {
+              id: { type: 'ObjectPattern' },
+              init: { type: 'Identifier', name: '_components' },
+            },
+          ],
+        },
+      ],
+    };
+    plugin(tree);
+    expect(tree.body).toHaveLength(0);
   });
 });

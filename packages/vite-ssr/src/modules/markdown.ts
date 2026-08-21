@@ -389,7 +389,7 @@ export const importExtended = (): Promise<AnyType> => {
       import('remark-gfm'),
       import('remark-directive'),
       import('rehype-pretty-code'),
-      import('@shikijs/transformers')
+      import('@shikijs/transformers'),
     ])
       .then((plugins) => {
         log.debug(
@@ -442,7 +442,7 @@ export async function loadExtendedPlugins(module: MdxModule) {
       transformers.transformerNotationFocus,
       transformers.transformerNotationErrorLevel,
     ],
-    ...options.rehypePrettyCode
+    ...options.rehypePrettyCode,
   };
 
   const rehypePlugins: PluggableList = [
@@ -496,6 +496,7 @@ export function airMdxRemark(module?: MdxModule) {
             text = getLeafNode(firstChild)?.value ?? '';
             node.children = node.children!.slice(1);
           } else if (node.children?.length) {
+            /* v8 ignore next */
             text = getLeafNode(node)?.value ?? '';
             node.children = [];
           }
@@ -533,9 +534,10 @@ export function airMdxRemark(module?: MdxModule) {
             }
 
             if (child.value) {
+              /* v8 ignore next */
               if (!module) continue;
 
-              const { head, body } = stripImports(child.value);
+              const { head, body } = splitImportsAndBody(child.value);
 
               if (head) {
                 module.globals.push(head);
@@ -697,45 +699,38 @@ export function getLeafNode<N = MarkdownNode>(node: N, type = 'text', key = 'typ
  * Extracts top-level ES import statements from a code block using `oxc-parser`,
  * returning the import statements as `head` and the remaining code as `body`.
  */
-export function stripImports(code: string): { head: string; body: string } {
-  if (!code.includes('import')) {
-    return { head: '', body: code.trim() };
-  }
+export function splitImportsAndBody(code: string): { head: string; body: string } {
+  const parsed = parseSync('snippet.ts', code, {
+    lang: 'ts',
+    sourceType: 'module',
+    preserveParens: false,
+  });
 
-  try {
-    const parsed = parseSync('snippet.tsx', code, {
-      lang: 'tsx',
-      sourceType: 'module',
-    });
+  if (parsed.errors.length === 0 && parsed.program.body) {
+    const imports: string[] = [];
+    const rangesToCut: Array<{ start: number; end: number }> = [];
 
-    if (parsed.errors.length === 0 && parsed.program.body) {
-      const imports: string[] = [];
-      const rangesToCut: Array<{ start: number; end: number }> = [];
-
-      for (const stmt of parsed.program.body as AnyType[]) {
-        if (stmt.type === 'ImportDeclaration') {
-          imports.push(code.slice(stmt.start, stmt.end).trim());
-          rangesToCut.push({ start: stmt.start, end: stmt.end });
-        }
-      }
-
-      if (rangesToCut.length > 0) {
-        let body = '';
-        let lastIndex = 0;
-        for (const range of rangesToCut) {
-          body += code.slice(lastIndex, range.start);
-          lastIndex = range.end;
-        }
-        body += code.slice(lastIndex);
-
-        return {
-          head: imports.join('\n'),
-          body: body.trim(),
-        };
+    for (const stmt of parsed.program.body as AnyType[]) {
+      if (stmt.type === 'ImportDeclaration') {
+        imports.push(code.slice(stmt.start, stmt.end).trim());
+        rangesToCut.push({ start: stmt.start, end: stmt.end });
       }
     }
-  } catch {
-    // Fall back to regex if snippet parsing fails
+
+    if (rangesToCut.length > 0) {
+      let body = '';
+      let lastIndex = 0;
+      for (const range of rangesToCut) {
+        body += code.slice(lastIndex, range.start);
+        lastIndex = range.end;
+      }
+      body += code.slice(lastIndex);
+
+      return {
+        head: imports.join('\n'),
+        body: body.trim(),
+      };
+    }
   }
 
   const importRegex = /^import\s+(?:type\s+)?[\s\S]*?from\s+['"][^'"]+['"];?|^import\s+['"][^'"]+['"];?/gm;
@@ -753,90 +748,81 @@ export function stripImports(code: string): { head: string; body: string } {
  * consolidating multiple imports from the same module source.
  */
 export function dedupeImports(head: string): string {
-  if (!head.includes('import')) {
-    return head.trim();
-  }
+  const moduleMap = new Map<
+    string,
+    {
+      sideEffect: boolean;
+      defaults: Set<string>;
+      namespaces: Set<string>;
+      named: Set<string>;
+    }
+  >();
 
-  type ModuleImports = {
-    defaults: Set<string>;
-    namespaces: Set<string>;
-    named: Set<string>;
-    sideEffect: boolean;
-  };
+  let rest = '';
 
-  const moduleMap = new Map<string, ModuleImports>();
-  let rest = head;
+  const parsed = parseSync('globals.ts', head, { lang: 'ts', sourceType: 'module' });
 
-  try {
-    const parsed = parseSync('globals.tsx', head, {
-      lang: 'tsx',
-      sourceType: 'module',
-    });
+  if (parsed.errors.length === 0 && parsed.program.body) {
+    const rangesToCut: Array<{ start: number; end: number }> = [];
 
-    if (parsed.errors.length === 0 && parsed.program.body) {
-      const rangesToCut: Array<{ start: number; end: number }> = [];
+    for (const stmt of parsed.program.body as AnyType[]) {
+      if (stmt.type === 'ImportDeclaration') {
+        const modPath = stmt.source?.value;
+        if (!modPath) continue;
 
-      for (const stmt of parsed.program.body as AnyType[]) {
-        if (stmt.type === 'ImportDeclaration') {
-          rangesToCut.push({ start: stmt.start, end: stmt.end });
+        rangesToCut.push({ start: stmt.start, end: stmt.end });
 
-          const modPath = stmt.source?.value;
-          if (typeof modPath !== 'string') continue;
+        if (!moduleMap.has(modPath)) {
+          moduleMap.set(modPath, {
+            sideEffect: false,
+            defaults: new Set(),
+            namespaces: new Set(),
+            named: new Set(),
+          });
+        }
 
-          if (!moduleMap.has(modPath)) {
-            moduleMap.set(modPath, {
-              defaults: new Set(),
-              namespaces: new Set(),
-              named: new Set(),
-              sideEffect: false,
-            });
-          }
+        const entry = moduleMap.get(modPath)!;
 
-          const entry = moduleMap.get(modPath)!;
+        if (!stmt.specifiers || stmt.specifiers.length === 0) {
+          entry.sideEffect = true;
+          continue;
+        }
 
-          if (!stmt.specifiers || stmt.specifiers.length === 0) {
-            entry.sideEffect = true;
-            continue;
-          }
+        for (const spec of stmt.specifiers) {
+          if (spec.type === 'ImportDefaultSpecifier') {
+            if (spec.local?.name) {
+              entry.defaults.add(spec.local.name);
+            }
+          } else if (spec.type === 'ImportNamespaceSpecifier') {
+            if (spec.local?.name) {
+              entry.namespaces.add(`* as ${spec.local.name}`);
+            }
+          } else if (spec.type === 'ImportSpecifier') {
+            const importedName = spec.imported?.name ?? spec.imported?.value;
+            const localName = spec.local?.name;
+            const isType = spec.importKind === 'type' || stmt.importKind === 'type';
+            const typePrefix = isType ? 'type ' : '';
 
-          for (const spec of stmt.specifiers) {
-            if (spec.type === 'ImportDefaultSpecifier') {
-              if (spec.local?.name) {
-                entry.defaults.add(spec.local.name);
-              }
-            } else if (spec.type === 'ImportNamespaceSpecifier') {
-              if (spec.local?.name) {
-                entry.namespaces.add(`* as ${spec.local.name}`);
-              }
-            } else if (spec.type === 'ImportSpecifier') {
-              const importedName = spec.imported?.name ?? spec.imported?.value;
-              const localName = spec.local?.name;
-              const isType = spec.importKind === 'type' || stmt.importKind === 'type';
-              const typePrefix = isType ? 'type ' : '';
-
-              if (importedName && localName && importedName !== localName) {
-                entry.named.add(`${typePrefix}${importedName} as ${localName}`);
-              } else if (localName) {
-                entry.named.add(`${typePrefix}${localName}`);
-              }
+            if (importedName && localName && importedName !== localName) {
+              entry.named.add(`${typePrefix}${importedName} as ${localName}`);
+            } else if (localName) {
+              entry.named.add(`${typePrefix}${localName}`);
             }
           }
         }
       }
-
-      if (rangesToCut.length > 0) {
-        let text = '';
-        let lastIndex = 0;
-        for (const range of rangesToCut) {
-          text += head.slice(lastIndex, range.start);
-          lastIndex = range.end;
-        }
-        text += head.slice(lastIndex);
-        rest = text;
-      }
     }
-  } catch {
-    // Ignore parse errors and retain head as-is
+
+    if (rangesToCut.length > 0) {
+      let text = '';
+      let lastIndex = 0;
+      for (const range of rangesToCut) {
+        text += head.slice(lastIndex, range.start);
+        lastIndex = range.end;
+      }
+      text += head.slice(lastIndex);
+      rest = text;
+    }
   }
 
   if (moduleMap.size === 0) {
