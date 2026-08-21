@@ -298,12 +298,25 @@ export function fillMissingRouteExports(options: FillRouteExportsOptions): FillR
   }
 
   if (exportAdditions.length) {
-    const insertStart = exports.defaultStart ?? content.length;
     const block = exportAdditions.join('\n');
-    if (insertStart >= content.length) {
-      magic.append(`\n${block}\n`);
+    if (exports.defaultStart !== undefined) {
+      let wsStart = exports.defaultStart;
+      while (
+        wsStart > 0 &&
+        (content[wsStart - 1] === ' ' ||
+          content[wsStart - 1] === '\t' ||
+          content[wsStart - 1] === '\n' ||
+          content[wsStart - 1] === '\r')
+      ) {
+        wsStart--;
+      }
+      magic.overwrite(wsStart, exports.defaultStart, `\n${block}\n\n`);
     } else {
-      magic.prependLeft(insertStart, `${block}\n\n`);
+      if (!content.endsWith('\n')) {
+        magic.append(`\n\n${block}\n`);
+      } else {
+        magic.append(`\n${block}\n`);
+      }
     }
     changed = true;
   }

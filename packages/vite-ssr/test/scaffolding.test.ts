@@ -151,7 +151,7 @@ describe('scaffolding — empty files become working pages', () => {
 
     expect(readFixture(dir, 'src/app.tsx')).toContain("import RootLayout from '../pages/layout.js';");
     expect(readFixture(dir, 'src/app.tsx')).toContain('export default (({ url }) =>');
-    expect(readFixture(dir, 'src/client.tsx')).toContain("import '@airlib/react/client';");
+    expect(readFixture(dir, 'src/client.tsx')).toContain("import { hydrateRoot } from 'react-dom/client';");
     expect(readFixture(dir, 'src/worker.ts')).toContain("import { createApp } from '@airlib/react/ssr';");
     expect(readFixture(dir, 'src/global.d.ts')).toContain('interface AirRouteMeta');
   });

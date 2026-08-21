@@ -463,7 +463,8 @@ export class RouteNode extends EventEmitter {
       name === this.fileMap.page ||
       name === this.fileMap.pageMdx ||
       name === this.fileMap.layout ||
-      name === this.fileMap.layoutMdx
+      name === this.fileMap.layoutMdx ||
+      isNamedPage(name, this.fileMap)
     ) {
       this.scaffoldFile(name);
     }

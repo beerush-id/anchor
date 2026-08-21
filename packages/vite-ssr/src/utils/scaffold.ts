@@ -2,11 +2,14 @@ import path from 'node:path';
 import type { FolderNode } from '../modules/folder-node.js';
 import {
   deriveIndexName,
+  deriveNamedRouteName,
   deriveRouteName,
   type FileMap,
   FRAMEWORK_PACKAGE,
   type Framework,
   humanizeSegment,
+  isNamedPage,
+  namedPageName,
 } from './mapper.js';
 
 /**
@@ -68,6 +71,20 @@ export function scaffoldForFile(opts: {
     return scaffoldPageTsx({ framework, rel: folder.rel, routeExport, files });
   }
 
+  if (isNamedPage(base, files)) {
+    const name = namedPageName(base, files);
+    if (base.endsWith(`.${files.pageMdx}`)) {
+      return scaffoldPageMdx({ segment: name });
+    }
+    const routeExport = deriveNamedRouteName(folder.segment, name);
+    return scaffoldPageTsx({
+      framework,
+      rel: folder.rel ? `${folder.rel}/${name}` : name,
+      routeExport,
+      files,
+    });
+  }
+
   return undefined;
 }
 
@@ -99,7 +116,6 @@ export default (({ url }) => <UIRouter router={router} root={RootLayout} url={ur
  * Scaffolds a `client.tsx` client hydration module.
  */
 export function scaffoldClientTsx(opts: { framework: Framework; files: FileMap }): string {
-  const pkg = FRAMEWORK_PACKAGE[opts.framework];
   const files = opts.files;
   const appMod = `./${files.entry.replace(/\.[^.]+$/, '.js')}`;
 
@@ -116,9 +132,7 @@ router
 `;
   }
 
-  return `import '${pkg}/client'; // MUST be first import
-
-import { hydrateRoot } from 'react-dom/client';
+  return `import { hydrateRoot } from 'react-dom/client';
 import App from '${appMod}';
 import router from './router.js';
 

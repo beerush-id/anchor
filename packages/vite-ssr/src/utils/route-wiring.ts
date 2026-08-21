@@ -83,8 +83,11 @@ export function wireUIFileContent(options: WireUIOptions): WireUIResult | undefi
         : `import ${targetRouteName} from '${source}';`;
     } else {
       const defaultSpec = specifiers.find((s) => s.type === 'ImportDefaultSpecifier');
-      const named = specifiers.filter((s) => s.type === 'ImportSpecifier').map((s) => content.slice(s.start, s.end));
-      const defaultPart = defaultSpec ? `${content.slice(defaultSpec.start, defaultSpec.end)}, ` : '';
+      const named = specifiers
+        .filter((s) => s.type === 'ImportSpecifier' && s.local.name !== targetRouteName)
+        .map((s) => content.slice(s.start, s.end));
+      const keepDefault = defaultSpec && defaultSpec.local.name !== argument.name;
+      const defaultPart = keepDefault ? `${content.slice(defaultSpec.start, defaultSpec.end)}, ` : '';
       importBlock = `import ${defaultPart}{ ${[targetRouteName, ...named].join(', ')} } from '${source}';`;
     }
   }

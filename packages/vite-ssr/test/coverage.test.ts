@@ -210,7 +210,7 @@ describe('coverage tests for unreached branches', () => {
       app = makeApp(dir);
 
       const content = readFixture(dir, 'pages/blogs/page.tsx');
-      expect(content).toContain("import blogsRoute, { blogsIndexRoute } from './route.ts';");
+      expect(content).toContain("import { blogsIndexRoute } from './route.ts';");
       expect(content).toContain('page(blogsIndexRoute)');
     });
 
