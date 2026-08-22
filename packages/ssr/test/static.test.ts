@@ -266,6 +266,68 @@ describe('createStatic', () => {
     expect(cached?.html).toBe('<h1>Not used</h1>');
     expect(mockGet).toHaveBeenCalledTimes(1);
   });
+
+  it('handles fallbackCache function returning a string or null', async () => {
+    const router = createMockRouter({ static: true });
+    const staticRes = createStatic(router as never, {
+      cache: { pages: () => 'public, max-age=120' },
+    });
+    const url = new URL('http://localhost/fn-cache');
+    await staticRes.set(url, '<h1>Function Cache</h1>');
+    const cached = await staticRes.get(url);
+    expect(cached?.headers.get('Cache-Control')).toBe('public, max-age=120');
+
+    const nullCacheRes = createStatic(router as never, {
+      cache: { pages: () => null as any },
+    });
+    await nullCacheRes.set(url, '<h1>Null Cache</h1>');
+    const nullCached = await nullCacheRes.get(url);
+    expect(nullCached?.headers.has('Cache-Control')).toBe(false);
+  });
+
+  it('supports Deno runtime for static file reads and writes', async () => {
+    vi.unstubAllGlobals();
+    const mockDeno = createMockDeno();
+    vi.stubGlobal('Deno', mockDeno);
+
+    const router = createMockRouter({ static: { maxAge: 60 } });
+    const staticRes = createStatic(router as never, { cacheDir: '/deno-cache' });
+    const url = new URL('http://localhost/deno-page');
+
+    await staticRes.set(url, '<h1>Deno Static</h1>');
+    const cached = await staticRes.get(url);
+    expect(cached?.html).toBe('<h1>Deno Static</h1>');
+
+    // Test non-file stat branch
+    mockDeno.stat.mockResolvedValueOnce({ isFile: false, mtime: new Date() });
+    const notFileResult = await staticRes.get(url);
+    expect(notFileResult).toBeUndefined();
+  });
+
+  it('supports Node.js runtime for static file reads and writes', async () => {
+    vi.unstubAllGlobals();
+    delete (globalThis as any).Bun;
+    delete (globalThis as any).Deno;
+
+    const router = createMockRouter({ static: { maxAge: 60 } });
+    const staticRes = createStatic(router as never, { cacheDir: './dist/test-node-cache' });
+    const url = new URL('http://localhost/node-page');
+
+    await staticRes.set(url, '<h1>Node Static</h1>');
+    const cached = await staticRes.get(url);
+    expect(cached?.html).toBe('<h1>Node Static</h1>');
+
+    // Test expired node cache
+    const expiredRes = createStatic(router as never, { cacheDir: './dist/test-node-cache' });
+    const expiredCached = await expiredRes.get(new URL('http://localhost/node-page'));
+    expect(expiredCached).toBeDefined();
+
+    // Clean up created test dir
+    const fs = await import('node:fs/promises');
+    try {
+      await fs.rm('./dist/test-node-cache', { recursive: true, force: true });
+    } catch {}
+  });
 });
 
 function createMockRouter(options: Record<string, unknown> = {}) {

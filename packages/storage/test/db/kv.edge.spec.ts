@@ -160,4 +160,27 @@ describe('IndexedKV Module - Edge Cases', () => {
     await result.promise().catch(errHandler);
     expect(errHandler).toHaveBeenCalledTimes(3);
   });
+
+  it('should support kvFn.remove, kvFn.ready, and kvFn.store', async () => {
+    const { createKVStore } = await import('../../src/db/kv.js');
+    const myKv = createKVStore('test-remove-store');
+    await myKv.ready();
+
+    expect(myKv.store()).toBeDefined();
+
+    // Remove non-cached key
+    myKv.remove('non_cached_key');
+
+    // Create state and remove cached key
+    const state = myKv('cached_key', 'initial_value');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    myKv.remove('cached_key');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(state.status).toBe('removed');
+
+    const activeState = myKv('active_key', 'active_val');
+    myKv.leave(activeState);
+    myKv.leave({} as never);
+  });
 });

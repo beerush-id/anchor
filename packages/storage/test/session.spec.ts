@@ -309,5 +309,19 @@ describe('Reactive Storage', () => {
       expect(sessionStorage.getItem(key)).toBe(JSON.stringify({ a: 2 }));
       ssr.destroy();
     });
+
+    it('should ignore storage event for non-synced keys', () => {
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: 'some_random_key',
+          newValue: JSON.stringify({ a: 10 }),
+        })
+      );
+    });
+
+    it('should handle SessionStorage without adapter', () => {
+      const storage = new SessionStorage('test-no-adapter', { a: 1 }, '1.0.0', undefined, null as any);
+      expect(storage.get('a')).toBe(1);
+    });
   });
 });

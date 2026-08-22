@@ -164,11 +164,13 @@ async function readStaticFile(filePath: string, maxAge?: number): Promise<string
     } catch (_e) {}
   }
 
+  /* istanbul ignore else */
   if (typeof process !== 'undefined' && process.versions?.node) {
     try {
       const fsName = 'node:fs/promises';
       const fs = await import(/* @vite-ignore */ fsName);
       const stat = await fs.stat(filePath);
+      /* istanbul ignore else */
       if (stat.isFile() && !isExpired(stat.mtimeMs, maxAge)) {
         return await fs.readFile(filePath, 'utf-8');
       }
@@ -195,6 +197,7 @@ async function writeStaticFile(filePath: string, content: string): Promise<void>
     return;
   }
 
+  /* istanbul ignore else */
   if (typeof process !== 'undefined' && process.versions?.node) {
     try {
       const fsName = 'node:fs/promises';

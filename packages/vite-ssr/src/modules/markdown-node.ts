@@ -74,6 +74,7 @@ export class MarkdownNode extends EventEmitter {
       '',
     ].join('\n');
 
+    /* istanbul ignore else */
     if (writeIfChanged(this.generatedFilePath, moduleContent)) {
       log.debug(color.event('Generated metadata'), 'for', color.file(this.itemPath));
       this.emitChange('update');

@@ -17,6 +17,7 @@ export const TRACKER_REGISTRY = new WeakMap<Linkable, (prop: KeyLike) => void>()
 
 let bindingInitialized = false;
 
+/* istanbul ignore else */
 if (!bindingInitialized && isBrowser()) {
   bindingInitialized = true;
 

@@ -162,5 +162,48 @@ describe('Mocked Indexed Table', () => {
       expect(await table.read('2')).toBeUndefined();
       expect(errorSpy).toHaveBeenCalled();
     });
+
+    it('should handle indexes already containing created_at and updated_at', async () => {
+      const table = new IndexedTable<{ name: string }>('test-custom-indexes-1', 1, [
+        'name',
+        'created_at',
+        'updated_at',
+      ]);
+      await table.promise();
+      expect(table.status).toBe(IDBStatus.Open);
+    });
+
+    it('should skip seeding if table already has records', async () => {
+      const table = new IndexedTable<{ id: string; name: string }>('test-already-seeded');
+      await table.create({ id: '1', name: 'Existing' });
+
+      // Create a new instance pointing to same table with seeds
+      const table2 = new IndexedTable<{ id: string; name: string }>('test-already-seeded').seed([
+        { id: '2', name: 'New' },
+      ]);
+      await table2.promise();
+      expect(await table2.count()).toBe(1);
+    });
+
+    it('should support table.promise on row state', async () => {
+      const { createTable } = await import('../../src/db/table.js');
+      const table = createTable<{ name: string }>('test-promise-state');
+      const rowState = table.add({ name: 'Promise Item' });
+
+      const resolved = await table.promise(rowState);
+      expect(resolved).toBe(rowState);
+
+      // Immediate resolution when already resolved
+      const immediate = await table.promise(rowState);
+      expect(immediate).toBe(rowState);
+
+      table.leave(rowState.id);
+      // Non-existent id leave
+      table.leave('non-existent-id');
+
+      // Test error rejection in table.promise
+      const notFoundRow = table.get('not-found-id');
+      await expect(table.promise(notFoundRow)).rejects.toThrow('Not found.');
+    });
   });
 });

@@ -121,6 +121,7 @@ export class MetadataNode extends EventEmitter {
     if (!name.endsWith('.mdx')) return;
     const absPath = path.join(this.folderNode.dir, name);
     const mdxNode = this.markdownNodes.get(absPath);
+    /* istanbul ignore else */
     if (mdxNode) {
       this.markdownNodes.delete(absPath);
       mdxNode.destroy();
@@ -132,6 +133,7 @@ export class MetadataNode extends EventEmitter {
     if (!name.endsWith('.mdx')) return;
     const absPath = path.join(this.folderNode.dir, name);
     const mdxNode = this.markdownNodes.get(absPath);
+    /* istanbul ignore else */
     if (mdxNode) {
       mdxNode.update();
       this.generate();

@@ -185,6 +185,22 @@ describe('ssrRenderToString', () => {
     expect(result.html).toContain('Internal SSR Render Error');
     vi.restoreAllMocks();
   });
+
+  it('handles route with noscript option without appending hydration script', async () => {
+    const router = {
+      ...createMockRouter(),
+      find: vi.fn(() => ({ route: { options: { noscript: true } } })),
+    } as any;
+
+    const result = await ssrRenderToString({
+      router,
+      renderView: mockRenderView,
+      url: 'http://localhost/',
+      hydrated: true,
+    });
+
+    expect(result.head).not.toContain('<script>hydrate()</script>');
+  });
 });
 
 describe('createRenderer', () => {

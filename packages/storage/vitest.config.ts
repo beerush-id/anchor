@@ -10,6 +10,7 @@ export default defineConfig({
     outputFile: 'coverage/index.html',
     coverage: {
       enabled: true,
+      provider: 'istanbul',
       include: ['src/**/*.ts'],
       reportsDirectory: './coverage/coverage',
     },

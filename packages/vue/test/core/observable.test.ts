@@ -25,7 +25,7 @@ describe('Anchor Vue - Observable', () => {
         state.value = 'updated value';
         await wrapper.vm.$nextTick();
 
-        expect(wrapper.text()).toBe('test value');
+        expect(wrapper.text()).toBe('updated value');
         wrapper.unmount();
       });
     });

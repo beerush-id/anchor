@@ -110,4 +110,113 @@ describe('createAssetResolver', () => {
     expect(mockEnv.ASSETS.fetch).toHaveBeenCalledWith(request);
     expect(response).toBe(mockResponse);
   });
+
+  it('falls through if env.ASSETS.fetch throws or returns 404', async () => {
+    const mockEnv = {
+      ASSETS: {
+        fetch: vi.fn().mockRejectedValue(new Error('fetch error')),
+      },
+    };
+
+    const resolver = createAssetResolver({ cache: { assets: false } });
+    const request = new Request('http://localhost/non-existent.css');
+    const url = new URL(request.url);
+
+    const response = await resolver(request, url, mockEnv);
+    expect(response).toBeUndefined();
+  });
+
+  it('handles Bun runtime environment when file exists and when not', async () => {
+    const mockFile = {
+      exists: vi.fn().mockResolvedValue(true),
+    };
+    vi.stubGlobal('Bun', {
+      file: vi.fn(() => mockFile),
+    });
+
+    try {
+      const resolver = createAssetResolver({ cache: { assets: 'public, max-age=60' } });
+      const request = new Request('http://localhost/app.js');
+      const url = new URL(request.url);
+
+      const response = await resolver(request, url);
+      expect(response).toBeInstanceOf(Response);
+      expect(response?.headers.get('Cache-Control')).toBe('public, max-age=60');
+
+      mockFile.exists.mockResolvedValue(false);
+      const notFoundResponse = await resolver(request, url);
+      expect(notFoundResponse).toBeUndefined();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('handles Deno runtime environment when file exists and when not', async () => {
+    vi.stubGlobal('Deno', {
+      stat: vi.fn().mockResolvedValue({ isFile: true }),
+      open: vi.fn().mockResolvedValue({ readable: new ReadableStream() }),
+    });
+
+    try {
+      const resolver = createAssetResolver({ cache: { assets: 'public, max-age=60' } });
+      const request = new Request('http://localhost/app.js');
+      const url = new URL(request.url);
+
+      const response = await resolver(request, url);
+      expect(response).toBeInstanceOf(Response);
+
+      // Non-file branch
+      (globalThis as any).Deno.stat.mockResolvedValue({ isFile: false });
+      const notFileResponse = await resolver(request, url);
+      expect(notFileResponse).toBeUndefined();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('handles Bun runtime without Cache-Control header', async () => {
+    const mockFile = {
+      exists: vi.fn().mockResolvedValue(true),
+    };
+    vi.stubGlobal('Bun', {
+      file: vi.fn(() => mockFile),
+    });
+
+    try {
+      const resolver = createAssetResolver({ cache: { assets: false } });
+      const request = new Request('http://localhost/app.js');
+      const url = new URL(request.url);
+
+      const response = await resolver(request, url);
+      expect(response).toBeInstanceOf(Response);
+      expect(response?.headers.has('Cache-Control')).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('handles Node.js runtime asset resolution', async () => {
+    vi.unstubAllGlobals();
+    delete (globalThis as any).Bun;
+    delete (globalThis as any).Deno;
+
+    const fs = await import('node:fs/promises');
+    await fs.mkdir('./dist/client', { recursive: true });
+    await fs.writeFile('./dist/client/test.js', 'console.log("test");');
+
+    try {
+      const resolver = createAssetResolver({ cache: { assets: 'public, max-age=60' } });
+      const request = new Request('http://localhost/test.js');
+      const url = new URL(request.url);
+
+      const response = await resolver(request, url);
+      expect(response).toBeInstanceOf(Response);
+      expect(response?.headers.get('Content-Type')).toBe('application/javascript');
+
+      const notFound = await resolver(new Request('http://localhost/missing.js'), new URL('http://localhost/missing.js'));
+      expect(notFound).toBeUndefined();
+    } finally {
+      await fs.rm('./dist/client', { recursive: true, force: true });
+    }
+  });
 });

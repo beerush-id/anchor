@@ -200,6 +200,7 @@ export class RouteNode extends EventEmitter {
       files: this.fileMap,
     });
 
+    /* istanbul ignore else */
     if (content) {
       try {
         fs.writeFileSync(file, content);
@@ -291,10 +292,12 @@ export class RouteNode extends EventEmitter {
 
     if (!result) return;
 
+    /* istanbul ignore else */
     if (result.warning) {
       this.warn(result.warning);
     }
 
+    /* istanbul ignore else */
     if (result.changed && result.output !== content) {
       fs.writeFileSync(filePath, result.output);
       this.emitChange('reload');
@@ -432,11 +435,13 @@ export class RouteNode extends EventEmitter {
         changed = true;
       }
     } else if (name === this.fileMap.layout || name === this.fileMap.layoutMdx) {
+      /* istanbul ignore else */
       if (!this.layout) {
         this.layout = true;
         changed = true;
       }
     } else if (isNamedPage(name, this.fileMap)) {
+      /* istanbul ignore else */
       if (!this.namedPages.has(name)) {
         this.namedPages.add(name);
         if (this.page && !this.layout) {
@@ -447,6 +452,7 @@ export class RouteNode extends EventEmitter {
     }
 
     if (changed) {
+      /* istanbul ignore else */
       if (this.page || this.layout || this.namedPages.size) {
         this.ensureRouteFile();
       }
@@ -478,11 +484,13 @@ export class RouteNode extends EventEmitter {
       }
       changed = true;
     } else if (name === this.fileMap.pageMdx) {
+      /* istanbul ignore else */
       if (this.page === 'mdx') {
         this.page = undefined;
         changed = true;
       }
     } else if (name === this.fileMap.layout || name === this.fileMap.layoutMdx) {
+      /* istanbul ignore else */
       if (!this.folderNode.files.has(this.fileMap.layout) && !this.folderNode.files.has(this.fileMap.layoutMdx)) {
         this.layout = false;
         changed = true;

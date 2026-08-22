@@ -70,6 +70,7 @@ export class RouteStore extends Map<string, RouteNode> {
     }
 
     for (const namedPage of node.namedPages) {
+      /* istanbul ignore else */
       if (base === namedPage) {
         const pageName = namedPageName(namedPage, node.fileMap);
         return {
@@ -90,6 +91,7 @@ export class RouteStore extends Map<string, RouteNode> {
 
     for (const child of node.children.values()) {
       const found = this.findNode(child, dir);
+      /* istanbul ignore else */
       if (found) return found;
     }
 

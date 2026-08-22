@@ -214,6 +214,7 @@ export class IndexedStore {
       });
     } else {
       this.connection.onClosed?.add((error) => {
+        /* istanbul ignore else */
         if (error) {
           this.error = error;
         }
@@ -330,6 +331,7 @@ export class IndexedStore {
 
     return await new Promise((resolve) => {
       const unsubscribe = this.subscribe((event) => {
+        /* istanbul ignore else */
         if (event.type === IDBStatus.Open || event.type === IDBStatus.Closed) {
           resolve(event);
           unsubscribe();

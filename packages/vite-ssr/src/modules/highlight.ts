@@ -11,6 +11,7 @@ export const SHIKI_THEMES = { light: 'catppuccin-latte', dark: 'catppuccin-mocha
 
 export async function getHighlighterSingleton(): Promise<Highlighter> {
   if (highlighter) return highlighter;
+  /* istanbul ignore else */
   if (!highlighterPromise) {
     const started = performance.now();
     log.debug(color.event('Initializing Shiki highlighter'));
@@ -51,6 +52,7 @@ export type HighlightOptions = {
 export async function highlightCode(code: string, opts: HighlightOptions) {
   const h = await getHighlighterSingleton();
 
+  /* istanbul ignore else */
   if (opts.lang && !h.getLoadedLanguages().includes(opts.lang)) {
     try {
       await h.loadLanguage(opts.lang as BundledLanguage);

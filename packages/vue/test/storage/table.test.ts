@@ -197,5 +197,15 @@ describe('Storage - Table', () => {
 
       expect(mockTable.seed).toHaveBeenCalledWith([{ id: '1', name: 'Test' }]);
     });
+
+    it('should accept an existing ReactiveTable instance', () => {
+      mount({
+        template: '<div></div>',
+        setup() {
+          const tableRef = createTableRef(mockTable as never);
+          expect(tableRef).toBeDefined();
+        },
+      });
+    });
   });
 });

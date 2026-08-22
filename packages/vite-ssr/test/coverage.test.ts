@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AIR_ENV, DEFAULT_FILE_MAP } from '../src/modules/env.js';
-import { MDX_DEFAULT_OPTIONS, mdxEntryWrapper, mdxFile } from '../src/modules/markdown.js';
+import { MDX_DEFAULT_OPTIONS, airMdxHeadings, airMdxRehype, getLeafNode, loadExtendedPlugins, mdxEntryWrapper, mdxFile, mdxMatcher } from '../src/modules/markdown.js';
 import {
   canonicalPath,
   derivePrefix,
@@ -739,6 +739,38 @@ describe('coverage tests for unreached branches', () => {
       app = makeApp(dir);
 
       expect(readFixture(dir, 'src/app.tsx')).toBe('');
+    });
+
+    it('handles mdxMatcher and getLeafNode defaults', async () => {
+      const matcher = mdxMatcher();
+      expect(matcher('page.mdx')).toBe(true);
+      expect(matcher('page.md')).toBe(true);
+      expect(matcher('page.tsx')).toBe(false);
+
+      const leaf = getLeafNode({ type: 'root', children: [{ type: 'paragraph', children: [{ type: 'text', value: 'hello' }] }] });
+      expect(leaf).toEqual({ type: 'text', value: 'hello' });
+
+      const notFound = getLeafNode({ type: 'root' }, 'missing');
+      expect(notFound).toBeUndefined();
+
+      const plugins = await loadExtendedPlugins({ options: { extended: true } } as never);
+      expect(plugins.remarkPlugins.length).toBeGreaterThan(0);
+      expect(plugins.rehypePlugins.length).toBeGreaterThan(0);
+
+      const headingsPlugin = airMdxHeadings();
+      const mockTree = { type: 'root', children: [] } as never;
+      expect(() => headingsPlugin(mockTree)).not.toThrow();
+
+      const rehypePlugin = airMdxRehype();
+      expect(() => rehypePlugin(mockTree)).not.toThrow();
+
+      const compiled = await mdxFile('/test.mdx', '# Test');
+      expect(compiled.code).toBeDefined();
+
+      const compiledWithPost = await mdxFile('/test.mdx', '# Test', {
+        postProcesses: [async (c) => c],
+      });
+      expect(compiledWithPost.code).toBeDefined();
     });
   });
 });

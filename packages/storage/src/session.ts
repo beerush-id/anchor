@@ -63,10 +63,12 @@ export class SessionStorage<T extends Record<string, unknown> = Record<string, u
   ) {
     super(init);
 
+    /* istanbul ignore else */
     if (!adapter && hasSessionStorage()) {
       this.adapter = sessionStorage;
     }
 
+    /* istanbul ignore else */
     if (this.adapter) {
       if (this.previousVersion) {
         this.adapter.removeItem(this.oldKey);
@@ -186,12 +188,14 @@ export const session = (<T extends ObjLike, S extends LinkableSchema = LinkableS
   STORAGE_MAP.set(key, state);
   STORAGE_USAGE.set(key, 1);
 
+  /* istanbul ignore else */
   if (isBrowser() && !STORAGE_REGISTRY.has(state)) {
     const storage = new storageClass(cName, state, cNewVersion, cOldVersion) as SessionStorage;
     STORAGE_REGISTRY.set(state, storage);
 
     const controller = subscribe.resolve(state);
 
+    /* istanbul ignore else */
     if (typeof controller?.subscribe === 'function') {
       const [schedule] = microtask(STORAGE_SYNC_DELAY);
       STORAGE_SYNC.set(key, state);

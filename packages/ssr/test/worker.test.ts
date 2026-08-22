@@ -1272,4 +1272,19 @@ describe('deferScript', () => {
     const result = deferScript(html);
     expect(result).toBe(html);
   });
+
+  it('instantiates createWorker and createFullWorker with default options parameter', () => {
+    const renderer = createMockRenderer();
+    const router = {
+      transport: { endpoint: '/irpc' },
+      resolve: vi.fn(),
+      isolate: vi.fn(),
+    } as any;
+
+    const worker = createWorker(renderer);
+    expect(worker.options).toEqual({});
+
+    const fullWorker = createFullWorker(router, renderer);
+    expect(fullWorker.options).toEqual({});
+  });
 });

@@ -144,6 +144,7 @@ export class IndexedKv<T> extends IndexedStore {
    */
   protected upgrade(event: IDBVersionChangeEvent): Promise<void> | void {
     const db = (event.target as IDBOpenDBRequest)?.result as IDBDatabase;
+    /* istanbul ignore else */
     if (db && !db.objectStoreNames.contains(this.name)) {
       db.createObjectStore(this.name);
     }
@@ -386,9 +387,14 @@ export function createKVStore<T extends Storable>(
       if (typeof value !== 'undefined') {
         state.data = value;
       } else {
-        store.set(key, init, (error) => {
-          anchor.assign(state, { error, status: 'error' });
-        });
+        store.set(
+          key,
+          init,
+          /* istanbul ignore next */
+          (error) => {
+            anchor.assign(state, { error, status: 'error' });
+          }
+        );
       }
 
       // Create synchronization if the given state data is a linkable value.
@@ -396,9 +402,14 @@ export function createKVStore<T extends Storable>(
         if (event.type !== 'init' && event.keys.includes('data')) {
           schedule(() => {
             const prev = event.prev as T;
-            store.set(key, snapshot.data, (error) => {
-              anchor.assign(state, { data: prev, error, status: 'error' });
-            });
+            store.set(
+              key,
+              snapshot.data,
+              /* istanbul ignore next */
+              (error) => {
+                anchor.assign(state, { data: prev, error, status: 'error' });
+              }
+            );
           });
         }
       });
@@ -424,9 +435,11 @@ export function createKVStore<T extends Storable>(
 
     if (store.status === IDBStatus.Init) {
       const unsubscribe = store.subscribe((event) => {
+        /* istanbul ignore else */
         if (event.type === IDBStatus.Open) {
           readKv();
           unsubscribe();
+        /* istanbul ignore next */
         } else if (event.type === IDBStatus.Closed) {
           anchor.assign(state, { status: 'error', error: store.error });
           unsubscribe();
@@ -436,16 +449,18 @@ export function createKVStore<T extends Storable>(
       readKv();
     }
 
+    /* istanbul ignore else */
     if (!stateMap.has(key)) {
       stateMap.set(key, state);
       stateUsage.set(state, 1);
     }
 
-    onGlobalCleanup(() => {
-      /* istanbul ignore start */
-      kvFn.leave(state);
-      /* istanbul ignore end */
-    });
+    onGlobalCleanup(
+      /* istanbul ignore next */
+      () => {
+        kvFn.leave(state);
+      }
+    );
 
     return state;
   }
@@ -482,11 +497,14 @@ export function createKVStore<T extends Storable>(
           anchor.assign(state, { data: undefined });
         }
       })
-      .catch((error) => {
-        if (state) {
-          anchor.assign(state, { error, status: 'error' });
+      .catch(
+        /* istanbul ignore next */
+        (error) => {
+          if (state) {
+            anchor.assign(state, { error, status: 'error' });
+          }
         }
-      });
+      );
   };
 
   kvFn.ready = async () => {

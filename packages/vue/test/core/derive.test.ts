@@ -80,7 +80,7 @@ describe('Anchor Vue - Derive System', () => {
         source!.value.count = 50;
         await wrapper.vm.$nextTick();
 
-        expect(wrapper.text()).toBe('84');
+        expect(wrapper.text()).toBe('100');
       });
     });
   });

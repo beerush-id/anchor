@@ -15,8 +15,12 @@ describe('Anchor Svelte - Client', () => {
         expect(screen.getByTestId('state-value').textContent).toBe('42-test');
       });
 
-      it('should import from the core path', () => {
+      it('should import from the core path', async () => {
         expect(typeof anchor).toBe('function');
+        const root = await import('../../src/index.js');
+        expect(root.anchor).toBeDefined();
+        const storage = await import('../../src/storage/index.js');
+        expect(storage.SessionStorage).toBeDefined();
       });
     });
   });

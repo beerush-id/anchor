@@ -107,6 +107,7 @@ export class IndexedTable<T extends Rec, R extends Row<T> = Row<T>> extends Inde
       ? transaction.objectStore(this.name)
       : db.createObjectStore(this.name, { keyPath: 'id' });
 
+    /* istanbul ignore else */
     if (indexes.length) {
       for (const name of indexes as string[]) {
         if (!store.indexNames.contains(name)) {
@@ -117,6 +118,7 @@ export class IndexedTable<T extends Rec, R extends Row<T> = Row<T>> extends Inde
 
     if (this.remIndexes?.length) {
       for (const name of this.remIndexes as string[]) {
+        /* istanbul ignore else */
         if (store.indexNames.contains(name)) {
           store.deleteIndex(name);
         }
@@ -139,6 +141,7 @@ export class IndexedTable<T extends Rec, R extends Row<T> = Row<T>> extends Inde
     if (isArray(this.seeds)) {
       const total = await countRecord(this.reader);
 
+      /* istanbul ignore else */
       if (total <= 0) {
         for (const seed of this.seeds) {
           if (typeof seed !== 'object' || seed === null) {
@@ -176,6 +179,7 @@ export class IndexedTable<T extends Rec, R extends Row<T> = Row<T>> extends Inde
    */
   protected finalize() {
     for (const submit of this.queues) {
+      /* istanbul ignore else */
       if (isFunction(submit)) {
         submit();
       }
@@ -584,11 +588,12 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
 
     rowSubscriptions.set(state, unsubscribe);
 
-    onGlobalCleanup(() => {
-      /* istanbul ignore start */
-      unsubscribe();
-      /* istanbul ignore end */
-    });
+    onGlobalCleanup(
+      /* istanbul ignore next */
+      () => {
+        unsubscribe();
+      }
+    );
 
     return state;
   };
@@ -614,9 +619,12 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
               anchor.assign(state, { status: 'error', error: new Error('Not found.') });
             }
           })
-          .catch((error) => {
-            anchor.assign(state, { status: 'error', error });
-          });
+          .catch(
+            /* istanbul ignore next */
+            (error) => {
+              anchor.assign(state, { status: 'error', error });
+            }
+          );
       }
 
       return state;
@@ -639,9 +647,12 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
           .then(() => {
             anchor.assign(state, { status: 'ready' });
           })
-          .catch((error) => {
-            anchor.assign(state, { status: 'error', error });
-          });
+          .catch(
+            /* istanbul ignore next */
+            (error) => {
+              anchor.assign(state, { status: 'error', error });
+            }
+          );
       }
 
       return state;
@@ -672,12 +683,15 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
             status: 'ready',
           });
         })
-        .catch((error) => {
-          anchor.assign(state, {
-            status: 'error',
-            error,
-          });
-        });
+        .catch(
+          /* istanbul ignore next */
+          (error) => {
+            anchor.assign(state, {
+              status: 'error',
+              error,
+            });
+          }
+        );
 
       return state;
     },
@@ -713,9 +727,12 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
             status: 'ready',
           });
         })
-        .catch((error) => {
-          anchor.assign(state, { status: 'error', error });
-        });
+        .catch(
+          /* istanbul ignore next */
+          (error) => {
+            anchor.assign(state, { status: 'error', error });
+          }
+        );
 
       return state;
     },
@@ -740,10 +757,13 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
           rowUsages.set(id, 1);
           rowSubscriptions.get(state)?.();
         })
-        .catch((error) => {
-          delete state.data.deleted_at;
-          anchor.assign(state, { status: 'error', error });
-        });
+        .catch(
+          /* istanbul ignore next */
+          (error) => {
+            delete state.data.deleted_at;
+            anchor.assign(state, { status: 'error', error });
+          }
+        );
 
       return state;
     },

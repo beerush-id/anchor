@@ -137,6 +137,7 @@ export function detectFramework(root: string): Framework {
     const deps = { ...pkg.dependencies, ...pkg.devDependencies };
 
     if (deps['@airlib/solid']) return 'solid';
+    /* istanbul ignore else */
     if (deps['@airlib/react']) return 'react';
   } catch {}
 

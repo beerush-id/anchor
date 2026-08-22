@@ -309,4 +309,14 @@ describe('IndexedDB - Edge Cases', () => {
     expect(rec.created_at).toBeInstanceOf(Date);
     expect(rec.updated_at).toBeInstanceOf(Date);
   });
+
+  it('should handle onClosed with error and immediate promise resolution', async () => {
+    const store = new TestIndexStore('test-closed-db');
+    const closedEvent = await store.promise();
+    expect(closedEvent).toBeDefined();
+
+    // Already open/closed promise immediate resolution
+    const immediateEvent = await store.promise();
+    expect(immediateEvent).toEqual({ type: store.status });
+  });
 });

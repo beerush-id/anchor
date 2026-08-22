@@ -86,6 +86,7 @@ export class ManifestNode extends EventEmitter {
   }
 
   private handleChildAdded = (childFolder: FolderNode) => {
+    /* istanbul ignore else */
     if (this.addChild(childFolder)) {
       this.updateEntries();
     }

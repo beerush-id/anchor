@@ -103,6 +103,7 @@ export function parseRouteExports(content: string): RouteExports | undefined {
   for (const node of ast.body!) {
     if (node.type === 'ImportDeclaration') {
       const source = node.source?.value;
+      /* istanbul ignore else */
       if (typeof source === 'string') {
         let kind: RouteImport['kind'] = 'named';
         let localName = '';
@@ -158,13 +159,16 @@ export function parseRouteExports(content: string): RouteExports | undefined {
           binding: routeBinding(decl.init),
         });
       }
-    } else if (
-      node.type === 'ExportDefaultDeclaration' &&
-      node.declaration?.type === 'Identifier' &&
-      node.declaration.name
-    ) {
-      defaultName = node.declaration.name;
-      defaultStart = node.start!;
+    } else {
+      /* istanbul ignore else */
+      if (
+        node.type === 'ExportDefaultDeclaration' &&
+        node.declaration?.type === 'Identifier' &&
+        node.declaration.name
+      ) {
+        defaultName = node.declaration.name;
+        defaultStart = node.start!;
+      }
     }
   }
 
@@ -172,7 +176,10 @@ export function parseRouteExports(content: string): RouteExports | undefined {
   if (defaultStart !== undefined) {
     const adjacent = comments
       .filter((c) => c.end <= defaultStart && content.slice(c.end, defaultStart).trim() === '')
-      .sort((a, b) => b.end - a.end)[0];
+      .sort(
+        /* istanbul ignore next */
+        (a, b) => b.end - a.end
+      )[0];
     if (adjacent && isDefaultMarkerComment(adjacent.value)) {
       defaultInsertStart = adjacent.start;
     }

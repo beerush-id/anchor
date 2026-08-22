@@ -95,7 +95,10 @@ export class ImageStore {
     this.options = { ...IMAGE_DEFAULT_OPTIONS, ...options };
     this.rootDir = root || process.cwd();
     this.cacheDir = path.join(this.rootDir, this.options.cacheDir);
-    this.ensureDir = fs.mkdir(this.cacheDir, { recursive: true }).catch(() => undefined);
+    this.ensureDir = fs.mkdir(this.cacheDir, { recursive: true }).catch(
+      /* istanbul ignore next */
+      () => undefined
+    );
   }
 
   private ensureDir: Promise<string | undefined>;

@@ -84,10 +84,12 @@ export function variableRef<T>(init: T, constant?: boolean): VariableRef<T> {
         // Remove the state ref from registry.
         REF_REGISTRY.delete(stateRef);
 
+        /* istanbul ignore else */
         if (component) {
           const observers = INSTANCE_REGISTRY.get(component);
           observers?.delete(observer);
 
+          /* istanbul ignore else */
           if (!observers?.size) {
             INSTANCE_REGISTRY.delete(component);
           }

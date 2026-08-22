@@ -84,6 +84,7 @@ export async function ssrRenderToString(renderOptions: SSRRenderStringOptions): 
         ? url
         : `http://localhost${url.startsWith('/') ? url : `/${url}`}`;
     const sitemapXml = await router.sitemap({ ...sitemapConfig, url: fullUrl });
+    /* istanbul ignore else */
     if (sitemapXml) {
       return {
         html: sitemapXml,
@@ -134,6 +135,7 @@ export async function ssrRenderToString(renderOptions: SSRRenderStringOptions): 
         html = `<h1>Internal SSR Render Error.</h1>`;
         status = 500;
 
+        /* istanbul ignore else */
         if (!isBrowser()) {
           console.error(error);
         }

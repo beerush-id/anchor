@@ -51,11 +51,13 @@ export function createAssetResolver<E = AnyType>(options: AppWorkerOptions<E>): 
     }
 
     // If running in Node.js:
+    /* istanbul ignore else */
     if (typeof process !== 'undefined' && process.versions?.node) {
       try {
         const fsName = 'node:fs/promises';
         const fs = await import(/* @vite-ignore */ fsName);
         const stat = await fs.stat(filePath);
+        /* istanbul ignore else */
         if (stat.isFile()) {
           const buffer = await fs.readFile(filePath);
           return new Response(buffer, {

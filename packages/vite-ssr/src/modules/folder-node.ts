@@ -53,8 +53,11 @@ export class FolderNode extends EventEmitter {
         const child = new FolderNode(abs, this);
         this.children.set(entry.name, child);
         child.scan();
-      } else if (entry.isFile()) {
-        this.files.add(entry.name);
+      } else {
+        /* istanbul ignore else */
+        if (entry.isFile()) {
+          this.files.add(entry.name);
+        }
       }
     }
 

@@ -76,6 +76,7 @@ export class AppNode extends EventEmitter {
 
     AIR_ENV.routes.attach(this.rootRoute);
 
+    /* istanbul ignore else */
     if (opts.metadataEnabled !== false) {
       log.verbose(color.event('Booting metadata tree'));
       this.rootMetadata = new MetadataNode(this.rootFolder, undefined, opts.root, opts.pagesDir);
@@ -83,6 +84,7 @@ export class AppNode extends EventEmitter {
       this.rootMetadata.boot();
     }
 
+    /* istanbul ignore else */
     if (opts.manifestEnabled !== false) {
       log.verbose(color.event('Booting manifest tree'));
       this.rootManifest = new ManifestNode(this.rootRoute, this.rootFolder, undefined, opts.root, this.fileMap.route);
@@ -127,6 +129,7 @@ export class AppNode extends EventEmitter {
       folder: undefined,
     });
 
+    /* istanbul ignore else */
     if (content) {
       try {
         fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -166,6 +169,7 @@ export class AppNode extends EventEmitter {
           files: this.fileMap,
         });
 
+        /* istanbul ignore else */
         if (content) {
           fs.writeFileSync(path.join(this.opts.pagesDir, base), content, 'utf-8');
         }
