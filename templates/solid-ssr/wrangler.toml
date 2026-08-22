@@ -1,5 +1,5 @@
-name = "my-anchor-solid-app"
-main = "dist/server/worker.js"
+name = "solid-ssr"
+main = "./server/worker.js"
 compatibility_date = "2024-06-10"
 compatibility_flags = ["nodejs_compat"]
 
