@@ -1,6 +1,6 @@
 # my-air-react
 
-AIR Stack for React — **Vite SSR + IRPC Starter**
+AirLib for React — **Vite SSR + IRPC Starter**
 
 ## What's Included
 
@@ -36,6 +36,6 @@ src/
 
 ## Learn More
 
-- [AIR Stack](https://airlib.dev/)
+- [AirLib](https://airlib.dev/)
 - [Vite](https://vite.dev/)
 - [React](https://react.dev/)

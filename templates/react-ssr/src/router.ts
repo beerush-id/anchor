@@ -1,4 +1,4 @@
-import { createRouter } from '@anchorlib/react';
+import { createRouter } from '@airlib/react';
 
 const router = createRouter();
 export default router;

@@ -1,6 +1,6 @@
 # my-anchor-app
 
-AIR Stack for React — **Vite SSR Starter (SSR Only)**
+AirLib for React — **Vite SSR Starter (SSR Only)**
 
 ## What's Included
 
@@ -34,6 +34,6 @@ src/
 
 ## Learn More
 
-- [AIR Stack](https://airlib.dev/)
+- [AirLib](https://airlib.dev/)
 - [Vite](https://vite.dev/)
 - [React](https://react.dev/)

@@ -1,4 +1,4 @@
-import { airPages } from '@anchorlib/vite-ssr';
+import { airPages } from '@airlib/vite';
 import { defineConfig } from 'vite';
 import solid from 'vite-plugin-solid';
 

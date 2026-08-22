@@ -1,6 +1,6 @@
 # my-air-solid
 
-AIR Stack for Solid — **Vite SSR + IRPC Starter**
+AirLib for Solid — **Vite SSR + IRPC Starter**
 
 ## What's Included
 
@@ -37,6 +37,6 @@ src/
 
 ## Learn More
 
-- [AIR Stack](https://airlib.dev/)
+- [AirLib](https://airlib.dev/)
 - [Vite](https://vite.dev/)
 - [SolidJS](https://www.solidjs.com/)

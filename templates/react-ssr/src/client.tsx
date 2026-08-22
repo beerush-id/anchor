@@ -1,11 +1,9 @@
-import '@anchorlib/react/client'; // MUST be first import
-
 import { hydrateRoot } from 'react-dom/client';
 import App from './app.js';
 import router from './router.js';
 
 import './app.css';
-import { acceptInteractions } from '@anchorlib/react/browser';
+import { acceptInteractions } from '@airlib/react/browser';
 
 router
   .activate(window.location.href)

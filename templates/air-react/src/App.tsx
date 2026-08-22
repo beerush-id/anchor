@@ -1,5 +1,5 @@
-import { type AppEntry, UIRouter } from '@anchorlib/react';
-import RootLayout from './pages/layout.tsx';
+import { type AppEntry, UIRouter } from '@airlib/react';
+import RootLayout from '@/pages/layout.tsx';
 import router from './router.ts';
 
 export default (({ url }) => {

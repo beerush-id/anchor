@@ -1,4 +1,4 @@
-/// <reference types="@anchorlib/vite-ssr/ambient" />
+/// <reference types="@airlib/vite/ambient" />
 
 interface AirRouteMeta {
   name?: string;

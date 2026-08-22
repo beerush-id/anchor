@@ -222,13 +222,13 @@ if (isBrowser()) {
     history.replaceState(null, '', url);
   }
 
-  setRedirectHandler((redirect) => {
-    navigate(redirect.url ?? (redirect as AnyType).route, {
+  setRedirectHandler((redirect: AnyType) => {
+    navigate(redirect.url ?? redirect.route, {
       query: redirect.query,
       params: redirect.params,
       redirect: location.href,
       replace: true,
-    } as never);
+    } as AnyType);
   });
 }
 

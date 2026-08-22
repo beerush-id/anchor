@@ -1,4 +1,4 @@
-import { createApp } from '@anchorlib/solid/ssr';
+import { createApp } from '@airlib/solid/ssr';
 import { HTTPRouter } from '@irpclib/http/router';
 import { WebSocketRouter } from '@irpclib/ws/router';
 import { httpTransport, wsTransport } from './api.js';

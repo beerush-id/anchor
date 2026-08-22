@@ -1,4 +1,4 @@
-import { createApp } from '@anchorlib/solid/ssr';
+import { createApp } from '@airlib/solid/ssr';
 import App from './app.js';
 import router from './router.js';
 

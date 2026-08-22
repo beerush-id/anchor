@@ -1,4 +1,4 @@
-import { createApp } from '@anchorlib/react/ssr';
+import { createApp } from '@airlib/react/ssr';
 import App from './app.js';
 import router from './router.js';
 

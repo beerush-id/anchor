@@ -1,4 +1,4 @@
-import { createApp } from '@anchorlib/react/ssr';
+import { createApp } from '@airlib/react/ssr';
 import { HTTPRouter } from '@irpclib/http/router';
 import { WebSocketRouter } from '@irpclib/ws/router';
 import { httpTransport, wsTransport } from './api.js';

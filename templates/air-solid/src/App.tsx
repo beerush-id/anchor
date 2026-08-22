@@ -1,5 +1,5 @@
-import { type AppEntry, UIRouter } from '@anchorlib/solid';
-import RootLayout from './pages/layout.js';
+import { type AppEntry, UIRouter } from '@airlib/solid';
+import RootLayout from '@/pages/layout.tsx';
 import router from './router.js';
 
 export default (({ url }) => {

@@ -23,9 +23,16 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
   "include": [
-    "src"
+    ".airlib/**/*",
+    "src/**/*",
+    "pages/**/*",
+    "assets/**/*",
+    "components/**/*"
   ]
 }

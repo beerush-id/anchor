@@ -1,6 +1,6 @@
 # my-anchor-solid-app
 
-AIR Stack for Solid — **Vite SSR Starter (SSR Only)**
+AirLib for Solid — **Vite SSR Starter (SSR Only)**
 
 ## What's Included
 
@@ -35,6 +35,6 @@ src/
 
 ## Learn More
 
-- [AIR Stack](https://airlib.dev/)
+- [AirLib](https://airlib.dev/)
 - [Vite](https://vite.dev/)
 - [SolidJS](https://www.solidjs.com/)
