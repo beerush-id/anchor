@@ -1,5 +1,5 @@
-import { $symbol, getScope, microtask, setScope } from '@airlib/core';
-import type { AnyRoute, InferParams, InferQuery, RouteTarget, UnknownRedirect } from './types.js';
+import { $symbol, type AnyType, getScope, microtask, setScope } from '@airlib/core';
+import type { InferParams, InferQuery, RouteTarget, UnknownRedirect } from './types.js';
 import { createUrl } from './url.js';
 
 const REDIRECT_HANDLER = $symbol('redirect-handler');
@@ -103,5 +103,5 @@ export function redirect<T>(
  */
 export function redirectUrl(redirect: UnknownRedirect): string {
   if (typeof redirect.url === 'string') return redirect.url;
-  return createUrl((redirect.route as AnyRoute).path, redirect.params, redirect.query);
+  return createUrl((redirect.route as AnyType).path as '/', (redirect as AnyType).params, (redirect as AnyType).query);
 }

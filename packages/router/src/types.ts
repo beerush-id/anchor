@@ -247,7 +247,7 @@ export type AnyRoute =
 /** Unknown provider type */
 export type UnknownProvider = (ctx: RouteContext<TRec, TRec, TRec>) => Promise<unknown> | unknown;
 /** Unknown redirect type */
-export type UnknownRedirect = Redirect<UnknownRoute>;
+export type UnknownRedirect = Redirect<AnyRoute>;
 
 /** Options for configuring the router */
 export type RouterOptions = RouteOptions & {
@@ -316,6 +316,7 @@ export type MatchedRoute = {
 /** A complete match result with URL and context */
 export type MatchResult = MatchedRoute & {
   url: URL;
+  slave?: boolean;
 };
 
 /** Cached route data with expiration */
@@ -396,11 +397,7 @@ export type RouteExceptionRenderer<Params, QueryParams, Data, PParams, PQueryPar
   context: RouterContext<PParams, PQueryParams, PData>;
 }) => Output;
 
-export type RouteTarget<T> = T extends
-  | Route<infer _Path, infer _Params, infer _Query, infer _Data, infer _Parent>
-  | IndexRoute<infer _IPath, infer _IParams, infer _IQuery, infer _IData, infer _IParent>
-  ? T
-  : never;
+export type RouteTarget<T> = T extends { path: string } ? T : never;
 
 export type InferState<T> =
   T extends Route<infer _Path, infer Params, infer Query, infer Data, infer _TParent>

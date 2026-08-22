@@ -52,6 +52,12 @@ describe('redirect.ts', () => {
       expect(redirect.query).toBeUndefined();
     });
 
+    it('should store url when provided as string', () => {
+      const redirect = new Redirect('/test-url');
+      expect(redirect.url).toBe('/test-url');
+      expect(redirect.route).toBeUndefined();
+    });
+
     it('should be throwable', () => {
       const redirect = new Redirect(new Route(sharedRouter, '/test'));
       expect(() => {
@@ -263,6 +269,12 @@ describe('redirect.ts', () => {
       testRoute = router.route('/users').route('/:id') as never;
     });
 
+    it('should return string url when provided as string', () => {
+      const redirect = new Redirect('/test-url-string');
+      const url = redirectUrl(redirect as never);
+      expect(url).toBe('/test-url-string');
+    });
+
     it('should return route path when no params or query', () => {
       const redirect = new Redirect(testRoute as never);
       const url = redirectUrl(redirect as never);
@@ -412,10 +424,10 @@ describe('redirect.ts', () => {
     it('should handle route without leading slash', () => {
       // Routes should be created via router.route() for proper path handling
       // Note: redirectUrl always prepends '/' if not present
-      const noLeadingSlashRoute = (router.route('users' as never) as UnknownRoute).route('/:id');
+      const noLeadingSlashRoute = router.route('users' as '/users').route('/:id');
       const params = { id: '123' };
-      const redirect = new Redirect(noLeadingSlashRoute as never, params as never);
-      const url = redirectUrl(redirect as never);
+      const redirect = new Redirect(noLeadingSlashRoute, params);
+      const url = redirectUrl(redirect);
       expect(url).toBe('/users/123');
     });
 

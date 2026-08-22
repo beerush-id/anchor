@@ -333,6 +333,42 @@ describe('Route class', () => {
       expect((route as any).loadRenderer).toBe(loader);
       expect(renderSpy).not.toHaveBeenCalled();
     });
+
+    it('should wait for existing renderLoaderQueue in ensureRenderer', async () => {
+      const route = new Route(sharedRouter, '/test');
+
+      let resolvePromise: (value: any) => void;
+      const promise = new Promise((resolve) => {
+        resolvePromise = resolve;
+      });
+
+      (route as any).loadRenderer = () => promise as any;
+
+      const ensure1 = route.ensureRenderer();
+      const ensure2 = route.ensureRenderer();
+
+      expect((route as any).renderLoaderQueue).toBeDefined();
+
+      resolvePromise!(vi.fn());
+
+      await ensure1;
+      await ensure2;
+
+      expect(route.renderer).toBeDefined();
+    });
+
+    it('should return early if renderer is already set and not forced', async () => {
+      const route = new Route(sharedRouter, '/test');
+      route.render(vi.fn());
+      const loader = vi.fn();
+      (route as any).loadRenderer = loader;
+
+      await route.ensureRenderer(); // Should return early
+      expect(loader).not.toHaveBeenCalled();
+
+      await route.ensureRenderer(true); // Should not return early
+      expect(loader).toHaveBeenCalled();
+    });
   });
 
   describe('params getter', () => {
@@ -703,6 +739,17 @@ describe('Route class', () => {
       expect(route.providers.has('test1')).toBe(true);
       expect(route.providers.has('test2')).toBe(true);
       expect(route.providers.has('base')).toBe(true);
+    });
+  });
+
+  describe('rewrite method', () => {
+    it('should set the target route and return itself', () => {
+      const route = new Route(sharedRouter, '/test');
+      const target = new Route(sharedRouter, '/target');
+      const result = route.rewrite(target as never);
+
+      expect(route.target).toBe(target);
+      expect(result).toBe(route);
     });
   });
 

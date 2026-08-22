@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { configure, DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from '../src/constant.js';
 import { Router, type UnknownRoute } from '../src/index.js';
 import { RouteRegistry } from '../src/registry.js';
@@ -282,6 +282,29 @@ describe('constant.ts', () => {
 
       new RouteRegistry(route as UnknownRoute);
       expect(ROUTE_MAP_LINK.has(route)).toBe(true);
+    });
+  });
+
+  describe('environment checks', () => {
+    it('should set baseUrl to location.origin if location is defined', async () => {
+      vi.stubGlobal('location', { origin: 'https://browser.example.com' });
+      vi.stubGlobal('window', {
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        location: { origin: 'https://browser.example.com' },
+      });
+
+      const symbols = Object.getOwnPropertySymbols(globalThis);
+      for (const sym of symbols) {
+        if (sym?.description?.includes('anchor')) {
+          delete (globalThis as any)[sym];
+        }
+      }
+
+      vi.resetModules();
+      const mod = await import('../src/constant.js');
+      expect(mod.DEFAULT_CONFIG.baseUrl).toBe('https://browser.example.com');
+      vi.unstubAllGlobals();
     });
   });
 });

@@ -375,17 +375,19 @@ export class Router<Output = any> {
 
     if (storage.activeUrl === url.href) return snapshots;
 
-    const rewrite = match.segments.find((s) => s.route.target);
-    if (rewrite) {
-      const urlSegments = url.pathname.split('/').slice(1);
-      const segmentInex = match.segments.indexOf(rewrite);
+    const rewrite = match.segments.findIndex((s) => s.route.target);
+    const offset = match.slave ? 1 : 0;
+    if (rewrite > -1) {
+      const urlSegments = url.pathname.split('/');
+      const rewriteSegment = match.segments[rewrite];
       const rewriteUrl = urlSegments.map((s, i) => {
-        if (i === segmentInex) return rewrite.route.target!.name;
+        if (i === rewrite + offset) return rewriteSegment.route.target!.name;
         return s;
       });
       this.finish();
-      throw redirect(`/${rewriteUrl.join('/')}`);
+      throw redirect(rewriteUrl.join('/'));
     }
+    console.log(match);
 
     const { segments, exception } = match;
     storage.context.exception = exception;

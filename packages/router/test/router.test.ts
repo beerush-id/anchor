@@ -470,6 +470,101 @@ describe('router.ts', () => {
 
         await Promise.all(promises);
       });
+
+      describe('URL Rewriting', () => {
+        it('should handle simple one-to-one rewrite (static)', async () => {
+          const source = router.route('/old-page');
+          const target = router.route('/new-page');
+          source.rewrite(target);
+
+          try {
+            await router.activate('/old-page');
+            expect.unreachable();
+          } catch (e: any) {
+            expect(e).toBeInstanceOf(Redirect);
+            expect(e.url).toBe('/new-page');
+          }
+        });
+
+        it('should handle nested rewrite', async () => {
+          const parent = router.route('/parent');
+          const source = parent.route('/old-child');
+          const target = parent.route('/new-child');
+          source.rewrite(target);
+
+          try {
+            await router.activate('/parent/old-child');
+            expect.unreachable();
+          } catch (e: any) {
+            expect(e).toBeInstanceOf(Redirect);
+            expect(e.url).toBe('/parent/new-child');
+          }
+        });
+
+        it('should handle slave rewrite', async () => {
+          const slaveSource = router.add('/slave-old');
+          const target = router.route('/slave-new');
+          slaveSource.rewrite(target);
+
+          try {
+            await router.activate('/slave-old');
+            expect.unreachable();
+          } catch (e: any) {
+            expect(e).toBeInstanceOf(Redirect);
+            expect(e.url).toBe('/slave-new');
+          }
+        });
+
+        it('should handle nested slave rewrite', async () => {
+          const slaveParent = router.add('/slave-parent');
+          const slaveChildSource = slaveParent.route('/old-child');
+          const slaveChildTarget = slaveParent.route('/new-child');
+          slaveChildSource.rewrite(slaveChildTarget);
+
+          try {
+            await router.activate('/slave-parent/old-child');
+            expect.unreachable();
+          } catch (e: any) {
+            expect(e).toBeInstanceOf(Redirect);
+            expect(e.url).toBe('/slave-parent/new-child');
+          }
+        });
+
+        it('should handle dynamic rewrite (preserving params)', async () => {
+          const oldUsers = router.route('/users-old');
+          const newUsers = router.route('/users-new');
+          oldUsers.rewrite(newUsers);
+
+          // Both have dynamic children
+          oldUsers.route('/:id');
+          newUsers.route('/:id');
+
+          try {
+            await router.activate('/users-old/123');
+            expect.unreachable();
+          } catch (e: any) {
+            expect(e).toBeInstanceOf(Redirect);
+            expect(e.url).toBe('/users-new/123');
+          }
+        });
+
+        it('should handle catch-all rewrite (preserving trailing path)', async () => {
+          const oldDocs = router.route('/docs-old');
+          const newDocs = router.route('/docs-new');
+          oldDocs.rewrite(newDocs);
+
+          // Catch-all child
+          oldDocs.route('/*path');
+
+          try {
+            await router.activate('/docs-old/getting-started/intro/v1');
+            expect.unreachable();
+          } catch (e: any) {
+            expect(e).toBeInstanceOf(Redirect);
+            expect(e.url).toBe('/docs-new/getting-started/intro/v1');
+          }
+        });
+      });
     });
 
     describe('deactivate method', () => {

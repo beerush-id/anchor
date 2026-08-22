@@ -86,7 +86,7 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
     index = 0,
     passive = false
   ): MatchedRoute | void {
-    if (!url || !url.pathname) return;
+    if (!url?.pathname) return;
 
     if (!urlSegments) {
       urlSegments = cleanPath(url.pathname, this.slave ? '' : '/').split('/');

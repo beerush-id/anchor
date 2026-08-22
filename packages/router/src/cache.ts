@@ -247,6 +247,9 @@ export class URLCache {
       ) as MatchResult;
 
       if (nextMatch) {
+        if (registry.slave) {
+          nextMatch.slave = true;
+        }
         if (nextMatch.exception && (!match || nextMatch.segments.length >= match.segments.length)) {
           match = nextMatch;
         }
