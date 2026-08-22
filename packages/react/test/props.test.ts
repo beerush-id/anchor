@@ -2,7 +2,7 @@ import { classx, effect, mutable } from '@airlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { $use, bind } from '../src/binding';
 import type { Bindable, ComponentProps, ReactiveProps } from '../src/index.js';
-import { callback, getProps, proxyProps, withProps } from '../src/props';
+import { callback, getProps, omitProps, pickProps, proxyProps, withProps } from '../src/props';
 
 describe('Anchor React - Props', () => {
   let errSpy: ReturnType<typeof vi.spyOn>;
@@ -322,6 +322,15 @@ describe('Anchor React - Props', () => {
       expect(pickedProps.value).toBe('newValue');
       pickedProps.value = 'newerValue';
       expect(pickedProps.value).toBe('newerValue');
+    });
+
+    it('should use default arguments for omitProps and pickProps', () => {
+      const source = { a: 1, b: 2 };
+      const omitted = omitProps(source, source);
+      expect(Object.keys(omitted)).toEqual(['a', 'b']);
+
+      const picked = pickProps(source, source);
+      expect(Object.keys(picked)).toEqual([]);
     });
   });
 });

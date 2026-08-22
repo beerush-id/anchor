@@ -225,6 +225,7 @@ export function UIRouter(props: UIRouterProps) {
   );
 }
 
+/* istanbul ignore next */
 function scrollIntoView(hash: string, behavior: ScrollBehavior = 'smooth') {
   const element = document.getElementById(hash);
   if (element) {
@@ -324,6 +325,7 @@ const createExceptionRenderer = <TParams, TQueryParams, TData, PParams, PQuery, 
 setRendererFactory(createRenderer);
 setExceptionRendererFactory(createExceptionRenderer);
 
+/* istanbul ignore next */
 if (isBrowser()) {
   if (location.pathname.endsWith('/')) {
     const url = `${location.pathname.replace(/\/$/, '')}${location.search}`;

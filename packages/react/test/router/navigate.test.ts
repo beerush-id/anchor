@@ -48,6 +48,13 @@ describe('Anchor React - Navigate Utility', () => {
     expect(dispatchSpy).toHaveBeenCalled();
   });
 
+  it('should use default options when options parameter is omitted', () => {
+    navigate('/home' as never);
+
+    expect(pushSpy).toHaveBeenCalledWith({ href: '/home', query: undefined, params: undefined, redirect: undefined }, '', '/home');
+    expect(dispatchSpy).toHaveBeenCalled();
+  });
+
   it('should navigate to a RouteComponent correctly', () => {
     const router = createRouter();
     const coreRoute = router.route('/users').route('/:id');

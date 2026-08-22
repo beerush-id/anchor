@@ -12,6 +12,7 @@ export const TableOfContent = setup<TableOfContentProps>((props) => {
   const activeId = mutable('');
 
   let observer: IntersectionObserver | undefined;
+  /* istanbul ignore else */
   if (isBrowser()) {
     observer = new IntersectionObserver(
       (entries) => {

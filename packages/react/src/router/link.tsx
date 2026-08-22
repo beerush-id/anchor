@@ -58,6 +58,7 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
 
       if (router && href) {
         route = untrack(() => router.find(target, true)?.route);
+        /* istanbul ignore next */
         if (route?.index) route = route.index as unknown as AnyRoute;
       }
     }

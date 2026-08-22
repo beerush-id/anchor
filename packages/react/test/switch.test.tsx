@@ -2,7 +2,7 @@ import { act, render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import '../src/client/index';
 import { mutable } from '@airlib/core';
-import { $use, createSwitch, For, Show, Snippet, stubScheduler } from '../src/index.js';
+import { $use, createSlot, createSwitch, For, Show, Snippet, stubScheduler } from '../src/index.js';
 
 stubScheduler();
 
@@ -244,6 +244,22 @@ describe('Switches', () => {
       const { container } = render(<Snippet data={{ name: 'Alice' }}>{'' as never}</Snippet>);
 
       expect(container.textContent).toContain('[Snippet Error: Snippet must pass function as the children]');
+    });
+
+    it('should use default displayName and scopeName when omitted', () => {
+      const ctx = Symbol('test-anonymous-switch');
+      const AnonSwitch = createSwitch<{ status: string }, string>(ctx, 'status');
+      expect((AnonSwitch as any).displayName).toBe('Switch(Anonymous)');
+
+      const AnonSlot = createSlot<string>(ctx, 'status');
+      expect((AnonSlot as any).displayName).toBe('Slot(Anonymous)');
+
+      const { container } = render(
+        <AnonSwitch for={{ status: 'active' }}>
+          <AnonSlot for="active">Active content</AnonSlot>
+        </AnonSwitch>
+      );
+      expect(container.textContent).toBe('Active content');
     });
   });
 });

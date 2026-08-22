@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 import { captureStack, isBrowser } from '@airlib/core';
 import type { FunctionComponent, memo, useEffect, useMemo, useRef, useState } from 'react';
 

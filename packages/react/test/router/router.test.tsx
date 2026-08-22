@@ -1,6 +1,6 @@
 import '../../src/client/index.js';
 import { type AnyType, clearContextStore, mutable } from '@airlib/core';
-import { DEFAULT_CONFIG, Redirect, type UnknownRoute } from '@airlib/router';
+import { DEFAULT_CONFIG, NotFoundError, Redirect, type UnknownRoute } from '@airlib/router';
 import { act, render, screen } from '@testing-library/react';
 import type { FC, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,10 +9,10 @@ import {
   getCurrentUrl,
   modal,
   page,
-  redirect,
-  route,
   RouteRendererComponent,
   RouteViewer,
+  redirect,
+  route,
   UIRouter,
 } from '../../src/index.js';
 
@@ -605,6 +605,8 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       expect(activateSpy).toHaveBeenCalled();
       expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'smooth' });
 
+      scrollToSpy.mockClear();
+      render(<UIRouter router={router} root={rootUi} headless={false} resetScroll={false} />);
       render(<UIRouter router={router} root={rootUi} headless={false} resetScroll={'instant'} />);
     });
 
@@ -830,6 +832,63 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
         '',
         '/redirect-target?foo=bar'
       );
+    });
+  });
+
+  describe('Exception rendering on leaf routes', () => {
+    it('renders ExceptionSnippet directly when leaf route has exception and no children', async () => {
+      const router = createRouter<ReactNode>();
+      const leafRoute = router.route('/leaf-error');
+      leafRoute.active = true;
+      leafRoute.context.exception = new NotFoundError('Leaf Error');
+      leafRoute.catch(() => <div>Custom Leaf Error Page</div>);
+
+      const { container } = render(
+        <UIRouter router={router}>
+          <RouteViewer route={leafRoute as any} stacks={new Map()} />
+        </UIRouter>
+      );
+
+      expect(container.textContent).toContain('Custom Leaf Error Page');
+    });
+
+    it('renders ExceptionSnippet when leaf route is not authenticated', async () => {
+      const router = createRouter<ReactNode>();
+      const leafRoute = router.route('/unauth');
+      leafRoute.active = true;
+      leafRoute.state.authenticated = false;
+      leafRoute.catch(() => <div>Access Denied</div>);
+
+      const { container } = render(
+        <UIRouter router={router}>
+          <RouteViewer route={leafRoute as any} stacks={new Map()} />
+        </UIRouter>
+      );
+
+      expect(container.textContent).toContain('Access Denied');
+    });
+
+    it('does not render ExceptionSnippet when route with catch handler has no exception', () => {
+      const router = createRouter<ReactNode>();
+      const parentRoute = router.route('/parent-ok');
+      const childRoute = parentRoute.route('/child-ok');
+      parentRoute.render(({ children }) => <div className="layout">{children}</div>).catch(() => <div>Error</div>);
+      childRoute.render(() => <div>Child Success</div>);
+      parentRoute.active = true;
+      childRoute.active = true;
+      parentRoute.state.authenticated = true;
+      childRoute.state.authenticated = true;
+
+      const { container } = render(
+        <UIRouter router={router}>
+          <RouteViewer route={parentRoute as any} stacks={new Map()}>
+            <RouteViewer route={childRoute as any} stacks={new Map()} />
+          </RouteViewer>
+        </UIRouter>
+      );
+
+      expect(container.textContent).toContain('Child Success');
+      expect(container.textContent).not.toContain('Error');
     });
   });
 });

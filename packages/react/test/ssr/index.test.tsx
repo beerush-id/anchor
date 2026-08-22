@@ -4,31 +4,37 @@ import { ALS_INSTANCE } from '@airlib/core/server';
 import { createRouter, GuardError, NotFoundError, ProviderError, Redirect } from '@airlib/router';
 import type { HTMLAttributes, ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { page, setup, UIRouter } from '../../src/index.js';
+import { Head, page, setup, UIRouter } from '../../src/index.js';
 import { createApp, createSSR } from '../../src/ssr/index.js';
 
 setAsyncScope(ALS_INSTANCE);
 
+beforeEach(() => {
+  vi.stubGlobal('window', undefined);
+  vi.stubGlobal('document', undefined);
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
 describe('createSSR', () => {
-  beforeEach(() => {
-    vi.stubGlobal('window', undefined);
-    vi.stubGlobal('document', undefined);
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it('renders standard output successfully', async () => {
+  it('renders standard output successfully with dynamic head elements', async () => {
     const router = createRouter<ReactNode>();
     const rootRoute = router.route();
-    const RootLayout = page(rootRoute).render(({ children }) => <div>{children}</div>);
+    const RootLayout = page(rootRoute).render(({ children }) => (
+      <div>
+        <Head meta={{ title: 'SSR Route Title' }} />
+        {children}
+      </div>
+    ));
 
     const ssr = createSSR(router, RootLayout);
 
-    const output = await ssr('http://localhost/', '');
+    const output = await ssr({ url: 'http://localhost/' });
 
     expect(output.html).toBe('<div></div>');
+    expect(output.head).toContain('<title>SSR Route Title</title>');
     expect(output.status).toBe(200);
     expect(output.cookies).toEqual([]);
     expect(output.redirect).toBeUndefined();
@@ -46,7 +52,7 @@ describe('createSSR', () => {
 
     const ssr = createSSR(router, RootLayout);
 
-    const output = await ssr('http://localhost/not-found', '');
+    const output = await ssr({ url: 'http://localhost/not-found' });
     expect(output.status).toBe(404);
   });
 
@@ -62,7 +68,7 @@ describe('createSSR', () => {
 
     const ssr = createSSR(router, RootLayout);
 
-    const output = await ssr('http://localhost/forbidden', '');
+    const output = await ssr({ url: 'http://localhost/forbidden' });
     expect(output.status).toBe(403);
   });
 
@@ -78,7 +84,7 @@ describe('createSSR', () => {
 
     const ssr = createSSR(router, RootLayout);
 
-    const output = await ssr('http://localhost/bad-request', '');
+    const output = await ssr({ url: 'http://localhost/bad-request' });
     expect(output.status).toBe(400);
   });
 
@@ -94,7 +100,7 @@ describe('createSSR', () => {
 
     const ssr = createSSR(router, RootLayout);
 
-    const output = await ssr('http://localhost/', '');
+    const output = await ssr({ url: 'http://localhost/' });
     expect(output.redirect).toBe('/target?ref=test');
   });
 
@@ -110,7 +116,7 @@ describe('createSSR', () => {
 
     const ssr = createSSR(router, RootLayout);
 
-    const output = await ssr('http://localhost/', '');
+    const output = await ssr({ url: 'http://localhost/' });
     expect(output.status).toBe(500);
     expect(output.html).toBe('<h1>Internal SSR Render Error.</h1>');
     expect(output.head).toBe('');
@@ -127,7 +133,7 @@ describe('createSSR', () => {
     const store = new AsyncStore();
     const ssr = createSSR(router, RootLayout);
 
-    const output = await ssr('http://localhost/', '', store);
+    const output = await ssr({ url: 'http://localhost/', context: store });
     expect(output.status).toBe(200);
   });
 
@@ -171,22 +177,22 @@ describe('createSSR', () => {
     rootRoute.route('/about');
 
     const ssr = createSSR(router, RootLayout, { sitemap: { baseUrl: 'https://example.com' } });
-    const output = await ssr('http://localhost/sitemap.xml', '');
+    const output = await ssr({ url: 'http://localhost/sitemap.xml' });
 
     expect(output.status).toBe(200);
     expect(output.contentType).toBe('application/xml; charset=utf-8');
     expect(output.html).toContain('<loc>https://example.com/about</loc>');
 
     const ssrDisabled = createSSR(router, RootLayout, { sitemap: false });
-    const disabledOutput = await ssrDisabled('http://localhost/sitemap.xml', '');
+    const disabledOutput = await ssrDisabled({ url: 'http://localhost/sitemap.xml' });
     expect(disabledOutput.contentType).toBeUndefined();
 
     const ssrDefault = createSSR(router, RootLayout);
-    const defaultOutput = await ssrDefault('/sitemap.xml', '');
+    const defaultOutput = await ssrDefault({ url: '/sitemap.xml' });
     expect(defaultOutput.contentType).toBe('application/xml; charset=utf-8');
     expect(defaultOutput.html).toContain('<loc>http://localhost/about</loc>');
 
-    const noSlashOutput = await ssrDefault('sitemap.xml', '');
+    const noSlashOutput = await ssrDefault({ url: 'sitemap.xml' });
     expect(noSlashOutput.contentType).toBe('application/xml; charset=utf-8');
   });
 
@@ -237,5 +243,44 @@ describe('createApp', () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toContain('<div class="shell"><div></div></div>');
+  });
+
+  it('creates an app with template and collects dynamic head tags', async () => {
+    const router = createRouter<ReactNode>();
+    const rootRoute = router.route();
+    const RootLayout = page(rootRoute).render(({ children }) => (
+      <div>
+        <Head meta={{ title: 'SSR App Title', description: 'SSR Description' }} />
+        {children}
+      </div>
+    ));
+
+    const Entry = ({ url }: { url?: string }) => (
+      <UIRouter router={router} root={RootLayout} url={url} headless={true} />
+    );
+
+    const app = createApp(router, Entry, {
+      template: '<head><!--ssr-head--></head><body><!--ssr-outlet--></body>',
+    });
+    expect(app.fetch).toBeTypeOf('function');
+
+    const res = await app.fetch(new Request('http://localhost/'));
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain('<title>SSR App Title</title>');
+    expect(html).toContain('content="SSR Description"');
+    expect(html).toContain('<body><div></div></body>');
+  });
+
+  it('creates an app with default options fallback', () => {
+    const router = createRouter<ReactNode>();
+    const rootRoute = router.route();
+    const RootLayout = page(rootRoute);
+    const Entry = ({ url }: { url?: string }) => (
+      <UIRouter router={router} root={RootLayout} url={url} headless={true} />
+    );
+
+    const app = createApp(router, Entry);
+    expect(app.fetch).toBeTypeOf('function');
   });
 });

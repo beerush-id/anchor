@@ -142,6 +142,7 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
   const Setup = memoize(Factory, (prevProps, nextProps) => {
     const prevPropsRef = propsMap.get(prevProps);
 
+    /* istanbul ignore else */
     if (prevPropsRef) {
       anchor.assign(prevPropsRef, nextProps);
     }

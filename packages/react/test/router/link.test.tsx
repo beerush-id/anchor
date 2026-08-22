@@ -2,22 +2,29 @@ import '../../src/client/index.js';
 import { createRouter, DEFAULT_CONFIG } from '@airlib/router';
 import { fireEvent, render, screen } from '@testing-library/react';
 import type { FC, ReactNode } from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 import { Link, page, UIRouter } from '../../src/index.js';
 
 describe('Anchor React - Link Component', () => {
-  let pushSpy: ReturnType<typeof vi.spyOn>;
-  let replaceSpy: ReturnType<typeof vi.spyOn>;
-  let dispatchSpy: ReturnType<typeof vi.spyOn>;
-  let scrollIntoViewSpy: ReturnType<typeof vi.fn>;
+  let pushSpy: MockInstance;
+  let replaceSpy: MockInstance;
+  let dispatchSpy: MockInstance;
+  let scrollIntoViewSpy: MockInstance;
 
   beforeEach(() => {
     window.history.replaceState(null, '', '/');
     pushSpy = vi.spyOn(history, 'pushState');
     replaceSpy = vi.spyOn(history, 'replaceState');
-    dispatchSpy = vi.spyOn(window, 'dispatchEvent') as never;
+    dispatchSpy = vi.spyOn(window, 'dispatchEvent');
     scrollIntoViewSpy = vi.fn();
-    Element.prototype.scrollIntoView = scrollIntoViewSpy;
+    Element.prototype.scrollIntoView = scrollIntoViewSpy as never;
+
+    // Suppress jsdom navigation notice when testing browser-yielded clicks
+    (window as any)._virtualConsole?.removeAllListeners?.('jsdomError');
+    (window as any)._virtualConsole?.on?.('jsdomError', (error: any) => {
+      if (error?.message?.includes('navigation to another Document')) return;
+      console.error(error);
+    });
   });
 
   afterEach(() => {
@@ -28,9 +35,9 @@ describe('Anchor React - Link Component', () => {
   });
 
   const lastPopState = () =>
-    dispatchSpy.mock.calls.map(([event]) => event).find((event) => event instanceof PopStateEvent) as
-      | PopStateEvent
-      | undefined;
+    dispatchSpy.mock.calls
+      .map(([event]) => event as Event)
+      .find((event): event is PopStateEvent => event instanceof PopStateEvent);
 
   describe('href resolution', () => {
     it('renders an anchor with the fullPath of a string href', () => {
@@ -51,6 +58,45 @@ describe('Anchor React - Link Component', () => {
       render(<Link href="/search?q=anchor">Search</Link>);
 
       expect(screen.getByText('Search').getAttribute('href')).toBe('/search?q=anchor');
+    });
+
+    it('resolves index route for parent route when matched by href', () => {
+      const router = createRouter<ReactNode>();
+      const parentRoute = router.route('/dashboard');
+      parentRoute.index = router.route('/dashboard') as any;
+
+      render(
+        <UIRouter router={router}>
+          <Link href="/dashboard">Dashboard</Link>
+        </UIRouter>
+      );
+
+      expect(screen.getByText('Dashboard').getAttribute('href')).toBe('/dashboard');
+    });
+
+    it('resolves href when matching a route without an index route', () => {
+      const router = createRouter<ReactNode>();
+      router.route('/about');
+
+      render(
+        <UIRouter router={router}>
+          <Link href="/about">About Us</Link>
+        </UIRouter>
+      );
+
+      expect(screen.getByText('About Us').getAttribute('href')).toBe('/about');
+    });
+
+    it('handles unmatched href inside UIRouter gracefully', () => {
+      const router = createRouter<ReactNode>();
+
+      render(
+        <UIRouter router={router}>
+          <Link href="/unmatched-destination">Unmatched</Link>
+        </UIRouter>
+      );
+
+      expect(screen.getByText('Unmatched').getAttribute('href')).toBe('/unmatched-destination');
     });
 
     it('resolves the href from a bare Route in `to`', () => {
