@@ -1,0 +1,593 @@
+---
+nav: 'Extended Markdown'
+nav-icon: markdown
+nav-priority: 40
+title: "Extended Markdown"
+description: "Write rich documentation pages with admonitions, tabbed code blocks, interactive live demos, badges, and JSX components — all inside MDX."
+keywords:
+  - AirLib markdown
+  - MDX documentation
+  - admonitions
+  - code groups
+  - interactive demos
+---
+
+# Extended Markdown :badge[Since v1.3.0]{variant="tip"}
+
+AirLib's docs use **MDX** — Markdown with JSX — to write pages that are both human-readable prose and live, runnable components. Every page is a `.page.mdx` file that renders through the same route pipeline as a `.tsx` page: frontmatter sets the title, JSX components render interactive content, and reactive state works right in the markup.
+
+This page documents every extended syntax available in AirLib's MDX system.
+
+## Frontmatter
+
+Every MDX page starts with a YAML frontmatter block. The `title` and `description` appear in the browser tab and search results. The `nav` key controls the sidebar label, and `keywords` improve discoverability.
+
+```yaml
+---
+nav: 'Extended Markdown'
+title: "Extended Markdown"
+description: "Write rich documentation pages with admonitions, tabbed code blocks, and interactive demos."
+keywords:
+  - AirLib markdown
+  - MDX documentation
+  - admonitions
+---
+```
+
+:::tip[What we learn]
+Any key you add beyond `title` and `description` — `category`, `author`, `tags` — becomes route metadata your layout, sidebar, or `<Head>` can read. No extra wiring needed — see [Getting Started](/docs/getting-started#markdown-pages) for how MDX pages attach to routes.
+:::
+
+## Admonitions
+
+Admonitions highlight important information with a styled box, an icon, and a title. Use them to call out tips, warnings, or interactive demos.
+
+### Syntax
+
+Wrap content in a fenced block with the `:::type[Title]` syntax:
+
+```mdx
+:::note[Default Title]
+This is a note admonition.
+:::
+```
+
+### Available Types
+
+| Type | Use When | Default Title |
+|------|----------|---------------|
+| `note` | General information | Note |
+| `tip` | Best practices, shortcuts | Tip |
+| `info` | Supplementary context | Info |
+| `warning` | Potential issues | Warning |
+| `danger` | Breaking changes, data loss | Danger |
+| `important` | Critical details | Important |
+| `caution` | Proceed carefully | Caution |
+| `details` | Collapsible content | Details |
+| `interactive` | Live runnable demo | Live Demo |
+
+### Examples
+
+:::note[This is a note]
+Use notes for general information that doesn't fit a warning or tip. Notes work well for supplementary context or background details.
+:::
+
+:::tip[Shortcuts are great]
+Tips highlight best practices, shortcuts, or patterns that save time. Readers scan for these.
+:::
+
+:::info[For reference]
+Info blocks provide additional context — things that are good to know but not urgent.
+:::
+
+:::warning[Watch out]
+Warnings signal potential issues — things that might break or behave unexpectedly if ignored.
+:::
+
+:::danger[Do not do this]
+Danger blocks mark actions that can cause data loss, security vulnerabilities, or production outages.
+:::
+
+:::important[Remember this]
+Important blocks highlight details that must not be overlooked — often about configuration or architecture.
+:::
+
+:::caution[Proceed carefully]
+Caution signals edge cases or advanced patterns that require extra attention.
+:::
+
+### Custom Titles
+
+Override the default title with any text inside the brackets:
+
+```mdx
+:::tip[What we learn]
+Custom titles make admonitions scannable.
+:::
+```
+
+### Collapsible Admonitions
+
+Add the `collapsible` attribute to make any admonition collapsible — readers click to expand:
+
+```mdx
+:::note[Click to expand]{collapsible}
+This content is hidden by default.
+:::
+```
+
+The `details` type is collapsible by default — it renders as an HTML `<details>` element:
+
+```mdx
+:::details[Advanced Configuration]
+This section covers edge cases that most users won't need.
+:::
+```
+
+### JSX Component
+
+For programmatic use, import `Admonition` directly:
+
+```tsx
+import { Admonition } from '@airlib/react/mdx';
+
+<Admonition type="tip" title="Custom Title">
+  Content goes here.
+</Admonition>
+```
+
+The component also exports named shorthand components for each type:
+
+```tsx
+import { NoteBlock, TipBlock, WarningBlock, DangerBlock } from '@airlib/react/mdx';
+
+<TipBlock title="Shortcut">Use keyboard shortcuts to navigate faster.</TipBlock>
+```
+
+:::tip[What we learn]
+Pick the admonition type by intent: `tip` for best practices, `warning` for potential issues, `danger` for things that break or lose data. Use `details` or `collapsible` when the content is long and readers should choose to expand it. Custom titles make every admonition scannable — readers scan titles, not bodies.
+:::
+
+## Code Blocks
+
+### Basic Code Blocks
+
+Standard fenced code blocks with syntax highlighting:
+
+````mdx
+```ts
+const greeting = 'Hello, AirLib';
+console.log(greeting);
+```
+````
+
+### Language Labels
+
+The language tag in the fence appears as a label in the top-right corner of the code block:
+
+````mdx
+```typescript
+// The label "TYPESCRIPT" appears in the code block
+const result = await fetch('/api/data');
+```
+````
+
+### Titles
+
+Add a title to a code block by placing it after the language tag inside curly braces:
+
+````mdx
+```ts {data-title="src/router.ts"}
+import { createRouter } from '@airlib/react';
+const router = createRouter();
+```
+````
+
+The title appears as a floating label next to the language badge.
+
+### Copy Button
+
+Every code block has a copy button that appears on hover. No configuration needed — the `<CodeCopy>` component handles it automatically.
+
+:::tip[What we learn]
+Titles and language labels are automatic — just use the fence syntax and the renderer handles the rest. Readers copy code more often when the button is visible on hover, so never hide it.
+:::
+
+## Code Groups
+
+Code groups let you show the same example across multiple environments — React and SolidJS, different package managers, or different file types — in a tabbed interface.
+
+### Syntax
+
+Wrap multiple fenced code blocks in a `:::code-group` block. Each code block's language tag becomes a tab label:
+
+````mdx
+:::code-group
+
+```tsx [React]
+import { setup } from '@airlib/react';
+
+const Counter = setup(() => {
+  return render(() => <span>Count</span>);
+});
+```
+
+```tsx [SolidJS]
+import { setup } from '@airlib/solid';
+
+const Counter = setup(() => {
+  return <span>Count</span>;
+});
+```
+
+:::
+````
+
+### Tab Labels
+
+The text in square brackets after the language tag becomes the tab label. Use descriptive labels that match the context:
+
+````mdx
+:::code-group
+
+```bash [Bun]
+bun install
+```
+
+```bash [npm]
+npm install
+```
+
+```bash [pnpm]
+pnpm install
+```
+
+:::
+````
+
+### Keyboard Navigation
+
+Tabs support keyboard navigation — arrow keys switch between tabs, Home/End jump to first/last. The active tab persists across the page.
+
+### JSX Component
+
+```tsx
+import { CodeGroup } from '@airlib/react/mdx';
+
+<CodeGroup>
+  <pre data-title="React">...</pre>
+  <pre data-title="SolidJS">...</pre>
+</CodeGroup>
+```
+
+:::tip[What we learn]
+Code groups are the standard way to show framework-specific examples — React and SolidJS, or different package managers. The tab label comes from the bracket text after the language tag, so pick labels that readers recognize instantly. Tabs share keyboard navigation, so readers can arrow through without reaching for the mouse.
+:::
+
+## Interactive Demos
+
+Interactive demos embed live, runnable React components directly in the documentation. Readers can interact with the component — click buttons, type values, see reactive state update in real time.
+
+### Structure
+
+An interactive demo is an `:::interactive[Title]` admonition containing:
+
+1. A fenced `tsx` block that defines the component — it's compiled and executed at build time.
+2. A fenced `svelte` block (or any non-tsx fence) showing the JSX usage — rendered as the component's template.
+3. JSX after the code blocks — the live rendered output that readers interact with directly.
+
+The `tsx` block must define the component **and** the JSX after the code fences must reference it. The component is scoped to the `:::interactive` block — it doesn't leak into the rest of the page.
+
+Let's look at the markdown source before seeing it live:
+
+````mdx
+:::interactive[Counter Demo]
+
+**1. Create a Counter component:**
+
+```tsx
+import { setup, render, mutable } from '@airlib/react';
+
+const Counter = setup<{ start?: number }>((props) => {
+  const counter = mutable(props.start ?? 0);
+
+  return render(() => (
+    <button onClick={() => counter.value++}>
+      Click me {counter.value}
+    </button>
+  ), 'Counter');
+}, 'Counter');
+```
+
+**2. Use the component:**
+
+```html
+<Counter />
+<Counter start={10} />
+```
+
+**3. Preview the output:**
+
+<Counter />
+<Counter start={10} />
+:::
+````
+
+The live result:
+
+:::interactive[Counter Demo]
+
+**1. Create a Counter component:**
+
+```tsx
+import { setup, render, mutable } from '@airlib/react';
+
+const Counter = setup<{ start?: number }>((props) => {
+  const counter = mutable(props.start ?? 0);
+
+  return render(() => (
+    <button onClick={() => counter.value++}>
+      Click me {counter.value}
+    </button>
+  ), 'Counter');
+}, 'Counter');
+```
+
+**2. Use the component:**
+
+```html
+<Counter />
+<Counter start={10} />
+```
+
+**3. Preview the output:**
+
+<Counter />
+<Counter start={10} />
+:::
+
+### Best Practices
+
+- Keep demo components self-contained — no external dependencies beyond `@airlib/react` or `@airlib/solid`.
+- Use `setup()` and `render()` — they create isolated reactive boundaries.
+- Include visible output (a number, a label, a state change) so the reader sees the interactivity immediately.
+- Avoid complex state that requires async data — interactive demos run synchronously in the browser.
+
+:::tip[What we learn]
+Interactive demos are self-contained — the component is defined and rendered in the same `:::interactive` block. Keep them simple: a counter, a toggle, a timer. If the demo needs external data, use static mock data instead of async fetching. Readers engage more when the output is immediately visible.
+:::
+
+## Badges
+
+Badges are small, colored labels for marking API status, versions, or categories.
+
+### Syntax
+
+```mdx
+import { Badge } from '@airlib/react/mdx';
+
+<Badge variant="tip" text="Stable" />
+<Badge variant="info" text="New" />
+<Badge variant="warning" text="Deprecated" />
+<Badge variant="danger" text="Breaking" />
+<Badge variant="neutral" text="v2.0" />
+```
+
+### Variants
+
+| Variant | Use For |
+|---------|---------|
+| `tip` | Stable, recommended, best practice |
+| `info` | New features, additions |
+| `warning` | Deprecated, changing soon |
+| `danger` | Breaking changes, removals |
+| `neutral` | Version numbers, categories |
+
+### Inline Usage
+
+Badges work inline with text:
+
+```mdx
+The `createRouter()` function <Badge variant="info" text="New in v2.0" /> replaces the legacy router setup.
+```
+
+:::tip[What we learn]
+Badges are inline — they sit next to text without breaking the flow. Use `tip` for stable features, `info` for new additions, `warning` for deprecations, and `danger` for breaking changes. Readers scan for these colors before reading the surrounding text.
+:::
+
+## Tables
+
+Standard Markdown tables render with styling and responsive scrolling:
+
+```mdx
+| Option | Type | Description |
+|--------|------|-------------|
+| `ssg` | `boolean` | Enable static site generation |
+| `image` | `boolean \| ImageConfig` | Image optimization settings |
+| `markdown` | `boolean` | Enable MDX page support |
+```
+
+Tables are horizontally scrollable on small screens and have alternating row backgrounds for readability.
+
+:::tip[What we learn]
+Tables are best for structured reference data — option lists, API surfaces, comparison charts. Use inline code (backticks) for option names and types so they stand out from the description text. Keep tables focused: one concept per row.
+:::
+
+## JSX Components in MDX
+
+MDX pages can import and use any React component. This is what makes interactive demos, custom callouts, and dynamic layouts possible.
+
+### Import Syntax
+
+Place imports at the top of the file, after the frontmatter:
+
+```mdx
+---
+nav: 'My Page'
+title: 'My Page'
+---
+
+import { Badge } from '@airlib/react/mdx';
+import { Show, mutable } from '@airlib/react';
+
+# My Page
+
+Content here.
+```
+
+### Available Components from `@airlib/react/mdx`
+
+| Component | Purpose |
+|-----------|---------|
+| `Admonition` | Styled callout boxes (note, tip, warning, etc.) |
+| `Badge` | Small colored labels for status/version |
+| `CodeBlock` | Code block with title, language label, and copy button |
+| `CodeGroup` | Tabbed code blocks for multi-environment examples |
+| `Layout` | Full docs layout with sidebar, TOC, and pagination |
+| `Pagination` | Previous/next page navigation |
+| `TableOfContent` | Auto-generated table of contents from headings |
+| `Sidebar` | Navigation sidebar |
+
+### Using Anchor Components
+
+You can use any component from `@airlib/react` or `@airlib/solid` inside MDX — `Show`, `For`, `Snippet`, `mutable`, `effect`, and more. The MDX page is a fully reactive component tree:
+
+```mdx
+import { Show, mutable } from '@airlib/react';
+
+# Reactive Example
+
+The count is: {count.value}
+
+<Show when={() => count.value > 5}>
+  The count is greater than five!
+</Show>
+```
+
+:::tip[What we learn]
+MDX is not limited to markdown — any React or Solid component works. Place imports after the frontmatter and before the content. The page becomes a fully reactive component tree, so `Show`, `For`, `mutable`, and `effect` all work the same way they do in a `.tsx` file.
+:::
+
+## Reactive State in MDX
+
+MDX pages have access to the route's live reactive state via `$state`:
+
+```mdx
+---
+title: Dashboard
+---
+
+# Welcome, {$state.data.user.name}!
+
+Your last login was {$state.data.lastLogin}.
+```
+
+The `$state` object is the route's live reactive state — when data changes, the page updates. This works because MDX pages run through the same route pipeline as `.tsx` pages.
+
+### Linking to Route State
+
+When an MDX page is attached to a route with providers, the provided data is available immediately:
+
+```mdx
+import { page } from '@airlib/react';
+import { docsRoute } from './route.js';
+
+// The page inherits the route's state
+```
+
+See [Data Loaders & Providers](/docs/routing/data-loaders) for how to attach data to routes.
+
+:::tip[What we learn]
+`$state` is the same reactive state object available in `.tsx` pages — when the provider resolves, the MDX page updates automatically. This means you can use MDX for pages that display user-specific data, fetched content, or any route-provided state without switching to TSX.
+:::
+
+## File Naming Conventions
+
+| Pattern | Renders At | Use For |
+|---------|-----------|---------|
+| `page.mdx` | `/folder` | Static content pages (docs, FAQs) |
+| `page.tsx` | `/folder` | Interactive component pages |
+| `layout.tsx` | Wraps child pages | Section structure |
+
+MDX pages are detected automatically — no configuration needed. Create a `.page.mdx` file in `src/pages` and it renders through the same route pipeline as a `.tsx` page.
+
+### MDX vs. TSX
+
+| Feature | `.page.mdx` | `.page.tsx` |
+|---------|------------|------------|
+| Prose content | Native Markdown | JSX strings |
+| Code blocks | Fenced syntax with highlighting | Manual `<pre>` or `<code>` |
+| Admonitions | `:::type[Title]` syntax | `<Admonition>` component |
+| Interactive components | Inline TSX in code fences | Full component definition |
+| Frontmatter | YAML block | Manual `<Head>` component |
+| Route state | `$state.data.*` | `{ state }` from render callback |
+
+Use MDX for documentation, guides, and content-heavy pages. Use TSX for interactive pages that need full component control.
+
+:::tip[What we learn]
+The `.page.mdx` suffix is what tells the file router to treat the file as a route. A plain `.mdx` file (without `.page`) is just a component — it won't appear in the route tree. Use `.page.mdx` for pages, plain `.mdx` for reusable content fragments.
+:::
+
+## Importing MDX as Components
+
+You want to show rich markdown content — a code sample, a formatted guide, a product description — inside a JSX page, like a landing page or a dashboard. Writing that in JSX strings is tedious and loses syntax highlighting. Import a `.mdx` file as a component and render it inline:
+
+````mdx
+<!-- src/components/preview.mdx -->
+
+## Quick Start
+
+Install the package:
+
+```bash
+npm install @airlib/react
+```
+
+Then create your first component:
+
+```tsx
+import { setup } from '@airlib/react';
+
+const Greeting = setup(() => <h1>Hello</h1>);
+```
+````
+
+Import and render it in your page:
+
+:::code-group
+
+```tsx [React]
+import Preview from './components/preview.mdx';
+
+export default page(landingRoute).render(() => (
+  <div>
+    <h1>Welcome</h1>
+    <Preview />
+  </div>
+));
+```
+
+```tsx [SolidJS]
+import Preview from './components/preview.mdx';
+
+export default page(landingRoute).render(() => (
+  <div>
+    <h1>Welcome</h1>
+    <Preview />
+  </div>
+));
+```
+
+:::
+
+Any `.mdx` file works — no `.page.mdx` suffix, no route attachment. The file is just a component that happens to be written in markdown. It can import its own components, use JSX expressions, and access the same syntax highlighting and code group features as page-level MDX.
+
+:::tip[What we learn]
+Imported MDX compiles at build time — the markdown becomes a React/Solid component with zero runtime overhead. This is more efficient than rendering markdown at runtime, and it lets you compose rich content (code samples, formatted guides) inside any JSX page without shipping a markdown parser to the browser.
+:::
+
+## Next Steps
+
+- [Getting Started](/docs/getting-started) — Build your first AirLib application
+- [User Interface](/docs/user-interface) — Reactive components and autonomous UI patterns
+- [Universal SSR](/docs/universal-ssr) — The SSR pipeline, caching, and static generation

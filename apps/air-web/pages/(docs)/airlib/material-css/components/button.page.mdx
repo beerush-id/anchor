@@ -1,0 +1,84 @@
+---
+title: 'Button'
+description: 'Material Design button components including filled, elevated, tonal, outlined, text, and toggle variants.'
+nav: 'Button'
+nav-priority: 132
+---
+
+# Button
+Material Design buttons help people take actions and make choices. They come in several variants out-of-the-box (filled, elevated, tonal, outlined, text, and toggle), and include responsive sizing and smart icon padding.
+
+## Theme Variables
+You can customize the standard button dimensions and layout by overriding its CSS variables.
+
+```css [CSS]
+:root {
+  --air-button-height: calc(var(--spacing) * 10);
+  --air-button-padding-x: calc(var(--spacing) * 6);
+  --air-button-icon-padding-x: calc(var(--spacing) * 4);
+  --air-button-gap: calc(var(--spacing) * 2);
+  --air-button-radius: var(--radius-full);
+  --air-button-font-size: var(--font-label-large-size);
+  --air-button-line-height: var(--font-label-large-line-height);
+}
+```
+These variables dictate the height, internal padding, icon spacing offsets, and base typography for all default medium-sized buttons.
+
+## Composed Utilities
+The following composed utilities provide ready-to-use buttons with all base layout, icon spacing, and interaction states built in.
+
+```html [HTML]
+<!-- Filled Button -->
+<button class="button">Filled Button</button>
+
+<!-- Elevated Button -->
+<button class="button-elevated">Elevated</button>
+
+<!-- Tonal Button -->
+<button class="button-tonal">Tonal</button>
+
+<!-- Outlined Button -->
+<button class="button-outlined">Outlined</button>
+
+<!-- Text Button -->
+<button class="button-text">Text</button>
+
+<!-- Toggle Button -->
+<button class="toggle-button" aria-pressed="true">Toggle</button>
+```
+
+- `button`: The standard high-emphasis filled button. Applies `button-base`, `button-icon-slot`, and `button-filled-surface` with hover/focus states.
+- `button-elevated`: High-emphasis elevated button. Applies `button-base`, `button-icon-slot`, and `button-elevated-surface` with hover/focus states.
+- `button-tonal`: Medium-emphasis filled tonal button. Applies `button-base`, `button-icon-slot`, and `button-tonal-surface` with hover/focus states.
+- `button-outlined`: Medium-emphasis outlined button. Applies `button-base`, `button-icon-slot`, and `button-outlined-surface` with hover/focus states.
+- `button-text`: Low-emphasis text button. Applies `button-base`, `button-icon-slot`, and `button-text-surface` with hover/focus states.
+- `toggle-button`: A stateful button that manages toggled styles when `aria-pressed="true"` or `aria-selected="true"`.
+
+## Composing Utilities
+For custom buttons or granular control over states, use the composing base and state layers.
+
+```html [HTML]
+<button class="button-base button-icon-slot button-filled-surface hover:button-filled-hover">
+  Custom Button
+</button>
+```
+
+- `button-base`: Sets up `inline-flex` layout, sizing variables (`height`, `padding`, `gap`, `radius`), typography styles, resets borders and text decoration, and applies transitions for interactive states.
+- `button-icon-slot`: Smart padding utility. It automatically adjusts `padding-inline-start` or `padding-inline-end` if the button contains an icon (e.g., `.material-symbols-outlined`, `svg`, `img`) as its first or last child to align with M3 specifications.
+- `button-disabled`: Applies `cursor: not-allowed` and adjusts background/text colors using color-mix for the disabled state.
+
+### Sizing Utilities
+- `button-xs`: Extra small button (`height: spacing * 6`).
+- `button-sm`: Small button (`height: spacing * 8`).
+- `button-md`: Medium button (default, `height: spacing * 10`).
+- `button-lg`: Large button (`height: spacing * 12`).
+- `button-xl`: Extra large button (`height: spacing * 14`).
+
+### State Utilities
+- `button-filled-surface`, `button-filled-hover`, `button-filled-focus`: Colors for the filled variant.
+- `button-elevated-surface`, `button-elevated-hover`, `button-elevated-focus`: Colors for the elevated variant.
+- `button-tonal-surface`, `button-tonal-hover`, `button-tonal-focus`: Colors for the tonal variant.
+- `button-outlined-surface`, `button-outlined-hover`, `button-outlined-focus`: Colors and 1px border for the outlined variant.
+- `button-text-surface`, `button-text-hover`, `button-text-focus`: Colors and tighter padding for the text variant.
+- `button-toggle-surface`, `button-toggle-hover`, `button-toggle-focus`: Default colors for the toggle button.
+- `button-toggle-selected-surface`, `button-toggle-selected-hover`, `button-toggle-selected-focus`: Active colors for the toggle button.

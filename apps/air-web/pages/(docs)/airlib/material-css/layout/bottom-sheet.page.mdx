@@ -1,0 +1,44 @@
+---
+title: 'Bottom Sheet'
+description: 'Material Design bottom sheets slide up from the bottom of the screen to reveal more content.'
+nav: 'Bottom Sheet'
+nav-priority: 173
+---
+
+# Bottom Sheet
+Bottom sheets are surfaces containing supplementary content that are anchored to the bottom of the screen.
+
+## Theme Variables
+You can customize the maximum width and the top corner radii of bottom sheets by overriding their CSS variables.
+
+```css [CSS]
+:root {
+  --air-bottom-sheet-radius: var(--radius-xl); /* 28px default */
+  --air-bottom-sheet-max-width: 40rem; /* 640px default */
+}
+```
+
+## Composed Utilities
+The following composed utilities automatically handle the layout, z-indexing, scrim backdrop, and slide-up animations.
+
+```html [HTML]
+<!-- Background Scrim -->
+<!-- Toggle data-state="open" via JavaScript to show -->
+<div class="bottom-sheet-scrim" data-state="open"></div>
+
+<!-- The Bottom Sheet -->
+<!-- Toggle data-state="open" via JavaScript to slide up -->
+<div class="bottom-sheet shadow-3" data-state="open">
+  <!-- Optional Drag Handle Indicator -->
+  <div class="bottom-sheet-handle"></div>
+  
+  <div class="p-4">
+    <h2 class="title-large">Bottom Sheet Title</h2>
+    <p class="body-medium mt-4">This is the content of the bottom sheet.</p>
+  </div>
+</div>
+```
+
+- `bottom-sheet`: Applied to the main sliding container. It fixes it to the bottom center of the screen, enforces the `max-width`, and applies a `surface-container-low` background. By default, it translates off-screen (`translateY(100%)`). When `data-state="open"` is applied, it smoothly translates into view.
+- `bottom-sheet-handle`: Applied to a `<div>` inside the bottom sheet to indicate draggability (often seen on mobile). It renders a small, rounded horizontal line using the `outline` color with reduced opacity.
+- `bottom-sheet-scrim`: Applied to a backdrop element placed behind the bottom sheet. It uses a fixed layout (`z-fixed`) to cover the entire viewport. By default, it is invisible and ignores pointer events. When `data-state="open"` is applied, it fades in a dark overlay (`color-scrim` mixed at 32% opacity) and intercepts clicks (which you can use to trigger closing the sheet).

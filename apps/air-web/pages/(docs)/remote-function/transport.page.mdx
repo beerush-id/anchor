@@ -1,0 +1,582 @@
+---
+nav: 'Transports'
+nav-priority: 65
+title: 'Transports'
+description: 'IRPC transports — HTTP, WebSocket, BroadcastChannel, custom transports, routing, stream lifecycle, and context management.'
+---
+
+# Transports
+
+A **transport** is the pluggable mechanism that carries IRPC calls between the client and server. It handles serialization, batching, streaming, retry, and connection management — all invisible to your function signatures and business logic.
+
+The [Overview](/docs/remote-function) introduced transport agnosticism as an architectural superpower. This page goes deep into **how** each transport works, **when** to choose which, and **how** to build your own.
+
+## The Transport Abstraction
+
+Every transport implements the same abstract interface:
+
+```typescript
+abstract class IRPCTransport {
+  abstract call(spec: IRPCSpec, args: IRPCData[], timeout?: number): Promise<IRPCData>;
+  protected abstract dispatch(calls: IRPCCall[]): Promise<void>;
+}
+```
+
+The base class handles batching and scheduling. The transport subclass handles the wire protocol. Your application code never interacts with the transport directly — it just calls the function stub.
+
+This means you can swap from HTTP to WebSocket to BroadcastChannel by changing **one line** in your module configuration. Every function call, every component binding, every handler — completely untouched.
+
+## HTTP Transport
+
+The default transport for most applications. Uses standard HTTP POST requests with automatic batching and streaming responses.
+
+**Package:** `@irpclib/http`
+
+### Client Configuration
+
+```typescript
+import { createPackage } from '@irpclib/irpc';
+import { HTTPTransport } from '@irpclib/http';
+
+const irpc = createPackage({ name: 'my-api', version: '1.0.0' });
+
+const transport = new HTTPTransport({
+  endpoint: `/irpc/${irpc.href}`,
+  timeout: 10000,
+  debounce: 0,
+  maxRetries: 3,
+  retryMode: 'exponential',
+  retryDelay: 1000,
+});
+
+irpc.use(transport);
+```
+
+### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `endpoint` | `string` | `'/irpc'` | URL path for requests |
+| `baseURL` | `string` | — | Base URL for cross-origin calls |
+| `headers` | `Record<string, string>` | — | Custom headers on every request |
+| `fetchOptions` | `RequestInit` | — | Custom fetch options (e.g., `credentials: 'include'`) |
+| `timeout` | `number` | — | Default timeout in ms |
+| `debounce` | `number` | `0` | Batching window in ms |
+| `maxRetries` | `number` | `0` | Retry attempts on network failure |
+| `retryMode` | `'linear' \| 'exponential'` | `'linear'` | Retry strategy |
+| `retryDelay` | `number` | `1000` | Base delay between retries in ms |
+
+### Server Setup (HTTPRouter)
+
+```typescript
+
+import { HTTPRouter } from '@irpclib/http/router';
+import { transport } from './lib/module.js';
+
+// Import all constructor files
+import './rpc/hello/constructor.js';
+
+const router = new HTTPRouter(transport);
+
+Bun.serve({
+  port: 3000,
+  fetch(req) {
+    if (req.url.endsWith(transport.endpoint) && req.method === 'POST') {
+      return router.resolve(req, [
+        ['token', req.headers.get('authorization')],
+      ]);
+    }
+    return new Response('Not Found', { status: 404 });
+  },
+});
+```
+
+The router's `resolve()` method accepts the HTTP request and an `initContext` array — `[key, value]` tuples that seed the request context. Hooks and handlers read these values through `getContext()`, never touching the raw `Request` object.
+
+### Custom Response Builder
+
+Intercept response creation to dynamically append headers or modify the response:
+
+```typescript
+return router.resolve(req, [], async (body, init) => {
+  await Promise.resolve(); // Let hooks flush side-effects
+
+  const headers = new Headers(init.headers);
+  headers.set('x-processed-by', 'anchor-router');
+
+  return new Response(body, { ...init, headers });
+});
+```
+
+### How Batching Works
+
+When multiple calls happen in the same microtask, the transport batches them into a single HTTP POST:
+
+```http
+POST /irpc/my-api/1.0.0
+Content-Type: application/json
+
+[
+  { "id": "1", "name": "getUser", "args": ["123"] },
+  { "id": "2", "name": "getPosts", "args": ["123"] },
+  { "id": "3", "name": "getStats", "args": ["123"] }
+]
+```
+
+### How Streaming Works
+
+The server doesn't wait for all handlers to complete. It pushes sequential `IRPCPacketStream` chunks over HTTP chunked transfer encoding as each handler resolves:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+Transfer-Encoding: chunked
+
+{"id":"2","name":"getPosts","type":"answer","status":"success","data":[...]}
+{"id":"3","name":"llamaModel","type":"answer","status":"pending","data":"Deep"}
+{"id":"1","name":"getUser","type":"answer","status":"success","data":{...}}
+{"id":"3","name":"llamaModel","type":"event","status":"pending","data":{"type":"set","keys":["data"],"value":"Deep in the void"}}
+{"id":"3","name":"llamaModel","type":"close","status":"success"}
+```
+
+The client parses these NDJSON lines and routes each packet to the correct caller by `id`. Each packet carries a `type` — `answer` delivers the initial or final data, `event` carries incremental state mutations, and `close` signals completion.
+
+### Performance
+
+HTTP Transport achieves **6.96x faster** throughput than traditional REST through batching:
+
+| Framework | Total Time | HTTP Requests | Speedup |
+|-----------|------------|---------------|---------|
+| **IRPC** | **3,617ms** | **100,000** | **6.96x** |
+| Bun Native | 25,180ms | 1,000,000 | 1.00x |
+| Hono | 18,004ms | 1,000,000 | 1.40x |
+
+*Benchmark: 100,000 users × 10 calls each = 1,000,000 total calls*
+
+## WebSocket Transport
+
+Persistent connections with lower latency and automatic reconnection. Best for real-time applications where sustained bidirectional communication is critical.
+
+**Package:** `@irpclib/ws`
+
+### Client Configuration
+
+```typescript
+import { WebSocketTransport } from '@irpclib/ws';
+
+const transport = new WebSocketTransport({
+  url: 'ws://localhost:8080',
+  autoReconnect: true,
+  maxReconnectAttempts: 5,
+  reconnectDelay: 1000,
+  connectionTimeout: 10000,
+});
+
+irpc.use(transport);
+```
+
+### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `url` | `string` | — | WebSocket URL to connect to |
+| `protocols` | `string[]` | — | Sub-protocols for the connection |
+| `autoReconnect` | `boolean` | `true` | Automatically reconnect on failure |
+| `maxReconnectAttempts` | `number` | `5` | Maximum reconnection attempts |
+| `reconnectDelay` | `number` | `1000` | Delay between reconnection attempts |
+| `connectionTimeout` | `number` | `10000` | Connection establishment timeout |
+| `headers` | `Record<string, string>` | — | Headers for the upgrade request |
+
+### Server Setup (WebSocketRouter)
+
+WebSocket authentication happens at **upgrade time**, not per-message. Extract tokens from the upgrade request, attach them to `ws.data`, and forward them as `initContext` on each `resolve()` call:
+
+```typescript
+import { WebSocketRouter } from '@irpclib/ws/router';
+import { transport } from './lib/module.js';
+import './rpc/hello/constructor.js';
+
+const router = new WebSocketRouter(transport, {
+  fileBufferTTL: 30000, // Cleanup orphaned binary frames after 30s
+});
+
+Bun.serve({
+  port: 8080,
+  fetch(req, server) {
+    const token = req.headers.get('authorization');
+    if (server.upgrade(req, { data: { token } })) return;
+    return new Response('WebSocket server running');
+  },
+  websocket: {
+    async message(ws, message) {
+      await router.resolve(message.toString(), ws, [
+        ['token', ws.data.token],
+      ]);
+    },
+    close(ws) {
+      // Abort all active streams for this connection
+      router.disconnect(ws);
+    },
+  },
+});
+```
+
+### Connection States
+
+Monitor the connection lifecycle:
+
+```typescript
+transport.state;  // 0=CONNECTING, 1=OPEN, 2=CLOSING, 3=CLOSED
+transport.isOpen; // boolean
+
+await transport.reconnect(); // Manual reconnection
+```
+
+Calls made while disconnected are queued and dispatched once reconnected.
+
+### File Uploads over WebSocket
+
+WebSocket transport supports `IRPCFile` via length-prefixed binary framing. The router buffers `ArrayBuffer` payloads and matches them to file pointers when the JSON payload arrives.
+
+:::warning[WebSocket File Upload Caveat]
+Large file transfers block the persistent socket pipeline. Other simultaneous RPC calls won't reach the server until the binary transfer completes. For applications with significant file uploads alongside real-time interactions, use **HTTP Transport** for file operations — the browser natively offloads HTTP uploads to a background thread.
+:::
+
+### Connection Disconnect
+
+When a WebSocket connection closes, call `router.disconnect(ws)` to abort all active streams for that connection:
+
+```typescript
+websocket: {
+  close(ws) {
+    router.disconnect(ws);
+  },
+}
+```
+
+The router tracks `AbortController` instances per connection per stream. Disconnecting fires all of them, triggering cleanup functions in all active stream handlers.
+
+## BroadcastChannel Transport
+
+Zero-server communication within the browser — between tabs, windows, iframes, and Web Workers.
+
+**Package:** `@irpclib/broadcast`
+
+### Client Configuration
+
+```typescript
+import { BroadcastTransport } from '@irpclib/broadcast';
+
+const irpc = createPackage({ name: 'my-api', version: '1.0.0' });
+
+const transport = new BroadcastTransport({
+  channel: irpc.href, // 'my-api/1.0.0'
+  timeout: 30000,
+});
+
+irpc.use(transport);
+```
+
+:::tip[Use irpc.href as Channel Name]
+Using the package's `href` (`name/version`) as the channel name provides automatic uniqueness, version-awareness, and zero manual channel management.
+:::
+
+### Router Setup (Worker)
+
+```typescript
+// worker.ts
+import { BroadcastRouter } from '@irpclib/broadcast/router';
+import { transport } from './lib/module.js';
+import './rpc/data/constructor.js';
+
+const router = new BroadcastRouter(transport);
+```
+
+That's it. The router listens on the BroadcastChannel and resolves incoming calls automatically.
+
+### Use Cases
+
+| Pattern | Description |
+|---------|-------------|
+| **Web Worker offload** | Run heavy computation (video encoding, data parsing) in a Worker without blocking the UI |
+| **Multi-tab sync** | Keep shopping carts, notifications, or state synchronized across browser tabs |
+| **Iframe communication** | Parent ↔ iframe messaging with type-safe function calls |
+| **Offline-first** | Full execution without any server infrastructure |
+
+### Context in BroadcastChannel
+
+Unlike HTTP and WebSocket, BroadcastChannel has no incoming request object. Supply context via `initContext` when calling `resolve()` directly:
+
+```typescript
+router.resolve(requests, [
+  ['token', self.workerToken],
+]);
+```
+
+### Router Disconnect
+
+Call `router.disconnect()` to abort all active streams when the Worker or context is shutting down:
+
+```typescript
+router.disconnect();
+```
+
+## Choosing a Transport
+
+| Criterion | HTTP | WebSocket | BroadcastChannel |
+|-----------|------|-----------|------------------|
+| **Server required** | Yes | Yes | No |
+| **Latency** | Medium | Low | Lowest |
+| **Persistent connection** | No | Yes | N/A |
+| **Auto-reconnection** | N/A | Yes | N/A |
+| **File uploads** | ✅ Best | ⚠️ Blocks socket | ✅ Structured clone |
+| **Cross-tab** | No | No | Yes |
+| **Web Workers** | No | No | Yes |
+| **Offline** | No | No | Yes |
+| **Setup complexity** | Simple | Medium | Simple |
+| **Browser support** | Universal | Excellent | Modern |
+
+**Use HTTP** for most server-client applications. It's the simplest, most compatible, and handles file uploads without blocking.
+
+**Use WebSocket** when you need persistent low-latency connections for real-time features like live dashboards, chat, or collaborative editing.
+
+**Use BroadcastChannel** when you need zero-server execution — offloading computation to Web Workers, syncing across tabs, or building offline-first architectures.
+
+## Stream Lifecycle
+
+All transports manage active streams through four cancellation boundaries:
+
+### 1. Client Cancellation
+
+Calling `.close()` on an `IRPCReader` sends a `CANCEL` packet to the router. The router invokes the stream's `AbortController` and drops the stream:
+
+```typescript
+const prices = watchPrices('AAPL');
+
+// Later
+prices.close(); // CANCEL packet → server cleanup
+```
+
+### 2. Context Signals
+
+The router injects an `AbortSignal` into the request context. Handlers can listen to this signal for manual teardown:
+
+```typescript
+const signal = getAbortSignal();
+signal?.addEventListener('abort', () => {
+  // Clean up resources
+});
+```
+
+### 3. TTL Timeouts
+
+If a function defines a `ttl` spec, the router aborts the stream when the timeout is reached — regardless of whether the client is still connected:
+
+```typescript
+const watchPrices = irpc.declare<WatchPricesFn>('watchPrices', () => 0, {
+  stream: true,
+  ttl: 300000, // 5-minute maximum
+});
+```
+
+### 4. Connection Disconnect
+
+When a WebSocket connection closes or a BroadcastChannel router shuts down, calling `router.disconnect()` aborts **all** active streams for that connection. HTTP connections are managed per-request — when the client drops the connection, the router's `AbortController` fires.
+
+## Credentials
+
+You can attach key-value credentials directly to a transport. These credentials will be sent with every request, and handlers can read them using the `credential()` helper.
+
+### Client-Side
+Use `.sign()` to attach credentials to the transport. You can pass a static object or a factory function.
+
+```typescript
+// Attach a static token
+transport.sign({ MY_CUSTOM_KEY: '<insert-your-token-here>' });
+
+// Or use a factory function for dynamic values
+transport.sign(() => ({ MY_CUSTOM_KEY: getToken() }));
+```
+
+### Server-Side
+Inside your handlers, use the `credential()` helper to read the caller's credentials.
+
+```typescript
+import { credential } from '@irpclib/irpc';
+
+irpc.construct(getProfile, async () => {
+  const token = credential<string>('MY_CUSTOM_KEY');
+  const user = await verifyAPIKey(token);
+  return db.users.find(user.id);
+});
+```
+
+## Context Management Across Transports
+
+The router only manages the internal `AbortController`. All application-level context is your responsibility — injected via `initContext` at the integration point.
+
+The critical architectural benefit: **hooks and handlers never reference transport-specific types**. They consume the same standardized keys regardless of which transport delivered the call.
+
+### Define Your Contract Once
+
+```typescript
+// Shared hook — works on HTTP, WebSocket, and BroadcastChannel
+const authHook = async () => {
+  const token = getContext<string>('token');
+  if (!token) throw new Error('Unauthorized');
+  setContext('user', await verifyToken(token));
+};
+
+// Register on any router
+httpRouter.use(authHook);
+wsRouter.use(authHook);
+broadcastRouter.use(authHook);
+```
+
+### Inject Context Per Transport
+
+Each transport maps its specific objects into the same standardized keys:
+
+```typescript
+// HTTP — extract from headers
+router.resolve(req, [
+  ['token', req.headers.get('authorization')],
+  ['locale', req.headers.get('accept-language')],
+]);
+
+// WebSocket — extract from ws.data (set during upgrade)
+router.resolve(msg, ws, [
+  ['token', ws.data.token],
+  ['locale', ws.data.locale],
+]);
+
+// BroadcastChannel — extract from worker globals
+router.resolve(requests, [
+  ['token', self.workerToken],
+  ['locale', self.workerLocale],
+]);
+```
+
+Hooks and handlers see `'token'` and `'locale'` everywhere. Zero transport awareness required.
+
+## Custom Transports
+
+Build a custom transport for any protocol by extending `IRPCTransport`.
+
+### Client-Side: Override `dispatch()`
+
+```typescript
+import {
+  IRPCTransport,
+  IRPC_PACKET_TYPE,
+  IRPC_STATUS,
+  TransportError,
+  type IRPCCall,
+  type IRPCData,
+  type IRPCPacketStream,
+  type IRPCRequest,
+  type TransportConfig,
+} from '@irpclib/irpc';
+
+class CustomTransport extends IRPCTransport {
+  constructor(public config: TransportConfig & { url: string }) {
+    super(config);
+  }
+
+  protected async dispatch(calls: IRPCCall[]) {
+    try {
+      // 1. Serialize calls into wire format
+      const requests: IRPCRequest[] = calls.map(({ id, payload: { name, args } }) => ({
+        id, name, args,
+      }));
+
+      // 2. Send via your protocol
+      const response = await this.send(requests);
+
+      // 3. Feed response packets back to each call
+      for (const packet of response.packets) {
+        const call = calls.find(c => c.id === packet.id);
+        if (call) {
+          call.enqueue(packet); // Drives IRPCReader → resolves/rejects
+        }
+      }
+    } catch (error) {
+      // On network failure, enqueue error packets (triggers retry if configured)
+      calls.forEach((call) => {
+        call.enqueue({
+          id: call.id,
+          name: call.payload.name,
+          type: IRPC_PACKET_TYPE.CLOSE,
+          status: IRPC_STATUS.ERROR,
+          error: TransportError.failed(error as Error).json(),
+          createdAt: Date.now(),
+        } as IRPCPacketStream<IRPCData>);
+      });
+    }
+  }
+
+  private async send(requests: IRPCRequest[]) {
+    // Your custom protocol implementation
+  }
+}
+```
+
+**Key constraint:** `call.enqueue(packet)` is the **only** way to feed data back. It drives the internal `IRPCReader`, which resolves standard calls or populates stream subscriptions.
+
+### Server-Side: Build a Router
+
+Use `IRPCResolver` to validate and execute requests, and `IRPCStream` to normalize outputs into `IRPCPacketStream` packets:
+
+```typescript
+import {
+  IRPCResolver,
+  IRPCStream,
+  createContext,
+  withContext,
+  type IRPCPackage,
+  type IRPCRequest,
+} from '@irpclib/irpc';
+
+class CustomRouter {
+  constructor(
+    private module: IRPCPackage,
+    private transport: CustomTransport,
+  ) {}
+
+  async resolve(rawMessage: string, initContext: [string | symbol, unknown][] = []) {
+    const requests: IRPCRequest[] = JSON.parse(rawMessage);
+
+    const promises = requests.map((irpcReq) => {
+      const resolver = new IRPCResolver(irpcReq, this.module);
+      const ctx = createContext<string | symbol, unknown>([...initContext]);
+
+      return withContext(ctx, async () => {
+        const stream = new IRPCStream(irpcReq.id, irpcReq.name, () => resolver.resolve());
+
+        stream.pipe((packet) => {
+          this.sendPacket(JSON.stringify(packet));
+        });
+
+        await new Promise<void>((done) => stream.close(done));
+      });
+    });
+
+    await Promise.allSettled(promises);
+  }
+
+  private sendPacket(data: string) {
+    // Your custom protocol send implementation
+  }
+}
+```
+
+`IRPCStream` handles both standard and stream responses transparently — your router doesn't need to know which type the handler returns.
+
+### Custom Transport Checklist
+
+Custom transports **must**:
+
+1. Override `dispatch()` — accept `IRPCCall[]` and serialize them for transmission
+2. Feed packets via `call.enqueue()` — match response packets to calls by `id`
+3. Handle errors — enqueue error packets on network failure so retry logic activates
+4. Implement a router — use `IRPCResolver` + `IRPCStream` to execute and stream responses

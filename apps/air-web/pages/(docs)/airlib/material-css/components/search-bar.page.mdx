@@ -1,0 +1,53 @@
+---
+title: 'Search Bar'
+description: 'Material Design search bar component for entering queries and displaying search results.'
+nav: 'Search Bar'
+nav-priority: 150
+---
+
+# Search Bar
+Search bars allow users to enter a query and display search results. They act as a specialized text input wrapped in a distinctive pill-shaped container.
+
+## Theme Variables
+You can customize the search bar height by overriding its CSS variables.
+
+```css [CSS]
+:root {
+  --search-bar-height: calc(var(--spacing) * 14); /* 56px default */
+}
+```
+This variable defines the total height of the search container. The border radius automatically adapts to form a pill shape.
+
+## Composed Utilities
+The following composed utilities automatically handle the layout, styling, and focus delegation from the inner input to the outer wrapper.
+
+```html [HTML]
+<div class="search-bar">
+  <!-- Leading Icon -->
+  <span class="material-symbols-outlined">search</span>
+  
+  <!-- Native Input -->
+  <input type="text" class="search-bar-input" placeholder="Search..." />
+  
+  <!-- Trailing Icon / Action -->
+  <button class="icon-button">
+    <span class="material-symbols-outlined">mic</span>
+  </button>
+</div>
+```
+
+- `search-bar`: Applied to the outer wrapper `div`. It applies the `surface-container-high` background and establishes a flex layout with proper gap spacing. Crucially, it listens for focus on its children via the `:has(.search-bar-input:focus)` selector to dynamically apply the container-level focus color state.
+- `search-bar-input`: Applied directly to the native `<input>`. It strips the default borders and outline, fills the remaining space (`flex-1`), and applies the `body-large` typography and placeholder text coloring.
+
+## Composing Utilities
+If you need custom state handling, build the search bar using the modular layer utilities.
+
+```html [HTML]
+<div class="search-bar-base search-bar-surface hover:search-bar-hover">
+  <input type="text" class="search-bar-input-base" />
+</div>
+```
+
+- `search-bar-base`: Establishes the core container layout (`flex items-center`), binds height, sets `radius-full`, padding, gap, and configures smooth background transitions.
+- `search-bar-surface`, `search-bar-hover`, `search-bar-focus`: Dedicated background color mix states for standard container interactions.
+- `search-bar-input-base`: The core utility that resets native input styling and applies the appropriate text colors and typography.

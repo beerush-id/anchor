@@ -1,0 +1,53 @@
+---
+title: 'Navigation Rail'
+description: 'Material Design navigation rail layout for primary destinations on tablet and desktop screens.'
+nav: 'Navigation Rail'
+nav-priority: 177
+---
+
+# Navigation Rail
+Navigation rails provide access to primary destinations in apps when using tablet and desktop screens. They are positioned vertically on the left edge of the screen.
+
+## Theme Variables
+You can customize the standard width of the navigation rail by overriding its CSS variable.
+
+```css [CSS]
+:root {
+  --air-nav-rail-width: calc(var(--spacing) * 20); /* 80px default */
+}
+```
+
+## Composed Utilities
+The navigation rail utilizes a similar HTML structure to the navigation bar but is optimized for a vertical, fixed-left layout with slightly wider hover targets.
+
+```html [HTML]
+<!-- Fixed to the left of the screen -->
+<nav class="navigation-rail">
+  
+  <!-- Selected Item -->
+  <button class="navigation-rail-item" aria-selected="true">
+    <div class="nav-rail-icon-container">
+      <span class="material-symbols-outlined material-fill">home</span>
+    </div>
+    <span>Home</span>
+  </button>
+  
+  <!-- Unselected Item -->
+  <button class="navigation-rail-item" aria-selected="false">
+    <div class="nav-rail-icon-container">
+      <span class="material-symbols-outlined">search</span>
+    </div>
+    <span>Search</span>
+  </button>
+
+</nav>
+```
+
+### Rail and Item Layout
+- `navigation-rail`: Applied to the main wrapper (`<nav>`). It fixes the rail to the left edge of the screen (`z-fixed`), establishes a column flex layout, applies a `surface` background color, and adds a vertical border to the right side using the `outline-variant` color.
+- `navigation-rail-item`: Applied to the interactive elements (e.g., `<button>`). It establishes a column flex layout, applies `label-medium` typography, and uses `on-surface-variant` text color. When the `[aria-selected="true"]` attribute is present, the text color shifts to `on-surface`.
+
+### Icon Container
+- `nav-rail-icon-container`: Applied to a `<div>` wrapping the icon. Just like the navigation bar, this container dynamically handles Material 3 state layers based on its parent `navigation-rail-item`:
+  - **Unselected:** Transparent background. Hover and focus states apply subtle `on-surface-variant` color mixes.
+  - **Selected:** Automatically applies a pill-shaped `secondary-container` background with `on-secondary-container` icon color when the parent has `[aria-selected="true"]`. Hover and focus states dynamically adapt using `on-surface` color mixes over the secondary container.

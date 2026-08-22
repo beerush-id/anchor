@@ -1,0 +1,328 @@
+---
+nav: 'Distribution'
+nav-priority: 67
+title: 'Distribution'
+description: 'IRPC distribution — packages, microservice routing, NPM publishing, edge distribution, dynamic transport switching, and monitoring.'
+---
+
+# Distribution
+
+Distribution is how your IRPC functions reach production — how they're packaged, versioned, routed to different servers, published to registries, and dynamically swapped at runtime. 
+
+The [Overview](/docs/remote-function) mentioned transport agnosticism and edge distribution as architectural superpowers. This page goes deep into the **mechanics** of each pattern and how to implement them.
+
+## The Package System
+
+Every IRPC function belongs to a **package**. A package is a named, versioned namespace that groups functions and binds them to a transport.
+
+```typescript
+import { createPackage } from '@irpclib/irpc';
+import { HTTPTransport } from '@irpclib/http';
+
+export const irpc = createPackage({
+  name: 'my-api',
+  version: '1.0.0',
+});
+
+export const transport = new HTTPTransport({
+  endpoint: `/irpc/${irpc.href}`, // '/irpc/my-api/1.0.0'
+});
+
+irpc.use(transport);
+```
+
+### Package Identity
+
+`irpc.href` returns `name/version` — a unique identifier that serves as:
+- The HTTP endpoint path
+- The WebSocket message namespace
+- The BroadcastChannel name
+- The wire-protocol routing key
+
+This means `getUser` in `auth/1.0.0` never collides with `getUser` in `billing/2.0.0` — even if they share the same transport or server instance.
+
+### Version Boundaries
+
+The version is part of the execution payload. If a client running `1.0.0` stubs sends a call to a server running `2.0.0` handlers, the routing key won't match. This prevents silent contract breakage across deployments — the version mismatch surfaces immediately as a routing error instead of a subtle data shape bug.
+
+## Microservice Distribution
+
+Because each package accepts its own transport instance, you can distribute your architecture across microservices without an API gateway:
+
+```typescript
+// User service — runs on server A
+export const userService = createPackage({ name: 'users', version: '1.0.0' });
+userService.use(new HTTPTransport({
+  endpoint: 'https://server-a.internal/irpc/users/1.0.0',
+}));
+
+// Project service — runs on server B
+export const projectService = createPackage({ name: 'projects', version: '1.0.0' });
+projectService.use(new HTTPTransport({
+  endpoint: 'https://server-b.internal/irpc/projects/1.0.0',
+}));
+
+// Declare functions on their respective packages
+export const getUser = userService.declare<GetUserFn>({ name: 'getUser' });
+export const getProject = projectService.declare<GetProjectFn>({ name: 'getProject' });
+```
+
+From the client's perspective, they just call `await getUser()` and `await getProject()` normally. The packages route the execution payloads to their respective microservices behind the scenes. No URL manipulation, no routing configuration, no API gateway.
+
+### Multi-Transport Microservices
+
+You can even mix transports across microservices:
+
+```typescript
+// Real-time service — WebSocket for low-latency streaming
+export const realtimeService = createPackage({ name: 'realtime', version: '1.0.0' });
+realtimeService.use(new WebSocketTransport({
+  url: 'wss://realtime.internal',
+}));
+
+// Batch service — HTTP for large payloads and file uploads
+export const batchService = createPackage({ name: 'batch', version: '1.0.0' });
+batchService.use(new HTTPTransport({
+  endpoint: 'https://batch.internal/irpc/batch/1.0.0',
+}));
+```
+
+The client calls `watchPrices('AAPL')` and `uploadReport(file)` with identical syntax. The packages route one over WebSocket and the other over HTTP — completely transparent.
+
+## NPM Distribution
+
+IRPC's strict separation between declaration (`index.ts`) and implementation (`constructor.ts`) enables a powerful distribution model: **publish your API stubs to NPM while keeping your server logic private**.
+
+### How It Works
+
+Your `index.ts` files contain only the function signatures and spec metadata — no business logic, no database connections, no secrets. These files are safe to publish. Client teams install the package and get full TypeScript autocomplete, type-checked arguments, and compile-time error detection — without ever seeing your server code.
+
+### Project Structure
+
+```
+my-api/
+├── lib/
+│   └── module.ts          # Package + transport config
+├── rpc/
+│   ├── users/
+│   │   ├── index.ts       # ✅ Published — type stubs
+│   │   └── constructor.ts # ❌ Private — server logic
+│   └── billing/
+│       ├── index.ts       # ✅ Published
+│       └── constructor.ts # ❌ Private
+├── server.ts              # ❌ Private — server setup
+├── package.json
+└── .npmignore
+```
+
+### Configure `../../../../../package.json`
+
+```json
+{
+  "name": "my-api",
+  "version": "1.0.0",
+  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./*": "./dist/rpc/*"
+  },
+  "files": ["dist"]
+}
+```
+
+### Exclude Server Code
+
+Use `.npmignore` to exclude all server-side files:
+
+```
+# Source code (keep only dist/)
+src
+
+# Server implementation files
+**/constructor.ts
+**/constructor.js
+
+# Server entry point
+server.ts
+server.js
+
+# Environment
+.env
+.env.example
+```
+
+### Build and Publish
+
+```bash
+# Build client-safe stubs
+npm run build
+
+# Publish to NPM (or your private registry)
+npm publish
+```
+
+### Client Installation
+
+```bash
+npm install my-api
+```
+
+```typescript
+import { getUser, createUser } from 'my-api/users';
+
+const user = await getUser('123');
+const newUser = await createUser({ name: 'John', email: 'john@example.com' });
+```
+
+The stubs connect to your server's transport endpoint. Type safety is enforced at compile time. Your handler logic remains absolutely private on your server.
+
+## Dynamic Edge Distribution
+
+The most powerful distribution pattern: **dynamically routing functions to different execution environments at runtime** — without changing a single line of component code.
+
+### The Problem
+
+Supporting cost-effective "Free Tiers" typically requires duplicating your API logic to run entirely in the browser, creating an unmaintainable branching architecture between local code and server code.
+
+### The Solution
+
+Because IRPC separates the declaration from the transport, you can swap the execution target at runtime:
+
+```typescript
+import { createPackage } from '@irpclib/irpc';
+import { HTTPTransport } from '@irpclib/http';
+import { BroadcastTransport } from '@irpclib/broadcast';
+
+export const irpc = createPackage({ name: 'my-api', version: '1.0.0' });
+
+function configureTransport(plan: 'free' | 'paid') {
+  if (plan === 'paid') {
+    // Execute on your robust cloud servers
+    irpc.use(new HTTPTransport({
+      endpoint: 'https://api.yourservice.com/irpc/my-api/1.0.0',
+    }));
+  } else {
+    // Execute locally in a Web Worker — zero server costs
+    irpc.use(new BroadcastTransport({
+      channel: irpc.href,
+    }));
+  }
+}
+```
+
+For a **paid user**, the transport points to your cloud servers with full database access, GPU compute, and external integrations.
+
+For a **free user**, the transport points to a local Web Worker running the same handlers with limited local data. Your cloud servers are never touched.
+
+**Your frontend component logic remains 100% identical.** The UI has no idea whether `generateReport()` resolved on AWS or a local background thread. The function call is the same. The return type is the same. The component binding is the same.
+
+### Worker-Side Setup
+
+The Web Worker hosts the same handler implementations, running locally:
+
+```typescript
+// worker.ts
+import { BroadcastRouter } from '@irpclib/broadcast/router';
+import { transport } from './lib/module.js';
+
+// Import the same constructor files
+import './rpc/reports/constructor.js';
+import './rpc/analytics/constructor.js';
+
+const router = new BroadcastRouter(transport);
+```
+
+The handlers can use IndexedDB, local computation, or limited external APIs. The architecture is identical — only the transport destination changed.
+
+## Monitoring (IRPCStore)
+
+IRPC provides a global store for observing the system's live state. Packages, routers, and streams self-register — no manual tracking.
+
+```typescript
+import { IRPC_STORE } from '@irpclib/irpc';
+```
+
+### Live Tracking
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `IRPC_STORE.packages` | `Set<IRPCPackage>` | All registered packages |
+| `IRPC_STORE.routers` | `Set<IRPCRouter>` | All active routers |
+| `IRPC_STORE.calls` | `Set<IRPCCall>` | All in-flight calls |
+
+### Event Subscription
+
+```typescript
+const unsubscribe = IRPC_STORE.subscribe((event) => {
+  switch (event.type) {
+    case 'register': // Package or router registered
+      break;
+    case 'route':    // Router begins resolving a request batch
+      break;
+    case 'queue':    // New call added to in-flight set
+      break;
+    case 'dequeue':  // Call resolved/rejected, removed from in-flight
+      break;
+  }
+});
+```
+
+### What You Can Build
+
+The store is a **live window**, not a log. It tracks what's active right now. Zero overhead when nobody subscribes. Build on top of it:
+
+- **Request logging** — Log every function call with timing data
+- **Metrics dashboards** — Track throughput, error rates, stream durations
+- **Alerting** — Detect anomalies in call patterns or error spikes
+- **DevTools extensions** — Visualize the live IRPC state in browser DevTools
+- **Health checks** — Monitor active streams and router status
+
+```typescript
+// Example: Simple request logger
+IRPC_STORE.subscribe((event) => {
+  if (event.type === 'queue') {
+    console.log(`[IRPC] Call started: ${event.detail.payload.name}`);
+  }
+  if (event.type === 'dequeue') {
+    console.log(`[IRPC] Call completed: ${event.detail.payload.name}`);
+  }
+});
+```
+
+## Security Model
+
+IRPC's file separation enables a clean distribution model:
+
+| Layer | Contains | Typically Published? |
+|-------|----------|------------|
+| **Declaration** (`index.ts`) | Type signatures, spec metadata | ✅ Safe to publish |
+| **Implementation** (`constructor.ts`) | Business logic, DB queries, secrets | ⚠️ Up to you |
+| **Module** (`module.ts`) | Package config, transport wiring | ⚠️ Client-safe parts only |
+| **Server** (`server.ts`) | Router setup, hook registration | ⚠️ Up to you |
+
+The declaration file contains **zero executable logic**. It's a type-level contract. Even if someone decompiles the published JavaScript, they get empty function stubs and spec metadata — no business logic, no database drivers, no environment variables.
+
+### Hook-Based Authorization
+
+Security enforcement happens in hooks, not in the transport:
+
+```typescript
+// Global auth — runs before every handler
+router.use(async () => {
+  const token = getContext<string>('token');
+  if (!token) throw new Error('Unauthorized');
+  setContext('user', await verifyToken(token));
+});
+
+// Per-function authorization — runs before specific handlers
+irpc.hook(deleteUser, async (req) => {
+  const user = getContext<User>('user');
+  if (!user?.admin) throw new Error('Forbidden');
+});
+```
+
+Because hooks consume standardized context keys (not transport-specific types), the same auth logic works across HTTP, WebSocket, and BroadcastChannel routers without modification.

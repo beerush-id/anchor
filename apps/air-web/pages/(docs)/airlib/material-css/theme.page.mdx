@@ -1,0 +1,62 @@
+---
+title: 'Theme & Engine'
+description: 'Global CSS variables that power the AirLib Material 3 CSS design system.'
+nav: 'Theme & Engine'
+nav-priority: 122
+---
+
+# Theme & Engine
+
+AirLib Material CSS is built upon a robust system of native CSS variables (design tokens). These tokens are globally defined in the `@theme` block and power all components, layouts, and utilities.
+
+## The Seed Color System
+
+AirLib Material uses the `oklch()` color space. The entire theme is generated from a single `--seed-color`.
+
+```css [CSS]
+@theme {
+  --seed-color: #e6261a;
+}
+```
+
+By changing just the `--seed-color`, the system mathematically calculates perfect combinations for primary, secondary, tertiary, and surface colors using native CSS `light-dark()` functions, providing instant light and dark mode support without duplicate variables.
+
+## Surfaces and Elevations
+
+The theme defines a strict surface color hierarchy, from `lowest` to `highest`, matching the Material Design 3 elevation system.
+
+```css [CSS]
+@theme {
+  --color-surface-container-lowest: light-dark(oklch(100% 0 0), oklch(from var(--seed-color) 12% 0.02 h));
+  --color-surface-container-highest: light-dark(oklch(from var(--seed-color) 90% 0.02 h), oklch(from var(--seed-color) 32% 0.02 h));
+  
+  --elevation-1: 0 1px 2px 0 rgba(0,0,0,0.3);
+}
+```
+
+## Abstract Base Math
+
+Spacing and sizing are calculated from a common base (`--spacing: 0.25rem`). This enforces consistency across all component dimensions and padding.
+
+```css [CSS]
+@theme {
+  --spacing: 0.25rem; /* 4px */
+  
+  --radius-sm: calc(var(--spacing) * 2); /* 8px */
+  --radius-md: calc(var(--spacing) * 3); /* 12px */
+  --radius-full: 9999px;
+}
+```
+
+## Expressive Motion
+
+Animations utilize standard Material easing curves and durations.
+
+```css [CSS]
+@theme {
+  --duration-short: 200ms;
+  --duration-medium: 300ms;
+  
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+```

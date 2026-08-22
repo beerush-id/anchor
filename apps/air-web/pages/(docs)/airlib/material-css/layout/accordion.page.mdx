@@ -1,0 +1,59 @@
+---
+title: 'Accordion'
+description: 'Material Design accordion layout for vertically collapsing and expanding content.'
+nav: 'Accordion'
+nav-priority: 171
+---
+
+# Accordion
+Accordions allow users to toggle the display of a large amount of content by collapsing or expanding vertically stacked sections.
+
+## Composed Utilities
+The accordion component uses a specific HTML structure to achieve smooth hardware-accelerated height animations using CSS Grid (`grid-template-rows`).
+
+```html [HTML]
+<div class="accordion-group">
+  
+  <!-- Accordion Item 1 -->
+  <div class="accordion-item">
+    <!-- Header (Clickable toggle) -->
+    <button class="accordion-header">
+      Section Title 1
+      <span class="material-symbols-outlined">expand_more</span>
+    </button>
+    
+    <!-- Content Wrapper (Hidden by default) -->
+    <!-- Toggle data-state="open" via JavaScript to expand -->
+    <div class="accordion-content" data-state="open">
+      <!-- Inner padding wrapper -->
+      <div class="accordion-inner">
+        This is the inner content of the first section.
+      </div>
+    </div>
+  </div>
+
+  <!-- Accordion Item 2 -->
+  <div class="accordion-item">
+    <button class="accordion-header">
+      Section Title 2
+      <span class="material-symbols-outlined">expand_more</span>
+    </button>
+    
+    <div class="accordion-content" data-state="closed">
+      <div class="accordion-inner">
+        This is the inner content of the second section.
+      </div>
+    </div>
+  </div>
+
+</div>
+```
+
+### Group and Item Structure
+- `accordion-group`: Applied to the outer wrapper containing multiple accordion items. It applies a flex column layout with a 2px gap. It also handles advanced border-radius logic so the first and last items inherit outer radii (using `--air-card-radius` or `--radius-xl`), while adjacent inner items share a tighter segmented radius (`--radius-sm`).
+- `accordion-item`: Applied to the individual expanding sections. It acts as a segmented container with a `surface-container-low` background and `overflow: hidden`.
+
+### Header and Content
+- `accordion-header`: Applied to the interactive `<button>`. It applies `title-medium` typography and handles hover and focus state backgrounds using `color-mix` with `on-surface`. It is configured as a flex container to align the title text and any trailing toggle icon.
+- `accordion-content`: Applied to the content wrapper directly below the header. It uses `grid-template-rows: 0fr` to hide the content. When its attribute becomes `data-state="open"`, it smoothly transitions to `grid-template-rows: 1fr` using standard Material easing.
+- `accordion-inner`: Applied to the `div` inside `accordion-content`. Because CSS Grid height transitions require the inner content to handle its own padding, this utility sets and animates the vertical padding to zero when closed and to standard padding when its parent receives `data-state="open"`.

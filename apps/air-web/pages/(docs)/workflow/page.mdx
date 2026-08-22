@@ -1,0 +1,125 @@
+---
+nav: 'Overview'
+nav-icon: account-tree
+nav-priority: 70
+title: 'Workflow Orchestration'
+description: 'Schema-driven, environment-agnostic execution pipelines — orchestrate complex asynchronous logic with fine-grained error recovery and observability.'
+keywords:
+  - AirLib
+  - Anchor
+  - Workflows
+  - Orchestration
+  - Promise Chaining
+  - Schema Validation
+  - Observability
+---
+
+# Workflow Orchestration
+
+**Schema-Driven, Promise-like Execution Pipelines**
+
+You want to build a reliable payment processor, an AI agent loop, or a complex background job. To handle it safely, you are forced to:
+
+- Write massive, deeply nested **`try/catch`** blocks to handle intermediate failures.
+- Manually pass **mutable state** from one asynchronous operation to the next.
+- Wire bespoke **`if/else`** branching logic that makes the function impossible to read.
+- Manually invoke **Zod** or **Valibot** to validate inputs and intermediate data.
+- Sprinkle **telemetry tracking** and **logging** around every single network request.
+- Manually build **cleanup** or **rollback** mechanisms when a step throws halfway through.
+
+Whichever way you structure it, business logic is quickly **buried** under error handling, logging, and data validation.
+
+:::tip[What if:]
+Multi-step asynchronous logic was just a predictable, **Promise-like chaining?**
+:::
+
+```typescript
+type ChatInput = {
+  prompt: string
+  model: 'gpt-4' | 'claude-3'
+};
+
+export const chatWorkflow = plan<ChatInput>()
+  // 1. Sequential Processing
+  .then(async (input) => {
+    const system = 'You are a helpful assistant.';
+    return { ...input, system };
+  })
+  // 2. Conditional Routing
+  .switch('model', {
+    'gpt-4': (resolve) => resolve((input) => openai.chat(input.prompt, input.system)),
+    'claude-3': (resolve) => resolve((input) => anthropic.chat(input.prompt, input.system)),
+  })
+  // 3. Error Recovery
+  .catch((error) => {
+    console.error('AI Request failed!', error);
+    return { text: 'An error occurred.', error: true };
+  });
+```
+
+:::code-group
+
+```ts [IRPC Handler] {2}
+irpc.construct(askAi, (prompt, model) => {
+  return chatWorkflow({ prompt, model });
+});
+```
+
+```tsx [React] {8}
+export const ChatButton = setup(() => {
+  const isPending = mutable(false);
+
+  const ask = async () => {
+    isPending.value = true;
+
+    try {
+      const result = await chatWorkflow({ prompt: 'Hello!', model: 'gpt-4' });
+      console.log(result.text);
+    } finally {
+      isPending.value = false;
+    }
+  };
+
+  return render(() => (
+    <button onClick={ask} disabled={isPending.value}>
+      {isPending.value ? 'Thinking...' : 'Ask AI'}
+    </button>
+  ));
+});
+```
+
+```tsx [SolidJS] {8}
+export const ChatButton = setup(() => {
+  const isPending = mutable(false);
+
+  const ask = async () => {
+    isPending.value = true;
+
+    try {
+      const result = await chatWorkflow({ prompt: 'Hello!', model: 'gpt-4' });
+      console.log(result.text);
+    } finally {
+      isPending.value = false;
+    }
+  };
+
+  return (
+    <button onClick={ask} disabled={isPending.value}>
+      {isPending.value ? 'Thinking...' : 'Ask AI'}
+    </button>
+  );
+});
+```
+:::
+
+Because the **Workflow API** is just JavaScript, you can **orchestrate complex logic anywhere** JavaScript runs—in the **browser**, **Bun**, **Deno**, **Node.js**, or **Cloudflare Workers**.
+
+## Deep Dives
+
+Explore the core architectural pillars of the Workflow engine:
+
+- **[Plan & Recover](/docs/workflow/plan)**: Learn how to chain sequential steps, compose pipelines, and handle error recovery natively.
+- **[Reactive Execution](/docs/workflow/reactive)**: Learn how to track progress step-by-step and defer execution based on state dependencies.
+- **[Schema Validation](/docs/workflow/schema)**: Learn how to strictly enforce data boundaries using Zod, Valibot, or duck-typed functions.
+- **[Branching Logic](/docs/workflow/switch)**: Learn how to execute isolated, conditional branches based on data states or matcher functions.
+- **[Observability & Monitoring](/docs/workflow/monitoring)**: Learn how to globally monitor execution states and instantly build reactive telemetry dashboards.

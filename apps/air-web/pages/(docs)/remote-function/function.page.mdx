@@ -1,0 +1,745 @@
+---
+nav: 'Functions'
+nav-priority: 61
+title: 'Functions'
+description: 'IRPC function declarations — signatures, argument patterns, reactive streams, naming conventions, execution bindings, and per-function configuration.'
+---
+
+# Functions
+
+A **function** is the atomic unit of the Remote Function architecture. Every remote operation — a database query, an AI generation, a file upload — starts as a function declaration that both the client and server share.
+
+The [Overview](/docs/remote-function) showed you the three-step pattern. This page goes deep into the **declaration** — how to structure signatures, how streams work at the proxy level, and how to organize your function modules.
+
+## Declaring a Function
+
+`irpc.declare()` registers a function signature into a package and returns a callable **stub**:
+
+```typescript
+// rpc/users/index.ts
+import { irpc } from '../../lib/module.js';
+
+export type GetUserFn = (id: string) => Promise<User>;
+export const getUser = irpc.declare<GetUserFn>('getUser', () => ({}));
+```
+
+The generic `<GetUserFn>` enforces the exact parameter and return types across both the client call site and the server handler. Misspelled arguments or wrong return shapes are caught at compile time.
+
+The return value of `irpc.declare()` is an **`IRPCStub`**. This stub acts as a smart proxy—it looks and behaves exactly like a standard async function, but calling it returns an `IRPCReader` instead of a raw `Promise`. The stub also exposes specialized lifecycle APIs for use inside reactive component bodies:
+
+```typescript
+interface IRPCStub<Fn extends (...args: any[]) => any> {
+  (...args: Parameters<Fn>): IRPCReader<ReturnType<Fn>>;
+  once(...args: Parameters<Fn>): IRPCReader<ReturnType<Fn>>;
+  with(factory: () => Parameters<Fn>, debounce?: number): IRPCReader<ReturnType<Fn>>;
+  when(factory: () => Parameters<Fn>, debounce?: number): IRPCReader<ReturnType<Fn>>;
+  later(debounce?: number): IRPCReader<ReturnType<Fn>> & { dispatch: (...args: Parameters<Fn>) => void };
+}
+```
+
+### Reactive Execution Bindings
+
+- **`.once()`**: Triggers the RPC exactly once. Use this for standard imperative calls.
+- **`.with()`**: Binds the function to a reactive factory. Whenever the parameters returned by the factory change, the stub re-runs automatically.
+- **`.when()`**: Similar to `.with()`, but execution is deferred until the factory returns a truthy value (or a value other than `undefined`).
+- **`.later()`**: Returns a manual trigger object. The RPC will not execute until you explicitly call `.dispatch()`. This is useful for event handlers like `onClick` that need to pass arguments from the event object.
+
+## Naming Conventions
+
+### Wire Names
+
+The `name` field inside `irpc.declare()` is the **wire identifier** — it's what the server uses to route each call to the correct handler. It must be unique within its package.
+
+With a handful of functions this is trivial. With hundreds, collisions become real — you'll have a `list` for products, orders, invoices, and users. IRPC's `name` is a free-form string, so you can pick any strategy that scales with your codebase:
+
+**Dotted namespacing** — Group by domain with a dot separator. Scales naturally and reads like a path:
+
+```typescript
+export const listProducts = irpc.declare<ListProductsFn>('product.list', () => []);
+export const getProduct   = irpc.declare<GetProductFn>('product.get', () => ({}));
+export const listOrders   = irpc.declare<ListOrdersFn>('order.list', () => []);
+export const getOrder     = irpc.declare<GetOrderFn>('order.get', () => ({}));
+```
+
+**Verb-prefixed** — Prefix with the action. Simpler, works well for smaller packages:
+
+```typescript
+export const listProducts  = irpc.declare<ListProductsFn>('listProducts', () => []);
+export const getProduct    = irpc.declare<GetProductFn>('getProduct', () => ({}));
+export const createProduct = irpc.declare<CreateProductFn>('createProduct', () => ({}));
+```
+
+**Kebab-case** — If you prefer a REST-like feel:
+
+```typescript
+export const listProducts = irpc.declare<ListProductsFn>('list-products', () => []);
+export const getProduct   = irpc.declare<GetProductFn>('get-product', () => ({}));
+```
+
+Pick one convention and stick with it across your package. The wire name doesn't need to match the export name — the export name is for your codebase, the wire name is for the protocol.
+
+### Type Names
+
+Type aliases follow `PascalCase` with a `Fn` suffix:
+
+```typescript
+export type GetUserFn = (id: string) => Promise<User>;
+export type CreateUserFn = (data: UserInput) => Promise<User>;
+export type WatchPricesFn = (ticker: string) => RemoteState<number>;
+```
+
+### File Structure
+
+IRPC has no compiler and no file-based routing — you can organize your files however you like. You can even put declarations and implementations in the same file (though there's little reason to — you'd ship your server logic to the client for nothing).
+
+A convention that works well is giving each domain its own directory with two files:
+
+```
+rpc/
+├── users/
+│   ├── index.ts        ← Declaration (shared, safe to publish)
+│   └── constructor.ts  ← Implementation (typically server-only)
+├── products/
+│   ├── index.ts
+│   └── constructor.ts
+└── ai/
+    ├── index.ts
+    └── constructor.ts
+```
+
+- **`index.ts`** — Contains `irpc.declare()` calls, type exports, and shared types.
+- **`constructor.ts`** — Contains `irpc.construct()` calls with the actual business logic.
+
+You could just as easily put everything in a single `rpc.ts` file, or split by feature instead of by domain. IRPC doesn't care — it only looks at what you register via `irpc.declare()` and `irpc.construct()`.
+
+## Export Patterns
+
+IRPC stubs are just functions — how you expose them is up to you. Here are three patterns that work at different scales.
+
+### Flat Exports
+
+The simplest pattern. Each function is a named export. Works well when you have a few functions per domain:
+
+```typescript
+// rpc/users/index.ts
+export const getUser    = irpc.declare<GetUserFn>('user.get', () => ({}));
+export const createUser = irpc.declare<CreateUserFn>('user.create', () => ({}));
+export const listUsers  = irpc.declare<ListUsersFn>('user.list', () => []);
+```
+
+```typescript
+// Consumer
+import { getUser, createUser } from './rpc/users/index.js';
+```
+
+### Namespace Objects
+
+Group stubs into a single object. This avoids polluting the import namespace when you have many domains with overlapping verb names (`get`, `list`, `create`):
+
+```typescript
+// rpc/users/index.ts
+const get    = irpc.declare<GetUserFn>('user.get', () => ({}));
+const create = irpc.declare<CreateUserFn>('user.create', () => ({}));
+const list   = irpc.declare<ListUsersFn>('user.list', () => []);
+const remove = irpc.declare<DeleteUserFn>('user.delete', () => ({}));
+
+export const users = { get, create, list, remove };
+```
+
+```typescript
+// Consumer — no name collisions, self-documenting
+import { users } from './rpc/users/index.js';
+
+const user = await users.get('123');
+const all  = await users.list();
+```
+
+This scales cleanly when you have `products.list`, `orders.list`, and `users.list` all in the same component.
+
+### Barrel Re-exports
+
+Aggregate multiple domains into a single entry point for convenience:
+
+```typescript
+// rpc/index.ts
+export { users } from './users/index.js';
+export { products } from './products/index.js';
+export { orders } from './orders/index.js';
+```
+
+```typescript
+// Consumer
+import { users, products } from './rpc/index.js';
+
+const user = await users.get('123');
+const items = await products.list({ category: 'electronics' });
+```
+
+### Co-exporting Types
+
+Always export your domain types alongside the stubs so consumers get full autocomplete:
+
+```typescript
+// rpc/users/index.ts
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'member';
+};
+
+export type UserInput = { name: string; email: string };
+
+export type GetUserFn = (id: string) => Promise<User>;
+export const getUser = irpc.declare<GetUserFn>('user.get', () => ({}));
+```
+
+```typescript
+import { getUser, type User } from './rpc/users/index.js';
+```
+
+## Argument Patterns
+
+Function signatures support several argument patterns. The arguments are serialized to JSON over the wire, so they must be serializable.
+
+### Single Argument
+
+The simplest pattern — one value in, one value out:
+
+```typescript
+export type GetUserFn = (id: string) => Promise<User>;
+export const getUser = irpc.declare<GetUserFn>('getUser', () => ({}));
+
+// Client
+const user = await getUser('user-123');
+```
+
+### Multiple Arguments
+
+Multiple positional arguments map directly to the function signature:
+
+```typescript
+export type UpdateUserFn = (id: string, data: Partial<UserInput>) => Promise<User>;
+export const updateUser = irpc.declare<UpdateUserFn>('updateUser', () => ({}));
+
+// Client
+const user = await updateUser('user-123', { name: 'Jane' });
+```
+
+### Object Arguments
+
+For complex inputs, use a single object parameter. This scales better than many positional arguments and makes call sites self-documenting:
+
+```typescript
+export type SearchUsersFn = (query: {
+  term: string;
+  role?: 'admin' | 'member';
+  limit?: number;
+  offset?: number;
+}) => Promise<User[]>;
+
+export const searchUsers = irpc.declare<SearchUsersFn>('searchUsers', () => []);
+
+// Client
+const users = await searchUsers({ term: 'john', role: 'admin', limit: 10 });
+```
+
+### No Arguments
+
+Functions that take no arguments work just as well:
+
+```typescript
+export type GetCurrentUserFn = () => Promise<User>;
+export const getCurrentUser = irpc.declare<GetCurrentUserFn>('getCurrentUser', () => ({}));
+
+// Client
+const me = await getCurrentUser();
+```
+
+### File Arguments
+
+Files can be passed as direct arguments or nested inside objects. The transport extracts and reconstructs them automatically:
+
+```typescript
+import type { IRPCFile } from '@irpclib/irpc';
+
+// Direct file argument
+export type UploadAvatarFn = (file: IRPCFile) => Promise<string>;
+export const uploadAvatar = irpc.declare<UploadAvatarFn>('uploadAvatar', () => '');
+
+// Nested inside an object
+export type UpdateProfileFn = (profile: {
+  username: string;
+  avatar: IRPCFile;
+  documents: IRPCFile[];
+}) => Promise<void>;
+export const updateProfile = irpc.declare<UpdateProfileFn>('updateProfile', () => undefined);
+
+// Client wrapping a native File
+const file = fileInput.files[0];
+const payload = new IRPCFile({ name: file.name, size: file.size, type: file.type }, file);
+await uploadAvatar(payload);
+```
+
+The server receives the `IRPCFile` automatically, where `file.data` contains the raw binary `Blob` and `file.meta` provides the necessary metadata (name, size, type).
+
+### Downloading Files
+
+To serve remote files securely without forcing the client to download them immediately, return an `IRPCBlob`. Because it acts as a wrapper, the client can choose to either wait for the entire file instantly, or fetch the wrapper to stream and track the download reactively.
+
+```typescript
+import { IRPCBlob } from '@irpclib/irpc';
+
+// Server: Dynamically resolve a secure file reference
+irpc.construct(getAvatar, async (userId) => {
+  const user = await db.users.find(userId);
+  const signedUrl = await s3.getSignedUrl(user.avatarKey);
+  return new IRPCBlob(signedUrl, { type: 'image/png' });
+});
+
+// Imperative: Fetch the pointer and instantly download the native Blob
+const blob = await getAvatar('user-123');
+
+// Reactive: Bind to a UI component and download on demand
+const avatar = getAvatar.later();
+
+// Later in the UI...
+<button onClick={async () => {
+  await avatar.dispatch(props.userId); // Fetch the secure file reference
+  avatar.data?.load(); // Trigger download manually
+}}>
+  Download
+</button>
+```
+
+By returning an `IRPCBlob`, the server successfully defers the actual data transfer. The client gains full control over the execution context—using `await` for background scripts, or `.later()` to build interactive progress UIs—saving bandwidth and keeping the initial RPC response lightweight.
+
+:::tip[Use HTTP Transport for file uploads]
+The browser offloads HTTP uploads to a background thread. WebSocket transport supports binary framing, but large transfers block the persistent socket, delaying other RPC calls.
+:::
+
+## Return Types
+
+You define your function's return type naturally — just like writing any TypeScript function. IRPC supports three patterns:
+
+```typescript
+// Return a plain value
+export type GetNameFn = () => string;
+
+// Return a Promise (most common)
+export type GetUserFn = (id: string) => Promise<User>;
+
+// Return a RemoteState for continuous streaming
+export type WatchPricesFn = (ticker: string) => RemoteState<number>;
+```
+
+When the return type is `RemoteState<T>`, you must provide `{ stream: true }`:
+
+```typescript
+import type { RemoteState } from '@irpclib/irpc';
+
+export type WatchPricesFn = (ticker: string) => RemoteState<number>;
+
+export const watchPrices = irpc.declare<WatchPricesFn>('watchPrices', () => 0, {
+  stream: true,
+});
+```
+
+:::warning[Always set `{ stream: true }` for streaming functions]
+Without `{ stream: true }`, the engine has no runtime signal that the call is a stream — TypeScript types are erased at runtime. The call will share a connection with other batched calls, which means it can't be independently cancelled and may lead to unexpected behavior.
+:::
+
+### Initial Data
+
+Provide a `seed` factory to seed `reader.data` before the server responds:
+
+```typescript
+// Stream with initial data — seed is the second argument
+export const watchPrices = irpc.declare<WatchPricesFn>('watchPrices', () => 0, {
+  stream: true,
+});
+
+// Standard call with initial data (useful for optimistic UI)
+export const getUser = irpc.declare<GetUserFn>('getUser', () => ({
+  id: '', name: 'Loading...', email: '', role: 'member',
+}));
+```
+
+Without `seed`, `reader.data` is `undefined` until the server responds.
+
+The handler implements its logic using the declared return type — returning a value, a Promise, or a `stream()`. See the [Handlers](/docs/remote-function/handler) page for implementation details.
+
+## Execution
+
+Calling the stub fires the call **immediately**. It returns an `IRPCReader`—which acts as a reactive proxy but also extends `Promise`—so you can `await` it or use `.then()` exactly like a standard async function:
+
+```typescript
+// 1. await — waits for the result
+const user = await getUser('123');
+
+// 2. .then() — handles the result via callback
+getUser('123').then(user => console.log(user));
+
+// 3. Background execution — the call fires immediately without awaiting
+const reader = getUser('123');
+// reader.status === 'pending'
+```
+
+### Reactive Execution (Components)
+
+When calling functions inside reactive component bodies (like `setup()`), you use specific lifecycle methods exposed by the `IRPCStub` to manage execution timing and reactivity automatically. These methods return an `IRPCReader` that the UI binds directly to:
+
+:::tip[Why execute in the component body?]
+If you wait to fire a call inside an `onMount` effect, the component initially renders an `IRPCReader` with an `idle` status. Once mounted, the effect fires the call, changing the status to `pending` and forcing the renderer to re-run immediately. 
+
+By executing these APIs directly in the synchronous `setup()` body, the reader is born in the `pending` state. The UI renders the correct loading state on the very first pass, completely avoiding the wasted double-render.
+:::
+
+#### `.once()`
+
+Runs the function **exactly once** when the component body runs on the browser. It doesn't track dependencies and will not re-run. Perfect for static initialization.
+
+:::code-group
+
+```tsx [React]
+import { setup, render } from '@airlib/react';
+import { getAppConfig } from './rpc/config/index.js';
+
+export const ConfigWidget = setup(() => {
+  const config = getAppConfig.once('web');
+
+  return render(() => <div>Version: {config.data?.version}</div>);
+});
+```
+
+```tsx [SolidJS]
+import { setup } from '@airlib/solid';
+import { getAppConfig } from './rpc/config/index.js';
+
+export const ConfigWidget = setup(() => {
+  const config = getAppConfig.once('web');
+
+  return <div>Version: {config.data?.version}</div>;
+});
+```
+
+:::
+
+#### `.with(args, debounce?)`
+
+Creates an **eager reactive call**. It fires immediately when the component body runs on the browser, and because the arguments are wrapped in a factory function, it tracks any reactive dependencies used inside. If a dependency changes, the call automatically re-runs.
+
+You can pass an optional `debounce` (in milliseconds) as the second argument to prevent flooding the server with requests during rapid state changes (like typing).
+
+:::code-group
+
+```tsx [React]
+import { setup, render } from '@airlib/react';
+import { getUser } from './rpc/users/index.js';
+
+export const UserProfile = setup<{ id: string }>((props) => {
+  const user = getUser.with(() => [props.id]);
+
+  return render(() => <div>User: {user.data?.name}</div>);
+});
+```
+
+```tsx [SolidJS]
+import { setup } from '@airlib/solid';
+import { getUser } from './rpc/users/index.js';
+
+export const UserProfile = setup<{ id: string }>((props) => {
+  const user = getUser.with(() => [props.id]);
+
+  return <div>User: {user.data?.name}</div>;
+});
+```
+
+:::
+
+#### `.when(args, debounce?)`
+
+Creates a **lazy reactive call**. It completely skips the initial execution. The call only fires *after* a tracked dependency changes for the first time.
+
+Like `.with()`, it accepts an optional `debounce` (in milliseconds) as the second argument to delay execution until the dependencies stop changing for the specified duration.
+
+:::code-group
+
+```tsx [React]
+import { setup, render, mutable, $bind } from '@airlib/react';
+import { searchUsers } from './rpc/users/index.js';
+
+export const SearchBar = setup(() => {
+  const state = mutable({ query: '' });
+  const search = searchUsers.when(() => [state.query], 300); // 300ms debounce
+
+  return render(() => (
+    <div>
+      <input value={$bind(state, 'query')} placeholder="Search..." />
+      <ul>
+        {search.data?.map(u => <li key={u.id}>{u.name}</li>)}
+      </ul>
+    </div>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { setup, mutable, $bind } from '@airlib/solid';
+import { searchUsers } from './rpc/users/index.js';
+import { For } from 'solid-js';
+
+export const SearchBar = setup(() => {
+  const state = mutable({ query: '' });
+  const search = searchUsers.when(() => [state.query], 300); // 300ms debounce
+
+  return (
+    <div>
+      <input value={$bind(state, 'query')} placeholder="Search..." />
+      <ul>
+        <For each={search.data}>
+          {(u) => <li>{u.name}</li>}
+        </For>
+      </ul>
+    </div>
+  );
+});
+```
+
+:::
+
+#### `.later(debounce?)`
+
+Creates an imperative manual execution binding. It returns an `IRPCReader` augmented with a `.dispatch()` method. You can optionally pass a `debounce` time (in milliseconds) to coalesce rapid manual invocations.
+
+:::code-group
+
+```tsx [React]
+import { setup, render } from '@airlib/react';
+import { uploadAvatar } from './rpc/users/index.js';
+
+export const ProfileEditor = setup<{ id: string }>((props) => {
+  const uploader = uploadAvatar.later(200);
+
+  return render(() => (
+    <div>
+      <button onClick={() => uploader.dispatch(props.id, 'file')}>Upload</button>
+      {uploader.status === 'pending' && <span>Uploading...</span>}
+    </div>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { setup } from '@airlib/solid';
+import { uploadAvatar } from './rpc/users/index.js';
+
+export const ProfileEditor = setup<{ id: string }>((props) => {
+  const uploader = uploadAvatar.later(200);
+
+  return (
+    <div>
+      <button onClick={() => uploader.dispatch(props.id, 'file')}>Upload</button>
+      {uploader.status === 'pending' && <span>Uploading...</span>}
+    </div>
+  );
+});
+```
+
+:::
+
+## IRPCReader
+
+Every call returns an `IRPCReader<T>`, where `T` is the unwrapped data type:
+
+| Declared Return Type | Call Returns | `T` |
+|---------------------|-------------|-----|
+| `string` | `IRPCReader<string>` | `string` |
+| `Promise<User>` | `IRPCReader<User>` | `User` |
+| `RemoteState<number>` | `IRPCReader<number>` | `number` |
+
+`IRPCReader<T>` is a reactive proxy that extends `Promise<T>`. You can `await` it, `.then()` it, or bind directly to its live properties.
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `data` | `T` | The current payload — mutated by the server as data arrives |
+| `status` | `'idle' \| 'pending' \| 'success' \| 'error'` | The execution lifecycle state |
+| `error` | `IRPCError` | Error details when `status` is `'error'` — includes `type`, `code`, and `message` |
+
+
+### Subscription
+
+Subscribe to state changes programmatically:
+
+```typescript
+const prices = watchPrices('AAPL');
+
+prices.subscribe((state) => {
+  console.log('Price:', state.data);
+  console.log('Status:', state.status);
+});
+
+
+```
+
+### Cancellation
+
+Close a call to abort the server handler and trigger cleanup:
+
+```typescript
+const prices = watchPrices('AAPL');
+
+// Later
+prices.close();
+```
+
+`.close()` sends a cancellation packet to the server. The server's `AbortController` fires, cleanup functions run, and the stream is dropped.
+
+:::tip[Automatic Cleanup]
+When a component unmounts, readers bound to that component are automatically closed. You don't need to call `.close()` manually.
+:::
+
+## Caching
+
+Avoid redundant calls by caching responses:
+
+```typescript
+export const getUser = irpc.declare<GetUserFn>('getUser', () => ({}), {
+  maxAge: 60000, // Cache for 60 seconds
+});
+```
+
+Subsequent calls with **identical arguments** within the window return the cached result immediately — no extra request.
+
+### Cache Invalidation
+
+Clear stale entries manually after mutations:
+
+```typescript
+// Invalidate a specific entry (by arguments)
+irpc.invalidate(getUser, 'user-123');
+
+// Invalidate all entries for this function
+irpc.invalidate(getUser);
+```
+
+## Coalescing
+
+When multiple callers invoke the same function with identical arguments **simultaneously**, coalescing merges them into a single execution:
+
+```typescript
+export const getCurrentUser = irpc.declare<GetCurrentUserFn>('getCurrentUser', () => ({}), {
+  coalesce: true,
+});
+```
+
+If three disconnected components all call `getCurrentUser()` at the same time, only one request fires. All three receive the same result.
+
+Coalescing is distinct from caching: caching reuses past results **over time**; coalescing deduplicates concurrent **in-flight** requests.
+
+## Timeout
+
+Set a per-function timeout. If the call exceeds it, the Promise rejects:
+
+```typescript
+export const slowQuery = irpc.declare<SlowQueryFn>('slowQuery', () => undefined, {
+  timeout: 30000, // 30 seconds
+});
+```
+
+## Retry
+
+Configure retry behavior for transient transport failures:
+
+```typescript
+export const processPayment = irpc.declare<ProcessPaymentFn>('processPayment', () => undefined, {
+  maxRetries: 5,
+  retryMode: 'exponential', // delays: 1s, 2s, 4s, 8s, 16s
+  retryDelay: 1000,
+});
+```
+
+**Only transport errors are retried.** Handler errors (thrown by your server logic) fail immediately — retrying a business logic error would be incorrect.
+
+## TTL (Time-To-Live)
+
+For streams, TTL caps the maximum lifetime. If the stream exceeds the duration, the router aborts it server-side:
+
+```typescript
+export const watchPrices = irpc.declare<WatchPricesFn>('watchPrices', () => 0, {
+  stream: true,
+  ttl: 300000, // 5-minute maximum
+});
+```
+
+For one-shot calls, use `timeout` instead.
+
+## Priority Cascade
+
+All per-function options (`timeout`, `maxRetries`, `retryMode`, `retryDelay`) cascade from most specific to least specific:
+
+```
+Function → Package → Transport
+```
+
+A `timeout` set on the function overrides the package default, which overrides the transport fallback. Set sane defaults globally and override where needed:
+
+```typescript
+// Package-level defaults
+const irpc = createPackage({
+  name: 'my-api',
+  version: '1.0.0',
+  maxRetries: 3,
+  retryMode: 'linear',
+});
+
+// Function-level override
+export const criticalOp = irpc.declare<CriticalOpFn>('criticalOp', () => undefined, {
+  maxRetries: 10,
+  retryMode: 'exponential',
+});
+```
+
+## Validation
+
+Attach Zod schemas for runtime input and output validation:
+
+```typescript
+import { z } from 'zod';
+
+export const createUser = irpc.declare({
+  name: 'createUser',
+  schema: {
+    input: [z.object({
+      name: z.string().min(1),
+      email: z.string().email(),
+    })],
+    output: z.object({
+      id: z.string(),
+      name: z.string(),
+    }),
+  },
+});
+```
+
+- **Input validation** runs before the handler — invalid arguments are rejected before your server code is reached.
+- **Output validation** runs before the response is sent — catching handler bugs before they reach the client.
+
+Validation is optional. TypeScript enforces types at compile time. Schemas add **runtime** enforcement for untrusted input boundaries.
+
+## Automatic Batching
+
+When multiple functions are called simultaneously, the transport batches them into a **single request**:
+
+```typescript
+const [user, posts, stats] = await Promise.all([
+  getUser('123'),
+  getPosts('123'),
+  getStats('123'),
+]);
+// → ONE HTTP request. Responses stream back as each handler completes.
+```
+
+Batching is automatic and zero-configuration. Calls made in the same microtask are batched. The `debounce` option on the transport controls the batching window.
