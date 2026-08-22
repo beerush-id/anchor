@@ -6,9 +6,9 @@ import {
   createWorker,
   deferScript,
   SSR_ENV_KEY,
+  ssrEnv,
   type SSROutput,
   type SSRRenderer,
-  ssrEnv,
 } from '../src/index.js';
 
 function createMockRenderer(output?: Partial<SSROutput>): SSRRenderer {
@@ -1119,7 +1119,7 @@ describe('worker static generation (SSG/ISG)', () => {
   it('serves cached static page immediately without executing renderer on hit', async () => {
     const bun = createMockBun();
     vi.stubGlobal('Bun', bun);
-    await bun.write('/pages/about.html', '<html>cached page</html>');
+    await bun.write('/pages/about/index.html', '<html>cached page</html>');
 
     const router = { find: vi.fn(() => ({ route: { options: { static: true } } })) };
     const renderer = Object.assign(vi.fn(), { router }) as unknown as SSRRenderer;
@@ -1159,7 +1159,7 @@ describe('worker static generation (SSG/ISG)', () => {
     expect(body).toBe('<html><title>ISG</title><div>generated ISG content</div></html>');
     expect(renderer).toHaveBeenCalledTimes(1);
 
-    const savedFile = bun.file('/pages/blog.html');
+    const savedFile = bun.file('/pages/blog/index.html');
     expect(await savedFile.exists()).toBe(true);
     expect(await savedFile.text()).toBe('<html><title>ISG</title><div>generated ISG content</div></html>');
   });
@@ -1167,7 +1167,7 @@ describe('worker static generation (SSG/ISG)', () => {
   it('applies worker page cache control header when serving cached static hits in createWorker', async () => {
     const bun = createMockBun();
     vi.stubGlobal('Bun', bun);
-    await bun.write('/pages/cache-test.html', '<html>cached html</html>');
+    await bun.write('/pages/cache-test/index.html', '<html>cached html</html>');
 
     const router = { find: vi.fn(() => ({ route: { options: { static: true } } })) };
     const renderer = Object.assign(vi.fn(), { router }) as unknown as SSRRenderer;
@@ -1186,7 +1186,7 @@ describe('worker static generation (SSG/ISG)', () => {
   it('serves cached static hits with cache control headers in createFullWorker', async () => {
     const bun = createMockBun();
     vi.stubGlobal('Bun', bun);
-    await bun.write('/pages/full-test.html', '<html>full worker hit</html>');
+    await bun.write('/pages/full-test/index.html', '<html>full worker hit</html>');
 
     const router = { find: vi.fn(() => ({ route: { options: { static: true } } })) };
     const renderer = Object.assign(vi.fn(), { router }) as unknown as SSRRenderer;

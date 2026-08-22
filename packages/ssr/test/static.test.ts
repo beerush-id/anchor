@@ -176,7 +176,7 @@ describe('createStatic', () => {
     const fresh = await staticRes.get(url);
     expect(fresh?.html).toBe('<h1>Old Page</h1>');
 
-    bun.setTime('/tmp/expired/old-page.html', Date.now() - 120 * 1000);
+    bun.setTime('/tmp/expired/old-page/index.html', Date.now() - 120 * 1000);
     const expired = await staticRes.get(url);
     expect(expired).toBeUndefined();
   });
