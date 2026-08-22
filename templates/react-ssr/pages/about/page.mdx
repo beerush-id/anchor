@@ -1,10 +1,10 @@
 ---
-title: About AIR Stack
+title: About AirLib
 ---
 
-# About AIR Stack
+# About AirLib
 
-AIR Stack (Anchor, IRPC, Router) was built to solve the architectural complexities that modern UI frameworks introduced, rather than just hiding them behind more abstractions.
+AirLib (Anchor, IRPC, Router) was built to solve the architectural complexities that modern UI frameworks introduced, rather than just hiding them behind more abstractions.
 
 ## The Motivation
 
@@ -15,14 +15,14 @@ We wanted to deliver what was originally promised: you define your state using p
 ## Core Architecture
 
 ### Intent-Driven State
-State shouldn't be handcuffed to a component's lifecycle. In AIR Stack, state is managed by pure JavaScript proxies (`mutable`, `derived`). Your business logic lives outside the UI tree, meaning it is inherently cross-framework (React and Solid share the exact same logic) and immune to render-cycle traps.
+State shouldn't be handcuffed to a component's lifecycle. In AirLib, state is managed by pure JavaScript proxies (`mutable`, `derived`). Your business logic lives outside the UI tree, meaning it is inherently cross-framework (React and Solid share the exact same logic) and immune to render-cycle traps.
 
 ### Isomorphic Simplicity
 The frontend and backend shouldn't feel like two different codebases communicating across a chasm. With IRPC, server-side functions and state mutations are seamlessly bridged to the client. When you mutate a backend proxy, it generates a JSON-patch and streams directly to connected clients—no manual WebSocket orchestration or fetch loops required.
 
 ### View-Layer Agnostic
-Whether you prefer the massive ecosystem and DX of React, or the fine-grained performance of SolidJS, AIR Stack normalizes the Developer Experience. By decoupling state from the view layer, you can use identical logic in either framework, choosing the right tool for the job without architectural lock-in.
+Whether you prefer the massive ecosystem and DX of React, or the fine-grained performance of SolidJS, AirLib normalizes the Developer Experience. By decoupling state from the view layer, you can use identical logic in either framework, choosing the right tool for the job without architectural lock-in.
 
 ---
 
-*AIR Stack is built for developers who want to get back to programming.*
+*AirLib is built for developers who want to get back to programming.*
