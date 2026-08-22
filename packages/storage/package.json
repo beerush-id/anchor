@@ -44,7 +44,7 @@
   "devDependencies": {
     "@biomejs/biome": "catalog:",
     "@types/bun": "catalog:",
-    "@vitest/coverage-v8": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "@vitest/ui": "catalog:",
     "fake-indexeddb": "^6.1.0",
     "jsdom": "catalog:",

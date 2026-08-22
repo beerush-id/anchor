@@ -79,7 +79,7 @@
   "devDependencies": {
     "@biomejs/biome": "catalog:",
     "@types/ws": "latest",
-    "@vitest/coverage-v8": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "publint": "catalog:",
     "rimraf": "catalog:",
     "tsdown": "catalog:",

@@ -94,7 +94,7 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:lib",
     "@types/react-dom": "catalog:lib",
-    "@vitest/coverage-v8": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "@vitest/ui": "catalog:",
     "jsdom": "catalog:",
     "publint": "catalog:",

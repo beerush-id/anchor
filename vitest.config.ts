@@ -28,7 +28,7 @@ export default defineConfig({
     reporters: ['default', 'html'],
     outputFile: 'docs/.vitepress/dist/coverage/index.html',
     coverage: {
-      provider: 'v8',
+      provider: 'istanbul',
       enabled: true,
       include: [
         'packages/core/src/**/*.ts',

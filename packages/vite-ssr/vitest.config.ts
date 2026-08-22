@@ -27,7 +27,7 @@ export default defineConfig({
     reporters: ['default', 'html'],
     outputFile: './coverage/index.html',
     coverage: {
-      provider: 'v8',
+      provider: 'istanbul',
       enabled: true,
       include: ['src/modules/**/*.ts', 'src/utils/**/*.ts'],
       exclude: ['src/plugins/**/*.ts'],

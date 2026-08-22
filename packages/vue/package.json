@@ -46,7 +46,7 @@
     "@testing-library/user-event": "catalog:",
     "@testing-library/vue": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
-    "@vitest/coverage-v8": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "@vitest/ui": "catalog:",
     "@vue/test-utils": "catalog:",
     "jsdom": "catalog:",

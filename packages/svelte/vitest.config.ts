@@ -1,7 +1,7 @@
-import { defineConfig } from 'vitest/config';
-import { resolve } from 'path';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { svelteTesting } from '@testing-library/svelte/vite';
+import { resolve } from 'path';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [svelte() as never, svelteTesting() as never],
@@ -20,7 +20,7 @@ export default defineConfig({
     reporters: ['default', 'html'],
     outputFile: 'coverage/index.html',
     coverage: {
-      provider: 'v8',
+      provider: 'istanbul',
       enabled: true,
       include: ['src/**/*.ts'],
       reportsDirectory: './coverage/coverage',

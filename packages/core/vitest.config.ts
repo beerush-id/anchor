@@ -8,7 +8,7 @@ export default defineConfig({
     outputFile: './coverage/index.html',
     setupFiles: ['./test/setup.ts'],
     coverage: {
-      provider: 'v8',
+      provider: 'istanbul',
       enabled: true,
       include: ['src/**/*.ts'],
       reportsDirectory: './coverage/coverage',

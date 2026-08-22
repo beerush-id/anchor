@@ -225,7 +225,7 @@ describe('Anchor Core - Async', () => {
       const controller = new AbortController();
       controller.abort();
 
-      await expect(cancelable(fn, controller.signal)).rejects.toThrow('The operation was aborted');
+      await expect(cancelable(fn, controller.signal)).rejects.toThrow('This operation was aborted');
     });
 
     it('should handle aborted asynchronous functions', async () => {
