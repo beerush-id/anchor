@@ -57,6 +57,7 @@ export type MdxExtendedOptions = {
  */
 export type MdxModuleOptions = Omit<MdxOptions, 'remarkPlugins' | 'rehypePlugins' | 'mdxExtensions'> & {
   include: string[];
+  template: string;
   extended: boolean | MdxExtendedOptions;
   headingDepth: number;
   remarkPlugins: PluggableList;
@@ -84,6 +85,7 @@ export interface HTMLNode extends MarkdownNode {
 
 export const MDX_DEFAULT_OPTIONS: MdxModuleOptions = {
   include: ['.md', '.mdx'],
+  template: `<div className="air-mdx-outlet"><!-- air-mdx-outlet --></div>`,
   extended: false,
   headingDepth: 3,
   remarkPlugins: [],
@@ -228,7 +230,7 @@ export class MdxModule {
     const head = dedupeImports(this.globals.join('\n'));
     const body = this.locals.join('\n');
 
-    this.output = wrapJsx(AIR_ENV.framework, head, body);
+    this.output = wrapJsx(AIR_ENV.framework, head, body, this.options.template);
     log.verbose(color.event('Wrapped'), 'JSX output');
 
     return this.output;

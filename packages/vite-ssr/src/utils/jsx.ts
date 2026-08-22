@@ -1,6 +1,8 @@
 import type { Framework } from '../modules/env.js';
 
-export function wrapJsx(framework: Framework, head: string, body: string): string {
+export function wrapJsx(framework: Framework, head: string, body: string, template = ''): string {
+  const content = template.replace('<!-- air-mdx-outlet -->', '<AirMdxContent />');
+
   if (framework === 'react') {
     return `
 import { getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink } from '@airlib/react';
@@ -22,7 +24,7 @@ ${body}
   return (
     <>
       <AirHtmlHead meta={airMdxMeta} />
-      <AirMdxContent />
+      ${content}
     </>
   );
 }
@@ -50,7 +52,7 @@ ${body}
   return (
     <>
       <AirHtmlHead meta={airMdxMeta} />
-      <AirMdxContent />
+      ${content}
     </>
   );
 }
