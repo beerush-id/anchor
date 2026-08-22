@@ -26,8 +26,10 @@
   "dependencies": {
     "@irpclib/irpc": "workspace:*"
   },
+  "peerDependencies": {
+    "@airlib/core": "workspace:*"
+  },
   "devDependencies": {
-    "@airlib/core": "workspace:*",
     "@biomejs/biome": "catalog:",
     "@types/bun": "catalog:",
     "@vitest/coverage-v8": "catalog:",
