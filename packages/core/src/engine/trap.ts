@@ -72,7 +72,7 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
 
   const getter = (target: ObjLike, prop: KeyLike, receiver?: unknown) => {
     // Make sure target is the underlying object.
-    /* v8 ignore next */
+    /* istanbul ignore next */
     if (STATE_REGISTRY.has(target)) target = STATE_REGISTRY.get(target) as typeof target;
 
     let value = Reflect.get(target, prop, receiver) as Linkable;
@@ -172,14 +172,14 @@ export function createOwnKeys<T extends Linkable>(init: T, options?: TrapOverrid
 
   return (target: object) => {
     // Make sure target is the underlying object.
-    /* v8 ignore next */
+    /* istanbul ignore next */
     if (STATE_REGISTRY.has(target)) target = STATE_REGISTRY.get(target) as typeof target;
 
     if ($$.reactive) {
       const observer = switchable.getObserver();
 
       if (configs.observable) {
-        /* v8 ignore next */
+        /* istanbul ignore next */
         plugin.track?.(init, observers, OBSERVER_KEYS.OWN_KEYS);
       }
 
@@ -188,7 +188,7 @@ export function createOwnKeys<T extends Linkable>(init: T, options?: TrapOverrid
         const tracked = trackProp(OBSERVER_KEYS.OWN_KEYS);
 
         if (!tracked) {
-          /* v8 ignore next */
+          /* istanbul ignore next */
           plugin.devTool?.onTrack?.(meta, observer, OBSERVER_KEYS.OWN_KEYS);
         }
       }

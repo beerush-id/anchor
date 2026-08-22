@@ -130,7 +130,7 @@ export class Router<Output = any> {
       const hydration = document.querySelector(`#${HYDRATION_KEY}`);
       if (hydration) {
         try {
-          /* v8 ignore next */
+          /* istanbul ignore next */
           this.hydratedSegments = JSON.parse(hydration.textContent || '');
         } catch (error) {
           captureStack.error.internal('Malformed router hydration cache.', error as Error);

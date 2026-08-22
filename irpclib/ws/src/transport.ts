@@ -130,7 +130,7 @@ export class WebSocketTransport extends IRPCTransport {
   constructor(public config: WebSocketTransportConfig) {
     super(config);
 
-    /* v8 ignore start - Dev-only HMR signal handler */
+    /* istanbul ignore start - Dev-only HMR signal handler */
     if (import.meta.hot) {
       // biome-ignore lint/suspicious/noExplicitAny: Detected as Bun's hot, not Vite's.
       const hot = import.meta.hot as any;
@@ -142,7 +142,7 @@ export class WebSocketTransport extends IRPCTransport {
         }
       });
     }
-    /* v8 ignore stop */
+    /* istanbul ignore stop */
   }
 
   /**

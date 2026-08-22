@@ -585,9 +585,9 @@ export function createTable<T extends Rec, R extends Row<T> = Row<T>>(
     rowSubscriptions.set(state, unsubscribe);
 
     onGlobalCleanup(() => {
-      /* v8 ignore start */
+      /* istanbul ignore start */
       unsubscribe();
-      /* v8 ignore end */
+      /* istanbul ignore end */
     });
 
     return state;

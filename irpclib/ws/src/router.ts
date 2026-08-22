@@ -151,7 +151,7 @@ export class WebSocketRouter extends IRPCRouter {
       delete req.files;
     }
 
-    /* v8 ignore next - Transport always sends credentials, ?? is defensive only */
+    /* istanbul ignore next - Transport always sends credentials, ?? is defensive only */
     const credStore = createCredentials(parsed.credentials ?? []);
     const resolver = this.config.resolver(req, this.packageOf(req));
     const abortController = new AbortController();

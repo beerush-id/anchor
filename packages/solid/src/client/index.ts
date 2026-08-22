@@ -34,9 +34,9 @@ if (!bindingInitialized) {
     if (!element) return;
 
     const component = getPureOwner(element as InternalOwner);
-    /* v8 ignore start */
+    /* istanbul ignore start */
     if (!component) return;
-    /* v8 ignore end */
+    /* istanbul ignore end */
 
     if (!COMPONENT_REGISTRY.has(component)) {
       const elements = new Map();
@@ -105,9 +105,9 @@ if (!bindingInitialized) {
  * @returns The first Owner that has owned components, or undefined if no such owner exists
  */
 function getPureOwner(node?: InternalOwner | null): InternalOwner | undefined {
-  /* v8 ignore start */
+  /* istanbul ignore start */
   if (!node) return;
-  /* v8 ignore end */
+  /* istanbul ignore end */
 
   return node.owned && !node.comparator ? node : getPureOwner(node?.owner as InternalOwner);
 }

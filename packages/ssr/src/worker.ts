@@ -101,7 +101,7 @@ export function createWorker<E = AnyType>(renderer: SSRRenderer, options: AppWor
         }
 
         return createResponse(new Response('Internal Server Error', { status: 500 }));
-        /* v8 ignore next - false report */
+        /* istanbul ignore next - false report */
       } finally {
         request.signal.removeEventListener('abort', abort);
         clearTimeout(timerId);
@@ -233,7 +233,7 @@ export function createFullWorker<E = AnyType>(
         }
 
         return createResponse(new Response('Internal Server Error', { status: 500 }));
-        /* v8 ignore next - false report */
+        /* istanbul ignore next - false report */
       } finally {
         request.signal.removeEventListener('abort', abort);
         clearTimeout(timerId);

@@ -102,7 +102,7 @@ export function wireUIFileContent(options: WireUIOptions): WireUIResult | undefi
     for (const statement of routeImports.slice(1)) {
       const lineStart = content.lastIndexOf('\n', statement.start - 1) + 1;
       const lineEnd = content.indexOf('\n', statement.end);
-      /* v8 ignore next */
+      /* istanbul ignore next */
       magic.remove(lineStart, lineEnd === -1 ? content.length : lineEnd + 1);
     }
     changes.push(`normalized the import to \`${importBlock}\``);

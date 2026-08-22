@@ -173,11 +173,11 @@ export function stubScheduler() {
   const current = scheduleUpdate;
   setUpdateScheduler((fn) => fn());
 
-  /* v8 ignore start */
+  /* istanbul ignore start */
   return () => {
     setUpdateScheduler(current);
   };
-  /* v8 ignore end */
+  /* istanbul ignore end */
 }
 
 /**

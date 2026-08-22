@@ -87,7 +87,7 @@ export async function generateSitemap(
           const childEntries = route.entries();
 
           for (const [, childVal] of childEntries) {
-            /* v8 ignore next 3 */
+            /* istanbul ignore next 3 */
             if (childVal.isIndex) {
               continue;
             }

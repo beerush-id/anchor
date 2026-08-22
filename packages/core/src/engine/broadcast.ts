@@ -70,7 +70,7 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
           for (const observer of observerList) {
             const keys = observer.states.get(init) as Set<KeyLike>;
             const needUpdate = changes.some((change) => {
-              /* v8 ignore next 1 */
+              /* istanbul ignore next 1 */
               return keys.has(change) || keys.has(OBSERVER_KEYS.OWN_KEYS);
             });
 

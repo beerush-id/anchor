@@ -102,7 +102,7 @@ export async function ssrRenderToString(renderOptions: SSRRenderStringOptions): 
   const ssr = createLifecycle();
   await ssr.runAsync(async () => {
     try {
-      /* v8 ignore next 2 */
+      /* istanbul ignore next 2 */
       const match = router?.find?.(url, true);
       const { noscript } = match?.route.options ?? {};
 

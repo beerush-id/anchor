@@ -8,7 +8,7 @@ const SELECTION_INIT = {
   rect: null as DOMRect | null,
   rects: [] as DOMRect[],
   paths: (padding = 0, radius = 0): string => {
-    /* v8 ignore start */
+    /* istanbul ignore start */
     const rect = SELECTION_STATE.rect as DOMRect | null;
     const rawRects = SELECTION_STATE.rects as DOMRect[];
     if (!rect || !rawRects.length) return '';
@@ -136,7 +136,7 @@ const SELECTION_INIT = {
       allPaths.push(path);
     }
 
-    /* v8 ignore end */
+    /* istanbul ignore end */
     return allPaths.join(' ');
   },
   size: 0,

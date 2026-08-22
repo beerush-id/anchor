@@ -43,7 +43,7 @@ export function createSSR(
     const baseRenderer = createBaseRenderer(
       router,
       ({ url }) => {
-        /* v8 ignore start */
+        /* istanbul ignore start */
         const html = renderToString(() =>
           Shell ? (
             <Shell>
@@ -53,7 +53,7 @@ export function createSSR(
             <UIRouter router={router} root={RootLayout} url={url} headless={true} resetScroll />
           )
         );
-        /* v8 ignore end */
+        /* istanbul ignore end */
         const head = renderToString(() => [...headings().values()].map(({ Renderer }) => <Renderer />));
         const hydration = generateHydrationScript();
 

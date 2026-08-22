@@ -142,13 +142,13 @@ export class IRPCBlob {
       .catch((error) => {
         IRPC_STORE.error(error as Error, [{ url: this.url }]);
         this.state.error = error as Error;
-        /* v8 ignore next */
+        /* istanbul ignore next */
         this.state.status = this.controller?.signal?.aborted ? IRPC_STATUS.ABORTED : IRPC_FILE_STATUS.ERROR;
         throw error;
       });
 
     onCleanup(() => {
-      /* v8 ignore next */
+      /* istanbul ignore next */
       this.controller?.abort();
     });
 

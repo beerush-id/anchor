@@ -511,7 +511,7 @@ export function airMdxRemark(module?: MdxModule) {
             text = getLeafNode(firstChild)?.value ?? '';
             node.children = node.children!.slice(1);
           } else if (node.children?.length) {
-            /* v8 ignore next */
+            /* istanbul ignore next */
             text = getLeafNode(node)?.value ?? '';
             node.children = [];
           }
@@ -549,7 +549,7 @@ export function airMdxRemark(module?: MdxModule) {
             }
 
             if (child.value) {
-              /* v8 ignore next */
+              /* istanbul ignore next */
               if (!module) continue;
 
               const { head, body } = splitImportsAndBody(child.value);

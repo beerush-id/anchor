@@ -331,7 +331,7 @@ export class IRPCPackage<K extends string = 'id'> {
 
       let off: (() => void) | undefined;
 
-      /* v8 ignore start - Dev-only HMR signal handler */
+      /* istanbul ignore start - Dev-only HMR signal handler */
       if (import.meta.hot) {
         const onInvalidate = (e: AnyType) => {
           if (e?.type !== 'irpc:invalidate-handler') return;
@@ -344,10 +344,10 @@ export class IRPCPackage<K extends string = 'id'> {
         import.meta.hot.on('custom', onInvalidate as AnyType);
         off = () => import.meta.hot?.off('custom', onInvalidate as AnyType);
       }
-      /* v8 ignore stop */
+      /* istanbul ignore stop */
 
       return () => {
-        /* v8 ignore next */
+        /* istanbul ignore next */
         off?.();
         source.close();
       };
