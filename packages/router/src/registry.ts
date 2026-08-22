@@ -202,7 +202,7 @@ export class RouteRegistry extends Map<string | symbol, RouteRegistry> {
  *
  * @internal
  */
-function cleanPath(path: string, leading = '/') {
+function cleanPath(path: string, leading: string) {
   return path.replace(/^[/]+/, leading).replace(/[/]+/g, '/').replace(/[/]+$/, '');
 }
 

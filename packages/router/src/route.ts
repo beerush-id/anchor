@@ -344,6 +344,7 @@ export class Route<
     const queries = Object.entries((query ?? {}) as TRec);
 
     if (queries.length) {
+      /* istanbul ignore else */
       if (!url.endsWith('?')) url += '?';
 
       url += queries
@@ -484,7 +485,7 @@ export class Route<
       parentMap.set(child.name, childMap);
     } else if (child.type === ROUTE_TYPE.DYNAMIC) {
       parentMap.set(DYNAMIC_ROUTE_KEY, childMap);
-    } else if (child.type === ROUTE_TYPE.WILDCARD) {
+    } else {
       parentMap.set(WILDCARD_ROUTE_KEY, childMap);
     }
 

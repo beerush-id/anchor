@@ -39,4 +39,26 @@ describe('RouterContext', () => {
     context.url = undefined;
     expect(context.url).toBeUndefined();
   });
+
+  it('should handle attach, detach, and clear sources', () => {
+    const source1 = { data: { a: 1 } } as any;
+    const source2 = { data: { b: 2 } } as any;
+
+    context.attach(source1);
+    expect(context.data.a).toBe(1);
+
+    // Duplicate attach should be ignored
+    context.attach(source1);
+
+    // Detaching a non-attached source should do nothing
+    context.detach(source2);
+    expect(context.data.a).toBe(1);
+
+    context.detach(source1);
+    expect(context.data.a).toBeUndefined();
+
+    context.attach(source1);
+    context.clear();
+    expect(context.data.a).toBeUndefined();
+  });
 });

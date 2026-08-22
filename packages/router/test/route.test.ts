@@ -1518,5 +1518,55 @@ describe('Route class', () => {
       expect(result).toBe(dashboard);
       expect(dashboard.options.keepAlive).toBe(true);
     });
+
+    it('should handle path ending with ? when formatting url with query', () => {
+      const root = sharedRouter.route();
+      const searchRoute = root.route('/search?');
+      expect(searchRoute.url({}, { q: 'anchor' })).toBe('/search?q=anchor');
+    });
+
+    it('should reuse existing guard observers on forced re-authentication', async () => {
+      const root = sharedRouter.route();
+      const guard = vi.fn().mockResolvedValue(true);
+      const authRoute = root.route('/profile').guard(guard);
+      const context = { params: {}, query: {}, redirect: vi.fn(), abort: vi.fn() } as any;
+
+      await authRoute.authenticate(context);
+      expect(guard).toHaveBeenCalledTimes(1);
+
+      // Force authenticate again to hit existing guardObservers branch
+      await authRoute.authenticate(context, true);
+      expect(guard).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle provider throwing after being aborted', async () => {
+      const root = sharedRouter.route();
+      let rejectPromise: (err: any) => void;
+      const delayedProvider = vi.fn().mockImplementation((ctx) => {
+        ctx.signal?.addEventListener('abort', () => {
+          rejectPromise?.(new Error('Aborted error'));
+        });
+        return new Promise((_, reject) => {
+          rejectPromise = reject;
+        });
+      });
+
+      const dataRoute = root.route('/data').provide('item', delayedProvider);
+      const context = { data: {}, params: {}, query: {} } as any;
+
+      const resolvePromise = dataRoute.resolve(context);
+      dataRoute.cancel(context);
+      await resolvePromise;
+    });
+
+    it('should create route entries with default isIndex = false and explicit isIndex = true', async () => {
+      const { createRouteEntry } = await import('../src/route.js');
+      const root = sharedRouter.route();
+      const [path1, entry1] = createRouteEntry(root);
+      expect(entry1.isIndex).toBe(false);
+
+      const [path2, entry2] = createRouteEntry(root, true);
+      expect(entry2.isIndex).toBe(true);
+    });
   });
 });

@@ -1000,5 +1000,37 @@ describe('URLCache', () => {
       const match = router.find('/auth/signin/ghost');
       expect(match?.route).toBe(signIn);
     });
+
+    it('should return undefined from URLCache when no route matches', () => {
+      const emptyRegistries = new Set<RouteRegistry>();
+      const urlCache = new URLCache(emptyRegistries);
+      const result = urlCache.get(new URL('http://localhost/404-not-found'));
+      expect(result).toBeUndefined();
+    });
+
+    it('should hydrate into existing provider cache map', () => {
+      const testRoute = new Route(sharedRouter, '/test');
+      const routeCache = new RouteCache(testRoute as never);
+      routeCache.set('provider1', new Map([['existing', { data: 'old', timestamp: 0 }]]));
+
+      routeCache.hydrate([
+        {
+          name: 'provider1',
+          cache: [{ key: 'newKey', value: { data: 'newVal', timestamp: 0 } }],
+        },
+      ]);
+
+      expect(routeCache.get('provider1')?.get('newKey')?.data).toBe('newVal');
+    });
+
+    it('should iterate over multiple registries when first registry does not match', () => {
+      const router = createRouter();
+      const r1 = router.route();
+      r1.route('/first');
+      const r2 = router.append('/second');
+      const result = router.find('/second');
+      expect(result).toBeDefined();
+      expect(result?.route).toBe(r2);
+    });
   });
 });

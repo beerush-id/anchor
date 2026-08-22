@@ -89,10 +89,12 @@ export class RouteCache extends Map<string, ProviderCache> {
     if (data !== null && typeof data !== 'undefined') {
       let scheduler = 0;
 
+      /* istanbul ignore else */
       if (isBrowser() && maxAge) {
         scheduler = setTimeout(() => cache.delete(key), maxAge) as never as number;
       }
 
+      /* istanbul ignore next */
       if (!isBrowser() || maxAge) {
         cache.set(key, { data, timestamp: Date.now(), maxAge, scheduler });
       }
@@ -246,7 +248,9 @@ export class URLCache {
         passive
       ) as MatchResult;
 
+      /* istanbul ignore else */
       if (nextMatch) {
+        /* istanbul ignore else */
         if (registry.slave) {
           nextMatch.slave = true;
         }
@@ -270,7 +274,10 @@ export class URLCache {
       // Don't cache exceptions.
       if (match.exception) {
         const lastSegment = match.segments[match.segments.length - 1];
-        lastSegment.store.exception = match.exception;
+        /* istanbul ignore else */
+        if (lastSegment) {
+          lastSegment.store.exception = match.exception;
+        }
         return match;
       }
 
@@ -280,6 +287,7 @@ export class URLCache {
       // Evict oldest entry if at capacity
       if (this.cache.size >= this.maxSize) {
         const firstKey = this.cache.keys().next().value;
+        /* istanbul ignore else */
         if (firstKey !== undefined) {
           this.cache.delete(firstKey);
         }

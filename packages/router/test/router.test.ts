@@ -65,6 +65,21 @@ describe('router.ts', () => {
       it('should initialize activeSegments as undefined', () => {
         expect(router.activeSegments).toBeUndefined();
       });
+
+      it('should parse hydration script from document when present', () => {
+        const removeMock = vi.fn();
+        vi.stubGlobal('document', {
+          querySelector: vi.fn((selector: string) => {
+            if (selector === '#__ANCHOR_ROUTER_CACHE__') {
+              return { textContent: JSON.stringify(['/users']), remove: removeMock };
+            }
+            return null;
+          }),
+        });
+
+        const hydratedRouter = new Router();
+        expect(removeMock).toHaveBeenCalled();
+      });
     });
 
     describe('route method', () => {

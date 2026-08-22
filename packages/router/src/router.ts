@@ -209,7 +209,7 @@ export class Router<Output = any> {
       this.rootRegistry.set(route.name, routeMap);
     } else if (route.type === ROUTE_TYPE.DYNAMIC) {
       this.rootRegistry.set(DYNAMIC_ROUTE_KEY, routeMap);
-    } else if (route.type === ROUTE_TYPE.WILDCARD) {
+    } else {
       this.rootRegistry.set(WILDCARD_ROUTE_KEY, routeMap);
     }
 

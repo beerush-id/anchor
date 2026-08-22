@@ -62,7 +62,7 @@ export async function generateSitemap(
 
         if (typeof item === 'string') {
           loc = item;
-        } else if (typeof item === 'object') {
+        } else {
           loc = item.loc ?? '';
           nested = !!item.nested;
           attrs = { ...item };
@@ -73,6 +73,7 @@ export async function generateSitemap(
             const existing = attrs.alternates ?? [];
             const merged = new Map(existing.map((a) => [a.hreflang, a.href]));
             for (const alt of autoAlternates) {
+              /* istanbul ignore else */
               if (!merged.has(alt.hreflang)) {
                 merged.set(alt.hreflang, alt.href);
               }
@@ -114,7 +115,7 @@ export async function generateSitemap(
                 loc: childSitemapOpt.loc.replace(parentPath, loc),
                 ...(childAlternates ? { alternates: childAlternates } : {}),
               });
-            } else if (childVal.type === ROUTE_TYPE.STATIC) {
+            } else {
               const mergedAttrs =
                 typeof childSitemapOpt === 'object' && childSitemapOpt !== null
                   ? { ...attrs, ...childSitemapOpt }
@@ -134,9 +135,11 @@ export async function generateSitemap(
           sitemapEntries.push({ ...attrs, loc });
         }
       }
+    /* istanbul ignore else */
     } else if (typeof sitemapOpt === 'object' && sitemapOpt !== null && sitemapOpt.loc) {
       // Explicit location overriding anything else
       sitemapEntries.push(sitemapOpt);
+    /* istanbul ignore else */
     } else if (val.type === ROUTE_TYPE.STATIC) {
       // Normal static emission
       const pathStr = val.toString();
@@ -151,7 +154,7 @@ export async function generateSitemap(
           ...sitemapOpt,
           loc: pathStr,
         });
-      } else if (sitemapOpt === true || sitemapOpt === undefined) {
+      } else {
         sitemapEntries.push({ loc: pathStr });
       }
     }

@@ -9,6 +9,7 @@ describe('sitemap.ts', () => {
     const router = new Router({ baseUrl: 'https://example.com' });
     const root = router.route();
     root.route('/about');
+    root.route('/:unmapped');
     const blog = root.route('/blog', { sitemap: false });
     blog.route('/:slug');
     const files = root.route('/files', { sitemap: false });
@@ -21,6 +22,7 @@ describe('sitemap.ts', () => {
     expect(xml).toContain('<loc>https://example.com/about</loc>');
     expect(xml).not.toContain('/blog');
     expect(xml).not.toContain('/files');
+    expect(xml).not.toContain('/:unmapped');
   });
 
   it('should exclude routes marked with sitemap: false', async () => {
@@ -401,5 +403,77 @@ describe('sitemap.ts', () => {
     const matches = xml.match(/<loc>http:\/\/localhost:3000\/custom-guide<\/loc>/g);
     expect(matches).toHaveLength(1);
     expect(xml).not.toContain('<loc>http://localhost:3000/custom-guide/</loc>');
+  });
+
+  it('should map nested parent alternates to static child routes and handle relative alternate hrefs', async () => {
+    const router = new Router({ baseUrl: 'https://example.com' });
+    const root = router.route();
+    const lang = root.route('/:lang', {
+      sitemap: () => [
+        {
+          loc: '/en',
+          nested: true,
+          alternates: [
+            { hreflang: 'en', href: '/en' },
+            { hreflang: 'fr', href: '/fr' },
+          ],
+        },
+      ],
+    });
+
+    lang.route('/overview');
+    lang.route('/custom', {
+      sitemap: {
+        loc: '/:lang/custom-loc',
+        alternates: [{ hreflang: 'fr', href: '/fr/custom-loc' }],
+      },
+    });
+
+    const xml = await router.sitemap();
+    expect(xml).toContain('<loc>https://example.com/en/overview</loc>');
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="en" href="https://example.com/en/overview" />');
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="fr" href="https://example.com/fr/overview" />');
+    expect(xml).toContain('<loc>https://example.com/en/custom-loc</loc>');
+  });
+
+  it('should handle absolute http and https alternate URLs in sitemap entries', async () => {
+    const router = new Router({ baseUrl: 'https://example.com' });
+    const root = router.route();
+    root.route('/global', {
+      sitemap: {
+        loc: '/global',
+        alternates: [
+          { hreflang: 'en', href: 'https://example.com/global' },
+          { hreflang: 'es', href: 'http://es.example.com/global/' },
+        ],
+      },
+    });
+
+    const xml = await router.sitemap();
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="en" href="https://example.com/global" />');
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="es" href="http://es.example.com/global" />');
+  });
+
+  it('should merge autoAlternates with existing alternates in sitemap item', async () => {
+    const router = new Router({ baseUrl: 'https://example.com' });
+    const root = router.route();
+    root.route('/:locale', {
+      sitemap: () => [
+        {
+          loc: '/en',
+          hreflang: 'en',
+          alternates: [{ hreflang: 'de', href: '/de' }],
+        },
+        {
+          loc: '/fr',
+          hreflang: 'fr',
+        },
+      ],
+    });
+
+    const xml = await router.sitemap();
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="de" href="https://example.com/de" />');
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="en" href="https://example.com/en" />');
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="fr" href="https://example.com/fr" />');
   });
 });
