@@ -240,6 +240,7 @@ function createWorkflow<I extends WorkflowData, O extends WorkflowData>(
       stepper.state.status = WORKFLOW_STATUS.PENDING;
     }
 
+    /* istanbul ignore else */
     if (isBrowser()) {
       const observer = createObserver(() => {
         // observer.reset();

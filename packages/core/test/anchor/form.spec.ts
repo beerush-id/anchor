@@ -77,6 +77,20 @@ describe('Anchor Core - Form API', () => {
       expect(errors.name).toBeDefined();
       expect(errors.age).toBeDefined();
     });
+
+    it('should not populate errors when safeInit is false and initial values are valid', () => {
+      const schema = z.object({
+        name: z.string().min(3),
+        age: z.number().min(18),
+      });
+
+      const [input, errors] = form(schema, { name: 'John', age: 25 }, { safeInit: false });
+
+      expect(input.name).toBe('John');
+      expect(input.age).toBe(25);
+      expect(errors.name).toBeUndefined();
+      expect(errors.age).toBeUndefined();
+    });
   });
 
   describe('Form Options', () => {

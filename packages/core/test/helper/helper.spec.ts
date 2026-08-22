@@ -19,6 +19,10 @@ describe('Anchor Helpers', () => {
       anchor.assign<ObjLike>(state, { a: 3, c: 4 });
 
       expect(state).toEqual({ a: 3, b: 2, c: 4 });
+
+      // Assign identical value to Object (prev === val)
+      anchor.assign<ObjLike>(state, { a: 3 });
+      expect(state.a).toBe(3);
     });
 
     it('should assign values to Array state', () => {
@@ -50,6 +54,10 @@ describe('Anchor Helpers', () => {
         ])
       );
       expect(state instanceof Map).toBe(true);
+
+      // Assign identical value to Map (prev === val)
+      anchor.assign(state, { a: 3 });
+      expect(state.get('a')).toBe(3);
     });
 
     it('should assign values to Set state', () => {
@@ -276,6 +284,10 @@ describe('Anchor Helpers', () => {
       });
 
       unsubscribe();
+
+      const mapState = anchor(new Map([['a', 1]]));
+      anchor.remove(mapState, 'nonexistent', 'a');
+      expect(mapState.has('a')).toBe(false);
     });
   });
 
@@ -329,6 +341,26 @@ describe('Anchor Helpers', () => {
       expect(state.get('a')).toBe(undefined);
       expect(state.get('b')).toBe(undefined);
       expect(state.get('c')).toBe(undefined);
+    });
+
+    it('should clean up set state', () => {
+      const state = anchor(new Set([1, 2, 3]));
+      expect(state.size).toBe(3);
+
+      anchor.clear(state);
+      expect(state.size).toBe(0);
+    });
+
+    it('should remove items from set state and multiple items from array', () => {
+      const setState = anchor(new Set(['x', 'y', 'z']));
+      anchor.remove(setState, 'x' as never, 'y' as never);
+      expect(setState.has('x')).toBe(false);
+      expect(setState.has('y')).toBe(false);
+      expect(setState.has('z')).toBe(true);
+
+      const arrState = anchor(['a', 'b', 'c', 'd']);
+      anchor.remove(arrState, 0 as never, 2 as never);
+      expect(arrState).toEqual(['b', 'd']);
     });
 
     it('should throw error when clearing non-assignable state', () => {

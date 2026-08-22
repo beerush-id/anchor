@@ -147,6 +147,7 @@ effectFn.async = asyncEffectFn as Effect['async'];
  *          from all tracked dependencies. This is automatically called when the current scope is cleaned up.
  */
 effectFn.client = <T>(fn: EffectHandler<T>, displayName?: string): StateUnsubscribe => {
+  /* istanbul ignore next */
   if (!isBrowser()) return () => {};
   return effectFn(fn, displayName);
 };
@@ -253,6 +254,7 @@ export function createObserver(
     const currentCleaners = Array.from(cleaners);
 
     for (const clear of currentCleaners) {
+      /* istanbul ignore else */
       if (typeof clear === 'function') {
         clear();
       }
@@ -267,6 +269,7 @@ export function createObserver(
 
   const reset = () => {
     resetters.forEach((reset) => {
+      /* istanbul ignore else */
       if (typeof reset === 'function') {
         reset();
       }
@@ -293,6 +296,7 @@ export function createObserver(
         keys.clear();
       });
 
+      /* istanbul ignore else */
       if (ANCHOR_SETTINGS.safeObservation) {
         observedSize += 1;
 

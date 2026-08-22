@@ -163,5 +163,19 @@ describe('browser/cursor', () => {
       expect(LIVE_CURSOR.x).not.toBe(999);
       expect(LIVE_CURSOR.y).not.toBe(999);
     });
+
+    it('should execute onCleanup when lifecycle scope is destroyed', async () => {
+      const { createLifecycle } = await import('../../src/scope/lifecycle.js');
+      const lifecycle = createLifecycle();
+      const div = document.createElement('div');
+      let ref: any;
+
+      lifecycle.run(() => {
+        ref = cursorRef(div);
+      });
+
+      expect(ref.current).toBe(div);
+      lifecycle.destroy();
+    });
   });
 });

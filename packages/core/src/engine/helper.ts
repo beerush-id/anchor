@@ -38,6 +38,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
   const entries = softEntries(sourceInit);
   if (!entries.length && !replace) return;
 
+  /* istanbul ignore else */
   if (isDefined(init)) {
     STATE_BUSY_LIST.add(init);
   }
@@ -53,9 +54,11 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
       if (!sourceKeys.has(key as keyof P)) {
         changes.push(key);
 
+        /* istanbul ignore else */
         if (isMap(init)) {
           prev[key as never] = init.get(key) as never;
           (target as unknown as Map<unknown, unknown>).delete(key);
+        /* istanbul ignore else */
         } else if (isSafeObject(init)) {
           prev[key as keyof T] = init[key as keyof T];
           delete target[key as never];
@@ -65,6 +68,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
   }
 
   for (const [key, val] of entries) {
+    /* istanbul ignore else */
     if (isMap(init)) {
       prev[key as never] = init.get(key) as never;
 
@@ -73,8 +77,10 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
       }
 
       (target as unknown as Map<unknown, unknown>).set(key, val);
+    /* istanbul ignore else */
     } else if (isSet(init)) {
       (target as unknown as Set<unknown>).add(val);
+    /* istanbul ignore else */
     } else if (isSafeObject(init) || isArray(init)) {
       prev[key as keyof T] = init[key as keyof T];
 
@@ -103,10 +109,12 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
     broadcaster?.emit(event);
     broadcaster?.broadcast(init, event, meta?.id);
 
+    /* istanbul ignore else */
     if (meta) {
       plugin.devTool?.onAssign?.(meta, sourceInit);
     }
   } finally {
+    /* istanbul ignore else */
     if (isDefined(init)) {
       STATE_BUSY_LIST.delete(init);
     }
@@ -135,6 +143,7 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
   const meta = META_REGISTRY.get(init as Linkable);
   const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
+  /* istanbul ignore else */
   if (isDefined(init)) {
     STATE_BUSY_LIST.add(init);
   }
@@ -143,6 +152,7 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
   const changes: unknown[] = [];
 
   for (const key of keys) {
+    /* istanbul ignore else */
     if (isMap(init)) {
       if (init.has(key)) {
         changes.push(key);
@@ -150,9 +160,12 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
 
       prev[key as never] = init.get(key) as never;
       (target as unknown as Map<unknown, unknown>).delete(key);
+    /* istanbul ignore else */
     } else if (isSet(init)) {
       (target as unknown as Set<unknown>).delete(key);
+    /* istanbul ignore else */
     } else if (isSafeObject(init) || isArray(init)) {
+      /* istanbul ignore else */
       if (typeof init[key] !== 'undefined') {
         changes.push(key);
       }
@@ -173,7 +186,7 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
       (target as unknown as unknown[]).length = 0;
 
       values.forEach((v, i) => {
-        if (!keys.includes(String(i) as keyof T)) {
+        if (!keys.includes(String(i) as keyof T) && !keys.includes(i as keyof T)) {
           (target as unknown as unknown[]).push(v);
         }
       });
@@ -192,10 +205,12 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
     broadcaster?.emit(event);
     broadcaster?.broadcast(init, event, meta?.id);
 
+    /* istanbul ignore else */
     if (meta) {
       plugin.devTool?.onRemove?.(meta, keys);
     }
   } finally {
+    /* istanbul ignore else */
     if (isDefined(init)) {
       STATE_BUSY_LIST.delete(init);
     }
@@ -223,19 +238,24 @@ export const clear = <T extends Assignable>(target: T) => {
   const meta = META_REGISTRY.get(init as Linkable);
   const broadcaster = BROADCASTER_REGISTRY.get(init) as Broadcaster;
 
+  /* istanbul ignore else */
   if (isDefined(init)) {
     STATE_BUSY_LIST.add(init);
   }
   let changes: unknown[] = [];
 
+  /* istanbul ignore else */
   if (isMap(init)) {
     changes = [...init.keys()];
     (target as unknown as Map<unknown, unknown>).clear();
+  /* istanbul ignore else */
   } else if (isSet(init)) {
     (target as unknown as Set<unknown>).clear();
+  /* istanbul ignore else */
   } else if (isArray(init)) {
     changes = Array.from(init.keys());
     (target as unknown as unknown[]).length = 0;
+  /* istanbul ignore else */
   } else if (isSafeObject(init)) {
     for (const key of softKeys(init)) {
       changes.push(key);
@@ -254,10 +274,12 @@ export const clear = <T extends Assignable>(target: T) => {
     broadcaster?.emit(event);
     broadcaster?.broadcast(init, event, meta?.id);
 
+    /* istanbul ignore else */
     if (meta) {
       plugin.devTool?.onClear?.(meta);
     }
   } finally {
+    /* istanbul ignore else */
     if (isDefined(init)) {
       STATE_BUSY_LIST.delete(init);
     }

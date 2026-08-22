@@ -9,7 +9,9 @@ describe('stylex', () => {
       color: 'red',
       display: 'block',
     });
-    expect(stylex.use(() => ({}))[IS_VALUE_GETTER]).toBe(true);
+    const getter = stylex.use(() => ({ color: 'blue' }));
+    expect(getter[IS_VALUE_GETTER]).toBe(true);
+    expect(getter()).toEqual({ color: 'blue' });
   });
 
   it('should append px to numeric values for properties that require units', () => {

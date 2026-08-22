@@ -37,14 +37,41 @@ describe('Anchor Utilities', () => {
       expect(handler).not.toHaveBeenCalled();
     });
 
-    it('should not execute task in queueMicrotask', () => {
-      const [schedule] = microtask<number>(0);
+    it('should use default delay of 10ms when parameter is omitted', () => {
+      const [schedule] = microtask<number>();
       const handler = vi.fn();
 
-      schedule(handler, 42);
-
-      vi.advanceTimersByTime(50);
+      schedule(handler, 100);
+      vi.advanceTimersByTime(5);
       expect(handler).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(5);
+      expect(handler).toHaveBeenCalledWith(100, 100);
+    });
+
+    it('should schedule tasks without context data', () => {
+      const [schedule] = microtask();
+      const handler = vi.fn();
+
+      schedule(handler);
+      vi.advanceTimersByTime(10);
+
+      expect(handler).toHaveBeenCalledWith(undefined, undefined);
+    });
+
+    it('should handle multiple schedules when delay is 0', async () => {
+      const [schedule] = microtask<number>(0);
+      const handler1 = vi.fn();
+      const handler2 = vi.fn();
+
+      schedule(handler1, 1);
+      schedule(handler2, 2);
+
+      const promise = new Promise((resolve) => setTimeout(resolve, 1));
+      vi.advanceTimersByTime(1);
+      await promise;
+
+      expect(handler2).toHaveBeenCalledWith(1, 2);
     });
 
     it('should pass initial and last context to the handler', () => {

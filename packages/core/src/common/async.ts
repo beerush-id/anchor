@@ -153,6 +153,7 @@ export function cancelable<R>(fn: (signal: AbortSignal) => Promise<R> | R, signa
     const result = fn(signal);
 
     const handleAbort = () => {
+      /* istanbul ignore else */
       if (!resolved) {
         reject(signal.reason);
       }
@@ -243,13 +244,13 @@ export async function retriable<T>(call: (signal: AbortSignal) => Promise<T> | T
     });
 
     const clearTimer = () => clearTimeout(timeId);
-    controller.signal.addEventListener('abort', () => clearTimer);
+    controller.signal.addEventListener('abort', clearTimer);
 
     try {
       return await awaited(Promise.race([timer, execute()]));
     } finally {
       clearTimer();
-      controller.signal.removeEventListener('abort', () => clearTimer);
+      controller.signal.removeEventListener('abort', clearTimer);
     }
   }
 

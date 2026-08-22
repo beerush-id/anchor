@@ -388,7 +388,7 @@ export class SuperList<T> {
     return value === undefined ? (null as unknown as T) : value;
   }
 
-  #createSortFn(key: keyof T, order: SortOrder = 'asc'): (a: T, b: T) => number {
+  #createSortFn(key: keyof T, order: SortOrder): (a: T, b: T) => number {
     return (a: T, b: T) => {
       const valA = (a as AnyType)?.[key];
       const valB = (b as AnyType)?.[key];

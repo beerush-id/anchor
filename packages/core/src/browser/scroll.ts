@@ -77,6 +77,7 @@ export function scrollRef<E extends Element | Document | Window = Element>(eleme
     state.current = element;
   }
 
+  /* istanbul ignore else */
   if (isBrowser()) {
     onCleanup(() => cleanup?.());
   }

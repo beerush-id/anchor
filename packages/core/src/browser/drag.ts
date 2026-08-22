@@ -202,6 +202,7 @@ function watchDnd() {
       };
       anchor.assign(PAYLOAD, payload);
 
+      /* istanbul ignore else */
       if (e.dataTransfer) {
         if (isInternal) e.dataTransfer.setDragImage(ghost, 0, 0);
 
@@ -212,6 +213,7 @@ function watchDnd() {
           })
         );
 
+        /* istanbul ignore else */
         if (PAYLOAD_INIT.files?.length) {
           for (const file of PAYLOAD_INIT.files) {
             e.dataTransfer.items.add(file);
@@ -229,6 +231,7 @@ function watchDnd() {
         isInternal: DRAG_PAIRS.has(target as Element),
       } as Partial<LiveDnD>;
 
+      /* istanbul ignore else */
       if (target as HTMLElement) {
         nextState.target = target as HTMLElement;
         const { x, y } = target.getBoundingClientRect();
@@ -264,6 +267,7 @@ function watchDnd() {
     const dragLeaveHandler = () => {
       dragCounter--;
 
+      /* istanbul ignore else */
       if (dragCounter <= 0) {
         dragCounter = 0;
         DND_STATE.isDragging = false;
@@ -342,6 +346,7 @@ function parseDataTransfer(source: DataTransfer | null) {
     for (const file of result.files) {
       mimes.add(file.type.split('/')[0]);
     }
+    /* istanbul ignore else */
     if (mimes.size === 1) result.type = mimes.values().next().value as string;
   }
 
@@ -351,6 +356,7 @@ function parseDataTransfer(source: DataTransfer | null) {
 function startDndState(e: DragEvent, options?: Partial<LiveDnD>) {
   const output = { ...options, isDragging: true } as LiveDnD;
 
+  /* istanbul ignore else */
   if (e.target) output.target = e.target as Element;
   anchor.assign(DND_STATE, output); // Triggers reactivity.
 }

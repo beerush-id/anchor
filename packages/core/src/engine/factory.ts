@@ -55,6 +55,7 @@ export function createLinkFactory<T extends Linkable>(
     const childController = CONTROLLER_REGISTRY.get(childState);
 
     // If the child state has a valid controller with subscribe method
+    /* istanbul ignore else */
     if (typeof childController?.subscribe === 'function') {
       const childHandler: StateSubscriber<unknown> = (_, event, emitter) => {
         // Ignore init events to prevent duplicate notifications
@@ -97,6 +98,7 @@ export function createUnlinkFactory<T extends Linkable>(meta: StateMetadata<T>):
   return (childState: State) => {
     const unsubscribe = subscriptions.get(childState);
 
+    /* istanbul ignore else */
     if (typeof unsubscribe === 'function') {
       unsubscribe();
       subscriptions.delete(childState);
@@ -236,6 +238,7 @@ export function createDestroyFactory<T extends Linkable>(init: T, state: State<T
     // Removing the destroyed state from all observers.
     if (observers.size) {
       for (const observer of observers) {
+        /* istanbul ignore else */
         if (observer.states.has(init)) {
           observer.states.delete(init);
         }

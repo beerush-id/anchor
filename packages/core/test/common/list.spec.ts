@@ -29,6 +29,20 @@ describe('SuperList', () => {
       expect(list.size).toBe(2);
       expect(list.values.length).toBe(5);
     });
+
+    it('should ignore invalid orderBy key in constructor options', () => {
+      const list = new SuperList<string>(undefined, { orderBy: [null as any, 'asc'] });
+      expect(list.size).toBe(0);
+    });
+
+    it('should sort empty list and allow default order in orderBy', () => {
+      const list = new SuperList<{ name: string }>();
+      list.sort((a, b) => a.name.localeCompare(b.name));
+      expect(list.size).toBe(0);
+
+      list.orderBy('name');
+      expect(list.size).toBe(0);
+    });
   });
 
   describe('add()', () => {
@@ -749,9 +763,14 @@ describe('SuperList', () => {
       expect(list.size).toBe(TOTAL_SIZE);
       expect(addDuration).toBeLessThan(500);
 
+      let isAscending = true;
       for (let i = 1; i < TOTAL_SIZE; i += 1) {
-        expect(list.values[i].value!.score).toBeGreaterThanOrEqual(list.values[i - 1].value!.score);
+        if (list.values[i].value!.score < list.values[i - 1].value!.score) {
+          isAscending = false;
+          break;
+        }
       }
+      expect(isAscending).toBe(true);
 
       const startResort = performance.now();
       list.sort((a, b) => b.score - a.score);
@@ -759,9 +778,14 @@ describe('SuperList', () => {
 
       expect(resortDuration).toBeLessThan(500);
 
+      let isDescending = true;
       for (let i = 1; i < TOTAL_SIZE; i += 1) {
-        expect(list.values[i].value!.score).toBeLessThanOrEqual(list.values[i - 1].value!.score);
+        if (list.values[i].value!.score > list.values[i - 1].value!.score) {
+          isDescending = false;
+          break;
+        }
       }
+      expect(isDescending).toBe(true);
     });
   });
 });

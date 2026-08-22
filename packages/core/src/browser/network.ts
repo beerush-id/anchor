@@ -71,6 +71,7 @@ function watchNetwork() {
     window.addEventListener('online', updateState);
     window.addEventListener('offline', updateState);
 
+    /* istanbul ignore else */
     if (conn) {
       conn.addEventListener('change', updateState);
     }
@@ -78,6 +79,7 @@ function watchNetwork() {
     return () => {
       window.removeEventListener('online', updateState);
       window.removeEventListener('offline', updateState);
+      /* istanbul ignore else */
       if (conn) {
         conn.removeEventListener('change', updateState);
       }

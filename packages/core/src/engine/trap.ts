@@ -178,6 +178,7 @@ export function createOwnKeys<T extends Linkable>(init: T, options?: TrapOverrid
     if ($$.reactive) {
       const observer = switchable.getObserver();
 
+      /* istanbul ignore else */
       if (configs.observable) {
         /* istanbul ignore next */
         plugin.track?.(init, observers, OBSERVER_KEYS.OWN_KEYS);

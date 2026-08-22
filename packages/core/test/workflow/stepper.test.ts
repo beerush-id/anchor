@@ -474,6 +474,23 @@ describe('WorkflowStepper', () => {
       expect(step1.status).toBe(WORKFLOW_STATUS.SKIPPED);
       expect(step2.status).toBe(WORKFLOW_STATUS.SKIPPED);
     });
+
+    it('should break step execution loop when a step calls skip() during run', async () => {
+      const step2Fn = vi.fn((input) => input);
+      const steps: WorkflowEntry[] = [
+        step('1', (_, s: any) => {
+          s.stepper.skip();
+          return { early: true };
+        }),
+        step('2', step2Fn),
+      ];
+
+      const stepper = new WorkflowStepper(steps);
+      await stepper.run({});
+
+      expect(step2Fn).not.toHaveBeenCalled();
+      expect(stepper.status).toBe(WORKFLOW_STATUS.SKIPPED);
+    });
   });
 
   describe('passive mode', () => {

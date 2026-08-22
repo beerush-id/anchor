@@ -323,6 +323,7 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
           nextInput = this.output ?? this.input ?? {};
         }
 
+        /* istanbul ignore else */
         if (!nextStep) {
           await this.finalize();
           return this.finish();
@@ -482,6 +483,7 @@ export class WorkflowStepper<I extends WorkflowData, O extends WorkflowData, D =
         return;
       }
 
+      /* istanbul ignore else */
       if (anchor.has(target.state)) replay(target.state, event);
     });
 

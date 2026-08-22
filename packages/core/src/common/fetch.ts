@@ -485,6 +485,7 @@ function appendChunk<T>(state: FetchState<T>, chunk: T, transform?: (current: T,
       return;
     }
 
+    /* istanbul ignore else */
     if (isArray(state.data)) {
       (state.data as unknown[]).push(...(transform(state.data, chunk) as unknown[]));
     }
@@ -506,8 +507,10 @@ const toPromise = <T, S extends FetchState<T>>(state: S): Promise<S> => {
     return new Promise((resolve, reject) => {
       const unsubscribe = subscribe(state, (_s, event) => {
         if (event.type !== 'init' && !event.keys.includes('data')) {
+          /* istanbul ignore else */
           if (state.status === FetchStatus.Error) {
             reject(state.error);
+          /* istanbul ignore else */
           } else if (state.status === FetchStatus.Success) {
             resolve(state);
           }

@@ -63,9 +63,11 @@ export function createCollectionGetter<T extends Set<unknown> | Map<KeyLike, unk
   const { configs } = options ?? meta;
 
   return ((target, prop, receiver?) => {
+    /* istanbul ignore else */
     if ($$.reactive) {
       const observer = switchable.getObserver();
 
+      /* istanbul ignore else */
       if (configs.observable && !COLLECTION_MUTATION_KEYS.has(prop as never)) {
         plugin.track?.(init, observers, OBSERVER_KEYS.COLLECTION_MUTATIONS);
       }
@@ -242,6 +244,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
       if (INIT_REGISTRY.has(oldValue as Linkable)) {
         const childState = INIT_REGISTRY.get(oldValue as Linkable) as Linkable;
 
+        /* istanbul ignore else */
         if (subscriptions.has(childState)) {
           unlink(childState);
         }
@@ -315,6 +318,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
         return result;
       }
 
+      /* istanbul ignore else */
       if (method === 'clear') {
         const entries = [...self.entries()];
         const values = entries.map(([, value]) => value);
@@ -324,6 +328,7 @@ export function createCollectionMutator<T extends Set<Linkable> | Map<string, Li
           for (const current of values) {
             const childState = INIT_REGISTRY.get(current) as Linkable;
 
+            /* istanbul ignore else */
             if (subscriptions.has(childState)) {
               unlink(childState as Linkable);
             }

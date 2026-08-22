@@ -144,16 +144,56 @@ describe('browser/keyboard', () => {
       expect(LIVE_KEYBOARD.is('ctrl', 'c')).toBe(false);
     });
 
-    it('should parse altKey and metaKey modifiers', async () => {
+    it('should parse altKey and metaKey modifiers and handle keyup with modifiers', async () => {
       const { LIVE_KEYBOARD } = await import('../../src/browser/keyboard.js');
       const { acceptInteractions } = await import('../../src/browser/interactive.js');
       LIVE_KEYBOARD.key;
       await acceptInteractions(true);
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', altKey: true, metaKey: true }));
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', altKey: true, metaKey: true, ctrlKey: true, shiftKey: true }));
       expect(LIVE_KEYBOARD.modifiers.has('alt')).toBe(true);
       expect(LIVE_KEYBOARD.modifiers.has('meta')).toBe(true);
-      expect(LIVE_KEYBOARD.is('alt', 'meta', 'Enter')).toBe(true);
+      expect(LIVE_KEYBOARD.modifiers.has('ctrl')).toBe(true);
+      expect(LIVE_KEYBOARD.modifiers.has('shift')).toBe(true);
+      expect(LIVE_KEYBOARD.is('alt', 'meta', 'ctrl', 'shift', 'Enter')).toBe(true);
+
+      // keyup while modifiers are still true
+      document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', altKey: true, metaKey: true, ctrlKey: true, shiftKey: true }));
+      expect(LIVE_KEYBOARD.modifiers.size).toBe(4);
+
+      // keyup when modifiers are released
+      document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', altKey: false, metaKey: false, ctrlKey: false, shiftKey: false }));
+      expect(LIVE_KEYBOARD.modifiers.size).toBe(0);
+    });
+
+    it('should track element-specific keyboard events', async () => {
+      const { keyboardRef } = await import('../../src/browser/keyboard.js');
+      const div = document.createElement('div');
+      const state = keyboardRef(div);
+
+      div.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+      expect(state.key).toBe('Escape');
+
+      div.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape' }));
+      expect(state.key).toBe('');
+
+      state.current = undefined;
+      expect(state.key).toBe('');
+    });
+
+    it('should execute onCleanup when lifecycle scope is destroyed', async () => {
+      const { keyboardRef } = await import('../../src/browser/keyboard.js');
+      const { createLifecycle } = await import('../../src/scope/lifecycle.js');
+      const lifecycle = createLifecycle();
+      const div = document.createElement('div');
+      let ref: any;
+
+      lifecycle.run(() => {
+        ref = keyboardRef(div);
+      });
+
+      expect(ref.current).toBe(div);
+      lifecycle.destroy();
     });
   });
 });

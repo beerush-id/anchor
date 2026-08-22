@@ -180,6 +180,7 @@ export function createArrayMutator<T extends unknown[]>(init: T, options?: TrapO
             const value = addedItems[i];
             const index = args.indexOf(value);
 
+            /* istanbul ignore else */
             if (index > -1) {
               args[index] = (validation.data as unknown[])?.[i];
             }

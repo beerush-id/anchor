@@ -200,6 +200,17 @@ describe('Workflow API', () => {
       const result = await workflow({ status: 'ok', code: 200 });
       expect(result.res).toBe('nested-ok');
     });
+
+    it('should ignore non-function switch branch builders', () => {
+      const workflow = plan<{ status: string }>().switch('status', {
+        ok: (resolve) => resolve((i) => i),
+        ignored: null as any,
+      });
+
+      const entry = workflow.steps[0] as WorkflowSwitch;
+      expect(entry.switches['ok']).toBeDefined();
+      expect(entry.switches['ignored']).toBeUndefined();
+    });
   });
 
   describe('error handling', () => {

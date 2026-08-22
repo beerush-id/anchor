@@ -1,4 +1,5 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { acceptInteractions, onInteractive } from '../../src/browser/interactive.js';
 import { sleep } from '../../src/index.js';
 
 describe('browser/interactive', () => {
@@ -12,46 +13,30 @@ describe('browser/interactive', () => {
     errorSpy?.mockRestore();
   });
 
-  beforeEach(() => {
-    vi.resetModules();
-    errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-  });
-
-  afterEach(() => {
-    errorSpy.mockRestore();
-  });
-
-  it('should queue handlers before acceptInteractions is called', async () => {
-    const { onInteractive } = await import('../../src/browser/interactive.js');
+  it('should queue handlers before acceptInteractions is called', () => {
     const handler = vi.fn();
     onInteractive(handler);
     expect(handler).not.toHaveBeenCalled();
   });
 
   it('should execute queued handlers when acceptInteractions is called', async () => {
-    const { onInteractive, acceptInteractions } = await import('../../src/browser/interactive.js');
     const handler = vi.fn();
     onInteractive(handler);
     await acceptInteractions(false); // pass false for synchronous processing without sleep(0)
     expect(handler).toHaveBeenCalled();
   });
 
-  it('should execute handlers immediately if already accepted', async () => {
-    const { onInteractive, acceptInteractions } = await import('../../src/browser/interactive.js');
-    await acceptInteractions(false);
-
+  it('should execute handlers immediately if already accepted', () => {
     const handler = vi.fn();
     onInteractive(handler);
     expect(handler).toHaveBeenCalled();
   });
 
   it('should collect and run disposers on subsequent acceptInteractions', async () => {
-    const { onInteractive, acceptInteractions } = await import('../../src/browser/interactive.js');
     const disposer = vi.fn();
     const handler = vi.fn(() => disposer);
 
     onInteractive(handler);
-    await acceptInteractions(false);
     expect(handler).toHaveBeenCalled();
     expect(disposer).not.toHaveBeenCalled();
 
@@ -60,57 +45,50 @@ describe('browser/interactive', () => {
   });
 
   it('should handle async handlers and their disposers', async () => {
-    const { onInteractive, acceptInteractions } = await import('../../src/browser/interactive.js');
     const disposer = vi.fn();
     const handler = vi.fn(async () => {
-      await sleep(10);
+      await sleep(5);
       return disposer;
     });
 
     onInteractive(handler);
-    await acceptInteractions(false);
     expect(handler).toHaveBeenCalled();
     expect(disposer).not.toHaveBeenCalled();
 
     // Wait for the async handler to resolve and register its disposer
-    await sleep(20);
+    await sleep(15);
 
     await acceptInteractions(false);
     expect(disposer).toHaveBeenCalled();
   });
 
+  it('should handle default deferred acceptInteractions and async handlers returning non-function', async () => {
+    const handler = vi.fn(async () => {
+      await sleep(5);
+      return undefined;
+    });
+
+    onInteractive(handler);
+    await acceptInteractions(); // uses default deferred = true
+    await sleep(15);
+    expect(handler).toHaveBeenCalled();
+  });
+
   it('should recover from handler errors without breaking others', async () => {
-    const { onInteractive, acceptInteractions } = await import('../../src/browser/interactive.js');
     const badHandler = vi.fn(() => {
       throw new Error('Test error');
     });
     const goodHandler = vi.fn();
 
-    // Suppress console.error for this test as it's expected
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-
     onInteractive(badHandler);
     onInteractive(goodHandler);
 
-    await acceptInteractions(false);
-
     expect(badHandler).toHaveBeenCalled();
     expect(goodHandler).toHaveBeenCalled();
-
-    consoleError.mockRestore();
   });
 
   describe('Coverage', () => {
-    beforeAll(() => {
-      vi.useFakeTimers();
-    });
-
-    afterAll(() => {
-      vi.useRealTimers();
-    });
-
     it('should catch errors from async handlers', async () => {
-      const { onInteractive, acceptInteractions } = await import('../../src/browser/interactive.js');
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const badAsyncHandler = vi.fn().mockRejectedValue(new Error('Async error'));
@@ -127,22 +105,21 @@ describe('browser/interactive', () => {
     });
 
     it('should log violation if interactions are not accepted within 1000ms', async () => {
-      // Need to re-import in a fresh environment where the setTimeout is evaluated
+      vi.useFakeTimers();
       vi.resetModules();
       const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      // We need to import it so the script runs and schedules the setTimeout
-      const { onInteractive } = await import('../../src/browser/interactive.js');
+      const { onInteractive: freshOnInteractive } = await import('../../src/browser/interactive.js');
 
-      onInteractive(() => {}); // Queue a listener
+      freshOnInteractive(() => {}); // Queue a listener
 
       // Advance timers by 1000ms to trigger the violation check
       vi.advanceTimersByTime(1000);
 
-      // The captureStack.violation.general logs to console.error internally
       expect(consoleError).toHaveBeenCalled();
 
       consoleError.mockRestore();
+      vi.useRealTimers();
     });
   });
 });

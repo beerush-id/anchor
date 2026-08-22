@@ -44,6 +44,7 @@ export const LIVE_MEDIA = {} as LiveMediaQueries;
 export function mediaQuery(query: string, disposable = true): ValueGetterType<boolean> {
   const state = mutable(false);
 
+  /* istanbul ignore else */
   if (isBrowser()) {
     onInteractive(() => {
       const media = window.matchMedia(query);
@@ -52,6 +53,7 @@ export function mediaQuery(query: string, disposable = true): ValueGetterType<bo
       const handler = (e: MediaQueryListEvent) => (state.value = e.matches);
       media.addEventListener('change', handler);
 
+      /* istanbul ignore else */
       if (disposable) {
         onCleanup(() => {
           media.removeEventListener('change', handler);

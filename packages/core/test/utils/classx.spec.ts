@@ -4,7 +4,9 @@ import { classx, isValueGetter } from '../../src/index.js';
 describe('classx', () => {
   it('should join multiple string classes', () => {
     expect(classx('foo', 'bar', 'baz')).toBe('foo bar baz');
-    expect(isValueGetter<string>(classx.use(() => 'foo'))).toBe(true);
+    const getter = classx.use(() => 'foo');
+    expect(isValueGetter<string>(getter)).toBe(true);
+    expect(getter()).toBe('foo');
   });
 
   it('should ignore falsy values', () => {

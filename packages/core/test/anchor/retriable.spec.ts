@@ -149,4 +149,16 @@ describe('Anchor Core - Retriable', () => {
     await expect(promise).rejects.toThrow('Call was aborted');
     expect(fn).toHaveBeenCalledTimes(1); // Only initial call, aborted during execution
   });
+
+  it('should clear timeout timer on external abort', async () => {
+    const controller = new AbortController();
+    const fn = vi.fn().mockImplementation((signal: AbortSignal) => {
+      return new Promise((_, reject) => {
+        signal.addEventListener('abort', () => reject(new Error('Aborted')));
+      });
+    });
+    const promise = retriable(fn, { timeout: 1000, controller });
+    setTimeout(() => controller.abort(), 10);
+    await expect(promise).rejects.toThrow('Call was aborted');
+  });
 });

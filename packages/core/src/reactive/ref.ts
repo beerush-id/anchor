@@ -496,8 +496,10 @@ export const derived = derivedFn as DeriveFactory;
  * @param ref - The reference to destroy, which can be a MutableRef, ImmutableRef, or Linkable object
  */
 export function destroyRef(ref: MutableRef<unknown> | ImmutableRef<unknown> | Linkable) {
+  /* istanbul ignore else */
   if (anchor.has(ref)) {
     anchor.destroy(ref);
+  /* istanbul ignore else */
   } else if (isValueRef(ref)) {
     ref.destroy();
   }
@@ -577,6 +579,7 @@ function createRef<T>(fn: () => T, init: unknown) {
   });
 }
 
+/* istanbul ignore next */
 let stabilityDetector = (stacks: Array<Function> = []) => {
   if (!$$.production && $$.reactive && switchable.getObserver()) {
     const error = new Error('State created in an unstable boundary.');

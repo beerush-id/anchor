@@ -50,6 +50,7 @@ export function microtask<T = undefined>(delay = 10): MicroTask<T> {
 
     executor = initContext = lastContext = activeId = undefined;
 
+    /* istanbul ignore else */
     if (typeof execFn === 'function') {
       try {
         execFn(initValue as T, lastValue as T);

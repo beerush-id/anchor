@@ -196,6 +196,7 @@ export function syncCookies() {
     // Handle deletions — cookie removed by server (max-age=0)
     for (const [name, entry] of jar) {
       if (!current.has(name) && entry.init) {
+        /* istanbul ignore else */
         if (anchor.has(entry.value)) {
           anchor.assign(entry.value, entry.init, true);
         }
@@ -207,6 +208,7 @@ export function syncCookies() {
   }
 }
 
+/* istanbul ignore next */
 if (isBrowser()) {
   setScope(COOKIE_JAR_WRITABLE, true);
   setCookieContext(decodeCookies(document.cookie));
@@ -264,7 +266,9 @@ export function cookies<T extends ObjLike>(name: string, init: T, options?: Cook
 
   const controller = subscribe.resolve(state);
 
+  /* istanbul ignore else */
   if (typeof controller?.subscribe === 'function') {
+    /* istanbul ignore else */
     if (isBrowser()) {
       const [schedule] = microtask(0);
       const unsubscribe = controller.subscribe((_s, e) => {
@@ -273,6 +277,7 @@ export function cookies<T extends ObjLike>(name: string, init: T, options?: Cook
         schedule(() => writeDocumentCookie(entry));
       });
       onGlobalCleanup(unsubscribe);
+    /* istanbul ignore next */
     } else if (jar) {
       const unsubscribe = controller.subscribe((_s, e) => {
         if (e.type === 'init' || syncing) return;

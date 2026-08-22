@@ -28,6 +28,17 @@ describe('Anchor Utilities', () => {
       expect(fn2).toHaveBeenCalledTimes(1);
     });
 
+    it('should use default delay of 10ms when parameter is omitted', () => {
+      const [schedule] = microbatch();
+      const fn = vi.fn();
+
+      schedule(fn);
+      expect(fn).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(10);
+      expect(fn).toHaveBeenCalledTimes(1);
+    });
+
     it('should execute functions in queueMicrotask', async () => {
       const [schedule] = microbatch(0);
       const fn = vi.fn();

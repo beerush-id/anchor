@@ -116,6 +116,19 @@ describe('Anchor Core - Observable Object', () => {
       expect(warnSpy).toHaveBeenCalledTimes(5);
     });
 
+    it('should not trigger observer onChange when batch assigning untracked properties', () => {
+      const state = anchor({ a: 1, b: 2, c: 3 }, { observable: true });
+      const onChange = vi.fn();
+      const observer = createObserver(onChange);
+
+      observer.run(() => {
+        void state.a;
+      });
+
+      anchor.assign(state, { b: 20, c: 30 });
+      expect(onChange).not.toHaveBeenCalled();
+    });
+
     it('should track nested object properties', () => {
       const state = anchor({ nested: { a: 1, b: 2 } }, { observable: true });
 

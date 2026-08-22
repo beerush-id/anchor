@@ -303,5 +303,27 @@ describe('browser/drag', () => {
       expect(LIVE_DND.x).toBe(prevX);
       consoleError.mockRestore();
     });
+
+    it('should return noop cleanup for falsy draggable element', () => {
+      const cleanup = LIVE_DND.draggable(null);
+      expect(typeof cleanup).toBe('function');
+      cleanup();
+    });
+
+    it('should execute onCleanup for draggable and droppable when lifecycle scope is destroyed', async () => {
+      const { createLifecycle } = await import('../../src/scope/lifecycle.js');
+      const lifecycle = createLifecycle();
+      const div = document.createElement('div');
+      const zone = document.createElement('div');
+
+      lifecycle.run(() => {
+        LIVE_DND.draggable(div, { type: 'custom' });
+        LIVE_DND.droppable(zone);
+      });
+
+      expect(div.getAttribute('draggable')).toBe('true');
+      lifecycle.destroy();
+      expect(div.hasAttribute('draggable')).toBe(false);
+    });
   });
 });

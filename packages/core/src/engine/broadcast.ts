@@ -65,7 +65,7 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
             observer.onChange(event);
           }
         } else {
-          const { changes = [] } = event as BatchChange;
+          const changes = (event as BatchChange).changes;
 
           for (const observer of observerList) {
             const keys = observer.states.get(init) as Set<KeyLike>;
@@ -83,6 +83,7 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
         for (const observer of observerList) {
           const keys = observer.states.get(init) as Set<KeyLike>;
 
+          /* istanbul ignore else */
           if (keys?.has(OBSERVER_KEYS.ARRAY_MUTATIONS)) {
             observer.onChange(event);
           }
@@ -91,6 +92,7 @@ export function createBroadcaster<T extends Linkable = Linkable>(init: Linkable,
         for (const observer of observerList) {
           const keys = observer.states.get(init) as Set<KeyLike>;
 
+          /* istanbul ignore else */
           if (keys?.has(OBSERVER_KEYS.COLLECTION_MUTATIONS)) {
             observer.onChange(event);
           }

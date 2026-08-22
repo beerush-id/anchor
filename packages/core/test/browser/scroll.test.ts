@@ -108,5 +108,21 @@ describe('browser/scroll', () => {
       expect(LIVE_SCROLL.x).toBe(prevX);
       consoleError.mockRestore();
     });
+
+    it('should execute onCleanup when lifecycle scope is destroyed', async () => {
+      vi.useRealTimers();
+      const { scrollRef } = await import('../../src/browser/scroll.js');
+      const { createLifecycle } = await import('../../src/scope/lifecycle.js');
+      const lifecycle = createLifecycle();
+      const div = document.createElement('div');
+      let ref: any;
+
+      lifecycle.run(() => {
+        ref = scrollRef(div);
+      });
+
+      expect(ref.current).toBe(div);
+      lifecycle.destroy();
+    });
   });
 });

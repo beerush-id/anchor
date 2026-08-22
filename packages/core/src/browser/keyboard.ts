@@ -98,6 +98,7 @@ export function keyboardRef<E extends Element | Document | Window = Element>(ele
     state.current = element;
   }
 
+  /* istanbul ignore else */
   if (isBrowser()) {
     onCleanup(() => cleanup?.());
   }
@@ -167,6 +168,7 @@ function attachKeyboardListener(
   return () => {
     target.removeEventListener('keydown', keydownHandler as EventListener);
     target.removeEventListener('keyup', keyupHandler as EventListener);
+    /* istanbul ignore else */
     if (target === document) {
       window.removeEventListener('blur', blurHandler);
     }

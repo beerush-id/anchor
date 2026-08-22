@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { anchor, rollback } from '../../src/index.js';
 import { replay } from '../../src/reactive/event.js';
 import { StateChange } from '../../src/types.js';
 
@@ -87,5 +88,67 @@ describe('replay.any', () => {
     const state = { nested: { map: new Map([['key', 1]]) } };
     replay.any(state, { type: 'map:set', keys: ['nested', 'map', 'key'], value: 2 } as StateChange);
     expect(state.nested.map.get('key')).toBe(2);
+  });
+});
+
+describe('replay and rollback on anchor states', () => {
+  it('should replay and rollback map mutations', () => {
+    const state = anchor(new Map([['a', 1], ['b', 2]]));
+
+    replay(state, { type: 'map:delete', keys: ['a'], prev: 1 } as StateChange);
+    expect(state.has('a')).toBe(false);
+
+    rollback(state, { type: 'map:delete', keys: ['a'], prev: 1 } as StateChange);
+    expect(state.get('a')).toBe(1);
+
+    replay(state, { type: 'map:clear', keys: [] } as StateChange);
+    expect(state.size).toBe(0);
+
+    rollback(state, { type: 'map:clear', keys: [], prev: [['a', 1], ['b', 2]] } as StateChange);
+    expect(state.size).toBe(2);
+  });
+
+  it('should replay and rollback set mutations', () => {
+    const state = anchor(new Set([1, 2]));
+
+    replay(state, { type: 'set:delete', keys: [], prev: 1 } as StateChange);
+    expect(state.has(1)).toBe(false);
+
+    rollback(state, { type: 'set:delete', keys: [], prev: 1 } as StateChange);
+    expect(state.has(1)).toBe(true);
+
+    replay(state, { type: 'set:clear', keys: [] } as StateChange);
+    expect(state.size).toBe(0);
+
+    rollback(state, { type: 'set:clear', keys: [], prev: [1, 2] } as StateChange);
+    expect(state.size).toBe(2);
+  });
+
+  it('should rollback array mutations', () => {
+    const state = anchor([1, 2, 3]);
+
+    rollback(state, { type: 'push', keys: [], value: [3] } as StateChange);
+    expect(state).toEqual([1, 2]);
+
+    rollback(state, { type: 'shift', keys: [], prev: 0 } as StateChange);
+    expect(state).toEqual([0, 1, 2]);
+
+    rollback(state, { type: 'pop', keys: [], prev: 3 } as StateChange);
+    expect(state).toEqual([0, 1, 2, 3]);
+
+    rollback(state, { type: 'unshift', keys: [], value: [0] } as StateChange);
+    expect(state).toEqual([1, 2, 3]);
+  });
+
+  it('should ignore unhandled event types in replay, replay.any, and rollback', () => {
+    const state = anchor({ a: 1 });
+    replay(state, { type: 'unknown_event' as any, keys: [] } as StateChange);
+    expect(state.a).toBe(1);
+
+    replay.any(state, { type: 'unknown_event' as any, keys: [] } as StateChange);
+    expect(state.a).toBe(1);
+
+    rollback(state, { type: 'unknown_event' as any, keys: [] } as StateChange);
+    expect(state.a).toBe(1);
   });
 });
