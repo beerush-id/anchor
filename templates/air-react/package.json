@@ -9,7 +9,7 @@
     "build:client": "vite build --outDir dist/client",
     "build:server": "vite build --ssr --outDir dist/server",
     "build": "bun run build:client && bun run build:server",
-    "start": "bun run dist/server/worker.js",
+    "start": "NODE_ENV=production bun run server/bun.js",
     "start:node": "NODE_ENV=production node server/node.js",
     "start:deno": "NODE_ENV=production deno run --allow-net --allow-read --allow-env server/deno.js",
     "lint": "biome check"
@@ -23,7 +23,8 @@
     "react-dom": "^19.2.0"
   },
   "optionalDependencies": {
-    "@hono/node-server": "^1.13.8"
+    "@hono/node-server": "catalog:",
+    "ws": "catalog:"
   },
   "devDependencies": {
     "@airlib/vite": "1.3.0",
