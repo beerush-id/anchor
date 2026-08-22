@@ -32,7 +32,7 @@ export function navigate<T>(
 ) {
   // biome-ignore lint/suspicious/noExplicitAny: Expect any.
   const { params, query, redirect, replace } = options as any;
-  const path = ((target as RouteComponent<T>).route as AnyRoute)?.path ?? (target as AnyRoute).path;
+  const path = ((target as RouteComponent<T>).route as AnyRoute)?.path ?? (target as unknown as AnyRoute).path;
   const href = createUrl(typeof target === 'string' ? target : path, params, query);
 
   const state = { href, query, params, redirect };

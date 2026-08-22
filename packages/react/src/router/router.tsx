@@ -252,15 +252,15 @@ export function page<T>(routeNode: RouteTarget<T>): RouteComponent<T> {
   const UIRoute: FC<{ children?: ReactNode }> = function UIRoute({ children }) {
     return children;
   };
-  UIRoute.displayName = `Route Factory(${(routeNode as AnyRoute).path})`;
+  UIRoute.displayName = `Route Factory(${(routeNode as unknown as AnyRoute).path})`;
 
-  (UIRoute as RouteComponent<AnyRoute>).route = routeNode as AnyRoute;
-  (UIRoute as RouteComponent<AnyRoute>).render = (renderer) => {
-    (routeNode as AnyRoute).render(renderer);
-    return UIRoute as RouteComponent<AnyRoute>;
+  (UIRoute as RouteComponent<AnyRoute>).route = routeNode as unknown as AnyRoute;
+  (UIRoute as RouteComponent<UnknownRoute>).render = (renderer) => {
+    (routeNode as unknown as AnyRoute).render(renderer);
+    return UIRoute as RouteComponent<UnknownRoute>;
   };
-  (UIRoute as RouteComponent<AnyRoute>).renderAsync = (loader, fallback) => {
-    (routeNode as AnyRoute).renderAsync(loader, fallback);
+  (UIRoute as AnyType).renderAsync = (loader: AnyType, fallback: AnyType) => {
+    (routeNode as unknown as AnyRoute).renderAsync(loader, fallback);
     return UIRoute as RouteComponent<AnyRoute>;
   };
 

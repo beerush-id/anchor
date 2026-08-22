@@ -14,6 +14,7 @@ type LinkComponent = <T>(props: LinkProps<T>) => ReactNode;
  * Automatically handles `active` state and preloads route definitions on hover if configured.
  *
  * @param props Link properties including the target route (`to`), params, and query.
+ *   `href` acts as the fallback target when `to` is absent; when both are present, `to` wins.
  * @returns A reactive `<a>` element.
  */
 export const Link = setup<LinkProps<AnyRoute>>((props) => {
@@ -44,36 +45,38 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
   const state = derived.as(() => {
     const { href, params, query } = $props;
 
-    let route: AnyRoute | undefined;
-    let target = href;
-
     const activeUrl = untrack(() => new URL(getCurrentUrl()));
-    if (target?.startsWith('#')) target = `${activeUrl.pathname}${target}`;
+
+    let route: AnyRoute | undefined;
+    let target: URL;
 
     if (props.to) {
       route = props.to instanceof Route ? props.to : (props.to as RouteComponent<AnyRoute>).route;
-      target = untrack(() => route!.url(params, query));
-    } else if (router && target) {
-      route = untrack(() => router.find(target!, true)?.route);
-      if (route?.index) route = route.index as unknown as AnyRoute;
+      target = new URL(untrack(() => route!.url(params, query)), activeUrl);
+    } else {
+      target = new URL(href || '/', activeUrl);
+
+      if (router && href) {
+        route = untrack(() => router.find(target, true)?.route);
+        if (route?.index) route = route.index as unknown as AnyRoute;
+      }
     }
 
-    const url = new URL(target ?? '/', activeUrl.origin);
-    if (url.pathname !== '/' && url.pathname.endsWith('/')) {
-      url.pathname = url.pathname.replace(/\/$/, '');
+    if (target.pathname !== '/' && target.pathname.endsWith('/')) {
+      target.pathname = target.pathname.replace(/\/$/, '');
     }
 
-    const hash = url.hash.substring(1);
+    const hash = target.hash.substring(1);
     return {
-      url,
+      url: target,
       hash,
       route,
       query,
       params,
-      href: url.href,
-      search: url.search,
-      pathname: url.pathname,
-      fullPath: url.pathname + (url.hash ? url.hash : '') + url.search,
+      href: target.href,
+      search: target.search,
+      pathname: target.pathname,
+      fullPath: target.pathname + (target.hash ? target.hash : '') + target.search,
     };
   });
 

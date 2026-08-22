@@ -122,7 +122,8 @@ export class Route<
   public get exceptionRenderer():
     | RouteExceptionRenderer<Params, QueryParams, Data, PParams, PQueryParams, PData, Output>
     | undefined {
-    return (this.exceptionRendererState.value ?? this.router.exceptionRenderer) as RouteExceptionRenderer<
+    const renderer = this.exceptionRendererState.value ?? (this.parent as unknown as this)?.exceptionRenderer;
+    return (renderer ?? this.router.exceptionRenderer) as RouteExceptionRenderer<
       Params,
       QueryParams,
       Data,

@@ -1,11 +1,11 @@
 import type {
+  AnyRoute,
   IndexRoute,
   None,
   PreloadMode,
   Route,
   RouteIndexRenderer,
   RouteLayoutRenderer,
-  RoutePath,
   Router,
   UnknownRoute,
 } from '@airlib/router';
@@ -14,8 +14,7 @@ import type { ComponentProps as ReactProps, FC, ReactNode } from 'react';
 /**
  * Represents any generic Route definition from the core router.
  */
-// biome-ignore lint/suspicious/noExplicitAny: Expected.
-export type AnyRoute = Route<RoutePath, any, any, any, any>;
+export type { AnyRoute };
 
 export type LinkDynamicProps<T, Params, Query> = Params extends None
   ? Query extends None

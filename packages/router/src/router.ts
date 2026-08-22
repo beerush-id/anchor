@@ -387,7 +387,6 @@ export class Router<Output = any> {
       this.finish();
       throw redirect(rewriteUrl.join('/'));
     }
-    console.log(match);
 
     const { segments, exception } = match;
     storage.context.exception = exception;
