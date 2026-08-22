@@ -1,0 +1,4 @@
+name = "irpc-starter"
+main = "./server/worker.js"
+compatibility_date = "2024-06-10"
+compatibility_flags = ["nodejs_compat"]

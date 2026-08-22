@@ -241,7 +241,9 @@ export type UnknownQueryParams = ExtractQueryParams<''>;
 /** Unknown route type */
 export type UnknownRoute = Route<RoutePath, UnknownParams, UnknownQueryParams>;
 /** Any Route type */
-export type AnyRoute = Route<AnyType, AnyType, AnyType> | IndexRoute<AnyType, AnyType, AnyType>;
+export type AnyRoute =
+  | Route<AnyType, AnyType, AnyType, AnyType, AnyType, AnyType, AnyType, AnyType, AnyType>
+  | IndexRoute<AnyType, AnyType, AnyType, AnyType, AnyType, AnyType, AnyType, AnyType, AnyType>;
 /** Unknown provider type */
 export type UnknownProvider = (ctx: RouteContext<TRec, TRec, TRec>) => Promise<unknown> | unknown;
 /** Unknown redirect type */

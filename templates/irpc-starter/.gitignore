@@ -1,0 +1,21 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+coverage
+
+# Environment
+.env
+.env.local
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea
+.vscode
+*.swp
+*.swo
