@@ -17,6 +17,7 @@ import { createArrayMutator } from './array.js';
 import { createCollectionMutator } from './collection.js';
 import { CONTROLLER_REGISTRY, INIT_GATEWAY_REGISTRY, META_REGISTRY, STATE_REGISTRY } from './registry.js';
 import { createGetter } from './trap.js';
+import { isObjectLike } from '../utils/index.js';
 
 /**
  * Creates a ProxyHandler for the given state object based on its mutability configuration.
@@ -178,7 +179,7 @@ export function inherit<T extends Record<string, AnyType>>(...sources: (Partial<
         const values = targets.map((t) => (t as T)[prop as keyof T]);
         const value = values.find((v) => typeof v !== 'undefined');
         if (typeof value !== 'undefined') {
-          return value && typeof value === 'object' ? inherit(...values.reverse()) : value;
+          return isObjectLike(value) ? inherit(...values.reverse()) : value;
         }
       },
       set(_, prop, value) {
