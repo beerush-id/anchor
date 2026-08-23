@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { compile, type CompileOptions as MdxOptions } from '@mdx-js/mdx';
@@ -56,6 +57,7 @@ export type MdxExtendedOptions = {
  * treated as pages, the heading depth to record, and post-compile hooks.
  */
 export type MdxModuleOptions = Omit<MdxOptions, 'remarkPlugins' | 'rehypePlugins' | 'mdxExtensions'> & {
+  cacheDir?: string;
   include: string[];
   template: string;
   extended: boolean | MdxExtendedOptions;
@@ -84,6 +86,7 @@ export interface HTMLNode extends MarkdownNode {
 }
 
 export const MDX_DEFAULT_OPTIONS: MdxModuleOptions = {
+  cacheDir: '.mdx-chunks',
   include: ['.md', '.mdx'],
   template: `<div className="air-mdx-outlet"><!-- air-mdx-outlet --></div>`,
   extended: false,
@@ -94,9 +97,17 @@ export const MDX_DEFAULT_OPTIONS: MdxModuleOptions = {
 
 type MdxCache = {
   hash: string;
-  item: MdxModule;
+  locals: string[];
+  globals: string[];
+  headings: MdxHeading[];
 };
+
 const MDX_CACHE = new Map<string, MdxCache>();
+
+function getMdxCachePath(id: string, cacheDir: string): string {
+  const baseDir = path.resolve(AIR_ENV.viteRoot || process.cwd(), AIR_ENV.cacheDir, cacheDir);
+  return path.join(baseDir, `${relToPages(id)}.json`);
+}
 
 /**
  * Compiles one MDX source into framework JSX. Compilation is deferred until
@@ -144,10 +155,34 @@ export class MdxModule {
     const cache = MDX_CACHE.get(this.id);
 
     if (cache && cache.hash === hash) {
-      this.locals = cache.item.locals;
-      this.globals = cache.item.globals;
+      this.locals = cache.locals;
+      this.globals = cache.globals;
+      this.headings = cache.headings;
+      this.metadata = META_STORE.resolve(this.id, code);
       log.debug(color.event('Loaded cache for'), color.file(relToPages(this.id)));
       return;
+    }
+
+    if (this.options.cacheDir) {
+      const cachePath = getMdxCachePath(this.id, this.options.cacheDir);
+      try {
+        const content = await fs.promises.readFile(cachePath, 'utf-8');
+        const data = JSON.parse(content) as MdxCache;
+        if (data && data.hash === hash) {
+          this.locals = data.locals;
+          this.globals = data.globals;
+          this.headings = data.headings;
+          this.metadata = META_STORE.resolve(this.id, code);
+          MDX_CACHE.set(this.id, data);
+          log.debug(color.event('Loaded cache for'), color.file(relToPages(this.id)));
+          return;
+        }
+      } catch (err: unknown) {
+        /* istanbul ignore next */
+        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+          log.warn(color.event('Cache read error:'), err as Error);
+        }
+      }
     }
 
     log.debug(color.event('Compiling'), color.file(relToPages(this.id)));
@@ -225,7 +260,26 @@ export class MdxModule {
       color.timing(`${Math.round(performance.now() - started)}ms`)
     );
 
-    MDX_CACHE.set(this.id, { hash, item: this });
+    const cacheData: MdxCache = {
+      hash,
+      locals: this.locals,
+      globals: this.globals,
+      headings: this.headings,
+    };
+
+    MDX_CACHE.set(this.id, cacheData);
+
+    if (this.options.cacheDir) {
+      const cachePath = getMdxCachePath(this.id, this.options.cacheDir);
+      try {
+        await fs.promises.mkdir(path.dirname(cachePath), { recursive: true });
+        await fs.promises.writeFile(cachePath, JSON.stringify(cacheData), 'utf-8');
+        log.verbose(color.event('Saved cache for'), color.file(relToPages(this.id)));
+      } catch (err) {
+        /* istanbul ignore next */
+        log.error(color.event('Cache write error:'), err as Error);
+      }
+    }
   }
 
   public toString() {

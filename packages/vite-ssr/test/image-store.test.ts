@@ -78,9 +78,8 @@ describe('image optimization — sources are encoded and cached by request', () 
   }
 
   it('falls back to the working directory when no root is given', () => {
-    const store = new ImageStore({}, '');
-
-    expect(store.rootDir).toBe(process.cwd());
+    expect(new ImageStore().rootDir).toBe(process.cwd());
+    expect(new ImageStore({}, '').rootDir).toBe(process.cwd());
   });
 
   it('serves an optimized original plus responsive sizes for a source image', async () => {

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { ResolvedConfig } from 'vite';
-import { ImageStore } from './image-store.js';
+import type { ImageStore } from './image-store.js';
 import { META_STORE, type MetadataStore } from './metadata.js';
 import { RouteStore } from './route-store.js';
 
@@ -43,7 +43,7 @@ export type AirEnv = {
   /** Central route registry over the parsed filesystem tree. */
   routes: RouteStore;
   /** Image encoding and caching store. */
-  images: ImageStore;
+  images?: ImageStore;
   /**
    * Vite root (`config.root`) — the absolute project root. Base for every
    * relative identifier in logs and for resolving `srcDir`/`pagesDir`.
@@ -94,7 +94,6 @@ export type AirEnv = {
 export const AIR_ENV: AirEnv = {
   meta: META_STORE,
   routes: new RouteStore(),
-  images: new ImageStore(),
   viteRoot: '',
   srcDir: 'src',
   pagesDir: 'pages',

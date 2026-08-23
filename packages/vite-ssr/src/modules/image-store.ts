@@ -5,6 +5,7 @@ import { performance } from 'node:perf_hooks';
 import type { LogLevel } from '@beerush/logger';
 import { Transformer } from '@napi-rs/image';
 import { color, taggedLogger } from '../logger.js';
+import { AIR_ENV } from './env.js';
 
 const log = taggedLogger('air-image');
 
@@ -29,7 +30,7 @@ interface ImageOptions {
   /*
    * Directory where encoded artifacts are cached (keyed by source path + format +
    * quality + size).
-   * @default 'node_modules/.cache/air-image'
+   * @default '.image-chunks'
    */
   cacheDir: string;
   /**
@@ -58,9 +59,12 @@ export interface ImageResolution {
   /** URL of the optimized original, or the best available size when custom sizes were requested. */
   src: string;
   /** Responsive `srcset` string of generated sizes. */
-  srcset?: string;
+  srcset: string;
+  /** Intrinsic width of the source image in pixels. */
   width: number;
+  /** Intrinsic height of the source image in pixels. */
   height: number;
+  /** Accessible alt text derived from the source file name. */
   alt: string;
   /** Fallback image metadata — what `default` access on the module resolves to. */
   default: ImageMeta;
@@ -72,7 +76,7 @@ const IMAGE_DEFAULT_OPTIONS: ImageOptions = {
   sizes: [128, 256, 512, 1024],
   format: 'webp',
   quality: 75,
-  cacheDir: 'node_modules/.cache/air-image',
+  cacheDir: '.image-chunks',
   devEnabled: true,
 };
 
@@ -94,14 +98,8 @@ export class ImageStore {
   constructor(options: AirImageOptions = {}, root: string = process.cwd()) {
     this.options = { ...IMAGE_DEFAULT_OPTIONS, ...options };
     this.rootDir = root || process.cwd();
-    this.cacheDir = path.join(this.rootDir, this.options.cacheDir);
-    this.ensureDir = fs.mkdir(this.cacheDir, { recursive: true }).catch(
-      /* istanbul ignore next */
-      () => undefined
-    );
+    this.cacheDir = path.resolve(this.rootDir, AIR_ENV.cacheDir, this.options.cacheDir);
   }
-
-  private ensureDir: Promise<string | undefined>;
 
   /**
    * Resolves a raw Vite module id (e.g. `/image.png?format=webp&sizes=400,800`)
@@ -134,7 +132,7 @@ export class ImageStore {
       allCached = false;
       log.debug(color.event('Encoding'), color.file(relFile), '→', color.file(name));
       const buf = await this.encodeImage(filePath, format, quality, size);
-      await this.ensureDir;
+      await fs.mkdir(this.cacheDir, { recursive: true });
       await fs.writeFile(abs, buf);
 
       const reduction = Math.round((1 - buf.length / originalSize) * 100);

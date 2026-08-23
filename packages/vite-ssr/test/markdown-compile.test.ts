@@ -1,7 +1,9 @@
+import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AIR_ENV } from '../src/modules/env.js';
 import { airRecmaPlugin, MDX_DEFAULT_OPTIONS, mdxFile, mdxMatcher, relToPages } from '../src/modules/markdown.js';
+import { hashBlock } from '../src/utils/hash.js';
 import { wrapJsx } from '../src/utils/jsx.js';
 import { cleanFixture, fixturePath, makeFixture } from './fixture.js';
 
@@ -446,5 +448,47 @@ describe('mdx compilation pipe — import deduplication and structure', () => {
     };
     plugin(tree);
     expect(tree.body).toHaveLength(0);
+  });
+
+  it('recompiles gracefully when cache file contains invalid json', async () => {
+    dir = makeFixture({ 'pages/guide/page.mdx': '' });
+    AIR_ENV.viteRoot = dir;
+    const id = fixturePath(dir, 'pages/guide/page.mdx');
+    const cacheDir = fixturePath(dir, '.airlib/.mdx-chunks');
+    const cacheFile = path.join(cacheDir, `${relToPages(id)}.json`);
+
+    fs.mkdirSync(path.dirname(cacheFile), { recursive: true });
+    fs.writeFileSync(cacheFile, '{ invalid json');
+
+    const result = await mdxFile(id, '# Valid\n', { ...PLAIN_OPTIONS, cacheDir });
+    expect(result.code).toBeDefined();
+  });
+
+  it('loads compiled chunk from disk cache when in-memory cache is empty', async () => {
+    dir = makeFixture({ 'pages/docs/page.mdx': '' });
+    AIR_ENV.viteRoot = dir;
+    const id = fixturePath(dir, 'pages/docs/page.mdx');
+    const cacheDir = fixturePath(dir, '.airlib/.mdx-chunks');
+    const cacheFile = path.join(cacheDir, `${relToPages(id)}.json`);
+
+    fs.mkdirSync(path.dirname(cacheFile), { recursive: true });
+    fs.writeFileSync(
+      cacheFile,
+      JSON.stringify({
+        hash: hashBlock('# Disk Pre\n'),
+        locals: ['function AirMdxContent() { return "hello"; }'],
+        globals: ['const airMdxMeta = {};'],
+        headings: [],
+      })
+    );
+
+    const result = await mdxFile(id, '# Disk Pre\n', { ...PLAIN_OPTIONS, cacheDir });
+    expect(result.code).toContain('AirMdxContent');
+
+    const noCacheResult = await mdxFile(fixturePath(dir, 'pages/other/page.mdx'), '# No Cache\n', {
+      ...PLAIN_OPTIONS,
+      cacheDir: '',
+    });
+    expect(noCacheResult.code).toBeDefined();
   });
 });
