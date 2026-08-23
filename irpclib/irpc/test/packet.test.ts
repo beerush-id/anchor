@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { IRPCBlob, IRPCFile } from '../src/file.js';
+import { IRPCBlob, IRPCFile, IRPCFileStream } from '../src/file.js';
 import {
   decode,
   decodeBlobs,
@@ -307,6 +307,32 @@ describe('IRPCPacket Transmission Encoders/Decoders', () => {
       expect(decodeBlobs(42)).toBe(42);
       expect(decodeBlobs(null)).toBe(null);
       expect(decodeBlobs(undefined)).toBe(undefined);
+    });
+
+    it('should decode primitive packet data without throwing', () => {
+      const stream = decode({ data: 'primitive_string', files: [] });
+      expect(stream.data).toBe('primitive_string');
+    });
+
+    it('should encode and decode nested arrays of file pointers', () => {
+      const file = new IRPCFile(new Uint8Array([1, 2, 3]) as any, { name: 'nested.bin' } as any);
+      const encoded = encode({ data: [['primitive', file]] });
+      expect(encoded.json.files.length).toBe(1);
+
+      const decoded = decode(encoded.json);
+      expect(((decoded.data as any).data as any)[0][1]).toBeInstanceOf(IRPCFileStream);
+    });
+
+    it('should encode primitives directly without error', () => {
+      const encoded = encode(12345);
+      expect(encoded.json.data).toBe(12345);
+      expect(encoded.json.files).toEqual([]);
+
+      const nullEncoded = encode(null);
+      expect(nullEncoded.json.data).toBeNull();
+
+      const nullDecoded = decode({ data: null, files: [] });
+      expect(nullDecoded.data).toBeNull();
     });
   });
 });

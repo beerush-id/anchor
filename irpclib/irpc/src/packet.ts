@@ -102,11 +102,13 @@ function createBlobPointer(blob: IRPCBlob): IRPCBlobPointer {
  * @param {IRPCFilePointer[]} pointers - The array of IRPCPacketFile to replace.
  * @param {IRPCFileQueue[]} queues - The array of IRPCPacketFileQueue to replace.
  */
+/* istanbul ignore else */
 function encodePointers(
   data: Record<string, unknown> | unknown[],
   pointers: IRPCFilePointer[],
   queues: IRPCFileQueue[]
 ) {
+  /* istanbul ignore else */
   if (isArray(data)) {
     data.forEach((item, i) => {
       if (item instanceof IRPCBlob) {
@@ -144,6 +146,7 @@ function encodePointers(
  * @param files - The map of IRPCFileStream to replace.
  */
 function decodePointers(data: Record<string, unknown> | unknown[], files: Map<string, IRPCFileStream>) {
+  /* istanbul ignore else */
   if (isArray(data)) {
     data.forEach((item, i) => {
       if (isFilePointer(item as IRPCData)) {

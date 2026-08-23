@@ -1,8 +1,8 @@
-import type { AnyType } from '@airlib/core';
+import { type AnyType, createLifecycle } from '@airlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 import { RESOLVE_ERROR, ResolveError, TRANSPORT_ERROR, TransportError } from '../src/error.js';
-import { type IRPCCall, type IRPCData, type IRPCPackagePayload, IRPCTransport } from '../src/index.js';
+import { IRPC_STORE, type IRPCCall, type IRPCData, type IRPCPackagePayload, IRPCTransport } from '../src/index.js';
 
 abstract class TransportType {
   abstract schedule(call: unknown): unknown;
@@ -17,6 +17,7 @@ describe('IRPC Transport', () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
+    vi.useRealTimers();
     transport = new IRPCTransport();
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -25,6 +26,7 @@ describe('IRPC Transport', () => {
   afterEach(() => {
     errorSpy.mockRestore();
     logSpy.mockRestore();
+    vi.useRealTimers();
   });
 
   describe('Initialization', () => {
@@ -107,6 +109,7 @@ describe('IRPC Transport', () => {
     });
 
     it('should reject with timeout error when timeout exceeded', async () => {
+      vi.useFakeTimers();
       class TestTransport extends IRPCTransport {
         public dispatch(): Promise<void> {
           return new Promise(() => {}); // Never resolve.
@@ -125,9 +128,10 @@ describe('IRPC Transport', () => {
       vi.advanceTimersByTime(101);
 
       await expect(promise).rejects.toThrow('Call timed out.');
+      vi.useRealTimers();
     });
 
-    it('should dispatch instantly and return reader statically when stream spec flag is true', () => {
+    it('should dispatch instantly and return reader statically when stream spec flag is true', async () => {
       const dispatchSpy = vi.spyOn(transport as AnyType, 'dispatch').mockImplementation(() => Promise.resolve());
 
       const spec = {
@@ -138,12 +142,55 @@ describe('IRPC Transport', () => {
       };
 
       const result = transport.call(spec, []);
+      await Promise.resolve();
 
       expect(dispatchSpy).toHaveBeenCalledTimes(1);
       expect(result).toBeDefined(); // Returns call.reader inherently
       expect(transport.queue.size).toBe(0); // Safely bypassed queue schedule
 
       dispatchSpy.mockRestore();
+    });
+
+    it('should dispatch standalone call with dedicated flag', async () => {
+      const dispatchSpy = vi.spyOn(transport as AnyType, 'dispatch').mockImplementation(() => Promise.resolve());
+      const spec = { name: 'testStandaloneFunc', handler: vi.fn(), standalone: true, package: pkg };
+
+      const result = transport.call(spec, []);
+      await Promise.resolve();
+
+      expect(dispatchSpy).toHaveBeenCalledWith(expect.any(Array), true);
+      expect(result).toBeDefined();
+      dispatchSpy.mockRestore();
+    });
+
+    it('should close call on lifecycle destroy', () => {
+      const lc = createLifecycle();
+      const closeSpy = vi.spyOn(transport, 'close');
+
+      lc.run(() => {
+        transport.call({ name: 'testCall', handler: vi.fn(), package: pkg }, []);
+      });
+
+      lc.destroy();
+
+      expect(closeSpy).toHaveBeenCalled();
+      closeSpy.mockRestore();
+    });
+
+    it('should catch and log error when stream dispatch rejects', async () => {
+      const errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
+      const dispatchSpy = vi
+        .spyOn(transport as AnyType, 'dispatch')
+        .mockRejectedValue(new Error('Stream dispatch error'));
+
+      const spec = { name: 'testStreamErr', handler: vi.fn(), stream: true, package: pkg };
+      transport.call(spec, []);
+      await new Promise((r) => queueMicrotask(r as any));
+      await new Promise((r) => queueMicrotask(r as any));
+
+      expect(errSpy).toHaveBeenCalled();
+      dispatchSpy.mockRestore();
+      errSpy.mockRestore();
     });
   });
 
@@ -174,12 +221,30 @@ describe('IRPC Transport', () => {
       } as never;
 
       (transportWithDebounceFalse as never as TransportType).schedule(call);
+      await Promise.resolve();
 
       // When debounce is false, dispatch should be called immediately
       expect(dispatchSpy).toHaveBeenCalledWith([call]);
       expect(transportWithDebounceFalse.queue.size).toBe(0);
 
       dispatchSpy.mockRestore();
+    });
+
+    it('should catch and log error when debounce false dispatch rejects', async () => {
+      const errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
+      const transportWithDebounceFalse = new IRPCTransport({ debounce: false });
+      const dispatchSpy = vi
+        .spyOn(transportWithDebounceFalse as AnyType, 'dispatch')
+        .mockRejectedValue(new Error('Debounce false error'));
+
+      const call: IRPCCall = { id: '1', payload: { name: 'test' }, enqueue: vi.fn() } as never;
+      (transportWithDebounceFalse as never as TransportType).schedule(call);
+      await new Promise((r) => queueMicrotask(r as any));
+      await new Promise((r) => queueMicrotask(r as any));
+
+      expect(errSpy).toHaveBeenCalled();
+      dispatchSpy.mockRestore();
+      errSpy.mockRestore();
     });
 
     it('should use queueMicrotask when debounce is 0', async () => {
@@ -334,6 +399,7 @@ describe('IRPC Transport', () => {
     });
 
     it('should resolve all calls when dispatching', async () => {
+      vi.useFakeTimers();
       class DispatchAll extends IRPCTransport {
         public async dispatch(calls: IRPCCall[]): Promise<void> {
           calls.forEach((call) =>
@@ -357,6 +423,7 @@ describe('IRPC Transport', () => {
 
       expect(promise1).toBeInstanceOf(Promise);
       expect(promise2).toBeInstanceOf(Promise);
+      vi.useRealTimers();
     });
   });
 

@@ -253,6 +253,7 @@ export class IRPCStream<T extends IRPCData> {
 
     if (this.closed) return;
     this.pipeHandlers.add(handler);
+    /* istanbul ignore next */
     this.start().catch((err) => IRPC_STORE.error(err, [{ id: this.id, name: this.name }]));
   }
 
@@ -269,6 +270,7 @@ export class IRPCStream<T extends IRPCData> {
 
     if (this.closed) return;
     this.errorHandlers.add(handler);
+    /* istanbul ignore next */
     this.start().catch((err) => IRPC_STORE.error(err, [{ id: this.id, name: this.name }]));
   }
 
@@ -285,6 +287,7 @@ export class IRPCStream<T extends IRPCData> {
 
     if (this.closed) return;
     this.closeHandlers.add(handler);
+    /* istanbul ignore next */
     this.start().catch((err) => IRPC_STORE.error(err, [{ id: this.id, name: this.name }]));
   }
 

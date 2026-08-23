@@ -1,3 +1,4 @@
+import { createLifecycle } from '@airlib/core';
 import { describe, expect, it, vi } from 'vitest';
 import { IRPC_FILE_STATUS } from '../src/enum.js';
 import { IRPCBlob, IRPCFile, IRPCFileStream } from '../src/file.js';
@@ -461,5 +462,167 @@ describe('IRPCBlob', () => {
 
     fetchSpy.mockRestore();
     errSpy.mockRestore();
+  });
+
+  it('should replay already downloaded buffer when pipe is called after write', () => {
+    const meta = { name: 'buffered.bin', size: 10, type: 'application/octet-stream' };
+    const stream = new IRPCFileStream(meta);
+    stream.write(new Uint8Array([1, 2, 3]));
+
+    const pipeFn = vi.fn();
+    stream.pipe(pipeFn);
+
+    expect(pipeFn).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]));
+  });
+
+  it('should catch and log error if pipe callback throws during late replay or write', () => {
+    const errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
+    const meta = { name: 'buffered-err.bin', size: 10, type: 'application/octet-stream' };
+    const stream = new IRPCFileStream(meta);
+    stream.write(new Uint8Array([1, 2, 3]));
+
+    stream.pipe(() => {
+      throw new Error('Pipe error');
+    });
+
+    expect(errSpy).toHaveBeenCalled();
+
+    stream.pipe(() => {
+      throw new Error('Write pipe error');
+    });
+    stream.write(new Uint8Array([4, 5]));
+
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+
+  it('should catch and log error when blob pipe callback throws', async () => {
+    const errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
+    const chunk = new Uint8Array([1, 2, 3]);
+    let readIndex = 0;
+    const chunks = [chunk];
+    const mockResponse = {
+      ok: true,
+      status: 200,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            if (readIndex < chunks.length) return { done: false, value: chunks[readIndex++] };
+            return { done: true, value: undefined };
+          },
+        }),
+      },
+    } as unknown as Response;
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(mockResponse));
+
+    const blob = new IRPCBlob('https://example.com/pipe-err.bin', { type: 'application/octet-stream', size: 3 });
+    blob.pipe(() => {
+      throw new Error('Blob pipe error');
+    });
+
+    await blob.load();
+
+    expect(errSpy).toHaveBeenCalled();
+    fetchSpy.mockRestore();
+    errSpy.mockRestore();
+  });
+
+  it('should handle reader returning done false with undefined value', async () => {
+    let readCount = 0;
+    const mockResponse = {
+      ok: true,
+      status: 200,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            readCount++;
+            if (readCount === 1) return { done: false, value: undefined };
+            return { done: true, value: undefined };
+          },
+        }),
+      },
+    } as unknown as Response;
+
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.resolve(mockResponse));
+    const blob = new IRPCBlob('https://example.com/undef-chunk.bin', { type: 'application/octet-stream', size: 10 });
+    await blob.load();
+    expect(blob.status).toBe(IRPC_FILE_STATUS.SUCCESS);
+    fetchSpy.mockRestore();
+  });
+
+  it('should catch and log error when pipe callback throws on buffered data', () => {
+    const errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
+    const file = new IRPCFileStream({ size: 10, name: 'buf-err.bin', type: 'application/octet-stream' });
+    (file as any).state.downloaded = 5;
+    (file as any).buffer = new Uint8Array(10);
+
+    file.pipe(() => {
+      throw new Error('Buffered pipe failure');
+    });
+
+    expect(errSpy).toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
+
+  it('should support unpipe and handle pipe without buffer', () => {
+    const file = new IRPCFileStream({ size: 10, name: 'unpipe.bin', type: 'application/octet-stream' });
+    (file as any).state.downloaded = 5;
+    (file as any).buffer = undefined;
+
+    const fn = vi.fn();
+    const unpipe = file.pipe(fn);
+    expect(fn).toHaveBeenCalledWith(undefined);
+
+    expect((file as any).pipes.size).toBe(1);
+    unpipe();
+    expect((file as any).pipes.size).toBe(0);
+  });
+
+  it('should support catch method on IRPCBlob', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(() => Promise.reject(new Error('Network drop')));
+    const blob = new IRPCBlob('https://example.com/catch.bin');
+    const caught = await blob.catch((err) => err.message);
+    expect(caught).toBe('Network drop');
+    fetchSpy.mockRestore();
+  });
+
+  it('should test all getters and setters for IRPCFile and IRPCBlob', () => {
+    const file = new IRPCFile({ size: 10, name: 'prop.bin', type: 'text/plain' });
+    file.status = IRPC_FILE_STATUS.SUCCESS;
+    expect(file.status).toBe(IRPC_FILE_STATUS.SUCCESS);
+    expect(file.success).toBe(true);
+    expect(file.completed).toBe(true);
+    expect(file.error).toBeUndefined();
+    expect(file.downloaded).toBe(0);
+
+    const blob = new IRPCBlob('https://example.com/prop.bin');
+    expect(blob.status).toBe(IRPC_FILE_STATUS.PENDING);
+    expect(blob.success).toBe(false);
+    expect(blob.completed).toBe(false);
+    expect(blob.error).toBeUndefined();
+    expect(blob.downloaded).toBe(0);
+  });
+
+  it('should abort fetch controller on lifecycle destroy', async () => {
+    const lc = createLifecycle();
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation((_url, init) => {
+      return new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => {
+          reject(new Error('Aborted by signal'));
+        });
+      });
+    });
+
+    let blob: IRPCBlob;
+    lc.run(() => {
+      blob = new IRPCBlob('https://example.com/abort-lc.bin');
+      blob.load().catch(() => {});
+    });
+
+    lc.destroy();
+
+    expect(fetchSpy).toHaveBeenCalled();
+    fetchSpy.mockRestore();
   });
 });

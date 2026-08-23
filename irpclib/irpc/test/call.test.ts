@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { IRPCCall } from '../src/call.js';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
-import type { IRPCTransport } from '../src/index.js';
+import { IRPC_STORE, type IRPCTransport } from '../src/index.js';
 
 const pkg = { name: 'irpc', version: '1.0.0' };
 
@@ -348,6 +348,60 @@ describe('IRPCCall', () => {
       expect(transport.schedule).toHaveBeenCalledTimes(1);
       vi.advanceTimersByTime(1);
       expect(transport.schedule).toHaveBeenCalledTimes(2);
+
+      vi.useRealTimers();
+    });
+
+    it('should log error when transport.dispatch fails during retry', async () => {
+      const errorSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
+      const transport = {
+        schedule: vi.fn(),
+        dispatch: vi.fn().mockRejectedValue(new Error('Dispatch retry error')),
+      } as unknown as IRPCTransport;
+      const payload = { package: pkg, name: 'testFunc', args: [] };
+      const options = { maxRetries: 3, retryDelay: 10, retryMode: 'linear' as const };
+      const spec = { stream: true } as any;
+
+      const call = new IRPCCall(transport, payload, options, undefined, spec);
+
+      vi.useFakeTimers();
+      call.reject(new Error('Initial error'));
+      await vi.advanceTimersByTimeAsync(10);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(transport.dispatch).toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalled();
+
+      vi.useRealTimers();
+      errorSpy.mockRestore();
+    });
+
+    it('should ignore non-terminal packet enqueue without resolving or rejecting', () => {
+      const payload = { package: pkg, name: 'testFunc', args: [] };
+      const call = new IRPCCall(mockTransport, payload, {});
+
+      call.enqueue({
+        id: call.id,
+        name: 'testFunc',
+        type: IRPC_PACKET_TYPE.EVENT,
+        status: IRPC_STATUS.PENDING,
+        data: { type: 'set', keys: ['data'], value: 'intermediate', oldValue: undefined } as any,
+      });
+
+      expect(call.resolved).toBe(false);
+      expect(call.reader.status).toBe(IRPC_STATUS.PENDING);
+    });
+
+    it('should retry when rejected without an explicit error reason', async () => {
+      vi.useFakeTimers();
+      const payload = { package: pkg, name: 'testFunc', args: [] };
+      const options = { maxRetries: 2, retryDelay: 10 };
+      const call = new IRPCCall(mockTransport, payload, options);
+
+      call.reject(undefined, true);
+      vi.advanceTimersByTime(10);
+      expect((call as any).retries).toBe(1);
 
       vi.useRealTimers();
     });

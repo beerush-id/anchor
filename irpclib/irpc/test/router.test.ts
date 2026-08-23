@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 import { getRouterHooks, IRPCTransport } from '../src/index.js';
 import { IRPCPackage } from '../src/package.js';
-import { IRPCRouter } from '../src/router.js';
+import { DeferredHook, IRPCRouter } from '../src/router.js';
 import { IRPC_STORE } from '../src/store.js';
 import type { IRPCRequest } from '../src/types.js';
 
@@ -323,6 +323,16 @@ describe('IRPCRouter', () => {
       );
 
       expect(order).toEqual(['preHook', 'hook', 'handler']);
+    });
+
+    it('should return cached promise on subsequent verify calls in DeferredHook', async () => {
+      const hook = vi.fn().mockResolvedValue('ok');
+      const deferred = new DeferredHook([hook]);
+
+      await deferred.verify();
+      await deferred.verify();
+
+      expect(hook).toHaveBeenCalledTimes(1);
     });
   });
 });

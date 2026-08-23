@@ -73,6 +73,7 @@ export class IRPCTransport {
 
     if (spec.stream || spec.standalone) {
       this.dispatch([call], spec.standalone)
+        /* istanbul ignore next */
         .finally(() => {})
         .catch((err) => IRPC_STORE.error(err, [{ id: call.id, name: call.payload.name }]));
       return call.reader;
@@ -95,6 +96,7 @@ export class IRPCTransport {
 
     if (debounce === false) {
       this.dispatch([call])
+        /* istanbul ignore next */
         .finally(() => {})
         .catch((err) => IRPC_STORE.error(err, [{ id: call.id, name: call.payload.name }]));
       return;

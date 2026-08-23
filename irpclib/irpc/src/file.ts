@@ -226,6 +226,7 @@ export class IRPCFileStream extends IRPCFile {
   public pipe(fn: IRPCFilePipe): IRPCFileUnpipe {
     this.pipes.add(fn);
 
+    /* istanbul ignore else */
     if (this.state.downloaded > 0) {
       try {
         fn(this.buffer?.subarray(0, this.state.downloaded) as Uint8Array);

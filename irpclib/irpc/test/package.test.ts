@@ -1,4 +1,4 @@
-import { type AnyType, createLifecycle, isReactive, setReactive, sleep } from '@airlib/core';
+import { type AnyType, createLifecycle, isReactive, mutable, setReactive, sleep } from '@airlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createContextStore, withContext } from '../src/context.js';
 import { IRPC_BASE_CONTEXT, IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
@@ -1445,6 +1445,77 @@ describe('IRPCPackage', () => {
       // In IRPC, scope disposal transitions the reader to SUCCESS
       expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
       expect(reader.data).toBe(''); // The init value, not updated
+    });
+
+    it('should safely handle exclude with non-existent keys or raw functions', () => {
+      const customStubs = {
+        customMethod: () => 'custom',
+      };
+      const excluded = rpc.exclude(customStubs as any, ['nonExistent' as any, 'customMethod' as any]);
+      expect(excluded).toEqual({});
+    });
+
+    it('should initialize and run reactive stubs when in browser environment', async () => {
+      vi.stubGlobal('window', {});
+      vi.stubGlobal('document', {});
+      vi.useFakeTimers();
+
+      const browserHello = rpc.declare<(name: string) => Promise<string>>({
+        name: 'browserHello',
+        seed: () => '',
+      });
+      rpc.construct(browserHello, async (name) => `Hello ${name}`);
+
+      const lc = createLifecycle();
+      const state = mutable({ name: 'BrowserWorld' });
+      let readerWith: any;
+      let readerWhen: any;
+      let readerOnce: any;
+      let readerLater: any;
+
+      lc.run(() => {
+        readerWith = browserHello.with(() => [state.name]);
+        readerWhen = browserHello.when(() => [state.name]);
+        readerOnce = browserHello.once((() => [state.name]) as never);
+        readerLater = (browserHello as any).later(10, () => [state.name]);
+      });
+
+      expect(readerWith).toBeDefined();
+      expect(readerWhen).toBeDefined();
+      expect(readerOnce).toBeDefined();
+      expect(readerLater).toBeDefined();
+
+      readerLater.dispatch('World');
+      state.name = 'MutatedBrowser';
+      vi.advanceTimersByTime(10);
+      await Promise.resolve();
+
+      lc.destroy();
+
+      vi.unstubAllGlobals();
+      vi.useRealTimers();
+    });
+
+    it('should abort reader if signal is aborted during guards in local stub', async () => {
+      const rpcGuard = createPackage({ name: 'pkg-guard-abort' });
+      const router = new IRPCRouter(new IRPCTransport());
+      router.use(() => Promise.resolve());
+
+      const controller = new AbortController();
+      rpcGuard.guard(async () => {
+        controller.abort();
+      });
+
+      const guarded = rpcGuard.declare<(name: string) => Promise<string>>({ name: 'guardedAbort', seed: () => '' });
+      rpcGuard.construct(guarded, async (name) => `Hello ${name}`);
+
+      await router.isolate(async () => {
+        const reader = guarded('World');
+        await expect(reader).resolves.toBe('');
+        expect(reader.status).toBe(IRPC_STATUS.ABORTED);
+      }, controller);
+
+      expect(controller.signal.aborted).toBe(true);
     });
   });
 });

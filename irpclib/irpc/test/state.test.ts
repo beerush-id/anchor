@@ -420,5 +420,14 @@ describe('RemoteState', () => {
       a.data = 'f';
       expect(b.data).toBe('e');
     });
+
+    it('should handle async stream initializer resolving to non-function cleanup', async () => {
+      const rs = stream(async (state) => {
+        state.data = 'resolved';
+      });
+
+      await Promise.resolve();
+      expect(rs.data).toBe('resolved');
+    });
   });
 });

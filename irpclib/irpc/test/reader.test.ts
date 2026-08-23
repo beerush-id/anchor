@@ -130,4 +130,50 @@ describe('IRPCReader', () => {
     expect(reader.status).toBe(IRPC_STATUS.SUCCESS);
     expect(closeSpy).toHaveBeenCalledTimes(1);
   });
+
+  it('should notify packet listeners when packets are pushed and allow unsubscription', () => {
+    const reader = new IRPCReader('id-sub');
+    const listener = vi.fn();
+    const unsub = reader.packetSubscribe(listener);
+
+    const pkt: IRPCPacketAnswer<string> = {
+      id: 'id-sub',
+      name: 'test',
+      type: IRPC_PACKET_TYPE.ANSWER,
+      status: IRPC_STATUS.PENDING,
+      data: 'data1',
+    };
+
+    reader.push(pkt);
+    expect(listener).toHaveBeenCalledWith(pkt);
+
+    unsub();
+    reader.push(pkt);
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('should ignore unrecognized packet types and still update status', () => {
+    const reader = new IRPCReader('id-unknown');
+    reader.push({
+      id: 'id-unknown',
+      name: 'test',
+      type: 'CUSTOM_UNKNOWN' as any,
+      status: IRPC_STATUS.PENDING,
+    } as any);
+
+    expect(reader.status).toBe(IRPC_STATUS.PENDING);
+  });
+
+  it('should ignore non-function in packet listeners', () => {
+    const reader = new IRPCReader('id-non-fn');
+    reader.packetSubscribe(null as any);
+    expect(() =>
+      reader.push({
+        id: 'id-non-fn',
+        name: 'test',
+        type: IRPC_PACKET_TYPE.ANSWER,
+        status: IRPC_STATUS.PENDING,
+      } as any)
+    ).not.toThrow();
+  });
 });

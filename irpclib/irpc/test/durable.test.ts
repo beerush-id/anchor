@@ -487,7 +487,13 @@ describe('Durable Adapter Utilities', () => {
 });
 
 describe('Durable Utilities', () => {
+  it('should create Durable instance with default empty object init', () => {
+    const d = new Durable();
+    expect(d.data).toEqual({});
+  });
+
   it('should generate properly formatted keys using durable.key()', () => {
+    expect(durable.key()).toMatch(/^global:\/\//);
     expect(durable.key('123')).toBe('global://123');
     expect(durable.key('123', 'room')).toBe('room://123');
   });
@@ -496,5 +502,40 @@ describe('Durable Utilities', () => {
     const uuid = durable.uuid();
     // Verify it generates a standard v4 format UUID without a namespace
     expect(uuid).toMatch(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i);
+  });
+
+  it('should resolve durable.get() with registered adapter and default namespace', () => {
+    const mockBridge = {
+      subscribe: vi.fn().mockResolvedValue(new Response(new Uint8Array())),
+    };
+    const mockAdapter = {
+      get: vi.fn().mockReturnValue(mockBridge),
+    };
+
+    durable.use(mockAdapter as any);
+    const state = durable.get('test-id');
+    expect(mockAdapter.get).toHaveBeenCalledWith('global', undefined);
+    expect(state).toBeDefined();
+  });
+
+  it('should handle multi-chunk stream reader in durable.from', async () => {
+    let readCount = 0;
+    const stream = new ReadableStream({
+      pull(controller) {
+        readCount++;
+        if (readCount === 1) {
+          controller.enqueue(new Uint8Array());
+        } else {
+          controller.close();
+        }
+      },
+    });
+    const response = new Response(stream);
+    const mockBridge = {
+      subscribe: vi.fn().mockResolvedValue(response),
+    };
+
+    const state = await durable.from(mockBridge as any, 'global://multi-chunk');
+    expect(state).toBeDefined();
   });
 });

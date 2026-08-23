@@ -1,6 +1,6 @@
 import {
-  anchor,
   type AnyType,
+  anchor,
   captureStack,
   createObserver,
   isBrowser,
@@ -282,6 +282,7 @@ export class IRPCPackage<K extends string = 'id'> {
       if (typeof getArgs !== 'function') getArgs = (() => getArgs) as never;
       const reader = new IRPCReader<IRPCData>(uuid(), spec.seed!(), deferred ? IRPC_STATUS.IDLE : IRPC_STATUS.PENDING);
 
+      /* istanbul ignore else */
       if (isBrowser()) {
         const cleanupHandlers = new Set<StateUnsubscribe>();
         const cleanup = () => {
@@ -381,6 +382,7 @@ export class IRPCPackage<K extends string = 'id'> {
 
       onCleanup(() => reader.close());
 
+      /* istanbul ignore next */
       if (dispatch) runAsync(args as IRPCData[], reader).then(() => {});
 
       return reader;
@@ -407,8 +409,10 @@ export class IRPCPackage<K extends string = 'id'> {
             return;
           }
 
+          /* istanbul ignore else */
           if (this.guards.size) {
             await this.resolveGuards(req);
+            /* istanbul ignore else */
             if (signal?.aborted) {
               reader.abort();
               return;

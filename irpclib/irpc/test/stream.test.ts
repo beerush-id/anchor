@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as Context from '../src/context.js';
 import { IRPC_BASE_CONTEXT, IRPC_PACKET_TYPE, IRPC_STATUS } from '../src/enum.js';
 import { RemoteState } from '../src/state.js';
+import { IRPC_STORE } from '../src/store.js';
 import { IRPCStream } from '../src/stream.js';
 import type { IRPCPacketAnswer, IRPCPacketClose, IRPCPacketEvent } from '../src/types.js';
 
@@ -328,5 +329,116 @@ describe('IRPCStream', () => {
     const closeHandler = vi.fn();
     stream.close(closeHandler);
     expect(closeHandler).not.toHaveBeenCalled();
+  });
+
+  it('should execute close immediately if stream is already in SUCCESS status', async () => {
+    const stream = new IRPCStream('id-succ', 'test_succ', async () => ({ id: '1', name: 'test', result: 'done' }));
+    stream.pipe(() => {});
+    await Promise.resolve();
+
+    const closeHandler = vi.fn();
+    stream.close(closeHandler);
+    expect(closeHandler).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not call catch handler if stream already succeeded without error', async () => {
+    const stream = new IRPCStream('id-succ-2', 'test_succ', async () => ({ id: '1', name: 'test', result: 'done' }));
+    stream.pipe(() => {});
+    await Promise.resolve();
+
+    const catchHandler = vi.fn();
+    stream.catch(catchHandler);
+    expect(catchHandler).not.toHaveBeenCalled();
+  });
+
+  it('should log error when start throws an unhandled rejection', async () => {
+    const errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
+
+    const stream1 = new IRPCStream('id-pipe-err', 'test', async () => ({}) as any);
+    (stream1 as any).start = () => Promise.reject(new Error('Pipe start err'));
+    stream1.pipe(() => {});
+
+    const stream2 = new IRPCStream('id-catch-err', 'test', async () => ({}) as any);
+    (stream2 as any).start = () => Promise.reject(new Error('Catch start err'));
+    stream2.catch(() => {});
+
+    const stream3 = new IRPCStream('id-close-err', 'test', async () => ({}) as any);
+    (stream3 as any).start = () => Promise.reject(new Error('Close start err'));
+    stream3.close(() => {});
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(errSpy).toHaveBeenCalledTimes(3);
+    errSpy.mockRestore();
+  });
+
+  it('should notify errorHandlers when stream encounters an error', async () => {
+    const handler = vi.fn();
+    const stream = new IRPCStream('errStream', 'test_err', () => {
+      throw new Error('Stream failed');
+    });
+
+    stream.catch(handler);
+    await (stream as any).start();
+
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Stream failed',
+      })
+    );
+  });
+
+  it('should notify errorHandlers when RemoteState is already errored at start', async () => {
+    const handler = vi.fn();
+    const state = new RemoteState('', IRPC_STATUS.ERROR);
+    state.error = new Error('State error');
+
+    const stream = new IRPCStream(
+      'streamErr',
+      'test_stream',
+      () =>
+        ({
+          id: 'streamErr',
+          name: 'test_stream',
+          result: state,
+        }) as any
+    );
+    stream.catch(handler);
+    await (stream as any).start();
+
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'State error',
+      })
+    );
+  });
+
+  it('should notify errorHandlers when active RemoteState rejects during streaming', async () => {
+    const handler = vi.fn();
+    const state = new RemoteState('', IRPC_STATUS.PENDING);
+    state.catch(() => {});
+
+    const stream = new IRPCStream(
+      'streamErr2',
+      'test_stream',
+      () =>
+        ({
+          id: 'streamErr2',
+          name: 'test_stream',
+          result: state,
+        }) as any
+    );
+    stream.catch(handler);
+    await (stream as any).start();
+
+    state.reject(new Error('Live stream reject'));
+    await Promise.resolve();
+
+    expect(handler).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Live stream reject',
+      })
+    );
   });
 });

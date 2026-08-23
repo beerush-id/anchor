@@ -1,4 +1,11 @@
-import { createPackage, credential, IRPC_FILE_STATUS, IRPC_STORE, IRPCResolver, type IRPCRequests } from '@irpclib/irpc';
+import {
+  createPackage,
+  credential,
+  IRPC_FILE_STATUS,
+  IRPC_STORE,
+  type IRPCRequests,
+  IRPCResolver,
+} from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HTTPTransport, IRPC_JSON_KEY } from '../../src/index.js';
 import { HTTPRouter } from '../../src/router.js'; // biome-ignore lint/suspicious/noExplicitAny: Expect any.
