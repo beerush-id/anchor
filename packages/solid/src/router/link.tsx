@@ -1,6 +1,7 @@
 import { classx, derived, untrack } from '@airlib/core';
 import { Route } from '@airlib/router';
 import { type JSX, onMount, splitProps } from '../solid.js';
+import { DEFAULT_ROUTER_CONFIGS } from './constant.js';
 import { getCurrentUrl, uiRouterCtx } from './router.js';
 import type { AnyRoute, LinkProps, RouteComponent } from './types.js';
 
@@ -59,6 +60,17 @@ export const Link = ((allProps: LinkProps<AnyRoute>) => {
       );
     } else {
       target = new URL(href || '/', activeUrl);
+
+      if (target.origin !== activeUrl.origin) {
+        return {
+          url: target,
+          hash: target.hash.substring(1),
+          href: target.href,
+          search: target.search,
+          pathname: target.pathname,
+          fullPath: target.href,
+        };
+      }
 
       if (router && href) {
         route = untrack(() => router.find(target, true)?.route);
@@ -143,7 +155,7 @@ export const Link = ((allProps: LinkProps<AnyRoute>) => {
       anchorRef.scrollIntoView({
         block: 'center',
         inline: 'center',
-        behavior: typeof props.keepVisible === 'string' ? props.keepVisible : 'smooth',
+        behavior: typeof props.keepVisible === 'string' ? props.keepVisible : DEFAULT_ROUTER_CONFIGS.scrollBehavior,
       });
     }
   });

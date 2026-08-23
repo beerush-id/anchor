@@ -6,6 +6,7 @@ import type { JSX } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RouteStacks } from '../../src/index.js';
 import { createRouter, RouteRendererComponent, RouteViewer, redirect, UIRouter } from '../../src/index.js';
+import { DEFAULT_ROUTER_CONFIGS } from '../../src/router/constant.js';
 import { getCurrentUrl, modal, page, route } from '../../src/router/index.js';
 
 describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
@@ -417,17 +418,21 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
 
       render(() => <UIRouter router={router} root={rootUi} headless={false} resetScroll={true} />);
 
+      await activateSpy.mock.results[0]?.value;
+
       expect(activateSpy).toHaveBeenCalled();
-      expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'smooth' });
+      expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, left: 0, behavior: DEFAULT_ROUTER_CONFIGS.scrollBehavior });
     });
 
     it('uses string resetScroll value as scroll behavior', async () => {
       const router = createRouter<JSX.Element>();
       const rootUi = page(router.rootRoute);
 
-      vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
+      const activateSpy = vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
 
       render(() => <UIRouter router={router} root={rootUi} headless={false} resetScroll={'instant'} />);
+
+      await activateSpy.mock.results[0]?.value;
 
       expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'instant' });
     });
@@ -457,7 +462,11 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
         },
       });
 
-      expect(scrollIntoViewMock).toHaveBeenCalledWith({ block: 'start', inline: 'start', behavior: 'smooth' });
+      expect(scrollIntoViewMock).toHaveBeenCalledWith({
+        block: 'start',
+        inline: 'start',
+        behavior: DEFAULT_ROUTER_CONFIGS.scrollBehavior,
+      });
       document.body.removeChild(targetEl);
     });
 
@@ -485,7 +494,11 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
         },
       });
 
-      expect(scrollIntoViewMock).toHaveBeenCalledWith({ block: 'start', inline: 'start', behavior: 'smooth' });
+      expect(scrollIntoViewMock).toHaveBeenCalledWith({
+        block: 'start',
+        inline: 'start',
+        behavior: DEFAULT_ROUTER_CONFIGS.scrollBehavior,
+      });
       document.body.removeChild(targetEl);
     });
 

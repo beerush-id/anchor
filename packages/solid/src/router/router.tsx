@@ -20,6 +20,7 @@ import { setup } from '../hoc.js';
 import type { Component, JSX, ParentComponent } from '../solid.js';
 import { For, onCleanup, onMount } from '../solid.js';
 import { Show } from '../switch.js';
+import { DEFAULT_ROUTER_CONFIGS } from './constant.js';
 import { navigate } from './navigate.js';
 import type { AnyRoute, RouteComponent, RouteStacks, UIRouterProps } from './types.js';
 
@@ -129,7 +130,7 @@ export function UIRouter(props: UIRouterProps): JSX.Element {
   const stacks: RouteStacks = new Map();
 
   const activate = async (e?: PopStateEvent) => {
-    const behavior = typeof resetScroll === 'string' ? resetScroll : 'smooth';
+    const behavior = typeof resetScroll === 'string' ? resetScroll : DEFAULT_ROUTER_CONFIGS.scrollBehavior;
 
     const { from, to } = e?.state ?? {};
     if (to?.hash && to?.path === from?.path) {
@@ -138,10 +139,6 @@ export function UIRouter(props: UIRouterProps): JSX.Element {
     }
     const match = router.find(url ?? location.href);
 
-    if (isBrowser() && resetScroll !== false && !STACK_REGISTRY.has((match as MatchedRoute)?.route)) {
-      window.scrollTo({ top: 0, left: 0, behavior });
-    }
-
     try {
       await router.activate(to?.href ?? location.href);
     } catch (error) {
@@ -149,6 +146,10 @@ export function UIRouter(props: UIRouterProps): JSX.Element {
         console.error(error);
       }
       return;
+    }
+
+    if (isBrowser() && resetScroll !== false && !STACK_REGISTRY.has((match as MatchedRoute)?.route)) {
+      window.scrollTo({ top: 0, left: 0, behavior });
     }
 
     if (to?.hash) {
@@ -192,7 +193,7 @@ function StackRenderer(props: { stacks: RouteStacks }): JSX.Element {
 }
 
 /* istanbul ignore next */
-function scrollIntoView(hash: string, behavior: ScrollBehavior = 'smooth') {
+function scrollIntoView(hash: string, behavior: ScrollBehavior = DEFAULT_ROUTER_CONFIGS.scrollBehavior) {
   const element = document.getElementById(hash);
   if (element) {
     element.scrollIntoView({ block: 'start', inline: 'start', behavior });

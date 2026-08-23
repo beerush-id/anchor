@@ -5,6 +5,7 @@ import { fireEvent, render, screen } from '@solidjs/testing-library';
 import type { JSX } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
 import { Link, page, UIRouter, uiRouterCtx } from '../../src/index.js';
+import { DEFAULT_ROUTER_CONFIGS } from '../../src/router/constant.js';
 
 describe('Anchor Solid - Link Component', () => {
   let pushSpy: MockInstance;
@@ -102,6 +103,27 @@ describe('Anchor Solid - Link Component', () => {
       ));
 
       expect(screen.getByText('Unmatched').getAttribute('href')).toBe('/unmatched-destination');
+    });
+
+    it('detects cross-origin href and renders full URL as href without forcing a default target', () => {
+      render(() => <Link href="https://example.com/docs?lang=en#setup">External Docs</Link>);
+      const anchor = screen.getByText('External Docs');
+
+      expect(anchor.tagName).toBe('A');
+      expect(anchor.getAttribute('href')).toBe('https://example.com/docs?lang=en#setup');
+      expect(anchor.getAttribute('target')).toBeNull();
+    });
+
+    it('preserves an explicit target attribute on cross-origin links', () => {
+      render(() => (
+        <Link href="https://example.com/login" target="_self">
+          External Login
+        </Link>
+      ));
+      const anchor = screen.getByText('External Login');
+
+      expect(anchor.getAttribute('href')).toBe('https://example.com/login');
+      expect(anchor.getAttribute('target')).toBe('_self');
     });
 
     it('resolves the href from a bare Route in `to`', () => {
@@ -409,7 +431,11 @@ describe('Anchor Solid - Link Component', () => {
       ));
 
       await Promise.resolve();
-      expect(scrollIntoViewSpy).toHaveBeenCalledWith({ block: 'center', inline: 'center', behavior: 'smooth' });
+      expect(scrollIntoViewSpy).toHaveBeenCalledWith({
+        block: 'center',
+        inline: 'center',
+        behavior: DEFAULT_ROUTER_CONFIGS.scrollBehavior,
+      });
     });
 
     it('uses the string keepVisible value as scroll behavior', async () => {
@@ -520,7 +546,7 @@ describe('Anchor Solid - Link Component', () => {
       expect(scrollIntoViewMock).toHaveBeenCalledWith({
         block: 'center',
         inline: 'center',
-        behavior: 'smooth',
+        behavior: DEFAULT_ROUTER_CONFIGS.scrollBehavior,
       });
     });
 
