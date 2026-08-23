@@ -1,7 +1,7 @@
+import { DEFAULT_CONFIG } from './constant.js';
 import type { RouteError } from './error.js';
 import { createState } from './store.js';
 import type { RouteContext, TRec } from './types.js';
-import { DEFAULT_CONFIG } from './constant.js';
 
 export class RouterContext<TParams, TQueryParams, TData> {
   private sources: RouteContext<TRec, TRec, TRec>[] = [];

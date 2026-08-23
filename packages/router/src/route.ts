@@ -1,4 +1,4 @@
-import { $do, type AnyType, awaited, createObserver, retriable, safeRun } from '@airlib/core';
+import { $do, type AnyType, awaited, createObserver, inherit, retriable, safeRun } from '@airlib/core';
 import { RouteCache, type RouteCacheSnapshot } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, ROUTE_MAP_LINK, WILDCARD_ROUTE_KEY } from './constant.js';
 import { ERROR_TYPE, ROUTE_STATUS, ROUTE_TYPE } from './enum.js';
@@ -275,7 +275,12 @@ export class Route<
       : this.name.startsWith('*')
         ? ROUTE_TYPE.WILDCARD
         : ROUTE_TYPE.STATIC;
-    this.options = { ...DEFAULT_CONFIG, ...router?.options, ...options } as RouteOptions;
+    this.options = inherit<RouteOptions>(
+      DEFAULT_CONFIG,
+      router.options,
+      (parent as AnyRoute)?.options,
+      options as RouteOptions
+    );
 
     const url = new URL(name, DEFAULT_CONFIG.baseUrl);
     for (const [key] of url.searchParams) {
