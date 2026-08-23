@@ -1,5 +1,6 @@
 import { captureStack } from '../shared/index.js';
 import type {
+  AnyType,
   KeyLike,
   Linkable,
   MethodLike,
@@ -156,3 +157,67 @@ export const writeContract = <T extends Linkable, K extends MutationKey<T>[]>(
 
   return proxied;
 };
+
+/**
+ * Inherits properties from multiple sources with zero copy overhead.
+ * - When reading a property, it will look through the sources in reverse order
+ * and return the first one that has the property.
+ * - When setting a property, it will set it on the last source.
+ * - Each nullish source will be converted to an empty object, and write goes to the last source.
+ *
+ * @param sources - The sources to inherit from
+ * @returns A proxy object that inherits from the sources
+ */
+export function inherit<T extends Record<string, AnyType>>(...sources: (Partial<T> | null | undefined)[]): T {
+  const targets = sources.map((s) => s ?? {}).reverse();
+
+  return new Proxy(
+    {},
+    {
+      get(_, prop) {
+        const values = targets.map((t) => (t as T)[prop as keyof T]);
+        const value = values.find((v) => typeof v !== 'undefined');
+        if (typeof value !== 'undefined') {
+          return value && typeof value === 'object' ? inherit(...values.reverse()) : value;
+        }
+      },
+      set(_, prop, value) {
+        if (!targets?.length) return true;
+        (targets[0] as T)[prop as keyof T] = value as T[keyof T];
+        return true;
+      },
+      deleteProperty(_, prop) {
+        if (!targets?.length) return true;
+        delete (targets[0] as T)[prop as string];
+        return true;
+      },
+      has(_target, prop) {
+        return targets.some((t) => prop in t);
+      },
+      ownKeys() {
+        const keys = new Set<string>();
+
+        for (const target of targets) {
+          for (const key of Object.keys(target)) {
+            keys.add(key);
+          }
+        }
+
+        return Array.from(keys);
+      },
+      getOwnPropertyDescriptor(_, prop) {
+        const target = targets.find((t) => prop in t);
+        if (target) {
+          return (
+            Object.getOwnPropertyDescriptor(target, prop) ?? {
+              configurable: true,
+              enumerable: true,
+              writable: true,
+              value: (target as T)[prop as keyof T],
+            }
+          );
+        }
+      },
+    }
+  ) as T;
+}
