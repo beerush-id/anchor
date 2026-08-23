@@ -29,6 +29,9 @@ Bun.serve({
         await ws.data.resolver(message, ws);
       }
     },
+    close(ws) {
+      ws.data?.resolver?.close?.(ws);
+    },
   },
 });
 
