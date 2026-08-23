@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "build": "bun run build:client && bun run build:server",
     "build:client": "vite build --outDir dist/client",
     "build:server": "vite build --ssr --outDir dist/server",
-    "build": "bun run build:client && bun run build:server",
-    "start": "bun run dist/server/worker.js",
+    "start": "NODE_ENV=production bun run server/bun.js",
+    "start:node": "NODE_ENV=production node server/node.js",
+    "start:deno": "NODE_ENV=production deno run --allow-net --allow-read --allow-env server/deno.js",
     "lint": "oxlint",
     "preview": "vite preview"
   },

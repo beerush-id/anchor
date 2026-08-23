@@ -3,123 +3,130 @@ nav: 'Installation'
 nav-icon: download
 nav-priority: 20
 title: 'Installation'
-description: 'Install AirLib via starter templates or package managers — core packages, React and SolidJS integrations, and project conventions.'
+description: 'Scaffold a new project with create airlib or install individual packages — React and SolidJS integrations, Vite plugin, and project conventions.'
 keywords:
   - AirLib installation
-  - Anchor installation
-  - IRPC installation
-  - Router installation
+  - create airlib
+  - Vite SSR setup
+  - fullstack TypeScript
 ---
 
 # Installation
 
-The AirLib is modular. You can start with our official templates or install only the layers you need for your application.
+AirLib can be scaffolded instantly via `create airlib` or added manually to any existing Vite project.
 
-## Starter Templates
+## Quick Start
 
-The fastest way to get started is by using our official templates. We provide pre-configured templates for different architectures:
-
-### 1. Full Stack Project
-Combines both the frontend UI (SSR and Client Hydration) and the execution logic into a single unified repository.
+The fastest way to scaffold a full-stack AirLib application is using the official CLI:
 
 :::code-group
-```bash [Bun]
-bunx degit beerush-id/airlib/templates/air-react my-air-app
-```
+
 ```bash [NPX]
-npx degit beerush-id/airlib/templates/air-react my-air-app
+npx create airlib my-air-app
 ```
-:::
-
-### 2. Frontend Project with SSR
-A strict SSR application. Used when your UI requires server-side rendering, but your core APIs and databases are handled externally.
-
-:::code-group
-```bash [Bun]
-bunx degit beerush-id/airlib/templates/react-ssr my-ssr-app
-```
-```bash [NPX]
-npx degit beerush-id/airlib/templates/react-ssr my-ssr-app
-```
-:::
-
-### 3. Standalone API
-A dedicated service providing universal IRPC endpoints for external clients to consume, completely independent of any UI layer.
-
-:::code-group
-```bash [Bun]
-bunx degit beerush-id/airlib/templates/irpc-bun-starter my-api
-```
-```bash [NPX]
-npx degit beerush-id/airlib/templates/irpc-bun-starter my-api
-```
-:::
-
-## Project Structure & Conventions
-
-When using the templates or building a full-stack AirLib application, we recommend the following file and folder conventions to keep your codebase organized:
-
-- `lib/views/`: View files that render state as is.
-- `lib/components/`: Component files that own states, behaviors, or side effects.
-- `lib/actions/`: Headless state factories, headless logic factories, and headless action references.
-- `lib/module.ts`: IRPC package configuration, defining transports and environments.
-- `lib/router.ts`: Router instance declaration.
-- `pages/(**/)route.ts`: Configures the route path, including guards and/or providers when needed.
-- `pages/(**/)function.ts`: Declares function signatures (stub), types, and/or schemas.
-- `pages/(**/)constructor.ts`: Implements the execution logic that fulfills the stub.
-- `pages/(**/)workflow.ts`: Defines complex multi-step operations.
-- `styles/index.css`: Entry point for CSS imports.
-- `styles/theme.css`: Design system and CSS variables.
-- `styles/utilities.css`: Tailwind CSS custom utilities.
-
-A feature directory (e.g., inside `../../../../pages`) may contain all of these files, or only a subset (e.g., only `route.ts` and `page.tsx`).
-
-## Manual Installation
-
-The core packages contain the state engine, routing engine, and network transport. They are entirely framework-agnostic.
-
-:::code-group
 
 ```bash [Bun]
-bun add @airlib/core @airlib/router @irpclib/irpc @irpclib/http
-```
-
-```bash [NPM]
-npm install @airlib/core @airlib/router @irpclib/irpc @irpclib/http
-```
-
-```bash [Yarn]
-yarn add @airlib/core @airlib/router @irpclib/irpc @irpclib/http
+bun create airlib my-air-app
 ```
 
 ```bash [PNPM]
-pnpm add @airlib/core @airlib/router @irpclib/irpc @irpclib/http
+pnpm create airlib my-air-app
 ```
 
 :::
 
-## View Integrations
+Once scaffolded, start the local development server:
 
-To bind the reactive graph to the DOM, install the integration package for your view framework.
+:::code-group
+
+```bash [Bun]
+cd my-air-app
+bun install
+bun dev
+```
+
+```bash [NPM]
+cd my-air-app
+npm install
+npm run dev
+```
+
+```bash [PNPM]
+cd my-air-app
+pnpm install
+pnpm dev
+```
+
+:::
+
+## Project Structure
+
+A scaffolded project uses file-based routing and universal multi-runtime deployment out of the box:
+
+```
+my-air-app/
+├── assets/                # Bundled media, SVGs, and images
+├── components/            # Reusable UI components
+├── pages/                 # File-based routes & layouts
+│   ├── (docs)/            # Slave route (independent top-level tree with its own layout)
+│   ├── layout.tsx         # Main app layout wrapper
+│   └── page.tsx           # Main landing / home page
+├── public/                # Static assets served untouched
+├── server/                # Multi-runtime Universal SSR entrypoints
+│   ├── bun.js             # Bun runtime server
+│   ├── node.js            # Node.js server (Hono)
+│   ├── deno.js            # Deno runtime server
+│   └── worker.ts          # Edge worker entry
+├── src/                   # Application source & runtime setup
+│   ├── api.ts             # IRPC client configuration & stubs
+│   ├── app.css            # Global CSS styles & design tokens
+│   ├── app.tsx            # Root application shell component
+│   ├── client.tsx         # Client-side hydration bootstrap
+│   ├── router.ts          # Client router configuration
+│   ├── worker.ts          # SSR worker handler & request renderer
+│   └── global.d.ts        # TypeScript declarations
+├── index.html             # Universal HTML shell
+├── vite.config.ts         # Vite configuration with airPages()
+├── wrangler.toml          # Cloudflare deployment config
+├── biome.json             # Code formatting & linting
+└── package.json
+```
+
+## Vite Configuration
+
+The `@airlib/vite` plugin handles route scaffolding, MDX compilation, metadata caching, and Universal SSR:
+
+```typescript [vite.config.ts]
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { airPages } from '@airlib/vite';
+
+export default defineConfig({
+  plugins: [react(), airPages()],
+});
+```
+
+## Manual Installation
+
+If adding AirLib to an existing Vite application, install the framework integration, RPC transports, and Vite plugin:
 
 ### React
 
 :::code-group
 
 ```bash [Bun]
-bun add @airlib/core @airlib/router @airlib/react
+bun add @airlib/react @irpclib/irpc @irpclib/http @irpclib/ws
+bun add -d @airlib/vite
 ```
 
 ```bash [NPM]
-npm install @airlib/core @airlib/router @airlib/react
-```
-
-```bash [Yarn]
-yarn add @airlib/core @airlib/router @airlib/react
+npm install @airlib/react @irpclib/irpc @irpclib/http @irpclib/ws
+npm install -D @airlib/vite
 ```
 
 ```bash [PNPM]
-pnpm add @airlib/core @airlib/router @airlib/react
+pnpm add @airlib/react @irpclib/irpc @irpclib/http @irpclib/ws
+pnpm add -D @airlib/vite
 ```
 
 :::
@@ -129,33 +136,58 @@ pnpm add @airlib/core @airlib/router @airlib/react
 :::code-group
 
 ```bash [Bun]
-bun add @airlib/core @airlib/router @airlib/solid
+bun add @airlib/solid @irpclib/irpc @irpclib/http @irpclib/ws
+bun add -d @airlib/vite
 ```
 
 ```bash [NPM]
-npm install @airlib/core @airlib/router @airlib/solid
-```
-
-```bash [Yarn]
-yarn add @airlib/core @airlib/router @airlib/solid
+npm install @airlib/solid @irpclib/irpc @irpclib/http @irpclib/ws
+npm install -D @airlib/vite
 ```
 
 ```bash [PNPM]
-pnpm add @airlib/core @airlib/router @airlib/solid
+pnpm add @airlib/solid @irpclib/irpc @irpclib/http @irpclib/ws
+pnpm add -D @airlib/vite
+```
+
+:::
+
+## Production Build
+
+To build the client bundle and server bundle for production deployment:
+
+:::code-group
+
+```bash [Bun]
+# Build client and server bundles
+bun run build
+
+# Start production Bun server
+bun start
+```
+
+```bash [Node]
+# Build client and server bundles
+npm run build
+
+# Start production Node server
+npm run start:node
+```
+
+```bash [Deno]
+# Build client and server bundles
+npm run build
+
+# Start production Deno server
+npm run start:deno
 ```
 
 :::
 
 ## Next Steps
 
-After installation, choose a module to begin integrating:
+Now that your project is ready, explore the core concepts:
 
-- [Getting Started](/docs/getting-started) - Build your first application using the full AirLib.
-- [Router](/docs/routing) - Set up your URL and state-driven routing.
-
-## Need Help?
-
-If you encounter issues during installation:
-
-1. Open an issue on [GitHub](https://github.com/beerush-id/airlib/issues)
-2. Join our community Discord for real-time support
+- [Getting Started](./getting-started) — Build your first reactive feature end-to-end.
+- [State Management](./state-management) — Master mutable proxies, signals, and derived state.
+- [Routing](./routing) — Learn file-based routes, loaders, and slave routes.

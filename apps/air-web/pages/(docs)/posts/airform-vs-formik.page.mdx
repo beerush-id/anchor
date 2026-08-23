@@ -1,0 +1,225 @@
+---
+nav: 'AirLib Form vs. Formik'
+title: 'AirLib Form vs. Formik'
+description: 'Comparing fine-grained proxy reactivity against top-down virtual DOM re-renders.'
+date: '2026-07-02'
+category: 'AirLib Form Posts'
+keywords:
+  - AirLib Form vs Formik
+  - Formik comparison
+  - React forms
+---
+
+# AirLib Form vs. Formik :badge[Comparison]{variant="info"} :badge[React]{variant="neutral"}
+
+[← Back](./) | **Technical Comparison** | **`Formik`** **`AirLib Form`**
+
+<a href="https://formik.org/" target="_blank" rel="noreferrer">Formik</a> revolutionized React forms by providing a declarative way to manage form state, validation, and submission. For a long time, it was the gold standard for building forms in React.
+
+**AirLib Form** approaches the same problem space but with modern reactivity paradigms. Instead of relying on React state and virtual DOM diffing to manage the form, AirLib Form uses Anchor's fine-grained reactive proxies. This eliminates the performance bottlenecks that Formik historically struggled with on large forms.
+
+## Framework comparison
+
+Both libraries provide a top-down `<Form>` component and manage form values, touched states, and validation errors. The primary difference lies in how state changes trigger UI updates.
+
+| Aspect | Formik | AirLib Form |
+|---|---|---|
+| **State** | React local state (`useState`) | Anchor reactive proxy (`mutable()`) |
+| **Re-renders** | The entire form tree on every keystroke | Only the mutated field |
+| **Component API** | `<Field name="email">` | `<Field>` / `<MyForm.Field>` |
+| **Validation** | Yup / Custom Functions | Zod schema (`createForm`) |
+
+## Application Setup
+
+Both libraries use a wrapper component to provide form state to child inputs.
+
+### Formik Setup
+
+In Formik, you define your initial values, validation schema (usually Yup), and an `onSubmit` handler, passing them all into the `<Formik>` wrapper.
+
+```tsx
+// components/checkout-form.tsx
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
+
+const validationSchema = Yup.object({
+  firstName: Yup.string().required('Required'),
+  email: Yup.string().email('Invalid email').required('Required'),
+});
+
+export function CheckoutForm() {
+  return (
+    <Formik
+      initialValues={{ firstName: '', email: '' }}
+      validationSchema={validationSchema}
+      onSubmit={(values, { setSubmitting }) => {
+        saveOrder(values).then(() => setSubmitting(false));
+      }}
+    >
+      {({ isSubmitting }) => (
+        <Form>
+          <div>
+            <label>First Name</label>
+            <Field type="text" name="firstName" />
+            <ErrorMessage name="firstName" component="span" />
+          </div>
+
+          <div>
+            <label>Email</label>
+            <Field type="email" name="email" />
+            <ErrorMessage name="email" component="span" />
+          </div>
+
+          <button type="submit" disabled={isSubmitting}>Submit</button>
+        </Form>
+      )}
+    </Formik>
+  );
+}
+```
+
+Because Formik stores form values in React state at the root `<Formik>` wrapper, typing into `<Field name="firstName">` causes the entire `<Formik>` tree to re-render.
+
+### AirLib Form Setup
+
+In AirLib Form, you pass your schema to `createForm`, which returns a namespace of components (`Form`, `Field`, etc.) that are already wired to the schema's types and rules.
+
+```tsx
+// components/checkout-form.tsx
+import { setup, render, mutable } from '@airlib/react';
+import { createForm, TextInput, EmailInput, FormSubmit } from '@airlib/react-form';
+import { z } from 'zod';
+
+const CheckoutForm = createForm(z.object({
+  firstName: z.string().min(1, 'Required'),
+  email: z.string().email('Invalid email'),
+}));
+
+export const Checkout = setup(() => {
+  const state = mutable({ firstName: '', email: '' });
+
+  return render(() => (
+    <CheckoutForm value={state} onSubmit={(values) => saveOrder(values)}>
+      <CheckoutForm.Field name="firstName" label="First Name">
+        <TextInput />
+      </CheckoutForm.Field>
+
+      <CheckoutForm.Field name="email" label="Email">
+        <EmailInput />
+      </CheckoutForm.Field>
+
+      <FormSubmit>Submit</FormSubmit>
+    </CheckoutForm>
+  ));
+});
+```
+
+Typing into `<TextInput />` directly mutates the reactive proxy property (`state.firstName`). Only the specific DOM nodes subscribed to `firstName` update, resulting in `O(1)` render performance regardless of form complexity.
+
+## Reactivity and Rendering Performance
+
+The most significant distinction between Formik and AirLib Form is how they handle state propagation.
+
+### Formik's Top-Down Re-renders
+
+In Formik, state is centralized in a React state hook. This means:
+
+- Typing in one input triggers a re-render of all fields inside the `<Formik>` component.
+- Fast typers can experience input lag on large forms (50+ fields).
+- Developers must use `React.memo` or `FastField` to optimize performance, adding mental overhead.
+
+### AirLib Form's Fine-Grained Reactivity
+
+In AirLib Form, state is a fine-grained reactive proxy graph. This means:
+
+- Typing in one input updates only that input's DOM node.
+- The parent `<Form>` and sibling `<Field>` components do not re-render.
+- Fast typers experience zero input latency, even on massive forms with hundreds of fields.
+- No `React.memo` or special wrapper components needed.
+
+## Dynamic Arrays
+
+Managing dynamic arrays of inputs (e.g., adding line items or team members) illustrates the architectural divergence clearly.
+
+### Formik's FieldArray
+
+Formik provides a `<FieldArray>` helper that exposes imperative mutation helpers (`push`, `remove`, `insert`) via render props.
+
+```tsx
+import { FieldArray } from 'formik';
+
+<FieldArray name="friends">
+  {({ push, remove, form }) => (
+    <div>
+      {form.values.friends.map((friend, index) => (
+        <div key={index}>
+          <Field name={`friends.${index}.name`} />
+          <button type="button" onClick={() => remove(index)}>X</button>
+        </div>
+      ))}
+      <button type="button" onClick={() => push({ name: '' })}>Add</button>
+    </div>
+  )}
+</FieldArray>
+```
+
+### AirLib Form's Native Array Mutation
+
+Because AirLib Form uses a reactive proxy, you simply mutate the array directly with standard JavaScript array methods.
+
+```tsx
+import { For } from '@airlib/react';
+
+<For each={() => state.friends}>
+  {(friend, index) => (
+    <div>
+      <CheckoutForm.Field name={`friends.${index}.name`} label="Friend Name">
+        <TextInput />
+      </CheckoutForm.Field>
+      <button type="button" onClick={() => state.friends.splice(index, 1)}>X</button>
+    </div>
+  )}
+</For>
+
+<button type="button" onClick={() => state.friends.push({ name: '' })}>Add</button>
+```
+
+## Submitting Changed Data
+
+### Formik Dirty State
+
+Formik tracks dirty state via `dirty` (boolean) and `initialValues`. If you want to submit only modified fields (a `PATCH` payload), you have to write custom diffing logic:
+
+```tsx
+const submitDirtyOnly = (values, formikBag) => {
+  const changes = Object.keys(values).reduce((acc, key) => {
+    if (values[key] !== formikBag.initialValues[key]) {
+      acc[key] = values[key];
+    }
+    return acc;
+  }, {});
+  
+  return save(changes);
+};
+```
+
+### AirLib Form Native Diffing
+
+AirLib Form automatically calculates the exact diff against the initial state and passes it as the second argument to `onSubmit`:
+
+```tsx
+<CheckoutForm 
+  value={state} 
+  onSubmit={async (data, changes) => {
+    await save(changes); // `changes` natively contains only modified fields
+  }}
+>
+```
+
+## Final thoughts
+
+Formik laid the groundwork for declarative forms in React, but its reliance on top-down virtual DOM re-renders limits its scalability on complex forms.
+
+**Choose Formik if:** You are maintaining an established codebase heavily invested in Yup and Formik patterns, and form rendering performance is not a bottleneck.
+
+**Choose AirLib Form if:** You want modern, fine-grained reactivity with zero lag, automated Zod validation, and clean schema-driven components that eliminate render-prop boilerplate.

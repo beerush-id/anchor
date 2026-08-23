@@ -1,0 +1,942 @@
+---
+nav: 'Building Forms with AirLib Form'
+title: 'Building Forms with AirLib Form'
+description: 'A comprehensive guide to building forms with AirLib Form, from basic text inputs to dynamic arrays and server mutations.'
+date: '2026-06-15'
+category: 'Tutorials'
+keywords:
+  - AirLib Form tutorial
+  - React forms tutorial
+  - schema-driven forms
+---
+
+# Building Forms with AirLib Form :badge[Tutorial]{variant="tip"} :badge[AirLib Form]{variant="info"}
+
+[← Back](./) | **`AirLib Form`** **`React`**
+
+Most React form tutorials stop at "here's how to wire an input." Real forms don't. Real forms have password confirmations, nested addresses, team member lists that grow and shrink, and a submit button that needs to know if anything actually changed.
+
+This tutorial builds one form at a time — each one harder than the last — using AirLib Form's React components. By the end, you'll have built a multi-section registration form with dynamic arrays, cross-field matching, headless rendering, and a globally configured design system.
+
+Here is the progression:
+
+- **[Your First Form](#your-first-form)** (~2 min): Schema, factory, fields, submit.
+- **[Choosing The Right Input](#choosing-the-right-input)** (~3 min): The 14 built-in inputs and when to use each.
+- **[Validation in Action](#validation-in-action)** (~3 min): Touched-gating, multi-rule fields, and error rendering.
+- **[Handling Submission](#handling-submission)** (~3 min): Full data, changed fields, pending states, reset.
+- **[Headless Fields](#headless-fields)** (~3 min): Taking full control of field rendering.
+- **[Cross-Field Matching](#cross-field-matching)** (~3 min): Password confirmation and date range validation.
+- **[Nested Objects](#nested-objects)** (~2 min): Dot-path fields for structured data.
+- **[Dynamic Arrays](#dynamic-arrays)** (~4 min): Adding and removing team members with `FieldList`.
+- **[Custom Inputs](#custom-inputs)** (~3 min): Building a currency input with `formInput`.
+- **[Global Configuration](#global-configuration)** (~2 min): One call to style every form in your app.
+- **[Putting It All Together](#putting-it-all-together)** (~4 min): A production registration form combining everything.
+
+## Your First Form
+
+Every AirLib Form starts with two things: a Zod schema that describes the data, and a factory that turns it into typed components.
+
+### Define the Schema
+
+The schema is the contract. Every field name, type, and validation rule lives here.
+
+```tsx
+import { z } from 'zod';
+
+const schema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Invalid email address'),
+});
+```
+
+### Create the Form Factory
+
+`createForm` takes the schema and returns a typed component with `Field` and other sub-components attached as a namespace.
+
+```tsx
+import { createForm } from '@airlib/react-form';
+
+const ContactForm = createForm(schema);
+```
+
+### Compose
+
+`ContactForm.Field` is typed against the schema — `name="nme"` is a compile error. Inputs inside the field don't need `name`, `value`, or `onChange` — they read everything from the field context automatically.
+
+```tsx
+import { TextInput, EmailInput, FormSubmit } from '@airlib/react-form';
+import { setup, render, mutable } from '@airlib/react';
+
+export const ContactPage = setup(() => {
+  const form = mutable({ name: '', email: '' });
+
+  return render(() => (
+    <ContactForm value={form} onSubmit={(data) => console.log(data)}>
+      <ContactForm.Field name="name" label="Name">
+        <TextInput placeholder="Jane Doe" />
+      </ContactForm.Field>
+
+      <ContactForm.Field name="email" label="Email">
+        <EmailInput placeholder="jane@example.com" />
+      </ContactForm.Field>
+
+      <FormSubmit>Send</FormSubmit>
+    </ContactForm>
+  ));
+});
+```
+
+:::tip[What you learned]
+- `createForm` generates a typed form component from a Zod schema.
+- `Field` provides the bridge between schema paths and input components.
+- Inputs auto-wire to their context — no `onChange`, no `value`, no `register`.
+:::
+
+## Choosing The Right Input
+
+AirLib Form ships with 14 input components that cover every standard HTML input type. Each one auto-wires to the field context, handles string buffering for non-string types, and forwards HTML props.
+
+### Text Inputs
+
+For `z.string()` fields — text, email, password, and multiline content.
+
+```tsx
+<ContactForm.Field name="firstName" label="First Name">
+  <TextInput placeholder="John" />
+</ContactForm.Field>
+
+<ContactForm.Field name="email" label="Email">
+  <EmailInput placeholder="john@acme.com" />
+</ContactForm.Field>
+
+<ContactForm.Field name="password" label="Password">
+  <PasswordInput />
+</ContactForm.Field>
+
+<ContactForm.Field name="bio" label="Bio">
+  <Textarea rows={4} />
+</ContactForm.Field>
+```
+
+### Number Inputs
+
+For `z.number()` fields. `NumberInput` buffers keystrokes as a raw string while the user types (so `"42."` doesn't get parsed prematurely), and syncs only valid numbers to the form state.
+
+```tsx
+<ContactForm.Field name="age" label="Age">
+  <NumberInput min={0} max={120} />
+</ContactForm.Field>
+
+<ContactForm.Field name="volume" label="Volume">
+  <Slider min={0} max={100} />
+</ContactForm.Field>
+```
+
+### Date and Time
+
+Values sync as strings formatted to the HTML spec (e.g., `"2025-06-07"` for dates).
+
+```tsx
+<ContactForm.Field name="birthday" label="Birthday">
+  <DatePicker />
+</ContactForm.Field>
+
+<ContactForm.Field name="alarm" label="Alarm">
+  <TimePicker />
+</ContactForm.Field>
+
+<ContactForm.Field name="meeting" label="Meeting">
+  <DateTimePicker />
+</ContactForm.Field>
+```
+
+### Selection
+
+```tsx
+{/* Boolean toggle — pairs with z.boolean() */}
+<ContactForm.Field name="agree" label="I agree to the terms">
+  <Checkbox />
+</ContactForm.Field>
+
+{/* Dropdown — pairs with z.string() or z.enum() */}
+<ContactForm.Field name="role" label="Role">
+  <Select>
+    <option value="">Select a role...</option>
+    <option value="admin">Admin</option>
+    <option value="editor">Editor</option>
+  </Select>
+</ContactForm.Field>
+
+{/* Radio group — pairs with z.string() or z.enum() */}
+<ContactForm.Field name="plan" label="Plan">
+  <div className="radio-group">
+    <label><Radio value="basic" /> Basic</label>
+    <label><Radio value="pro" /> Pro</label>
+  </div>
+</ContactForm.Field>
+```
+
+### Specialized
+
+```tsx
+<ContactForm.Field name="theme" label="Theme Color">
+  <ColorPicker />
+</ContactForm.Field>
+
+<ContactForm.Field name="avatar" label="Avatar">
+  <FilePicker accept="image/*" />
+</ContactForm.Field>
+```
+
+Every component forwards extra HTML props (`className`, `data-*`, `onBlur`, etc.) directly to the underlying DOM element.
+
+:::tip[What you learned]
+- AirLib Form has a built-in input for every standard HTML type.
+- Number inputs handle the decimal-typing problem with internal parse buffers.
+- Inputs work in three contexts: standalone, directly inside `<Form>`, or inside `<Field>` (fully automatic).
+:::
+
+## Validation in Action
+
+Validation is not a separate step you trigger — it runs on every keystroke. The Zod schema defines the rules, and the form engine enforces them continuously.
+
+```tsx
+const signupSchema = z.object({
+  username: z.string()
+    .min(3, 'At least 3 characters')
+    .max(20, 'No more than 20 characters')
+    .regex(/^[a-z0-9_]+$/, 'Only lowercase letters, numbers, and underscores'),
+  email: z.string().email('Please enter a valid email'),
+  age: z.number().min(18, 'Must be at least 18'),
+});
+
+const SignupForm = createForm(signupSchema);
+```
+
+Each Zod rule produces an error message when violated. If a field has multiple rules, all failed messages are collected as a `string[]`, and `Field` renders every one of them.
+
+```tsx
+export const Signup = setup(() => {
+  const data = mutable({ username: '', email: '', age: 18 });
+
+  return render(() => (
+    <SignupForm value={data} onSubmit={(data) => register(data)}>
+      <SignupForm.Field name="username" label="Username" errorClass="error">
+        <TextInput placeholder="cool_user_42" />
+      </SignupForm.Field>
+
+      <SignupForm.Field name="email" label="Email" errorClass="error">
+        <EmailInput />
+      </SignupForm.Field>
+
+      <SignupForm.Field name="age" label="Age" errorClass="error">
+        <NumberInput min={18} />
+      </SignupForm.Field>
+
+      <FormSubmit>Create Account</FormSubmit>
+    </SignupForm>
+  ));
+});
+```
+
+The `errorClass` is appended to the field's wrapper when validation fails. With this alone, the `Field` component handles label rendering, error display, and all ARIA attributes (`aria-invalid`, `aria-describedby`, `role="alert"`).
+
+`FormSubmit` disables itself when the form is invalid, unchanged, or currently submitting — no manual `disabled` logic needed.
+
+:::tip[What you learned]
+- Validation runs continuously on every mutation. No manual "validate" call.
+- `errorClass` applies a class to the field wrapper when invalid, enabling CSS-driven error styling.
+- `FormSubmit` tracks form readiness automatically — invalid or unchanged forms can't submit.
+:::
+
+## Handling Submission
+
+The `onSubmit` handler receives three arguments: the full data, only the changed fields, and the form event.
+
+```tsx
+<UserForm
+  value={existingUser}
+  onSubmit={async (data, changes, event) => {
+    // data:    { name: 'Alice', email: 'alice@test.com', age: 25 }
+    // changes: { name: 'Alice' } — only what was modified
+    await fetch('/api/user', {
+      method: 'PATCH',
+      body: JSON.stringify(changes),
+    });
+  }}
+>
+```
+
+The `changes` argument lets you send PATCH requests with only the modified fields — no diffing logic needed.
+
+### Submission Lifecycle
+
+When the form submits:
+
+- `form.status` moves to `'pending'`
+- All inputs become `disabled` — preventing edits during the network request
+- Concurrent submissions are blocked
+- On success: changed state resets — submitted values become the new baseline
+- On error: the form captures it in `form.error`
+
+### Submit and Reset Components
+
+`FormSubmit` and `FormReset` connect to the form state automatically.
+
+```tsx
+import { FormSubmit, FormReset } from '@airlib/react-form';
+
+<div className="actions">
+  <FormReset className="btn-secondary">Undo Changes</FormReset>
+  <FormSubmit className="btn-primary">Save Profile</FormSubmit>
+</div>
+```
+
+`FormSubmit` disables itself when the form is pending, invalid, or unchanged. `FormReset` reverts all fields to their initial values and disables itself when nothing has changed. If you need to clear all fields to empty values instead of reverting, use `<FormReset clear>`:
+
+```tsx
+<div className="actions">
+  <FormReset className="btn-secondary">Undo Changes</FormReset>
+  <FormReset clear className="btn-ghost">Clear All</FormReset>
+  <FormSubmit className="btn-primary">Save Profile</FormSubmit>
+</div>
+```
+
+Both accept a render function as `children` for dynamic content:
+
+```tsx
+<FormSubmit className="btn-primary">
+  {(form) => (
+    <>
+      {form?.pending && <Spinner />}
+      <span>{form?.pending ? 'Saving...' : 'Save Profile'}</span>
+    </>
+  )}
+</FormSubmit>
+```
+
+:::tip[What you learned]
+- `onSubmit` provides both full data and a diff of changed fields.
+- The form manages its own pending lifecycle — disabling inputs and blocking concurrent submits.
+- `FormSubmit` and `FormReset` wire themselves to form state without any manual props.
+:::
+
+## Headless Fields
+
+The default `Field` renders a `<div>` wrapper with a label and error display. When you need full control — custom layouts, conditional badges, multi-error rendering — pass a function as `children`.
+
+```tsx
+<UserForm.Field name="email">
+  {(field) => (
+    <div className="custom-field">
+      <label htmlFor="email">Email Address</label>
+      <EmailInput id="email" className="custom-input" />
+
+      <div className="field-meta">
+        {field.touched && field.error?.map(err => (
+          <span key={err} className="error" role="alert">{err}</span>
+        ))}
+        {field.changed && <span className="badge">Modified</span>}
+      </div>
+    </div>
+  )}
+</UserForm.Field>
+```
+
+The function receives the full field state:
+
+| Property | Type | Description |
+|---|---|---|
+| `value` | `T` | Current field value |
+| `name` | `string` | Field path |
+| `error` | `string[]` | All validation error messages |
+| `valid` | `boolean` | Schema validation result |
+| `matched` | `boolean` | Cross-field match result |
+| `touched` | `boolean` | Was ever mutated |
+| `changed` | `boolean` | Differs from initial value |
+| `disabled` | `boolean` | Form is pending |
+| `reset()` | `() => void` | Reverts this field to its initial value |
+| `clear()` | `() => void` | Clears this field to an empty value |
+
+Two signals are worth highlighting:
+
+- **`touched`** — Becomes `true` the first time the field is mutated. Stays `true` even if the user restores the original value. It answers: *"did the user interact with this?"*
+- **`changed`** — Tracks whether the current value differs from the initial value. Reverts to `false` if the user types the original value back. It answers: *"is this field different from what we started with?"*
+
+Combining them gives you precise control over when errors appear:
+
+```tsx
+<UserForm.Field name="email">
+  {(field) => (
+    <div>
+      <EmailInput />
+      {/* Show errors only after the user has interacted */}
+      {field.touched && !field.valid && (
+        <span className="error">{field.error?.[0]}</span>
+      )}
+    </div>
+  )}
+</UserForm.Field>
+```
+
+:::tip[What you learned]
+- Headless fields give you the raw reactive state without imposing any DOM structure.
+- `touched` and `changed` are independent signals — combining them controls when and how errors appear.
+- When using headless mode, you're responsible for ARIA attributes (`role="alert"`, `aria-invalid`, `aria-describedby`).
+:::
+
+## Cross-Field Matching
+
+When one field depends on another — confirm password must equal password, end date must follow start date — use the `match` prop.
+
+### Equality Match
+
+Pass a field path as a string. The engine compares the two values and exposes `matched` as a separate signal.
+
+```tsx
+const passwordSchema = z.object({
+  password: z.string().min(8, 'At least 8 characters'),
+  confirmPassword: z.string().min(8, 'At least 8 characters'),
+});
+
+const PasswordForm = createForm(passwordSchema);
+
+export const ChangePassword = setup(() => {
+  const data = mutable({ password: '', confirmPassword: '' });
+
+  return render(() => (
+    <PasswordForm value={data} onSubmit={changePassword}>
+      <PasswordForm.Field name="password" label="Password">
+        <PasswordInput />
+      </PasswordForm.Field>
+
+      <PasswordForm.Field name="confirmPassword" match="password">
+        {(field) => (
+          <div>
+            <PasswordInput />
+            {field.touched && field.error?.map(err => (
+              <span key={err} className="error">{err}</span>
+            ))}
+            {field.valid && !field.matched && (
+              <span className="error">Passwords don't match</span>
+            )}
+          </div>
+        )}
+      </PasswordForm.Field>
+
+      <FormSubmit>Change Password</FormSubmit>
+    </PasswordForm>
+  ));
+});
+```
+
+`valid` and `matched` are independent. A field can be valid (passes schema rules) but not matched (differs from the target). The view layer composes them.
+
+### Custom Match
+
+For logic beyond simple equality, pass a function. It receives the form state and returns a boolean.
+
+```tsx
+const rangeSchema = z.object({
+  startDate: z.string(),
+  endDate: z.string(),
+});
+
+const RangeForm = createForm(rangeSchema);
+
+<RangeForm.Field
+  name="endDate"
+  match={(form) => form.fields['endDate'] > form.fields['startDate']}
+>
+  {(field) => (
+    <div>
+      <DatePicker />
+      {!field.matched && <span className="error">End must be after start</span>}
+    </div>
+  )}
+</RangeForm.Field>
+```
+
+The match function runs inside Anchor's reactivity engine. It tracks which fields it reads and re-evaluates when any dependency changes — no manual subscription.
+
+:::tip[What you learned]
+- String `match` does equality checking. Function `match` does arbitrary logic.
+- `valid` and `matched` are independent signals — they compose, not replace each other.
+- The match function is reactive. Changing either field re-evaluates the condition.
+:::
+
+## Nested Objects
+
+For structured data like addresses, use dot-notation in field names. The schema defines the shape, and `Field` uses the path to reach into nested state.
+
+```tsx
+const profileSchema = z.object({
+  name: z.string().min(1, 'Required'),
+  address: z.object({
+    street: z.string().min(1, 'Required'),
+    city: z.string().min(1, 'Required'),
+    zip: z.string().regex(/^\d{5}$/, 'Invalid ZIP code'),
+  }),
+});
+
+const ProfileForm = createForm(profileSchema);
+
+export const EditProfile = setup(() => {
+  const profile = mutable({
+    name: '',
+    address: { street: '', city: '', zip: '' },
+  });
+
+  return render(() => (
+    <ProfileForm value={profile} onSubmit={saveProfile}>
+      <ProfileForm.Field name="name" label="Full Name">
+        <TextInput />
+      </ProfileForm.Field>
+
+      <h3>Address</h3>
+
+      <ProfileForm.Field name="address.street" label="Street">
+        <TextInput />
+      </ProfileForm.Field>
+
+      <ProfileForm.Field name="address.city" label="City">
+        <TextInput />
+      </ProfileForm.Field>
+
+      <ProfileForm.Field name="address.zip" label="ZIP Code">
+        <TextInput />
+      </ProfileForm.Field>
+
+      <FormSubmit>Save Profile</FormSubmit>
+    </ProfileForm>
+  ));
+});
+```
+
+Dot-paths are automatically sanitized for HTML `id` attributes: `address.city` produces `id="address-city"`, keeping label association and `aria-describedby` intact.
+
+:::tip[What you learned]
+- Dot-notation field paths reach into nested schema objects.
+- The engine handles id sanitization, so labels and ARIA attributes work with nested paths.
+:::
+
+## Dynamic Arrays
+
+Team members, phone numbers, line items — when the number of fields isn't fixed, use `FieldList`.
+
+```tsx
+import { For } from '@airlib/react';
+
+const teamSchema = z.object({
+  name: z.string().min(1, 'Team name required'),
+  members: z.array(z.object({
+    name: z.string().min(1, 'Name required'),
+    role: z.string().min(1, 'Role required'),
+  })),
+});
+
+const TeamForm = createForm(teamSchema);
+
+export const TeamEditor = setup(() => {
+  const team = mutable({
+    name: '',
+    members: [{ name: '', role: '' }],
+  });
+
+  return render(() => (
+    <TeamForm value={team} onSubmit={saveTeam}>
+      <TeamForm.Field name="name" label="Team Name">
+        <TextInput />
+      </TeamForm.Field>
+
+      <TeamForm.FieldList name="members">
+        {(members) => (
+          <div>
+            <h3>Members</h3>
+
+            <For each={() => members}>
+              {(member, i) => (
+                <div className="member-row">
+                  <TeamForm.Field name={`members.${i}.name`} label="Name">
+                    <TextInput />
+                  </TeamForm.Field>
+
+                  <TeamForm.Field name={`members.${i}.role`} label="Role">
+                    <TextInput />
+                  </TeamForm.Field>
+
+                  <button type="button" onClick={() => members.splice(i, 1)}>
+                    Remove
+                  </button>
+                </div>
+              )}
+            </For>
+
+            <button type="button" onClick={() => members.push({ name: '', role: '' })}>
+              Add Member
+            </button>
+          </div>
+        )}
+      </TeamForm.FieldList>
+
+      <FormSubmit>Save Team</FormSubmit>
+    </TeamForm>
+  ));
+});
+```
+
+`FieldList` exposes the raw reactive array. Standard JavaScript mutations — `.push()`, `.splice()`, `.pop()` — trigger Anchor's reactivity graph. The form re-validates, updates change tracking, and cleans up orphaned field state when items are removed.
+
+No `useFieldArray` hook, no special `append`/`remove` helpers, no synthetic `id` keys. Just arrays.
+
+:::tip[What you learned]
+- `FieldList` exposes a reactive array that you mutate with standard JavaScript methods.
+- Nested array fields use indexed dot-paths: `members.${i}.name`.
+- The engine handles validation, change tracking, and cleanup on every array mutation.
+:::
+
+## Custom Inputs
+
+### Factory Shorthand
+
+For standard HTML types that AirLib Form doesn't ship, `createInput` generates a form-aware component in one line.
+
+```tsx
+import { createInput } from '@airlib/react-form';
+
+const PhoneInput = createInput('tel');
+const SearchInput = createInput('search');
+const URLInput = createInput('url');
+```
+
+Each generated component auto-wires to the form context, handles ARIA attributes, and forwards HTML props — identical behavior to the built-in inputs.
+
+### Manual Wiring
+
+For inputs with custom behavior — formatted currency, rich text, third-party components — use `formInput` from the core.
+
+```tsx
+import { setup, render } from '@airlib/react';
+import { formInput } from '@airlib/form';
+
+export const CurrencyInput = setup<{ name: string }>((props) => {
+  const input = formInput(props, {
+    parse: (display) => parseFloat(display.replace(/[^0-9.]/g, '')),
+    stringify: (value) => value ? `$${value.toFixed(2)}` : '',
+  });
+
+  return render(() => (
+    <input
+      id={input.name}
+      name={input.name}
+      value={input.value}
+      disabled={input.disabled}
+      onInput={(e) => { input.value = e.currentTarget.value; }}
+      onBlur={() => input.settled()}
+    />
+  ));
+});
+```
+
+`parse` converts what the user types (a display string) into what the form stores (a number). `stringify` converts what the form stores back into what the user sees. `settled()` signals that the user finished typing — it flushes the internal parse buffer and applies formatting. This only matters for buffered inputs (like numbers where the user types `"42."`) — plain text inputs don't need it.
+
+Using it in a form is the same as any other input:
+
+```tsx
+<InvoiceForm.Field name="amount" label="Amount">
+  <CurrencyInput />
+</InvoiceForm.Field>
+```
+
+:::tip[What you learned]
+- `createInput('type')` generates a form-aware input from an HTML input type.
+- `formInput` gives you full control: parse/stringify for type conversion, `settled()` for blur formatting.
+- Custom inputs behave identically to built-in ones inside `Field` context.
+:::
+
+## Global Configuration
+
+Repeating `className="px-3 py-2 border rounded"` on every `TextInput` across your application is tedious. `configureForm` sets defaults once at the root.
+
+```tsx
+import { configureForm } from '@airlib/react-form';
+
+configureForm({
+  form: {
+    class: 'space-y-4',
+    errorClass: 'border-red-500',
+  },
+  field: {
+    class: 'flex flex-col gap-1',
+    labelClass: 'text-sm font-medium',
+    errorClass: 'text-xs text-red-500',
+    requiredLabel: '*',
+    requiredClass: 'text-red-500 ml-1',
+  },
+  input: {
+    class: 'px-3 py-2 border rounded',
+    errorClass: 'border-red-500 bg-red-50',
+  },
+  submit: {
+    class: 'bg-blue-500 text-white px-4 py-2 rounded',
+    pendingClass: 'opacity-50 cursor-not-allowed',
+  },
+});
+```
+
+Every `Field`, `TextInput`, and `FormSubmit` in your app inherits these classes. When a field enters an error state, `errorClass` is appended automatically.
+
+### Per-Input Overrides
+
+Different input types often need different styling. Configure them individually:
+
+```tsx
+configureForm({
+  textInput: {
+    class: 'w-full px-3 py-2 border rounded',
+  },
+  checkbox: {
+    class: 'w-4 h-4 text-blue-600 rounded',
+  },
+  file: {
+    class: 'file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0',
+  },
+});
+```
+
+The engine merges the generic `input` config with the specific input config — specific always wins.
+
+### Per-Form Configuration
+
+You can also pass `{ form, field }` options directly to `createForm` to scope styling to a specific form factory:
+
+```tsx
+const AdminForm = createForm(adminSchema, {
+  form: { class: 'admin-form' },
+  field: { class: 'admin-field', errorClass: 'admin-error' },
+});
+```
+
+This only affects `AdminForm` and its fields — other forms created with `createForm` still use the global defaults.
+
+### Local Overrides
+
+Any prop passed directly to a component overrides everything for that instance:
+
+```tsx
+<UserForm.Field name="email" label="Email" className="custom-field">
+  <EmailInput className="custom-input" />
+</UserForm.Field>
+```
+
+:::tip[What you learned]
+- `configureForm` eliminates repeated class props across your entire application.
+- The engine merges global → per-form → input-specific → local props, with local always winning.
+- Error and pending classes are appended automatically based on form state.
+:::
+
+## Putting It All Together
+
+Here is a production-style registration form that uses typed fields, headless rendering, cross-field matching, nested objects, dynamic arrays, and the submission lifecycle.
+
+```tsx
+import { z } from 'zod';
+import { setup, render, For, mutable } from '@airlib/react';
+import {
+  createForm,
+  TextInput, EmailInput, PasswordInput, NumberInput,
+  Checkbox, Select, FormSubmit, FormReset,
+} from '@airlib/react-form';
+
+const registrationSchema = z.object({
+  email: z.string().email('Please enter a valid email'),
+  password: z.string()
+    .min(8, 'At least 8 characters')
+    .regex(/[A-Z]/, 'Must contain an uppercase letter')
+    .regex(/[0-9]/, 'Must contain a number'),
+  confirmPassword: z.string().min(8),
+  name: z.string().min(2, 'Name is too short'),
+  age: z.number().min(18, 'Must be 18 or older'),
+  address: z.object({
+    street: z.string().min(1, 'Required'),
+    city: z.string().min(1, 'Required'),
+    zip: z.string().regex(/^\d{5}$/, 'Invalid ZIP'),
+  }),
+  plan: z.string().min(1, 'Select a plan'),
+  referrals: z.array(z.object({
+    email: z.string().email('Invalid email'),
+  })),
+  terms: z.boolean().refine(v => v, 'You must accept the terms'),
+});
+
+const RegForm = createForm(registrationSchema);
+
+const mockSubmit = async (data: any) => {
+  return new Promise<void>(resolve => setTimeout(() => {
+    console.log('Registered:', data);
+    resolve();
+  }, 1500));
+};
+
+export const Registration = setup(() => {
+  return render(() => (
+    <div className="w-full max-w-lg mx-auto p-8 bg-white rounded-xl shadow-lg border border-slate-100 my-8">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-slate-900">Registration</h2>
+        <p className="text-sm text-slate-500 mt-2">Every pattern from the tutorial in one place.</p>
+      </div>
+
+      <RegForm onSubmit={async (formData) => await mockSubmit(formData)}>
+        {/* ── Account ── */}
+        <fieldset className="mb-6">
+          <legend className="text-lg font-semibold text-slate-800 mb-3">Account</legend>
+
+          <RegForm.Field name="email" label="Email">
+            <EmailInput />
+          </RegForm.Field>
+
+          <RegForm.Field name="password" label="Password">
+            <PasswordInput />
+          </RegForm.Field>
+
+          <RegForm.Field name="confirmPassword" match="password">
+            {(field) => (
+              <div className="flex flex-col gap-1 mb-4">
+                <label className="text-sm font-medium text-slate-700">Confirm Password</label>
+                <PasswordInput />
+                {field.touched && field.error?.map(err => (
+                  <span key={err} className="text-sm text-red-500">{err}</span>
+                ))}
+                {field.valid && !field.matched && (
+                  <span className="text-sm text-red-500">Passwords don't match</span>
+                )}
+              </div>
+            )}
+          </RegForm.Field>
+        </fieldset>
+
+        {/* ── Profile ── */}
+        <fieldset className="mb-6">
+          <legend className="text-lg font-semibold text-slate-800 mb-3">Profile</legend>
+
+          <RegForm.Field name="name" label="Full Name">
+            <TextInput />
+          </RegForm.Field>
+
+          <RegForm.Field name="age" label="Age">
+            <NumberInput min={18} />
+          </RegForm.Field>
+        </fieldset>
+
+        {/* ── Address ── */}
+        <fieldset className="mb-6">
+          <legend className="text-lg font-semibold text-slate-800 mb-3">Address</legend>
+
+          <RegForm.Field name="address.street" label="Street">
+            <TextInput />
+          </RegForm.Field>
+
+          <div className="grid grid-cols-2 gap-3">
+            <RegForm.Field name="address.city" label="City">
+              <TextInput />
+            </RegForm.Field>
+
+            <RegForm.Field name="address.zip" label="ZIP Code">
+              <TextInput />
+            </RegForm.Field>
+          </div>
+        </fieldset>
+
+        {/* ── Preferences ── */}
+        <fieldset className="mb-6">
+          <legend className="text-lg font-semibold text-slate-800 mb-3">Preferences</legend>
+
+          <RegForm.Field name="plan" label="Subscription Plan">
+            <Select>
+              <option value="">Choose a plan...</option>
+              <option value="free">Free</option>
+              <option value="pro">Pro ($19/mo)</option>
+              <option value="enterprise">Enterprise ($99/mo)</option>
+            </Select>
+          </RegForm.Field>
+
+          <RegForm.FieldList name="referrals">
+            {(referrals) => (
+              <div className="mt-3 flex flex-col">
+                <label className="text-sm font-medium text-slate-700">Referral Emails</label>
+
+                <For each={() => referrals}>
+                  {(ref, i) => (
+                    <div className="flex items-start gap-2 mt-2">
+                      <div className="flex-1">
+                        <RegForm.Field name={`referrals.${i}.email`}>
+                          <EmailInput placeholder="friend@example.com" />
+                        </RegForm.Field>
+                      </div>
+                      <button type="button" onClick={() => referrals.splice(i, 1)}
+                        className="mt-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg">
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </For>
+
+                <button type="button" onClick={() => referrals.push({ email: '' })}
+                  className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium">
+                  + Add Referral
+                </button>
+              </div>
+            )}
+          </RegForm.FieldList>
+        </fieldset>
+
+        {/* ── Consent ── */}
+        <RegForm.Field name="terms">
+          {(field) => (
+            <label className="flex items-center gap-2 mb-6 cursor-pointer">
+              <Checkbox />
+              <span className="text-sm text-slate-700">I accept the terms and conditions</span>
+              {field.touched && !field.valid && (
+                <span className="text-sm text-red-500">{field.error?.[0]}</span>
+              )}
+            </label>
+          )}
+        </RegForm.Field>
+
+        {/* ── Actions ── */}
+        <div className="flex gap-3">
+          <FormReset>Reset</FormReset>
+          <FormSubmit>
+            {(form) => (
+              <span>{form?.pending ? 'Registering...' : 'Create Account'}</span>
+            )}
+          </FormSubmit>
+        </div>
+      </RegForm>
+    </div>
+  ));
+});
+```
+
+This single form combines every pattern from the tutorial:
+
+- **Typed fields** — `name="emal"` is a compile error
+- **Cross-field matching** — `confirmPassword` must equal `password`
+- **Headless rendering** — Custom layouts for the password confirmation and terms checkbox
+- **Nested objects** — `address.street`, `address.city`, `address.zip`
+- **Dynamic arrays** — Referral emails that grow and shrink
+- **Selection inputs** — `Select` for subscription plan, `Checkbox` for terms
+- **Submission lifecycle** — `FormSubmit` shows "Registering..." during the request, `FormReset` reverts everything
+
+Every input handles its own state. Every field handles its own errors. The parent component only describes the structure — and submits the result.
+
+:::tip[What you learned]
+- All AirLib Form patterns compose naturally within a single form.
+- The parent component declares structure and handles submission — nothing else.
+- Type safety, validation, accessibility, and pending state management are all handled by the engine.
+:::
+
+## Learn More
+
+- [Building Smart Form Components](/docs/posts/building-smart-form-components) — How the form engine is built under the hood
+- [AirLib Form vs React Hook Form](/docs/posts/airform-vs-react-hook-form) — In-depth architectural comparison

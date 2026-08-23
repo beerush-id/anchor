@@ -1,0 +1,185 @@
+---
+nav: 'AirLib v1.2.23'
+title: 'AirLib v1.2.23 — Asset Optimization & Caching'
+description: 'Introduces the responsive <Image> component, airImage Vite plugin, and SSR Asset Resolver with advanced caching strategies.'
+date: '2026-07-24'
+category: 'Release'
+keywords:
+  - AirLib v1.2.23
+  - responsive images
+  - SSR caching
+  - airImage
+---
+
+# AirLib v1.2.23 :badge[v1.2.23]{variant="tip"} :badge[Asset Optimization]{variant="info"}
+
+[← Back](./)
+
+**AirLib v1.2.23** introduces a comprehensive architecture for processing and rendering responsive image assets, alongside a robust SSR asset resolver equipped with configurable caching strategies across React and SolidJS.
+
+## Responsive Images
+
+Serving images efficiently across multiple screen sizes is traditionally a complex task, requiring manual variant generation and tedious `srcset` markup. This release completely automates the workflow, spanning from the Vite build pipeline directly into your UI components.
+
+### The `airImage` Plugin
+
+The new `@airlib/vite-ssr` `airImage()` plugin automatically intercepts image imports (using the `?airimg` query) and generates optimized format variants like WebP and AVIF. 
+
+Rather than returning a basic string URL, it returns an intelligent `AirImage` Proxy object. This object holds all generated responsive paths and automatically resolves the closest available size variant based on runtime demands.
+
+```typescript
+import { airImage } from '@airlib/vite-ssr';
+
+export default defineConfig({
+  plugins: [
+    airImage({ 
+      devEnabled: true, // Emulates production processing locally
+      sizes: [128, 256, 512, 1024],
+      format: 'webp',
+      quality: 75
+    })
+  ]
+});
+```
+
+### The `<Image>` Component
+
+To consume these optimized assets, we introduced the universal `<Image>` component for both React and SolidJS. It safely unwraps the `AirImage` object and maps the breakpoints to standard HTML tags, eliminating manual responsive boilerplate.
+
+:::code-group
+
+```tsx [React]
+import { Image } from '@airlib/react';
+import heroImage from './assets/hero.jpg?airimg';
+
+export function Hero() {
+  return (
+    <div>
+      {/* Automatically requests the closest variant >= 300px width */}
+      <Image from={heroImage} size={300} alt="Hero Banner" />
+
+      {/* Or omit `size` to render the full responsive srcset */}
+      <Image from={heroImage} alt="Hero Banner" />
+    </div>
+  );
+}
+```
+
+```tsx [SolidJS]
+import { Image } from '@airlib/solid';
+import heroImage from './assets/hero.jpg?airimg';
+
+export function Hero() {
+  return (
+    <div>
+      {/* Automatically requests the closest variant >= 300px width */}
+      <Image from={heroImage} size={300} alt="Hero Banner" />
+
+      {/* Or omit `size` to render the full responsive srcset */}
+      <Image from={heroImage} alt="Hero Banner" />
+    </div>
+  );
+}
+```
+
+:::
+
+## Asset Resolver & SSR Caching
+
+When hosting an SSR application across different edge environments (Node.js, Bun, Cloudflare Pages, Deno), safely resolving static file paths and mapping their MIME types is critical. 
+
+The `createWorker` utility now features a robust built-in asset resolver. It automatically handles cross-platform static asset routing, interprets incoming request URLs, and returns the correct file buffer with accurate MIME types without requiring manual configuration.
+
+### Caching Strategies
+
+To maximize performance, static assets and SSR pages often require entirely different caching strategies. The SSR workers now fully support configurable `CacheControlInit` headers, allowing you to easily define granular cache lifetimes.
+
+#### Global Caching
+
+You can specify global cache defaults by providing a standard `Cache-Control` string or a structured `CacheControlInit` object.
+
+:::code-group
+
+```typescript [worker.ts (React)]
+import { createWorker } from '@airlib/react/ssr';
+import { renderer } from './renderer.js';
+
+export default createWorker(renderer, {
+  cache: {
+    // String syntax
+    assets: 'public, max-age=31536000, immutable',
+    // Object syntax
+    pages: { public: true, maxAge: 86400 }
+  }
+});
+```
+
+```typescript [worker.ts (SolidJS)]
+import { createWorker } from '@airlib/solid/ssr';
+import { renderer } from './renderer.js';
+
+export default createWorker(renderer, {
+  cache: {
+    // String syntax
+    assets: 'public, max-age=31536000, immutable',
+    // Object syntax
+    pages: { public: true, maxAge: 86400 }
+  }
+});
+```
+
+:::
+
+#### Dynamic Route Caching
+
+For granular control, override the defaults dynamically per route. Pass a resolver function that evaluates the requested URL and returns a string, an object, or `false` to disable caching entirely.
+
+:::code-group
+
+```typescript [worker.ts (React)]
+import { createWorker } from '@airlib/react/ssr';
+import { renderer } from './renderer.js';
+
+export default createWorker(renderer, {
+  cache: {
+    assets: 'public, max-age=31536000, immutable',
+    pages: (url) => {
+      // String syntax for marketing
+      if (url.pathname.startsWith('/marketing')) {
+        return 'public, max-age=86400';
+      }
+      // Object syntax for dashboard
+      if (url.pathname.startsWith('/dashboard')) {
+        return { noStore: true, noCache: true, mustRevalidate: true };
+      }
+      // Disable caching entirely
+      return false;
+    }
+  }
+});
+```
+
+```typescript [worker.ts (SolidJS)]
+import { createWorker } from '@airlib/solid/ssr';
+import { renderer } from './renderer.js';
+
+export default createWorker(renderer, {
+  cache: {
+    assets: 'public, max-age=31536000, immutable',
+    pages: (url) => {
+      // String syntax for marketing
+      if (url.pathname.startsWith('/marketing')) {
+        return 'public, max-age=86400';
+      }
+      // Object syntax for dashboard
+      if (url.pathname.startsWith('/dashboard')) {
+        return { noStore: true, noCache: true, mustRevalidate: true };
+      }
+      // Disable caching entirely
+      return false;
+    }
+  }
+});
+```
+
+:::

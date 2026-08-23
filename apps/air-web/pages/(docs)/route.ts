@@ -9,7 +9,7 @@ const installationRoute = route.route('/installation');
 const universalSsrRoute = route.route('/universal-ssr');
 /** AirLib managed */
 
-export const docsRoute = route.config({ static: true, deferred: 500 });
+export const docsRoute = route.config({ static: true, deferred: 500, preloadMode: 'hover' });
 export const docsIndexRoute = indexRoute.meta({ label: 'Docs' });
 export const docsExtendedMarkdownRoute = extendedMarkdownRoute;
 export const docsGettingStartedRoute = gettingStartedRoute;

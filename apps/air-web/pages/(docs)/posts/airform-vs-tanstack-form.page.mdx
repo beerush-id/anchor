@@ -1,0 +1,351 @@
+---
+nav: 'AirLib Form vs. TanStack Form'
+title: 'AirLib Form vs. TanStack Form'
+description: 'Comparing declarative schema-first API with render-prop driven configuration.'
+date: '2026-07-05'
+category: 'AirLib Form Posts'
+keywords:
+  - AirLib Form vs TanStack Form
+  - TanStack Form comparison
+  - Headless forms
+---
+
+# AirLib Form vs. TanStack Form :badge[Comparison]{variant="info"} :badge[Headless]{variant="neutral"}
+
+[← Back](./) | **Technical Comparison** | **`TanStack Form`** **`AirLib Form`**
+
+<a href="https://tanstack.com/form" target="_blank" rel="noreferrer">TanStack Form</a> is a powerful, framework-agnostic headless form library. Like the rest of the TanStack ecosystem, it provides high-quality primitives that you assemble to build complex forms.
+
+**AirLib Form** is also deeply integrated into its framework-agnostic foundation (Anchor's core reactivity). However, where TanStack Form relies heavily on highly-configurable render props and explicitly defining validation adapters, AirLib Form opts for a highly declarative, component-first approach driven directly by a Zod schema.
+
+## Framework comparison
+
+Both libraries are designed to be extremely scalable and framework-agnostic, but their APIs feel very different to use on a daily basis.
+
+| Aspect | TanStack Form | AirLib Form |
+|---|---|---|
+| **API** | Render props & Hooks (`useForm`) | Components from `createForm()` |
+| **Validation** | Pluggable adapters (`zodValidator`) | Zod schema (`createForm(zod)`) |
+| **Component API** | `<form.Field>` | `<Field>` / `<MyForm.Field>` |
+| **Reactivity** | Pub/Sub Store | Anchor reactive proxy (`mutable()`) |
+
+## Application Setup
+
+Both libraries separate the definition of the form state from the UI components.
+
+### TanStack Form Setup
+
+In TanStack Form, you use the `useForm` hook, configure a validator adapter, and define the `onSubmit` logic.
+
+```tsx
+// components/profile-form.tsx
+import { useForm } from '@tanstack/react-form'
+import { zodValidator } from '@tanstack/zod-form-adapter'
+import { z } from 'zod'
+
+export function ProfileForm() {
+  const form = useForm({
+    defaultValues: { username: '' },
+    validatorAdapter: zodValidator(),
+    onSubmit: async ({ value }) => {
+      await saveProfile(value)
+    },
+  })
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        form.handleSubmit()
+      }}
+    >
+      <form.Field
+        name="username"
+        validators={{
+          onChange: z.string().min(3, 'Username must be at least 3 characters'),
+        }}
+      >
+        {(field) => (
+          <div>
+            <label>Username</label>
+            <input
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+            />
+            {field.state.meta.errors ? (
+              <em>{field.state.meta.errors.join(', ')}</em>
+            ) : null}
+          </div>
+        )}
+      </form.Field>
+
+      <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+        {([canSubmit, isSubmitting]) => (
+          <button type="submit" disabled={!canSubmit}>
+            {isSubmitting ? '...' : 'Submit'}
+          </button>
+        )}
+      </form.Subscribe>
+    </form>
+  )
+}
+```
+
+The approach is explicit: you pass validation logic inline to the field, use render props to access state, manually wire `onChange` and `onBlur`, and use a `Subscribe` component to optimize renders for the submit button.
+
+### AirLib Form Setup
+
+In AirLib Form, you pass your schema to `createForm`, which immediately provides the component namespace.
+
+```tsx
+// components/profile-form.tsx
+import { setup, render, mutable } from '@airlib/react'
+import { createForm, TextInput, FormSubmit } from '@airlib/react-form'
+import { z } from 'zod'
+
+const ProfileForm = createForm(z.object({
+  username: z.string().min(3, 'Username must be at least 3 characters')
+}))
+
+export const Profile = setup(() => {
+  const state = mutable({ username: '' });
+
+  return render(() => (
+    <ProfileForm value={state} onSubmit={(data) => saveProfile(data)}>
+      <ProfileForm.Field name="username" label="Username">
+        <TextInput />
+      </ProfileForm.Field>
+
+      <FormSubmit>Submit</FormSubmit>
+    </ProfileForm>
+  ))
+})
+```
+
+The `<TextInput />` internally wires the proxy state, `onChange`, and `onBlur`. The validation rule is defined once in the central schema, not inline at the field level. You do not need a `Subscribe` component because the `<FormSubmit>` component automatically reads and tracks the form's state via Anchor's reactive engine, independently updating itself without causing the root to re-render.
+
+## Component Context vs Render Props
+
+When scaling applications, developers frequently build reusable field components.
+
+### TanStack's Render Props
+
+TanStack relies on a render-prop architecture. To build a reusable field, you wrap the `form.Field` component.
+
+```tsx
+function CustomInputField({ form, name, label }) {
+  return (
+    <form.Field name={name}>
+      {(field) => (
+        <div>
+          <label>{label}</label>
+          <input
+            value={field.state.value}
+            onBlur={field.handleBlur}
+            onChange={(e) => field.handleChange(e.target.value)}
+          />
+          {field.state.meta.errors ? <em>{field.state.meta.errors}</em> : null}
+        </div>
+      )}
+    </form.Field>
+  )
+}
+```
+
+This pattern is highly flexible but visually noisy and requires manually passing the `form` instance down if not using context providers.
+
+### AirLib Form's Autonomous Context
+
+AirLib Form utilizes isolated component contexts. `<Field>` sets the context, and inputs like `<TextInput>` automatically consume it. You don't need render props or massive wrapper components.
+
+```tsx
+export const CustomInputField = setup<{ name: string, label: string }>((props) => {
+  const state = mutable({ username: '' });
+
+  return render(() => (
+    <MyForm value={state}>
+      <MyForm.Field name={props.name} label={props.label}>
+        <TextInput />
+      </MyForm.Field>
+    </MyForm>
+  ))
+})
+```
+
+If you need custom inputs, you use the `formInput()` function from the core `@airlib/form`, which reads the nearest Field context automatically.
+
+## Dynamic Arrays
+
+Dynamic arrays (like a list of friends) reveal how forms handle nested state mutations.
+
+### TanStack's Array API
+
+TanStack Form requires using `form.Field` with `mode="array"` to access specialized imperative methods like `pushValue` and `removeValue`.
+
+```tsx
+<form.Field
+  name="friends"
+  mode="array"
+>
+  {(field) => (
+    <div>
+      {field.state.value.map((_, i) => (
+        <form.Field key={i} name={`friends[${i}].name`}>
+          {(subField) => (
+            <input 
+              value={subField.state.value} 
+              onChange={(e) => subField.handleChange(e.target.value)} 
+            />
+          )}
+        </form.Field>
+      ))}
+      <button type="button" onClick={() => field.pushValue({ name: '' })}>
+        Add Friend
+      </button>
+    </div>
+  )}
+</form.Field>
+```
+
+### AirLib Form's Reactive Arrays
+
+AirLib Form completely eliminates the need for special array APIs or `FieldArray` components. Because Anchor's state is a reactive proxy graph, you mutate the array using standard JavaScript array methods, and standard UI loop constructs update the DOM automatically.
+
+```tsx
+import { For } from '@airlib/react';
+
+export function FriendList({ state }) {
+  return (
+    <div>
+      <For each={() => state.friends}>
+        {(friend, i) => (
+          <ProfileForm.Field name={`friends.${i}.name`} label="Name">
+            <TextInput />
+          </ProfileForm.Field>
+        )}
+      </For>
+      
+      <button type="button" onClick={() => state.friends.push({ name: '' })}>
+        Add Friend
+      </button>
+    </div>
+  );
+}
+```
+
+When `friends.push()` is called, Anchor's reactivity graph detects the array mutation and updates the DOM via the `<For>` component automatically. There are no specialized `pushValue` methods to learn.
+
+## Submitting Changed Data
+
+A common requirement for settings or profile forms is to submit only the fields the user actually modified (a `PATCH` request) rather than sending the entire payload.
+
+### TanStack's Manual Diffing
+
+TanStack Form's `onSubmit` provides the `value`, but does not provide a diff payload. You must manually extract the initial state from the store and write your own diffing function to compare it against the submitted data.
+
+```tsx
+<form.Provider>
+  <form
+    onSubmit={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      form.handleSubmit();
+    }}
+  >
+    {/* Inside your submit handler... */}
+    {async ({ value }) => {
+      const changes = customDiffFunction(initialState, value);
+      await api.patch('/profile', changes);
+    }}
+  </form>
+</form.Provider>
+```
+
+### AirLib Form's Native Diffing
+
+AirLib Form's `onSubmit` handler natively provides a `changes` parameter as its second argument. The proxy engine automatically calculates the exact diff against the initial state and provides an object containing only the mutated data.
+
+```tsx
+<ProfileForm 
+  value={state} 
+  onSubmit={async (data, changes) => {
+    // `changes` natively contains only the modified fields
+    await api.patch('/profile', changes);
+  }}
+>
+```
+
+## Boilerplate and Configuration
+
+When scaling a form library, you face two distinct configuration challenges: wiring the validation behavior (the "logic") and standardizing the design system (the "UI").
+
+### Behavioral Configuration
+
+**TanStack Form** requires you to explicitly configure validation adapters on the form level, and then manually define validation triggers on every single field. 
+
+```tsx
+import { useForm } from '@tanstack/react-form';
+import { zodValidator } from '@tanstack/zod-form-adapter';
+
+// 1. Configure the adapter
+const form = useForm({ validatorAdapter: zodValidator() });
+
+// 2. Configure the field triggers
+<form.Field
+  name="age"
+  validators={{
+    onChange: z.number().min(18),
+    onBlur: z.number().max(99)
+  }}
+>
+```
+
+**AirLib Form**, conversely, requires zero behavioral configuration. The reactive proxy continuously triggers Zod validation in `O(1)` time for the specific field you mutate. There are no adapters to register or `onChange` triggers to manually configure.
+
+```tsx
+const Form = createForm(schema);
+```
+
+### UI and Styling Configuration
+
+**TanStack Form** acts as a set of low-level, headless primitives. It does not provide a styling engine. To achieve global UI consistency, you must build custom render-prop wrappers for every input.
+
+```tsx
+// TanStack forces you to build wrappers like this
+export function CustomInput({ name, label }) {
+  return (
+    <form.Field name={name}>
+      {(field) => (
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium">{label}</label>
+          <input className="px-3 py-2 border rounded" value={field.state.value} onBlur={field.handleBlur} onChange={(e) => field.handleChange(e.target.value)} />
+          {field.state.meta.errors.length ? <span className="text-red-500 text-xs">{field.state.meta.errors}</span> : null}
+        </div>
+      )}
+    </form.Field>
+  );
+}
+```
+
+**AirLib Form** solves this at the engine level using a global `configureForm` API. You define your design system's classes and error states once at the root of your application.
+
+```tsx
+import { configureForm } from '@airlib/react-form';
+
+configureForm({
+  field: { class: 'flex flex-col gap-1', errorClass: 'text-red-500 text-xs' },
+  textInput: { class: 'px-3 py-2 border rounded', errorClass: 'border-red-500 bg-red-50' }
+});
+```
+
+When you use `<TextInput />` anywhere in your app, it automatically inherits these classes and applies the `errorClass` when the schema validation fails, eliminating the need for render-prop wrappers.
+
+## Final thoughts
+
+TanStack Form provides maximum flexibility through a render-prop architecture and explicit configuration, acting more like a set of low-level form primitives than a batteries-included library.
+
+**Choose TanStack Form if:** You need highly complex, bespoke validation triggers (e.g., validating X on change, but Y on blur), prefer explicit render props, and want the ability to swap validation adapters (Zod to Yup) dynamically.
+
+**Choose AirLib Form if:** You prefer a highly declarative, concise developer experience. If you want your Zod schema to be the undisputed single source of truth and want to avoid writing render props and manual `onChange` wiring, AirLib Form is significantly faster to implement.

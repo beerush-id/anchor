@@ -28,8 +28,6 @@ export default page(docsRoute).render(({ children }) => (
     <Header>
       <Search />
     </Header>
-    <Layout nav={navs} preload="hover">
-      {children}
-    </Layout>
+    <Layout nav={navs}>{children}</Layout>
   </>
 ));

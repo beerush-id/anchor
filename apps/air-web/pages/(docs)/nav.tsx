@@ -1,20 +1,21 @@
 import type { NavItem } from '@airlib/react/mdx';
-import formMeta from '@airlib-cache/metadata/(docs)/airlib/form/index.js';
-import componentsMeta from '@airlib-cache/metadata/(docs)/airlib/material-css/components/index.js';
-import extensionsMeta from '@airlib-cache/metadata/(docs)/airlib/material-css/extensions/index.js';
-import materialMeta from '@airlib-cache/metadata/(docs)/airlib/material-css/index.js';
-import layoutMeta from '@airlib-cache/metadata/(docs)/airlib/material-css/layout/index.js';
-import utilitiesMeta from '@airlib-cache/metadata/(docs)/airlib/material-css/utilities/index.js';
 import docsMeta from '@airlib-cache/metadata/(docs)/index.js';
 import remoteFunctionMeta from '@airlib-cache/metadata/(docs)/remote-function/index.js';
 import routingMeta from '@airlib-cache/metadata/(docs)/routing/index.js';
 import stateMeta from '@airlib-cache/metadata/(docs)/state-management/index.js';
 import storageMeta from '@airlib-cache/metadata/(docs)/storage/index.js';
 import uiMeta from '@airlib-cache/metadata/(docs)/user-interface/index.js';
+import formMeta from '@airlib-cache/metadata/(docs)/utilities/form/index.js';
+import componentsMeta from '@airlib-cache/metadata/(docs)/utilities/material-css/components/index.js';
+import extensionsMeta from '@airlib-cache/metadata/(docs)/utilities/material-css/extensions/index.js';
+import materialMeta from '@airlib-cache/metadata/(docs)/utilities/material-css/index.js';
+import layoutMeta from '@airlib-cache/metadata/(docs)/utilities/material-css/layout/index.js';
+import utilitiesMeta from '@airlib-cache/metadata/(docs)/utilities/material-css/utilities/index.js';
 import workflowMeta from '@airlib-cache/metadata/(docs)/workflow/index.js';
 import type { ComponentType } from 'react';
 import {
   AccountTreeIcon,
+  ArticleIcon,
   BuildIcon,
   CallIcon,
   ChecklistIcon,
@@ -22,31 +23,60 @@ import {
   DnsIcon,
   DownloadIcon,
   ExtensionIcon,
+  GettingStartedIcon,
   GridViewIcon,
   HomeIcon,
+  InstallIcon,
   MarkdownIcon,
+  NewspaperIcon,
+  OverviewIcon,
   PaletteIcon,
+  RemoteFunctionIcon,
   RocketLaunchIcon,
   RouteIcon,
+  SsrIcon,
+  StateManagementIcon,
   StorageIcon,
   StyleIcon,
+  UserInterfaceIcon,
   WidgetsIcon,
+  WorkflowIcon,
 } from './icons.js';
+import postsRoute from './posts/route.js';
+import releasesRoute from './releases/route.js';
 
 const ICONS: Record<string, ComponentType> = {
-  home: HomeIcon,
-  download: DownloadIcon,
-  'rocket-launch': RocketLaunchIcon,
-  rocket: RocketLaunchIcon,
-  dns: DnsIcon,
+  home: OverviewIcon,
+  overview: OverviewIcon,
+  docs: OverviewIcon,
+  download: InstallIcon,
+  install: InstallIcon,
+  installation: InstallIcon,
+  'rocket-launch': GettingStartedIcon,
+  rocket: GettingStartedIcon,
+  'getting-started': GettingStartedIcon,
+  book: GettingStartedIcon,
+  dns: SsrIcon,
+  ssr: SsrIcon,
+  'universal-ssr': SsrIcon,
+  server: SsrIcon,
   markdown: MarkdownIcon,
-  call: CallIcon,
-  'account-tree': AccountTreeIcon,
-  tree: AccountTreeIcon,
-  'data-object': DataObjectIcon,
-  object: DataObjectIcon,
+  call: RemoteFunctionIcon,
+  rpc: RemoteFunctionIcon,
+  'remote-function': RemoteFunctionIcon,
+  'account-tree': WorkflowIcon,
+  tree: WorkflowIcon,
+  workflow: WorkflowIcon,
+  workflows: WorkflowIcon,
+  'data-object': StateManagementIcon,
+  object: StateManagementIcon,
+  state: StateManagementIcon,
+  'state-management': StateManagementIcon,
+  anchor: StateManagementIcon,
   route: RouteIcon,
-  palette: PaletteIcon,
+  palette: UserInterfaceIcon,
+  ui: UserInterfaceIcon,
+  'user-interface': UserInterfaceIcon,
   checklist: ChecklistIcon,
   style: StyleIcon,
   storage: StorageIcon,
@@ -55,6 +85,9 @@ const ICONS: Record<string, ComponentType> = {
   grid: GridViewIcon,
   extension: ExtensionIcon,
   build: BuildIcon,
+  article: ArticleIcon,
+  newspaper: NewspaperIcon,
+  news: NewspaperIcon,
 };
 
 interface MetaEntry {
@@ -91,22 +124,27 @@ export const navs: NavItem[] = [
   ...toNavItems(docsMeta, true),
   { separator: true },
   {
-    text: 'Remote Function',
-    icon: () => <CallIcon />,
-    collapsed: true,
-    items: toNavItems(remoteFunctionMeta),
+    text: 'Posts',
+    route: postsRoute,
+    icon: () => <ArticleIcon />,
   },
   {
-    text: 'Workflows',
-    icon: () => <AccountTreeIcon />,
-    collapsed: true,
-    items: toNavItems(workflowMeta),
+    text: 'Releases',
+    route: releasesRoute,
+    icon: () => <NewspaperIcon />,
   },
+  { separator: true },
   {
     text: 'State Management',
-    icon: () => <DataObjectIcon />,
+    icon: () => <StateManagementIcon />,
     collapsed: true,
     items: toNavItems(stateMeta),
+  },
+  {
+    text: 'Remote Function',
+    icon: () => <RemoteFunctionIcon />,
+    collapsed: true,
+    items: toNavItems(remoteFunctionMeta),
   },
   {
     text: 'Routing',
@@ -115,12 +153,18 @@ export const navs: NavItem[] = [
     items: toNavItems(routingMeta),
   },
   {
+    text: 'Workflows',
+    icon: () => <WorkflowIcon />,
+    collapsed: true,
+    items: toNavItems(workflowMeta),
+  },
+  { separator: true },
+  {
     text: 'User Interface',
-    icon: () => <PaletteIcon />,
+    icon: () => <UserInterfaceIcon />,
     collapsed: true,
     items: toNavItems(uiMeta),
   },
-  { separator: true },
   {
     text: 'AirLib Form',
     icon: () => <ChecklistIcon />,
@@ -155,6 +199,7 @@ export const navs: NavItem[] = [
       },
     ],
   },
+  { separator: true },
   {
     text: 'Storage',
     icon: () => <StorageIcon />,
