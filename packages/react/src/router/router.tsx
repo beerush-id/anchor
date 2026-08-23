@@ -21,6 +21,7 @@ import type { FC, ReactNode } from 'react';
 import { setup, snippet } from '../hoc.js';
 import { createEffect, createRef } from '../hooks.js';
 import { createSlot } from '../switch.js';
+import { DEFAULT_ROUTER_CONFIGS } from './constant.js';
 import { navigate } from './navigate.js';
 import type { AnyRoute, RouteComponent, RouteStacks, UIRouterProps } from './types.js';
 
@@ -172,7 +173,7 @@ export function UIRouter(props: UIRouterProps) {
   const { router, resetScroll, url, headless = true, children } = props;
   const stacks = createRef(new Map()).current;
   const activate = async (e?: PopStateEvent) => {
-    const behavior = typeof resetScroll === 'string' ? resetScroll : 'smooth';
+    const behavior = typeof resetScroll === 'string' ? resetScroll : DEFAULT_ROUTER_CONFIGS.scrollBehavior;
 
     const { from, to } = e?.state ?? {};
     if (to?.hash && to?.path === from?.path) {
@@ -226,7 +227,7 @@ export function UIRouter(props: UIRouterProps) {
 }
 
 /* istanbul ignore next */
-function scrollIntoView(hash: string, behavior: ScrollBehavior = 'smooth') {
+function scrollIntoView(hash: string, behavior: ScrollBehavior = DEFAULT_ROUTER_CONFIGS.scrollBehavior) {
   const element = document.getElementById(hash);
   if (element) {
     element.scrollIntoView({ block: 'start', inline: 'start', behavior });

@@ -4,6 +4,7 @@ import type { MouseEventHandler, ReactNode, RefObject } from 'react';
 import { render, setup } from '../hoc.js';
 import { onMount } from '../lifecycle.js';
 import type { ComponentProps } from '../types.js';
+import { DEFAULT_ROUTER_CONFIGS } from './constant.js';
 import { getCurrentUrl, uiRouterCtx } from './router.tsx';
 import type { AnyRoute, LinkProps, RouteComponent } from './types.js';
 
@@ -52,9 +53,23 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
 
     if (props.to) {
       route = props.to instanceof Route ? props.to : (props.to as RouteComponent<AnyRoute>).route;
-      target = new URL(untrack(() => route!.url(params, query)), activeUrl);
+      target = new URL(
+        untrack(() => route!.url(params, query)),
+        activeUrl
+      );
     } else {
       target = new URL(href || '/', activeUrl);
+
+      if (target.origin !== activeUrl.origin) {
+        return {
+          url: target,
+          hash: target.hash.substring(1),
+          href: target.href,
+          search: target.search,
+          pathname: target.pathname,
+          fullPath: target.href,
+        };
+      }
 
       if (router && href) {
         route = untrack(() => router.find(target, true)?.route);
@@ -144,7 +159,7 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
       ref.current?.scrollIntoView({
         block: 'center',
         inline: 'center',
-        behavior: typeof props.keepVisible === 'string' ? props.keepVisible : 'smooth',
+        behavior: typeof props.keepVisible === 'string' ? props.keepVisible : DEFAULT_ROUTER_CONFIGS.scrollBehavior,
       });
     }
   });

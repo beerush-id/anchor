@@ -9,12 +9,13 @@ import {
   getCurrentUrl,
   modal,
   page,
-  RouteRendererComponent,
-  RouteViewer,
   redirect,
   route,
+  RouteRendererComponent,
+  RouteViewer,
   UIRouter,
 } from '../../src/index.js';
+import { DEFAULT_ROUTER_CONFIGS } from '../../src/router/constant.js';
 
 describe('Anchor React - UIRouter & RouteViewer Components', () => {
   let addEventListenerSpy: ReturnType<typeof vi.spyOn>;
@@ -603,7 +604,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       });
 
       expect(activateSpy).toHaveBeenCalled();
-      expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'smooth' });
+      expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, left: 0, behavior: DEFAULT_ROUTER_CONFIGS.scrollBehavior });
 
       scrollToSpy.mockClear();
       render(<UIRouter router={router} root={rootUi} headless={false} resetScroll={false} />);
@@ -662,7 +663,11 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
 
       await Promise.resolve();
 
-      expect(scrollSpy).toHaveBeenCalledWith({ block: 'start', inline: 'start', behavior: 'smooth' });
+      expect(scrollSpy).toHaveBeenCalledWith({
+        block: 'start',
+        inline: 'start',
+        behavior: DEFAULT_ROUTER_CONFIGS.scrollBehavior,
+      });
       expect(activateSpy).not.toHaveBeenCalled();
       target.remove();
     });
@@ -721,7 +726,11 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       await Promise.resolve();
 
       expect(activateSpy).toHaveBeenCalledWith(href);
-      expect(scrollSpy).toHaveBeenCalledWith({ block: 'start', inline: 'start', behavior: 'smooth' });
+      expect(scrollSpy).toHaveBeenCalledWith({
+        block: 'start',
+        inline: 'start',
+        behavior: DEFAULT_ROUTER_CONFIGS.scrollBehavior,
+      });
       target.remove();
     });
 
