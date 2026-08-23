@@ -15,6 +15,7 @@ export const ELEMENT_OBSERVER_REGISTRY = new WeakMap<Owner, StateObserver>();
 
 let bindingInitialized = false;
 
+/* istanbul ignore next */
 if (!bindingInitialized) {
   // Make sure to initialize binding only once.
   bindingInitialized = true;

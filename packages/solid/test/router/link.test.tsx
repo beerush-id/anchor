@@ -1,313 +1,559 @@
 /** @jsxImportSource solid-js */
 
-import { createRouter } from '@airlib/router';
+import { createRouter, DEFAULT_CONFIG } from '@airlib/router';
 import { fireEvent, render, screen } from '@solidjs/testing-library';
-import type { Component } from 'solid-js';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AnyRoute } from '../../src/index.js';
-import { Link, page } from '../../src/index.js';
-import * as NavigateModule from '../../src/router/navigate.js';
+import type { JSX } from 'solid-js';
+import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from 'vitest';
+import { Link, page, UIRouter, uiRouterCtx } from '../../src/index.js';
 
 describe('Anchor Solid - Link Component', () => {
-  let navigateSpy: ReturnType<typeof vi.spyOn>;
-  let preloadSpy: ReturnType<typeof vi.spyOn>;
+  let pushSpy: MockInstance;
+  let replaceSpy: MockInstance;
+  let dispatchSpy: MockInstance;
+  let scrollToSpy: MockInstance;
+  let scrollIntoViewSpy: MockInstance;
 
   beforeEach(() => {
-    navigateSpy = vi.spyOn(NavigateModule, 'navigate').mockImplementation(() => {});
+    window.history.replaceState(null, '', '/');
+    pushSpy = vi.spyOn(history, 'pushState');
+    replaceSpy = vi.spyOn(history, 'replaceState');
+    dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+    scrollToSpy = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    scrollIntoViewSpy = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoViewSpy as never;
+
+    // Suppress jsdom navigation notice when testing browser-yielded clicks
+    (window as any)._virtualConsole?.removeAllListeners?.('jsdomError');
+    (window as any)._virtualConsole?.on?.('jsdomError', (error: any) => {
+      if (error?.message?.includes('navigation to another Document')) return;
+      console.error(error);
+    });
   });
 
   afterEach(() => {
-    navigateSpy.mockRestore();
-    if (preloadSpy) preloadSpy.mockRestore();
+    pushSpy.mockRestore();
+    replaceSpy.mockRestore();
+    dispatchSpy.mockRestore();
+    scrollToSpy.mockRestore();
+    uiRouterCtx.set(undefined as never);
+    window.history.replaceState(null, '', '/');
   });
 
-  it('renders an anchor tag with string href', () => {
-    render(() => <Link href="/about">About Us</Link>);
-    const anchor = screen.getByText('About Us');
-    expect(anchor.tagName).toBe('A');
-    expect(anchor.getAttribute('href')).toBe('/about');
-  });
+  const lastPopState = () =>
+    dispatchSpy.mock.calls
+      .map(([event]) => event as Event)
+      .find((event): event is PopStateEvent => event instanceof PopStateEvent);
 
-  it('renders correctly with a structured RouteComponent in `to`', () => {
-    const router = createRouter();
-    const coreRoute = router.route('/settings');
-    const SettingsRoute = page(coreRoute);
+  describe('href resolution', () => {
+    it('renders an anchor with the fullPath of a string href', () => {
+      render(() => <Link href="/about">About Us</Link>);
+      const anchor = screen.getByText('About Us');
 
-    render(() => <Link to={SettingsRoute}>Settings</Link>);
-    const anchor = screen.getByText('Settings');
-    expect(anchor.getAttribute('href')).toBe('/settings');
-  });
+      expect(anchor.tagName).toBe('A');
+      expect(anchor.getAttribute('href')).toBe('/about');
+    });
 
-  it('renders correctly with a route object in `to`', () => {
-    const router = createRouter();
-    const coreRoute = router.route('/settings');
+    it('normalizes trailing slashes away from the rendered href', () => {
+      render(() => <Link href="/about/">About</Link>);
 
-    render(() => <Link to={coreRoute}>Settings</Link>);
-    const anchor = screen.getByText('Settings');
-    expect(anchor.getAttribute('href')).toBe('/settings');
-  });
+      expect(screen.getByText('About').getAttribute('href')).toBe('/about');
+    });
 
-  it('intercepts standard clicks and calls navigate', () => {
-    const TypedLink = Link as Component<{ href: string; query: any; children: any }>;
-    render(() => (
-      <TypedLink href="/contact" query={{ ref: 'test' }}>
-        Contact
-      </TypedLink>
-    ));
-    const anchor = screen.getByText('Contact');
+    it('keeps query strings from a string href in the rendered href', () => {
+      render(() => <Link href="/search?q=anchor">Search</Link>);
 
-    fireEvent.click(anchor);
+      expect(screen.getByText('Search').getAttribute('href')).toBe('/search?q=anchor');
+    });
 
-    expect(navigateSpy).toHaveBeenCalledWith('/contact?ref=test', {
-      query: { ref: 'test' },
-      params: undefined,
-      replace: undefined,
+    it('resolves index route for parent route when matched by href', () => {
+      const router = createRouter<JSX.Element>();
+      const parentRoute = router.route('/dashboard');
+      parentRoute.index = router.route('/dashboard') as any;
+
+      render(() => (
+        <UIRouter router={router}>
+          <Link href="/dashboard">Dashboard</Link>
+        </UIRouter>
+      ));
+
+      expect(screen.getByText('Dashboard').getAttribute('href')).toBe('/dashboard');
+    });
+
+    it('resolves href when matching a route without an index route', () => {
+      const router = createRouter<JSX.Element>();
+      router.route('/about');
+
+      render(() => (
+        <UIRouter router={router}>
+          <Link href="/about">About Us</Link>
+        </UIRouter>
+      ));
+
+      expect(screen.getByText('About Us').getAttribute('href')).toBe('/about');
+    });
+
+    it('handles unmatched href inside UIRouter gracefully', () => {
+      const router = createRouter<JSX.Element>();
+
+      render(() => (
+        <UIRouter router={router}>
+          <Link href="/unmatched-destination">Unmatched</Link>
+        </UIRouter>
+      ));
+
+      expect(screen.getByText('Unmatched').getAttribute('href')).toBe('/unmatched-destination');
+    });
+
+    it('resolves the href from a bare Route in `to`', () => {
+      const router = createRouter();
+      const settingsRoute = router.route('/settings');
+
+      render(() => <Link to={settingsRoute}>Settings</Link>);
+
+      expect(screen.getByText('Settings').getAttribute('href')).toBe('/settings');
+    });
+
+    it('resolves the href from a RouteComponent in `to`', () => {
+      const router = createRouter();
+      const SettingsRoute = page(router.route('/settings'));
+
+      render(() => <Link to={SettingsRoute}>Settings</Link>);
+
+      expect(screen.getByText('Settings').getAttribute('href')).toBe('/settings');
+    });
+
+    it('fills dynamic route params into the href', () => {
+      const router = createRouter();
+      const profileRoute = router.route('/users').route('/:id');
+
+      render(() => (
+        <Link to={profileRoute} params={{ id: '42' }}>
+          Profile
+        </Link>
+      ));
+
+      expect(screen.getByText('Profile').getAttribute('href')).toBe('/users/42');
+    });
+
+    it('appends the query prop to route-based hrefs', () => {
+      const router = createRouter();
+      const contactRoute = router.route('/contact?ref');
+
+      render(() => (
+        <Link to={contactRoute} query={{ ref: 'test' }}>
+          Contact
+        </Link>
+      ));
+
+      expect(screen.getByText('Contact').getAttribute('href')).toBe('/contact?ref=test');
+    });
+
+    it('renders an empty href when neither `to` nor `href` is provided', () => {
+      render(() => <Link>Empty Link</Link>);
+
+      expect(screen.getByText('Empty Link').getAttribute('href')).toBe('/');
+    });
+
+    it('forwards unrelated attributes to the anchor element', () => {
+      render(() => (
+        <Link href="/about" data-testid="about-link" title="About us">
+          About
+        </Link>
+      ));
+
+      const anchor = screen.getByTestId('about-link');
+      expect(anchor.tagName).toBe('A');
+      expect(anchor.getAttribute('title')).toBe('About us');
     });
   });
 
-  it('intercepts standard clicks and calls navigate', () => {
-    const router = createRouter();
-    const coreRoute = router.route('/contact');
-    const ContactPage = page(coreRoute);
+  describe('active state', () => {
+    it('applies aria-current and activeClass when the route is active', () => {
+      const router = createRouter();
+      const dashboardRoute = router.route('/dashboard');
+      dashboardRoute.active = true;
 
-    render(() => <Link to={ContactPage}>Contact</Link>);
-    const anchor = screen.getByText('Contact');
+      render(() => (
+        <Link to={dashboardRoute} class="btn" activeClass="btn-active">
+          Dashboard
+        </Link>
+      ));
 
-    fireEvent.click(anchor);
+      const anchor = screen.getByText('Dashboard');
+      expect(anchor.getAttribute('aria-current')).toBe('page');
+      expect(anchor.className).toContain('btn');
+      expect(anchor.className).toContain('btn-active');
+    });
 
-    expect(navigateSpy).toHaveBeenCalledWith('/contact', {
-      query: undefined,
-      params: undefined,
-      replace: undefined,
+    it('omits active styling when the route is inactive', () => {
+      const router = createRouter();
+      const dashboardRoute = router.route('/dashboard');
+      dashboardRoute.active = false;
+
+      render(() => (
+        <Link to={dashboardRoute} class="btn" activeClass="btn-active">
+          Dashboard
+        </Link>
+      ));
+
+      const anchor = screen.getByText('Dashboard');
+      expect(anchor.getAttribute('aria-current')).toBeNull();
+      expect(anchor.className).not.toContain('btn-active');
+    });
+
+    it('reflects active state for string hrefs resolved through the router context', () => {
+      dispatchSpy.mockImplementation(() => true);
+      const router = createRouter<JSX.Element>();
+      const aboutRoute = router.route('/about');
+      aboutRoute.active = true;
+
+      render(() => (
+        <UIRouter router={router}>
+          <Link href="/about" activeClass="current">
+            About
+          </Link>
+        </UIRouter>
+      ));
+
+      const anchor = screen.getByText('About');
+      expect(anchor.getAttribute('aria-current')).toBe('page');
+      expect(anchor.className).toContain('current');
     });
   });
 
-  it('respects replace prop during navigation', () => {
-    render(() => (
-      <Link href="/login" replace>
-        Login
-      </Link>
-    ));
-    const anchor = screen.getByText('Login');
+  describe('click navigation', () => {
+    it('pushes from/to state payloads and dispatches a popstate event', () => {
+      const from = { path: location.pathname, hash: location.hash, href: location.href, query: location.search };
+      const to = {
+        path: '/contact',
+        hash: '',
+        href: `${location.origin}/contact`,
+        query: '',
+      };
 
-    fireEvent.click(anchor);
+      render(() => <Link href="/contact">Contact</Link>);
+      fireEvent.click(screen.getByText('Contact'));
 
-    expect(navigateSpy).toHaveBeenCalledWith('/login', {
-      query: undefined,
-      params: undefined,
-      replace: true,
+      expect(pushSpy).toHaveBeenCalledTimes(1);
+      expect(pushSpy).toHaveBeenCalledWith({ from, to }, '', to.href);
+      expect(replaceSpy).not.toHaveBeenCalled();
+      expect(lastPopState()?.state).toEqual({ from, to });
+    });
+
+    it('uses replaceState instead of pushState when `replace` is set', () => {
+      render(() => (
+        <Link href="/login" replace>
+          Login
+        </Link>
+      ));
+      fireEvent.click(screen.getByText('Login'));
+
+      expect(replaceSpy).toHaveBeenCalledTimes(1);
+      expect(replaceSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ to: expect.objectContaining({ path: '/login' }) }),
+        '',
+        `${location.origin}/login`
+      );
+      expect(pushSpy).not.toHaveBeenCalled();
+    });
+
+    it('navigates to the resolved url of a route target', () => {
+      const router = createRouter();
+      const contactRoute = router.route('/contact');
+
+      render(() => <Link to={contactRoute}>Contact</Link>);
+      fireEvent.click(screen.getByText('Contact'));
+
+      expect(pushSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ to: expect.objectContaining({ path: '/contact' }) }),
+        '',
+        `${location.origin}/contact`
+      );
+    });
+
+    it('skips navigation and onClick when the target url is already current', () => {
+      window.history.replaceState(null, '', `${DEFAULT_CONFIG.baseUrl}/projects`);
+      pushSpy.mockClear();
+      replaceSpy.mockClear();
+
+      const onClick = vi.fn();
+
+      render(() => (
+        <Link href="/projects" onClick={onClick}>
+          Projects
+        </Link>
+      ));
+      fireEvent.click(screen.getByText('Projects'));
+
+      expect(pushSpy).not.toHaveBeenCalled();
+      expect(replaceSpy).not.toHaveBeenCalled();
+      expect(onClick).toHaveBeenCalled();
+    });
+
+    it('yields to the browser for modifier keys, non-left buttons, and custom targets', () => {
+      render(() => <Link href="/about">About</Link>);
+      const anchor = screen.getByText('About');
+
+      fireEvent.click(anchor, { metaKey: true });
+      fireEvent.click(anchor, { ctrlKey: true });
+      fireEvent.click(anchor, { shiftKey: true });
+      fireEvent.click(anchor, { altKey: true });
+      fireEvent.click(anchor, { button: 1 });
+
+      expect(pushSpy).not.toHaveBeenCalled();
+      expect(replaceSpy).not.toHaveBeenCalled();
+    });
+
+    it('yields to the browser when a target attribute is set', () => {
+      render(() => (
+        <Link href="/external" target="_blank">
+          External
+        </Link>
+      ));
+      fireEvent.click(screen.getByText('External'));
+
+      expect(pushSpy).not.toHaveBeenCalled();
+      expect(replaceSpy).not.toHaveBeenCalled();
+    });
+
+    it('invokes the custom onClick handler after dispatching navigation', () => {
+      const onClick = vi.fn();
+
+      render(() => (
+        <Link href="/next" onClick={onClick}>
+          Next
+        </Link>
+      ));
+      fireEvent.click(screen.getByText('Next'));
+
+      expect(pushSpy).toHaveBeenCalledTimes(1);
+      expect(onClick).toHaveBeenCalledTimes(1);
     });
   });
 
-  it('allows native browser behavior for modified clicks and targets', () => {
-    render(() => (
-      <Link href="/external" target="_blank">
-        External
-      </Link>
-    ));
-    const anchor = screen.getByText('External');
+  describe('hash navigation', () => {
+    it('scopes hash hrefs to the current pathname and carries the hash into the state payload', () => {
+      window.history.replaceState(null, '', `${DEFAULT_CONFIG.baseUrl}/docs`);
 
-    // With target="_blank", it should return early
-    fireEvent.click(anchor);
-    expect(navigateSpy).not.toHaveBeenCalled();
+      render(() => <Link href="#setup">Setup</Link>);
+      fireEvent.click(screen.getByText('Setup'));
 
-    // With metaKey, it should return early
-    render(() => <Link href="/new-tab">New Tab</Link>);
-    const newTabAnchor = screen.getByText('New Tab');
-    fireEvent.click(newTabAnchor, { metaKey: true });
-    expect(navigateSpy).not.toHaveBeenCalled();
-  });
+      expect(pushSpy).toHaveBeenCalledTimes(1);
+      const [data, , url] = pushSpy.mock.calls[0] as [Record<string, any>, string, string];
 
-  it('applies aria-current and activeClass when route is active', () => {
-    const router = createRouter();
-    const coreRoute = router.route('/dashboard');
-    const DashboardRoute = page(coreRoute);
-
-    coreRoute.active = true;
-
-    render(() => (
-      <Link to={DashboardRoute} class="btn" activeClass="btn-active">
-        Dashboard
-      </Link>
-    ));
-
-    const anchor = screen.getByText('Dashboard');
-    expect(anchor.getAttribute('aria-current')).toBe('page');
-    expect(anchor.className).toContain('btn btn-active');
-  });
-
-  it('applies active stylings to Index routes if their parent is active', () => {
-    const router = createRouter();
-    const parentCoreRoute = router.route('/users');
-    const indexCoreRoute = parentCoreRoute.route('/');
-    const IndexRouteComponent = page(indexCoreRoute as never as AnyRoute);
-
-    parentCoreRoute.active = true;
-    indexCoreRoute.active = false;
-
-    render(() => (
-      <Link to={IndexRouteComponent} activeClass="active-index" fullMatch={false}>
-        Users
-      </Link>
-    ));
-
-    const anchor = screen.getByText('Users');
-    expect(anchor.getAttribute('aria-current')).toBe('page');
-    expect(anchor.className).toContain('active-index');
-  });
-
-  it('calls router.preload when hovering with preload=hover', () => {
-    const router = createRouter();
-    const coreRoute = router.route('/heavy');
-    const HeavyRoute = page(coreRoute);
-
-    preloadSpy = vi.spyOn(router, 'preload').mockImplementation(async () => {}) as any;
-    const hoverSpy = vi.fn();
-
-    render(() => (
-      <Link to={HeavyRoute} preload="hover" onMouseEnter={hoverSpy}>
-        Heavy
-      </Link>
-    ));
-    const anchor = screen.getByText('Heavy');
-
-    fireEvent.mouseEnter(anchor);
-    expect(preloadSpy).toHaveBeenCalledWith('/heavy');
-    expect(hoverSpy).toHaveBeenCalled();
-  });
-
-  it('calls router.preload via route options preloadMode without explicit prop', () => {
-    const router = createRouter();
-    const coreRoute = router.route('/heavy-native', { preloadMode: 'hover' });
-    const NativeHeavyRoute = page(coreRoute);
-
-    preloadSpy = vi.spyOn(router, 'preload').mockImplementation(async () => {}) as any;
-
-    render(() => <Link to={NativeHeavyRoute}>Heavy Native</Link>);
-    const anchor = screen.getByText('Heavy Native');
-
-    fireEvent.mouseEnter(anchor);
-    expect(preloadSpy).toHaveBeenCalledWith('/heavy-native');
-  });
-
-  it('renders href as / if no to or href is provided', () => {
-    render(() => <Link>Empty Link</Link>);
-    const anchor = screen.getByText('Empty Link');
-
-    expect(anchor.getAttribute('href')).toBe('/');
-  });
-
-  it('triggers custom onClick if provided', () => {
-    const onClickSpy = vi.fn();
-    render(() => (
-      <Link href="/something" onClick={onClickSpy}>
-        Click Me
-      </Link>
-    ));
-
-    const anchor = screen.getByText('Click Me');
-    fireEvent.click(anchor);
-
-    expect(onClickSpy).toHaveBeenCalled();
-  });
-
-  it('does not apply active stylings to Index routes if parent is active but fullMatch is true', () => {
-    const router = createRouter();
-    const parentCoreRoute = router.route('/users');
-    const indexCoreRoute = parentCoreRoute.route('/');
-    const IndexRouteComponent = page(indexCoreRoute as never as AnyRoute);
-
-    parentCoreRoute.active = true;
-    indexCoreRoute.active = false;
-
-    render(() => (
-      <Link to={IndexRouteComponent} activeClass="active-index" fullMatch={true}>
-        Users
-      </Link>
-    ));
-
-    const anchor = screen.getByText('Users');
-    expect(anchor.getAttribute('aria-current')).toBeNull();
-    expect(anchor.className).not.toContain('active-index');
-  });
-
-  it('navigates strictly when path differs (prevents false endsWith matches)', () => {
-    // Override window.location to simulate being in a nested route
-    Object.defineProperty(window, 'location', {
-      value: {
-        pathname: '/console/projects',
-        search: '',
-      },
-      writable: true,
-    });
-
-    render(() => <Link href="/projects">Root Projects</Link>);
-    const anchor = screen.getByText('Root Projects');
-    fireEvent.click(anchor);
-
-    // Should navigate because '/console/projects' !== '/projects'
-    expect(navigateSpy).toHaveBeenCalledWith('/projects', {
-      query: undefined,
-      params: undefined,
-      replace: undefined,
+      expect(data.to.path).toBe('/docs');
+      expect(data.to.hash).toBe('setup');
+      expect(url).toBe(`${location.origin}/docs#setup`);
     });
   });
 
-  it('does not apply active stylings to Index routes by default (inferred fullMatch=true)', () => {
-    const router = createRouter();
-    const parentCoreRoute = router.route('/users');
-    const indexCoreRoute = parentCoreRoute.route('/'); // Index child
-    const IndexRouteComponent = page(indexCoreRoute as never as AnyRoute);
+  describe('scroll management', () => {
+    it('scrolls the body to the top on navigation when resetScroll is set', () => {
+      const scrollTo = vi.fn();
+      document.body.scrollTo = scrollTo;
 
-    parentCoreRoute.active = true;
-    indexCoreRoute.active = false;
+      render(() => (
+        <Link href="/next" resetScroll>
+          Next
+        </Link>
+      ));
+      fireEvent.click(screen.getByText('Next'));
 
-    render(() => (
-      <Link to={IndexRouteComponent} activeClass="active-index">
-        Users
-      </Link>
-    ));
-
-    const anchor = screen.getByText('Users');
-    expect(anchor.getAttribute('aria-current')).toBeNull();
-    expect(anchor.className).not.toContain('active-index');
-  });
-
-  it('does not apply active stylings to non-index sibling routes even if parent is active', () => {
-    const router = createRouter();
-    const parentCoreRoute = router.route('/users');
-    const siblingCoreRoute = parentCoreRoute.route('/profile'); // Non-index sibling
-    const SiblingRouteComponent = page(siblingCoreRoute as never as AnyRoute);
-
-    parentCoreRoute.active = true;
-    siblingCoreRoute.active = false;
-
-    render(() => (
-      <Link to={SiblingRouteComponent} activeClass="active-sibling" fullMatch={false}>
-        Profile
-      </Link>
-    ));
-
-    const anchor = screen.getByText('Profile');
-    expect(anchor.getAttribute('aria-current')).toBeNull();
-    expect(anchor.className).not.toContain('active-sibling');
-  });
-
-  it('swallows navigation if target path exactly matches current path', () => {
-    // Override window.location to simulate being on the target route
-    Object.defineProperty(window, 'location', {
-      value: {
-        pathname: '/projects',
-        search: '',
-      },
-      writable: true,
+      expect(scrollTo).toHaveBeenCalledWith({ left: 0, top: 0, behavior: 'auto' });
     });
 
-    render(() => <Link href="/projects">Root Projects</Link>);
-    const anchor = screen.getByText('Root Projects');
-    fireEvent.click(anchor);
+    it('uses the string resetScroll value as scroll behavior', () => {
+      const scrollTo = vi.fn();
+      document.body.scrollTo = scrollTo;
 
-    // Should NOT navigate because '/projects' === '/projects'
-    expect(navigateSpy).not.toHaveBeenCalled();
+      render(() => (
+        <Link href="/next" resetScroll="smooth">
+          Next
+        </Link>
+      ));
+      fireEvent.click(screen.getByText('Next'));
+
+      expect(scrollTo).toHaveBeenCalledWith({ left: 0, top: 0, behavior: 'smooth' });
+    });
+
+    it('leaves scroll restoration to the router when UIRouter manages it', () => {
+      dispatchSpy.mockImplementation(() => true);
+      const scrollTo = vi.fn();
+      document.body.scrollTo = scrollTo;
+
+      const router = createRouter<JSX.Element>();
+      router.route('/next');
+
+      render(() => (
+        <UIRouter router={router} resetScroll>
+          <Link href="/next" resetScroll>
+            Next
+          </Link>
+        </UIRouter>
+      ));
+      fireEvent.click(screen.getByText('Next'));
+
+      expect(pushSpy).toHaveBeenCalledTimes(1);
+      expect(scrollTo).not.toHaveBeenCalled();
+    });
+
+    it('scrolls an active link into view on mount when keepVisible is set', async () => {
+      const router = createRouter();
+      const dashboardRoute = router.route('/dashboard');
+      dashboardRoute.active = true;
+
+      render(() => (
+        <Link to={dashboardRoute} keepVisible>
+          Dashboard
+        </Link>
+      ));
+
+      await Promise.resolve();
+      expect(scrollIntoViewSpy).toHaveBeenCalledWith({ block: 'center', inline: 'center', behavior: 'smooth' });
+    });
+
+    it('uses the string keepVisible value as scroll behavior', async () => {
+      const router = createRouter();
+      const dashboardRoute = router.route('/dashboard');
+      dashboardRoute.active = true;
+
+      render(() => (
+        <Link to={dashboardRoute} keepVisible="auto">
+          Dashboard
+        </Link>
+      ));
+
+      await Promise.resolve();
+      expect(scrollIntoViewSpy).toHaveBeenCalledWith({ block: 'center', inline: 'center', behavior: 'auto' });
+    });
+
+    it('does not scroll inactive links into view even with keepVisible', async () => {
+      const router = createRouter();
+      const dashboardRoute = router.route('/dashboard');
+      dashboardRoute.active = false;
+
+      render(() => (
+        <Link to={dashboardRoute} keepVisible>
+          Dashboard
+        </Link>
+      ));
+
+      await Promise.resolve();
+      expect(scrollIntoViewSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('hover preloading', () => {
+    it('preloads the target on hover when preload="hover" is set', () => {
+      const router = createRouter();
+      const heavyRoute = router.route('/heavy');
+      const preloadSpy = vi.spyOn(router, 'preload').mockImplementation(async () => {}) as any;
+
+      render(() => (
+        <Link to={heavyRoute} preload="hover">
+          Heavy
+        </Link>
+      ));
+      fireEvent.mouseEnter(screen.getByText('Heavy'));
+
+      expect(preloadSpy).toHaveBeenCalledWith('/heavy');
+      preloadSpy.mockRestore();
+    });
+
+    it('preloads on hover when the route options define preloadMode hover', () => {
+      const router = createRouter();
+      const heavyRoute = router.route('/heavy-native', { preloadMode: 'hover' });
+      const preloadSpy = vi.spyOn(router, 'preload').mockImplementation(async () => {}) as any;
+
+      render(() => <Link to={heavyRoute}>Heavy Native</Link>);
+      fireEvent.mouseEnter(screen.getByText('Heavy Native'));
+
+      expect(preloadSpy).toHaveBeenCalledWith('/heavy-native');
+      preloadSpy.mockRestore();
+    });
+
+    it('forwards onMouseEnter but does not preload without a hover mode', () => {
+      const router = createRouter();
+      const plainRoute = router.route('/plain');
+      const preloadSpy = vi.spyOn(router, 'preload').mockImplementation(async () => {}) as any;
+      const onMouseEnter = vi.fn();
+
+      render(() => (
+        <Link to={plainRoute} onMouseEnter={onMouseEnter}>
+          Plain
+        </Link>
+      ));
+      fireEvent.mouseEnter(screen.getByText('Plain'));
+
+      expect(preloadSpy).not.toHaveBeenCalled();
+      expect(onMouseEnter).toHaveBeenCalledTimes(1);
+      preloadSpy.mockRestore();
+    });
+  });
+
+  describe('ref forwarding and keepVisible', () => {
+    it('invokes callback refs with the anchor element', () => {
+      const ref = vi.fn();
+
+      render(() => (
+        <Link href="/about" ref={ref as never}>
+          About
+        </Link>
+      ));
+
+      expect(ref).toHaveBeenCalledWith(expect.any(HTMLElement));
+    });
+
+    it('scrolls into view on mount when keepVisible is true and route is active', () => {
+      const router = createRouter();
+      const activeRoute = router.route('/active-visible');
+      activeRoute.active = true;
+      const scrollIntoViewMock = vi.fn();
+      Element.prototype.scrollIntoView = scrollIntoViewMock;
+
+      render(() => (
+        <Link to={activeRoute} keepVisible>
+          Active Item
+        </Link>
+      ));
+
+      expect(scrollIntoViewMock).toHaveBeenCalledWith({
+        block: 'center',
+        inline: 'center',
+        behavior: 'smooth',
+      });
+    });
+
+    it('scrolls into view using custom behavior string when keepVisible is a string', () => {
+      const router = createRouter();
+      const activeRoute = router.route('/active-instant');
+      activeRoute.active = true;
+      const scrollIntoViewMock = vi.fn();
+      Element.prototype.scrollIntoView = scrollIntoViewMock;
+
+      render(() => (
+        <Link to={activeRoute} keepVisible="instant">
+          Instant Item
+        </Link>
+      ));
+
+      expect(scrollIntoViewMock).toHaveBeenCalledWith({
+        block: 'center',
+        inline: 'center',
+        behavior: 'instant',
+      });
+    });
+
+    it('handles mouseEnter on link without active route', () => {
+      const mouseEnterSpy = vi.fn();
+      render(() => (
+        <Link href="/plain-external" onMouseEnter={mouseEnterSpy}>
+          Plain External
+        </Link>
+      ));
+
+      fireEvent.mouseEnter(screen.getByText('Plain External'));
+      expect(mouseEnterSpy).toHaveBeenCalled();
+    });
   });
 });

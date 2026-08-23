@@ -1,0 +1,178 @@
+import { type AnyType, classx } from '@airlib/core';
+import { type JSX, splitProps } from '../solid.js';
+import { Show } from '../switch.js';
+
+export type AdmonitionType =
+  | 'note'
+  | 'tip'
+  | 'info'
+  | 'warning'
+  | 'danger'
+  | 'important'
+  | 'caution'
+  | 'details'
+  | 'interactive';
+
+export interface AdmonitionProps extends JSX.HTMLAttributes<AnyType> {
+  type?: AdmonitionType;
+  title?: string;
+  icon?: JSX.Element;
+  children?: JSX.Element;
+  collapsible?: string | boolean;
+  titles?: Partial<Record<AdmonitionType, string>>;
+}
+
+export function Admonition(allProps: AdmonitionProps): JSX.Element {
+  const [props, restProps] = splitProps(allProps, [
+    'type',
+    'title',
+    'titles',
+    'icon',
+    'class',
+    'children',
+    'role',
+    'collapsible',
+  ]);
+
+  const type = () => props.type ?? 'note';
+  const isAlert = () => type() === 'warning' || type() === 'danger' || type() === 'caution';
+  const heading = () => props.title ?? props.titles?.[type()] ?? defaultTitles[type()];
+  const visualIcon = () => props.icon ?? defaultIcons[type()];
+  const isCollapsible = () =>
+    type() === 'details' ||
+    (props.collapsible !== undefined && props.collapsible !== false && props.collapsible !== 'false');
+
+  const HeaderContent = () => (
+    <Show when={heading() || visualIcon()}>
+      <Show when={visualIcon()}>
+        <span class="air-mdx-admonition-icon" aria-hidden="true">
+          {visualIcon()}
+        </span>
+      </Show>
+      <Show when={heading()}>
+        <span class="air-mdx-admonition-title">{heading()}</span>
+      </Show>
+    </Show>
+  );
+
+  return (
+    <Show
+      when={isCollapsible()}
+      fallback={
+        <div
+          {...restProps}
+          role={props.role ?? (isAlert() ? 'alert' : 'note')}
+          class={classx('air-mdx-admonition', `air-mdx-admonition-${type()}`, props.class)}
+        >
+          <Show when={heading() || visualIcon()}>
+            <div class="air-mdx-admonition-header">
+              <HeaderContent />
+            </div>
+          </Show>
+          <div class="air-mdx-admonition-content">{props.children}</div>
+        </div>
+      }
+    >
+      <details
+        {...restProps}
+        role={props.role ?? (isAlert() ? 'alert' : 'note')}
+        class={classx('air-mdx-admonition', `air-mdx-admonition-${type()}`, props.class)}
+      >
+        <Show when={heading() || visualIcon()}>
+          <summary class="air-mdx-admonition-header">
+            <HeaderContent />
+          </summary>
+        </Show>
+        <div class="air-mdx-admonition-content">{props.children}</div>
+      </details>
+    </Show>
+  );
+}
+
+export function NoteBlock(props: Omit<AdmonitionProps, 'type'>): JSX.Element {
+  return <Admonition type="note" {...props} />;
+}
+
+export function TipBlock(props: Omit<AdmonitionProps, 'type'>): JSX.Element {
+  return <Admonition type="tip" {...props} />;
+}
+
+export function InfoBlock(props: Omit<AdmonitionProps, 'type'>): JSX.Element {
+  return <Admonition type="info" {...props} />;
+}
+
+export function WarningBlock(props: Omit<AdmonitionProps, 'type'>): JSX.Element {
+  return <Admonition type="warning" {...props} />;
+}
+
+export function DangerBlock(props: Omit<AdmonitionProps, 'type'>): JSX.Element {
+  return <Admonition type="danger" {...props} />;
+}
+
+export function ImportantBlock(props: Omit<AdmonitionProps, 'type'>): JSX.Element {
+  return <Admonition type="important" {...props} />;
+}
+
+export function CautionBlock(props: Omit<AdmonitionProps, 'type'>): JSX.Element {
+  return <Admonition type="caution" {...props} />;
+}
+
+const defaultTitles: Record<AdmonitionType, string> = {
+  note: 'Note',
+  tip: 'Tip',
+  info: 'Info',
+  warning: 'Warning',
+  danger: 'Danger',
+  important: 'Important',
+  caution: 'Caution',
+  details: 'Details',
+  interactive: 'Live Demo',
+};
+
+const defaultIcons: Record<AdmonitionType, JSX.Element> = {
+  note: (
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+      <path d="M200-200h360v-160q0-17 11.5-28.5T600-400h160v-360H200v560Zm0 80q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v367q0 16-6 30.5T817-337L623-143q-11 11-25.5 17t-30.5 6H200Zm240-280H320q-17 0-28.5-11.5T280-440q0-17 11.5-28.5T320-480h120q17 0 28.5 11.5T480-440q0 17-11.5 28.5T440-400Zm200-160H320q-17 0-28.5-11.5T280-600q0-17 11.5-28.5T320-640h320q17 0 28.5 11.5T680-600q0 17-11.5 28.5T640-560ZM200-200v-560 560Z" />
+    </svg>
+  ),
+  tip: (
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+      <path d="M423.5-103.5Q400-127 400-160h160q0 33-23.5 56.5T480-80q-33 0-56.5-23.5ZM360-200q-17 0-28.5-11.5T320-240q0-17 11.5-28.5T360-280h240q17 0 28.5 11.5T640-240q0 17-11.5 28.5T600-200H360Zm-30-120q-69-41-109.5-110T180-580q0-125 87.5-212.5T480-880q125 0 212.5 87.5T780-580q0 81-40.5 150T630-320H330Zm24-80h252q45-32 69.5-79T700-580q0-92-64-156t-156-64q-92 0-156 64t-64 156q0 54 24.5 101t69.5 79Zm126 0Z" />
+    </svg>
+  ),
+  info: (
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+      <path d="M508.5-291.5Q520-303 520-320v-160q0-17-11.5-28.5T480-520q-17 0-28.5 11.5T440-480v160q0 17 11.5 28.5T480-280q17 0 28.5-11.5Zm0-320Q520-623 520-640t-11.5-28.5Q497-680 480-680t-28.5 11.5Q440-657 440-640t11.5 28.5Q463-600 480-600t28.5-11.5ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z" />
+    </svg>
+  ),
+  warning: (
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+      <path d="M109-120q-11 0-20-5.5T75-140q-5-9-5.5-19.5T75-180l370-640q6-10 15.5-15t19.5-5q10 0 19.5 5t15.5 15l370 640q6 10 5.5 20.5T885-140q-5 9-14 14.5t-20 5.5H109Zm69-80h604L480-720 178-200Zm330.5-51.5Q520-263 520-280t-11.5-28.5Q497-320 480-320t-28.5 11.5Q440-297 440-280t11.5 28.5Q463-240 480-240t28.5-11.5Zm0-120Q520-383 520-400v-120q0-17-11.5-28.5T480-560q-17 0-28.5 11.5T440-520v120q0 17 11.5 28.5T480-360q17 0 28.5-11.5ZM480-460Z" />
+    </svg>
+  ),
+  danger: (
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+      <path d="M363-120q-16 0-30.5-6T307-143L143-307q-11-11-17-25.5t-6-30.5v-234q0-16 6-30.5t17-25.5l164-164q11-11 25.5-17t30.5-6h234q16 0 30.5 6t25.5 17l164 164q11 11 17 25.5t6 30.5v234q0 16-6 30.5T817-307L653-143q-11 11-25.5 17t-30.5 6H363Zm1-80h232l164-164v-232L596-760H364L200-596v232l164 164Zm116-224 86 86q11 11 28 11t28-11q11-11 11-28t-11-28l-86-86 86-86q11-11 11-28t-11-28q-11-11-28-11t-28 11l-86 86-86-86q-11-11-28-11t-28 11q-11 11-11 28t11 28l86 86-86 86q-11 11-11 28t11 28q11 11 28 11t28-11l86-86Zm0-56Z" />
+    </svg>
+  ),
+  important: (
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+      <path d="M200-200q-17 0-28.5-11.5T160-240q0-17 11.5-28.5T200-280h40v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h40q17 0 28.5 11.5T800-240q0 17-11.5 28.5T760-200H200Zm280-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-280h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Zm188.5-171.5Q520-463 520-480v-120q0-17-11.5-28.5T480-640q-17 0-28.5 11.5T440-600v120q0 17 11.5 28.5T480-440q17 0 28.5-11.5ZM480-320q17 0 28.5-11.5T520-360q0-17-11.5-28.5T480-400q-17 0-28.5 11.5T440-360q0 17 11.5 28.5T480-320Z" />
+    </svg>
+  ),
+  caution: (
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+      <path d="M508.5-291.5Q520-303 520-320t-11.5-28.5Q497-360 480-360t-28.5 11.5Q440-337 440-320t11.5 28.5Q463-280 480-280t28.5-11.5Zm0-160Q520-463 520-480v-160q0-17-11.5-28.5T480-680q-17 0-28.5 11.5T440-640v160q0 17 11.5 28.5T480-440q17 0 28.5-11.5ZM480-80q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z" />
+    </svg>
+  ),
+  details: (
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+      <path d="m508-528 98-98q10-10 5-22t-19-12H368q-14 0-19 12t5 22l98 98q12 12 28 12t28-12Zm252-312q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h560ZM200-320v120h560v-120H200Zm560-80v-360H200v360h560Zm-560 80v120-120Z" />
+    </svg>
+  ),
+  interactive: (
+    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
+      <path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm0-80h640v-400H160v400Zm187-200-76-76q-12-12-11.5-28t12.5-28q12-11 28-11.5t28 11.5l104 104q12 12 12 28t-12 28L328-308q-11 11-27.5 11.5T272-308q-11-11-11-28t11-28l75-76Zm173 160q-17 0-28.5-11.5T480-320q0-17 11.5-28.5T520-360h160q17 0 28.5 11.5T720-320q0 17-11.5 28.5T680-280H520Z" />
+    </svg>
+  ),
+};

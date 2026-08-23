@@ -1,11 +1,10 @@
 /** @jsxImportSource solid-js */
 
 import { mutable, onCleanup } from '@airlib/core';
-import { render } from '@solidjs/testing-library';
-import userEvent from '@testing-library/user-event';
+import { fireEvent, render } from '@solidjs/testing-library';
 import type { JSX } from 'solid-js';
 import { describe, expect, it, vi } from 'vitest';
-import { bind, type Bindable, bindable, proxyProps } from '../../src/index.js';
+import { type Bindable, bind, bindable, proxyProps } from '../../src/index.js';
 import type { BindableComponentProps } from '../../src/types.js';
 
 describe('Anchor Solid - Reactive Binding Tests', () => {
@@ -72,8 +71,8 @@ describe('Anchor Solid - Reactive Binding Tests', () => {
       expect(display.textContent).toBe('initial');
 
       // Update input value
-      userEvent.type(input, 'hello');
-      // Note: This is a simplified test - actual input handling might need more setup
+      fireEvent.input(input, { target: { value: 'hello' } });
+      expect(state.text).toBe('hello');
     });
 
     it('should delegate to global cleanup handler', async () => {

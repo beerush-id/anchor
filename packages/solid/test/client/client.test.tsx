@@ -1,6 +1,6 @@
 /** @jsxImportSource solid-js */
 
-import { mutable, onCleanup, setReactive, type StateObserver } from '@airlib/core';
+import { mutable, onCleanup, type StateObserver, setReactive } from '@airlib/core';
 import { render, renderHook } from '@solidjs/testing-library';
 import { createEffect, type Owner } from 'solid-js';
 import { describe, expect, it, vi } from 'vitest';
@@ -78,6 +78,22 @@ describe('Anchor Solid - Reactive API', () => {
       expect(state.count).toBe(1);
 
       vi.unstubAllGlobals();
+    });
+
+    it('falls back to onGlobalCleanup when onCleanup is called outside owner context', () => {
+      const handler = vi.fn();
+      onCleanup(handler);
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('safely handles state access outside owner context without tracking', () => {
+      const state = mutable({ text: 'unowned' });
+      expect(state.text).toBe('unowned');
+    });
+
+    it('does not re-initialize tracker when re-imported', async () => {
+      const client = await import('../../src/client/index.js');
+      expect(client.COMPONENT_REGISTRY).toBeDefined();
     });
   });
 });

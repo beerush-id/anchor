@@ -26,6 +26,12 @@ describe('Image Component (Solid)', () => {
         alt: 'Mock Image',
       },
     },
+    default: {
+      src: '/mock-original.webp',
+      width: 1000,
+      height: 800,
+      alt: 'Mock Image',
+    },
   };
 
   // Attach the proxy-like behavior for array/number indexing
@@ -77,6 +83,47 @@ describe('Image Component (Solid)', () => {
     expect(img?.getAttribute('class')).toBe('custom-class'); // standard html prop
   });
 
+  it('allows explicit src, width, and height props to override target properties', () => {
+    const { container } = render(() => <Image from={mockImage} src="/custom.png" width={500} height={400} />);
+    const img = container.querySelector('img');
+
+    expect(img?.getAttribute('src')).toBe('/custom.png');
+    expect(img?.getAttribute('width')).toBe('500');
+    expect(img?.getAttribute('height')).toBe('400');
+  });
+
+  it('allows explicit srcset prop to override calculated srcset', () => {
+    const { container } = render(() => <Image from={mockImage} srcset="/custom.webp 1x" />);
+    const img = container.querySelector('img');
+
+    expect(img?.getAttribute('srcset')).toBe('/custom.webp 1x');
+  });
+
+  it('renders explicit srcset when from is omitted', () => {
+    const { container } = render(() => (
+      <Image srcset="/isolated.webp 1x" alt="Isolated Alt" width={200} height={150} />
+    ));
+    const img = container.querySelector('img');
+
+    expect(img?.getAttribute('srcset')).toBe('/isolated.webp 1x');
+    expect(img?.getAttribute('alt')).toBe('Isolated Alt');
+    expect(img?.getAttribute('width')).toBe('200');
+    expect(img?.getAttribute('height')).toBe('150');
+  });
+
+  it('renders explicit src, width, height, and alt when from is omitted', () => {
+    const { container } = render(() => (
+      <Image src="/plain.png" alt="Plain Alt" width={300} height={200} />
+    ));
+    const img = container.querySelector('img');
+
+    expect(img?.getAttribute('src')).toBe('/plain.png');
+    expect(img?.getAttribute('alt')).toBe('Plain Alt');
+    expect(img?.getAttribute('width')).toBe('300');
+    expect(img?.getAttribute('height')).toBe('200');
+    expect(img?.getAttribute('srcset')).toBeNull();
+  });
+
   it('renders a safe empty image without crashing if from is undefined or empty', () => {
     // Suppress Solid JS warning for missing required prop in test
     const originalError = console.error;
@@ -89,6 +136,25 @@ describe('Image Component (Solid)', () => {
     expect(img?.getAttribute('src')).toBeNull();
     expect(img?.getAttribute('class')).toBe('fallback-img');
 
+    const { container: container2 } = render(() => <Image />);
+    expect(container2.querySelector('img')).not.toBeNull();
+
     console.error = originalError;
   });
+
+  it('handles target image object without srcset property', () => {
+    const noSrcsetImage = { src: '/no-srcset.png', width: 100, height: 100, alt: 'No Srcset' } as any;
+    const { container } = render(() => <Image from={noSrcsetImage} />);
+    const img = container.querySelector('img');
+    expect(img?.getAttribute('srcset')).toBeNull();
+    expect(img?.getAttribute('src')).toBe('/no-srcset.png');
+  });
+
+  it('handles completely empty from object', () => {
+    const { container } = render(() => <Image from={{} as any} />);
+    const img = container.querySelector('img');
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute('src')).toBeNull();
+  });
 });
+

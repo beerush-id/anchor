@@ -271,5 +271,19 @@ describe('Anchor Solid - HOC API', () => {
       expect(renderProp.getByTestId('content').textContent).toBe('got: hello');
       renderProp.unmount();
     });
+
+    it('falls back to Anonymous when component has no name or displayName', () => {
+      const fn = () => <div>Anonymous</div>;
+      Object.defineProperty(fn, 'name', { value: '' });
+      const AnonymousComp = setup(fn);
+      const { getByText } = render(() => <AnonymousComp />);
+      expect(getByText('Anonymous')).toBeDefined();
+    });
+
+    it('handles execution outside reactive owner when self is null', () => {
+      const Comp = setup(() => <div>Direct</div>);
+      const res = Comp({});
+      expect(res).toBeDefined();
+    });
   });
 });

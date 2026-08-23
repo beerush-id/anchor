@@ -63,7 +63,7 @@ describe('Anchor Solid - Props API', () => {
         const proxied = proxyProps(props);
 
         expect(() => {
-          // @ts-ignore
+          // @ts-expect-error
           proxied.onClick = () => {};
         }).not.toThrow(); // The function returns true but logs an error
 
@@ -80,7 +80,7 @@ describe('Anchor Solid - Props API', () => {
         const props = { name: 'test', onClick: () => {} };
         const proxied = proxyProps(props);
 
-        // @ts-ignore
+        // @ts-expect-error
         proxied.name = 'updated';
         expect(proxied.name).toBe('updated');
       });
@@ -229,6 +229,16 @@ describe('Anchor Solid - Props API', () => {
       expect(picked.name).toBe('updated');
       expect(source.name).toBe('updated');
     });
+
+    it('works with default parameters when excludes/includes are omitted', () => {
+      const source = { name: 'test', age: 30 };
+      const props = proxyProps(source);
+      const omitted = omitProps(source, props);
+      const picked = pickProps(source, props);
+
+      expect(Object.keys(omitted)).toEqual(['name', 'age']);
+      expect(Object.keys(picked)).toEqual([]);
+    });
   });
 
   describe('integration with $omit and $pick methods', () => {
@@ -270,6 +280,31 @@ describe('Anchor Solid - Props API', () => {
       expect(() => {
         proxied.$pick();
       }).not.toThrow();
+    });
+  });
+
+  describe('omitProps & pickProps helpers', () => {
+    it('omits specified keys from object enumeration while proxying property access', () => {
+      const source = { id: 1, title: 'Doc', hidden: true };
+      const omitted = omitProps(source, source, ['hidden']);
+
+      expect(omitted.id).toBe(1);
+      expect(omitted.title).toBe('Doc');
+      expect(Object.keys(omitted)).toEqual(['id', 'title']);
+
+      (omitted as any).title = 'Updated';
+      expect(source.title).toBe('Updated');
+    });
+
+    it('picks only specified keys for object enumeration while proxying property access', () => {
+      const source = { id: 1, title: 'Doc', hidden: true };
+      const picked = pickProps(source, source, ['title']);
+
+      expect(picked.title).toBe('Doc');
+      expect(Object.keys(picked)).toEqual(['title']);
+
+      picked.title = 'Updated';
+      expect(source.title).toBe('Updated');
     });
   });
 });

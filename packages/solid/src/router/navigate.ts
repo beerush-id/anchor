@@ -2,6 +2,7 @@
 import type { NavigateOptions, Redirect, RedirectOptions, RouteTarget } from '@airlib/router';
 import { createUrl, redirect as redirectTo, Route } from '@airlib/router';
 import type { AnyRoute, RouteComponent } from './types.js';
+import type { AnyType } from '@airlib/core';
 
 /**
  * Programmatically navigate to a URL path.
@@ -33,7 +34,7 @@ export function navigate<T>(
 ) {
   // biome-ignore lint/suspicious/noExplicitAny: Expect any.
   const { params, query, redirect, replace } = options as any;
-  const path = ((target as RouteComponent<T>).route as AnyRoute)?.path ?? (target as AnyRoute).path;
+  const path = ((target as RouteComponent<T>).route as AnyRoute)?.path ?? (target as AnyType).path;
   const href = createUrl(typeof target === 'string' ? target : path, params, query);
 
   const state = { href, query, params, redirect };

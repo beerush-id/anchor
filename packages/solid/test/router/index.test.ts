@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import * as routerIndex from '../../src/index.js';
 
 describe('Anchor Solid - Router Index Barrel', () => {
-  it('re-exports all router modules', async () => {
-    const routerIndex = await import('../../src/index.js');
-
+  it('re-exports all router modules', () => {
     // Core router re-exports
     expect(routerIndex.createRouter).toBeDefined();
 

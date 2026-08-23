@@ -2,13 +2,9 @@ import solid from 'vite-plugin-solid';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  plugins: [solid() as never],
+  plugins: [solid({ dev: false, hot: false }) as never],
   resolve: {
     conditions: ['development', 'browser'],
-  },
-  esbuild: {
-    jsx: 'automatic',
-    jsxImportSource: 'solid-js',
   },
   test: {
     globals: true,

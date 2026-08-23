@@ -1,11 +1,12 @@
 /** @jsxImportSource solid-js */
 
+import { Redirect } from '@airlib/router';
 import { render } from '@solidjs/testing-library';
 import type { JSX } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RouteStacks } from '../../src/index.js';
 import { createRouter, RouteRendererComponent, RouteViewer, redirect, UIRouter } from '../../src/index.js';
-import { modal, page, route } from '../../src/router/index.js';
+import { getCurrentUrl, modal, page, route } from '../../src/router/index.js';
 
 describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
   let addEventListenerSpy: ReturnType<typeof vi.spyOn>;
@@ -414,7 +415,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
 
       const activateSpy = vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
 
-      render(() => <UIRouter router={router} root={rootUi} resetScroll={true} />);
+      render(() => <UIRouter router={router} root={rootUi} headless={false} resetScroll={true} />);
 
       expect(activateSpy).toHaveBeenCalled();
       expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'smooth' });
@@ -426,9 +427,142 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
 
       vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
 
-      render(() => <UIRouter router={router} root={rootUi} resetScroll={'instant'} />);
+      render(() => <UIRouter router={router} root={rootUi} headless={false} resetScroll={'instant'} />);
 
       expect(scrollToSpy).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'instant' });
+    });
+
+    it('scrolls element into view on popstate when hash target exists', async () => {
+      const router = createRouter<JSX.Element>();
+      const rootUi = page(router.rootRoute);
+      const targetEl = document.createElement('div');
+      targetEl.id = 'section-target';
+      const scrollIntoViewMock = vi.fn();
+      targetEl.scrollIntoView = scrollIntoViewMock;
+      document.body.appendChild(targetEl);
+
+      vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
+
+      render(() => <UIRouter router={router} root={rootUi} />);
+
+      const popstateListener = addEventListenerSpy.mock.calls.find(
+        ([event]: [string, ...unknown[]]) => event === 'popstate'
+      )?.[1] as (evt: unknown) => Promise<void>;
+      expect(popstateListener).toBeDefined();
+
+      await popstateListener({
+        state: {
+          from: { path: '/docs' },
+          to: { path: '/docs', hash: 'section-target', href: 'http://localhost/docs#section-target' },
+        },
+      });
+
+      expect(scrollIntoViewMock).toHaveBeenCalledWith({ block: 'start', inline: 'start', behavior: 'smooth' });
+      document.body.removeChild(targetEl);
+    });
+
+    it('scrolls element into view after activation when navigating across paths with hash', async () => {
+      const router = createRouter<JSX.Element>();
+      const rootUi = page(router.rootRoute);
+      const targetEl = document.createElement('div');
+      targetEl.id = 'section-other';
+      const scrollIntoViewMock = vi.fn();
+      targetEl.scrollIntoView = scrollIntoViewMock;
+      document.body.appendChild(targetEl);
+
+      vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
+
+      render(() => <UIRouter router={router} root={rootUi} />);
+
+      const popstateListener = addEventListenerSpy.mock.calls.find(
+        ([event]: [string, ...unknown[]]) => event === 'popstate'
+      )?.[1] as (evt: unknown) => Promise<void>;
+
+      await popstateListener({
+        state: {
+          from: { path: '/other' },
+          to: { path: '/docs', hash: 'section-other', href: 'http://localhost/docs#section-other' },
+        },
+      });
+
+      expect(scrollIntoViewMock).toHaveBeenCalledWith({ block: 'start', inline: 'start', behavior: 'smooth' });
+      document.body.removeChild(targetEl);
+    });
+
+    it('handles hash navigation gracefully when target element does not exist in DOM', async () => {
+      const router = createRouter<JSX.Element>();
+      const rootUi = page(router.rootRoute);
+      vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
+
+      render(() => <UIRouter router={router} root={rootUi} />);
+
+      const popstateListener = addEventListenerSpy.mock.calls.find(
+        ([event]: [string, ...unknown[]]) => event === 'popstate'
+      )?.[1] as (evt: unknown) => Promise<void>;
+
+      await popstateListener({
+        state: {
+          from: { path: '/docs' },
+          to: { path: '/docs', hash: 'non-existent-id', href: 'http://localhost/docs#non-existent-id' },
+        },
+      });
+    });
+
+    it('logs error when activation throws a non-Redirect error', async () => {
+      const router = createRouter<JSX.Element>();
+      const rootUi = page(router.rootRoute);
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      vi.spyOn(router, 'activate').mockRejectedValueOnce(new Error('Activation failed'));
+
+      render(() => <UIRouter router={router} root={rootUi} headless={false} />);
+      await Promise.resolve();
+
+      expect(errorSpy).toHaveBeenCalledWith(expect.any(Error));
+      errorSpy.mockRestore();
+    });
+
+    it('silently handles Redirect error during activation', async () => {
+      const router = createRouter<JSX.Element>();
+      const rootUi = page(router.rootRoute);
+      const targetRoute = router.route('/target');
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      vi.spyOn(router, 'activate').mockRejectedValueOnce(new Redirect(targetRoute as never));
+
+      render(() => <UIRouter router={router} root={rootUi} headless={false} />);
+      await Promise.resolve();
+
+      expect(errorSpy).not.toHaveBeenCalled();
+      errorSpy.mockRestore();
+    });
+
+    it('silently handles Redirect error with string URL during activation', async () => {
+      const router = createRouter<JSX.Element>();
+      const rootUi = page(router.rootRoute);
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      vi.spyOn(router, 'activate').mockRejectedValueOnce(new Redirect('/url-target'));
+
+      render(() => <UIRouter router={router} root={rootUi} headless={false} />);
+      await Promise.resolve();
+
+      expect(errorSpy).not.toHaveBeenCalled();
+      errorSpy.mockRestore();
+    });
+
+    it('does not reset scroll when destination is a modal stack route', async () => {
+      const router = createRouter<JSX.Element>();
+      const modalRoute = router.route('/modal-route');
+      modal(modalRoute);
+      const rootUi = page(router.rootRoute);
+
+      vi.spyOn(router, 'find').mockReturnValue({ route: modalRoute } as never);
+      vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
+
+      render(() => <UIRouter router={router} root={rootUi} headless={false} resetScroll={true} />);
+
+      expect(scrollToSpy).not.toHaveBeenCalled();
     });
 
     it('renders modal routes through StackRenderer when active', () => {
@@ -475,6 +609,18 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
         { href: '/redirect-target?foo=bar', query: { foo: 'bar' }, params: { id: '1' }, redirect: location.href },
         '',
         '/redirect-target?foo=bar'
+      );
+    });
+
+    it('should navigate automatically when a string URL Redirect is created', async () => {
+      redirect('/url-target' as never, { query: { key: 'val' } } as any);
+
+      await Promise.resolve();
+
+      expect(pushSpy).toHaveBeenCalledWith(
+        { href: '/url-target?key=val', query: { key: 'val' }, redirect: location.href },
+        '',
+        '/url-target?key=val'
       );
     });
   });
@@ -540,6 +686,24 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
 
       expect(UiRoute.route).toBe(rawRoute);
       expect(typeof UiRoute.render).toBe('function');
+    });
+  });
+
+  describe('getCurrentUrl()', () => {
+    it('returns location.href when outside router context in browser', () => {
+      const url = getCurrentUrl();
+      expect(url).toBe(location.href);
+    });
+
+    it('falls back to DEFAULT_CONFIG.baseUrl when location is undefined', () => {
+      const originalLocation = globalThis.location;
+      try {
+        delete (globalThis as any).location;
+        const url = getCurrentUrl();
+        expect(url).toBeDefined();
+      } finally {
+        globalThis.location = originalLocation;
+      }
     });
   });
 });

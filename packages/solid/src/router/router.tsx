@@ -1,20 +1,24 @@
-import { type AnyType, isBrowser } from '@airlib/core';
+import { $symbol, type AnyType, createContext, isBrowser, setContext, sleep } from '@airlib/core';
 import {
   createRouter as createAppRouter,
+  DEFAULT_CONFIG,
   getRenderProps,
   type MatchedRoute,
   Redirect,
+  type RouteContext,
   type RouteExceptionRenderer,
   type RouteRegistry,
   type RouteRenderer,
   type RouterOptions,
+  type RouteTarget,
   setExceptionRendererFactory,
   setRedirectHandler,
   setRendererFactory,
   type UnknownRoute,
 } from '@airlib/router';
-import { type Component, For, type JSX, onCleanup, onMount, type ParentComponent } from 'solid-js';
 import { setup } from '../hoc.js';
+import type { Component, JSX, ParentComponent } from '../solid.js';
+import { For, onCleanup, onMount } from '../solid.js';
 import { Show } from '../switch.js';
 import { navigate } from './navigate.js';
 import type { AnyRoute, RouteComponent, RouteStacks, UIRouterProps } from './types.js';
@@ -112,43 +116,49 @@ export function RouteRendererComponent(props: {
   );
 }
 
-/**
- * Renders stacked (modal) routes.
- */
-function StackRenderer(props: { stacks: RouteStacks }): JSX.Element {
-  return <For each={Array.from(props.stacks.values())}>{(Stack) => <Stack />}</For>;
-}
+const ROUTER_CTX = $symbol('router-context');
+export const uiRouterCtx = createContext<UIRouterProps>(ROUTER_CTX);
 
 /**
  * The root router component that mounts the application route tree to Solid.
  */
 export function UIRouter(props: UIRouterProps): JSX.Element {
+  uiRouterCtx.set(props);
+
+  const { router, resetScroll, url, headless = true, children } = props;
   const stacks: RouteStacks = new Map();
 
-  const activate = async () => {
-    const url = props.url ?? location.href;
-    const match = props.router.find(url);
+  const activate = async (e?: PopStateEvent) => {
+    const behavior = typeof resetScroll === 'string' ? resetScroll : 'smooth';
 
-    if (props.resetScroll && !STACK_REGISTRY.has((match as MatchedRoute)?.route)) {
-      window.scrollTo({
-        top: 0,
-        left: 0,
-        behavior: typeof props.resetScroll === 'string' ? props.resetScroll : 'smooth',
-      });
+    const { from, to } = e?.state ?? {};
+    if (to?.hash && to?.path === from?.path) {
+      scrollIntoView(to?.hash, behavior);
+      return;
+    }
+    const match = router.find(url ?? location.href);
+
+    if (isBrowser() && resetScroll !== false && !STACK_REGISTRY.has((match as MatchedRoute)?.route)) {
+      window.scrollTo({ top: 0, left: 0, behavior });
     }
 
     try {
-      await props.router.activate(url);
+      await router.activate(to?.href ?? location.href);
     } catch (error) {
       if (!(error instanceof Redirect)) {
         console.error(error);
       }
       return;
     }
+
+    if (to?.hash) {
+      await sleep(100);
+      scrollIntoView(to?.hash, behavior);
+    }
   };
 
-  if (!props.headless) {
-    activate();
+  if (!headless) {
+    void activate();
   }
 
   if (isBrowser()) {
@@ -163,14 +173,30 @@ export function UIRouter(props: UIRouterProps): JSX.Element {
 
   return (
     <>
-      <For each={Array.from(props.router.routes)}>
+      <For each={Array.from(router.routes)}>
         {(registry) => {
           return <RouteRendererComponent route={registry.route} registry={registry} stacks={stacks} />;
         }}
       </For>
       <StackRenderer stacks={stacks} />
+      {children}
     </>
   );
+}
+
+/**
+ * Renders stacked (modal) routes.
+ */
+function StackRenderer(props: { stacks: RouteStacks }): JSX.Element {
+  return <For each={Array.from(props.stacks.values())}>{(Stack) => <Stack />}</For>;
+}
+
+/* istanbul ignore next */
+function scrollIntoView(hash: string, behavior: ScrollBehavior = 'smooth') {
+  const element = document.getElementById(hash);
+  if (element) {
+    element.scrollIntoView({ block: 'start', inline: 'start', behavior });
+  }
 }
 
 /**
@@ -178,21 +204,21 @@ export function UIRouter(props: UIRouterProps): JSX.Element {
  * @param routeNode - The route node to attach the renderer to.
  * @returns A Component for use in navigation <Link>
  */
-export function page<T>(routeNode: T): RouteComponent<T> {
+export function page<T>(routeNode: RouteTarget<T>): RouteComponent<T> {
   const UIRoute: ParentComponent = function UIRoute(props) {
     return props.children;
   };
 
-  (UIRoute as RouteComponent<AnyRoute>).route = routeNode as AnyRoute;
-  (UIRoute as RouteComponent<AnyRoute>).render = (renderer) => {
-    (routeNode as AnyRoute).render(renderer);
+  (UIRoute as AnyType).route = routeNode as AnyType;
+  (UIRoute as AnyType).render = (renderer: AnyType) => {
+    (routeNode as AnyType).render(renderer);
 
-    return UIRoute as RouteComponent<AnyRoute>;
+    return UIRoute as AnyType;
   };
-  (UIRoute as RouteComponent<AnyRoute>).renderAsync = (loader, fallback) => {
-    (routeNode as AnyRoute).renderAsync(loader, fallback);
+  (UIRoute as AnyType).renderAsync = (loader: AnyType, fallback: AnyType) => {
+    (routeNode as AnyType).renderAsync(loader, fallback);
 
-    return UIRoute as RouteComponent<AnyRoute>;
+    return UIRoute as AnyType;
   };
 
   return UIRoute as RouteComponent<T>;
@@ -203,7 +229,7 @@ export function page<T>(routeNode: T): RouteComponent<T> {
  * @type {<T extends AnyRoute>(routeNode: T) => RouteComponent<T>}
  */
 export function route<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
-  return page(routeNode);
+  return page(routeNode as never);
 }
 
 /**
@@ -211,11 +237,63 @@ export function route<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
  * @param routeNode - The route node to attach the renderer to.
  * @returns A Component to be used in navigation <Link>
  */
-export function modal<T extends AnyRoute>(routeNode: T): RouteComponent<T> {
+export function modal<T>(routeNode: RouteTarget<T>): RouteComponent<T> {
   STACK_REGISTRY.add(routeNode as never);
   return page(routeNode);
 }
 
+const ROUTE_CTX = $symbol('route-context');
+export const routeCtx = createContext<RouteContext<AnyType, AnyType, AnyType>>(ROUTE_CTX);
+
+/**
+ * Creates a new Router instance.
+ *
+ * Convenience function for creating a router with optional options.
+ *
+ * @param options - Optional router configuration
+ * @returns A new Router instance
+ */
+export function createRouter<V = JSX.Element>(options?: RouterOptions) {
+  return createAppRouter<V>(options);
+}
+
+export function getCurrentUrl() {
+  const ctx = uiRouterCtx.get();
+  return ctx?.router.context.url ?? (typeof location !== 'undefined' ? location.href : DEFAULT_CONFIG.baseUrl!);
+}
+
+const createRenderer = <TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>(
+  route: UnknownRoute,
+  renderer: RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>
+): RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput> => {
+  return setup((props) => {
+    setContext(ROUTE_CTX, route.state);
+    return renderer(props as never) as never;
+  }, `Route(${route.path})`) as RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>;
+};
+
+const createExceptionRenderer = <TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>(
+  route: UnknownRoute,
+  renderer: RouteExceptionRenderer<TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>
+): RouteExceptionRenderer<TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput> => {
+  return setup((props) => {
+    setContext(ROUTE_CTX, route.state);
+    return renderer(props as never) as never;
+  }, `Exception(${route.path})`) as RouteExceptionRenderer<
+    TParams,
+    TQueryParams,
+    TData,
+    PParams,
+    PQuery,
+    PData,
+    TOutput
+  >;
+};
+
+setRendererFactory(createRenderer);
+setExceptionRendererFactory(createExceptionRenderer);
+
+/* istanbul ignore start */
 if (isBrowser()) {
   if (location.pathname.endsWith('/')) {
     const url = `${location.pathname.replace(/\/$/, '')}${location.search}`;
@@ -231,49 +309,4 @@ if (isBrowser()) {
     } as AnyType);
   });
 }
-
-const createRenderer = <TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>(
-  route: UnknownRoute,
-  renderer: RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>
-): RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput> => {
-  return setup(renderer as never, `Route(${route.path})`) as RouteRenderer<
-    TPath,
-    TParams,
-    TQueryParams,
-    TData,
-    PParams,
-    PQuery,
-    PData,
-    TOutput
-  >;
-};
-
-const createExceptionRenderer = <TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>(
-  route: UnknownRoute,
-  renderer: RouteExceptionRenderer<TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>
-): RouteExceptionRenderer<TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput> => {
-  return setup(renderer as never, `Exception(${route.path})`) as RouteExceptionRenderer<
-    TParams,
-    TQueryParams,
-    TData,
-    PParams,
-    PQuery,
-    PData,
-    TOutput
-  >;
-};
-
-setRendererFactory(createRenderer);
-setExceptionRendererFactory(createExceptionRenderer);
-
-/**
- * Creates a new Router instance.
- *
- * Convenience function for creating a router with optional options.
- *
- * @param options - Optional router configuration
- * @returns A new Router instance
- */
-export function createRouter<V = JSX.Element>(options?: RouterOptions) {
-  return createAppRouter<V>(options);
-}
+/* istanbul ignore end */

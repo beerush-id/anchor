@@ -20,6 +20,16 @@ describe('Anchor Solid - Navigate Utility', () => {
     dispatchSpy.mockRestore();
   });
 
+  it('should navigate to a string path without options', () => {
+    navigate('/home');
+
+    expect(pushSpy).toHaveBeenCalledWith(
+      { href: '/home', query: undefined, params: undefined, redirect: undefined },
+      '',
+      '/home'
+    );
+  });
+
   it('should navigate to a string path using pushState by default', () => {
     navigate('/dashboard' as never, { params: { id: '123' }, query: { tab: 'settings' } } as never);
 

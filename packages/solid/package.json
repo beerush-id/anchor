@@ -63,7 +63,7 @@
       "import": "./dist/server/index.js"
     },
     "./ssr": {
-      "solid": "./src/ssr/index.tsx",
+      "solid": "./src/ssr/index.ts",
       "types": "./dist/ssr/index.d.ts",
       "import": "./dist/ssr/index.js"
     },
@@ -80,7 +80,18 @@
     "./workflow": {
       "types": "./dist/workflow/index.d.ts",
       "import": "./dist/workflow/index.js"
-    }
+    },
+    "./mdx": {
+      "solid": "./src/mdx/index.ts",
+      "types": "./dist/mdx/index.d.ts",
+      "import": "./dist/mdx/index.js"
+    },
+    "./mdx/*": {
+      "solid": "./src/mdx/*.tsx",
+      "types": "./dist/mdx/*.d.ts",
+      "import": "./dist/mdx/*.js"
+    },
+    "./mdx/*.css": "./src/mdx/*.css"
   },
   "files": [
     "dist",

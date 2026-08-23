@@ -1,128 +1,7 @@
 import { $symbol, getScope, isBrowser, onCleanup, setScope } from '@airlib/core';
 import type { Component, JSX } from 'solid-js';
-
-const HEADING_SET_CLOSURE = $symbol('head-map-closure');
-
-/**
- * Defines a heading reference to be injected into the document head.
- */
-export type HeadingRef = {
-  name: string;
-  props: Record<string, string>;
-  Renderer: Component;
-};
-
-/**
- * A map of active heading references keyed by their identifier.
- */
-export type HeadingMap = Map<string, HeadingRef>;
-
-/**
- * Retrieves the request-isolated map of active heading references.
- *
- * @returns The heading map for the current execution context.
- */
-export function headings() {
-  let store = getScope<HeadingMap>(HEADING_SET_CLOSURE);
-
-  if (!store) {
-    store = new Map();
-    setScope(HEADING_SET_CLOSURE, store);
-  }
-
-  return store as HeadingMap;
-}
-
-/**
- * Attaches a heading element to the document head or collects it for SSR.
- *
- * @param name The tag name (e.g., 'title', 'meta').
- * @param props The attributes to apply to the tag.
- * @param Renderer The Solid component used to render the tag during SSR.
- */
-export function attachHeading(name: string, props: Record<string, string>, Renderer: Component) {
-  if (!isBrowser()) {
-    if (name === 'meta') name = `${name}:${props.name || props.property}`;
-    if (name === 'link') name = `${name}:${props.href}`;
-    if (name === 'style') name = `${name}:${performance.now()}`;
-    if (name === 'script') name = `jsonld:${props.children}`;
-
-    headings().set(name, { name, props, Renderer });
-
-    onCleanup(() => {
-      headings().delete(name);
-    });
-
-    return;
-  }
-
-  if (name === 'title') {
-    document.title = props.children;
-    return;
-  }
-
-  const element = document.createElement(name);
-
-  for (const [key, value] of Object.entries(props)) {
-    if (key === 'children') {
-      element.textContent = value;
-    } else {
-      element.setAttribute(key, value);
-    }
-  }
-
-  document.head.appendChild(element);
-
-  onCleanup(() => {
-    element.remove();
-  });
-}
-
-/**
- * Sets the document title.
- */
-export function Title(props: JSX.IntrinsicElements['title']) {
-  const Renderer = () => <title {...props} />;
-  attachHeading('title', props as Record<string, string>, Renderer);
-  return null as unknown as JSX.Element;
-}
-
-/**
- * Sets a meta tag in the document head.
- */
-export function Meta(props: JSX.IntrinsicElements['meta']) {
-  const Renderer = () => <meta {...props} />;
-  attachHeading('meta', props as Record<string, string>, Renderer);
-  return null as unknown as JSX.Element;
-}
-
-/**
- * Sets a link tag in the document head.
- */
-export function HeadLink(props: JSX.IntrinsicElements['link']) {
-  const Renderer = () => <link {...props} />;
-  attachHeading('link', props as Record<string, string>, Renderer);
-  return null as unknown as JSX.Element;
-}
-
-/**
- * Sets a style tag in the document head.
- */
-export function Style(props: JSX.IntrinsicElements['style']) {
-  const Renderer = () => <style {...props} />;
-  attachHeading('style', props as Record<string, string>, Renderer);
-  return null as unknown as JSX.Element;
-}
-
-/**
- * Sets structured JSON-LD data via a script tag in the document head.
- */
-export function JsonLd(props: { data: Record<string, unknown> | Record<string, unknown>[] }): JSX.Element {
-  const json = () => JSON.stringify(props.data);
-  const Renderer = () => <script type="application/ld+json">{json()}</script>;
-  attachHeading('script', { type: 'application/ld+json', children: json() }, Renderer);
-  return null as unknown as JSX.Element;
-}
+import { For } from '../solid.js';
+import { Show } from '../switch.js';
 
 /**
  * Comprehensive SEO metadata configuration for web applications.
@@ -198,58 +77,229 @@ export interface HeadProps {
  * @returns The rendered Head elements
  */
 export function Head(props: HeadProps): JSX.Element {
-  const meta = props.meta;
-  const children = props.children;
+  const keywords = () => (Array.isArray(props.meta?.keywords) ? props.meta?.keywords.join(', ') : props.meta?.keywords);
+  const ogTitle = () => props.meta?.og?.title ?? props.meta?.title;
+  const ogDesc = () => props.meta?.og?.description ?? props.meta?.description;
+  const ogUrl = () => props.meta?.og?.url ?? props.meta?.canonical;
 
-  if (!meta && !children) return null as unknown as JSX.Element;
-
-  const keywordsStr = Array.isArray(meta?.keywords) ? meta.keywords.join(', ') : meta?.keywords;
-  const ogTitle = meta?.og?.title ?? meta?.title;
-  const ogDesc = meta?.og?.description ?? meta?.description;
-  const ogUrl = meta?.og?.url ?? meta?.canonical;
-
-  const twitterTitle = meta?.twitter?.title ?? ogTitle;
-  const twitterDesc = meta?.twitter?.description ?? ogDesc;
-  const twitterImage = meta?.twitter?.image ?? meta?.og?.image;
-  const twitterCard = meta?.twitter?.card ?? (twitterImage ? 'summary_large_image' : 'summary');
+  const twitterTitle = () => props.meta?.twitter?.title ?? ogTitle();
+  const twitterDesc = () => props.meta?.twitter?.description ?? ogDesc();
+  const twitterImage = () => props.meta?.twitter?.image ?? props.meta?.og?.image;
+  const twitterCard = () => props.meta?.twitter?.card ?? (twitterImage() ? 'summary_large_image' : 'summary');
 
   return (
     <>
-      {meta?.title && <Title>{meta.title}</Title>}
-      {meta?.description && <Meta name="description" content={meta.description} />}
-      {keywordsStr && <Meta name="keywords" content={keywordsStr} />}
-      {meta?.author && <Meta name="author" content={meta.author} />}
-      {meta?.canonical && <HeadLink rel="canonical" href={meta.canonical} />}
-      {meta?.robots && <Meta name="robots" content={meta.robots} />}
-      {meta?.themeColor && <Meta name="theme-color" content={meta.themeColor} />}
-      {meta?.viewport && <Meta name="viewport" content={meta.viewport} />}
+      <Show when={props.meta?.title}>
+        <Title>{props.meta?.title}</Title>
+      </Show>
+      <Show when={props.meta?.description}>
+        <Meta name="description" content={props.meta?.description} />
+      </Show>
+      <Show when={keywords()}>
+        <Meta name="keywords" content={keywords()} />
+      </Show>
+      <Show when={props.meta?.author}>
+        <Meta name="author" content={props.meta?.author} />
+      </Show>
+      <Show when={props.meta?.canonical}>
+        <HeadLink rel="canonical" href={props.meta?.canonical} />
+      </Show>
+      <Show when={props.meta?.robots}>
+        <Meta name="robots" content={props.meta?.robots} />
+      </Show>
+      <Show when={props.meta?.themeColor}>
+        <Meta name="theme-color" content={props.meta?.themeColor} />
+      </Show>
+      <Show when={props.meta?.viewport}>
+        <Meta name="viewport" content={props.meta?.viewport} />
+      </Show>
 
-      {ogTitle && <Meta property="og:title" content={ogTitle} />}
-      {ogDesc && <Meta property="og:description" content={ogDesc} />}
-      {meta?.og?.type && <Meta property="og:type" content={meta.og.type} />}
-      {ogUrl && <Meta property="og:url" content={ogUrl} />}
-      {meta?.og?.image && <Meta property="og:image" content={meta.og.image} />}
-      {meta?.og?.imageAlt && <Meta property="og:image:alt" content={meta.og.imageAlt} />}
-      {meta?.og?.siteName && <Meta property="og:site_name" content={meta.og.siteName} />}
-      {meta?.og?.locale && <Meta property="og:locale" content={meta.og.locale} />}
+      <Show when={ogTitle()}>
+        <Meta property="og:title" content={ogTitle()} />
+      </Show>
+      <Show when={ogDesc()}>
+        <Meta property="og:description" content={ogDesc()} />
+      </Show>
+      <Show when={props.meta?.og?.type}>
+        <Meta property="og:type" content={props.meta?.og?.type} />
+      </Show>
+      <Show when={ogUrl()}>
+        <Meta property="og:url" content={ogUrl()} />
+      </Show>
+      <Show when={props.meta?.og?.image}>
+        <Meta property="og:image" content={props.meta?.og?.image} />
+      </Show>
+      <Show when={props.meta?.og?.imageAlt}>
+        <Meta property="og:image:alt" content={props.meta?.og?.imageAlt} />
+      </Show>
+      <Show when={props.meta?.og?.siteName}>
+        <Meta property="og:site_name" content={props.meta?.og?.siteName} />
+      </Show>
+      <Show when={props.meta?.og?.locale}>
+        <Meta property="og:locale" content={props.meta?.og?.locale} />
+      </Show>
 
-      {meta?.twitter && <Meta name="twitter:card" content={twitterCard} />}
-      {meta?.twitter?.site && <Meta name="twitter:site" content={meta.twitter.site} />}
-      {meta?.twitter?.creator && <Meta name="twitter:creator" content={meta.twitter.creator} />}
-      {twitterTitle && (meta?.twitter || meta?.og) && <Meta name="twitter:title" content={twitterTitle} />}
-      {twitterDesc && (meta?.twitter || meta?.og) && <Meta name="twitter:description" content={twitterDesc} />}
-      {twitterImage && <Meta name="twitter:image" content={twitterImage} />}
-      {meta?.twitter?.imageAlt && <Meta name="twitter:image:alt" content={meta.twitter.imageAlt} />}
+      <Show when={props.meta?.twitter}>
+        <Meta name="twitter:card" content={twitterCard()} />
+      </Show>
+      <Show when={props.meta?.twitter?.site}>
+        <Meta name="twitter:site" content={props.meta?.twitter?.site} />
+      </Show>
+      <Show when={props.meta?.twitter?.creator}>
+        <Meta name="twitter:creator" content={props.meta?.twitter?.creator} />
+      </Show>
+      <Show when={twitterTitle() && (props.meta?.twitter || props.meta?.og)}>
+        <Meta name="twitter:title" content={twitterTitle()} />
+      </Show>
+      <Show when={twitterDesc() && (props.meta?.twitter || props.meta?.og)}>
+        <Meta name="twitter:description" content={twitterDesc()} />
+      </Show>
+      <Show when={twitterImage()}>
+        <Meta name="twitter:image" content={twitterImage()} />
+      </Show>
+      <Show when={props.meta?.twitter?.imageAlt}>
+        <Meta name="twitter:image:alt" content={props.meta?.twitter?.imageAlt} />
+      </Show>
 
-      {meta?.alternates?.map((alt) => (
-        <HeadLink rel={alt.rel ?? 'alternate'} href={alt.href} hreflang={alt.hreflang} type={alt.type} />
-      ))}
+      <For each={props.meta?.alternates}>
+        {(alt) => <HeadLink rel={alt.rel ?? 'alternate'} href={alt.href} hreflang={alt.hreflang} type={alt.type} />}
+      </For>
 
-      {meta?.jsonLd && <JsonLd data={meta.jsonLd} />}
+      <Show when={props.meta?.jsonLd}>
+        <JsonLd data={props.meta?.jsonLd} />
+      </Show>
 
-      {meta?.custom && Object.entries(meta.custom).map(([key, value]) => <Meta name={key} content={value} />)}
+      <For each={Object.entries(props.meta?.custom ?? {})}>{([key, value]) => <Meta name={key} content={value} />}</For>
 
-      {children}
+      {props.children}
     </>
   );
+}
+
+/**
+ * Sets the document title.
+ */
+export function Title(props: JSX.IntrinsicElements['title']) {
+  const Renderer = () => <title {...props} />;
+  attachHeading('title', props as Record<string, string>, Renderer);
+  return null as unknown as JSX.Element;
+}
+
+/**
+ * Sets a meta tag in the document head.
+ */
+export function Meta(props: JSX.IntrinsicElements['meta']) {
+  const Renderer = () => <meta {...props} />;
+  attachHeading('meta', props as Record<string, string>, Renderer);
+  return null as unknown as JSX.Element;
+}
+
+/**
+ * Sets a link tag in the document head.
+ */
+export function HeadLink(props: JSX.IntrinsicElements['link'] & { hreflang?: string; hrefLang?: string }) {
+  const linkProps = () => {
+    const { hreflang, hrefLang, ...rest } = props;
+    return { ...rest, ...((hreflang ?? hrefLang) ? { hrefLang: (hreflang ?? hrefLang) as string } : {}) };
+  };
+  const Renderer = () => <link {...(linkProps() as JSX.IntrinsicElements['link'])} />;
+  attachHeading('link', linkProps() as Record<string, string>, Renderer);
+  return null as unknown as JSX.Element;
+}
+
+/**
+ * Sets a style tag in the document head.
+ */
+export function Style(props: JSX.IntrinsicElements['style']) {
+  const Renderer = () => <style {...props} />;
+  attachHeading('style', props as Record<string, string>, Renderer);
+  return null as unknown as JSX.Element;
+}
+
+/**
+ * Sets structured JSON-LD data via a script tag in the document head.
+ */
+export function JsonLd(props: { data?: Record<string, unknown> | Record<string, unknown>[] }): JSX.Element {
+  const json = () => JSON.stringify(props.data ?? {});
+  const Renderer = () => <script type="application/ld+json" innerHTML={json()} />;
+  attachHeading('script', { type: 'application/ld+json', children: json() }, Renderer);
+  return null as unknown as JSX.Element;
+}
+
+const HEADING_SET_CLOSURE = $symbol('head-map-closure');
+
+/**
+ * Defines a heading reference to be injected into the document head.
+ */
+export type HeadingRef = {
+  name: string;
+  props: Record<string, string>;
+  Renderer: Component;
+};
+
+/**
+ * A map of active heading references keyed by their identifier.
+ */
+export type HeadingMap = Map<string, HeadingRef>;
+
+/**
+ * Retrieves the request-isolated map of active heading references.
+ *
+ * @returns The heading map for the current execution context.
+ */
+export function headings() {
+  let store = getScope<HeadingMap>(HEADING_SET_CLOSURE);
+
+  if (!store) {
+    store = new Map();
+    setScope(HEADING_SET_CLOSURE, store);
+  }
+
+  return store as HeadingMap;
+}
+
+/**
+ * Attaches a heading element to the document head or collects it for SSR.
+ *
+ * @param name The tag name (e.g., 'title', 'meta').
+ * @param props The attributes to apply to the tag.
+ * @param Renderer The Solid component used to render the tag during SSR.
+ */
+export function attachHeading(name: string, props: Record<string, string>, Renderer: Component) {
+  if (!isBrowser()) {
+    if (name === 'meta') name = `${name}:${props.name || props.property}`;
+    if (name === 'link') name = `${name}:${props.href}`;
+    if (name === 'style') name = `${name}:${performance.now()}`;
+    if (name === 'script') name = `jsonld:${props.children}`;
+
+    headings().set(name, { name, props, Renderer });
+
+    onCleanup(() => {
+      headings().delete(name);
+    });
+
+    return;
+  }
+
+  if (name === 'title') {
+    document.title = props.children;
+    return;
+  }
+
+  const element = document.createElement(name);
+
+  for (const [key, value] of Object.entries(props)) {
+    if (key === 'children') {
+      element.textContent = value;
+    } else {
+      element.setAttribute(key, value);
+    }
+  }
+
+  document.head.appendChild(element);
+
+  /* istanbul ignore next */
+  onCleanup(() => {
+    element.remove();
+  });
 }

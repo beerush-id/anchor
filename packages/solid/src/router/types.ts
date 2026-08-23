@@ -1,20 +1,20 @@
 import type {
+  AnyRoute,
   IndexRoute,
   None,
+  PreloadMode,
   Route,
   RouteIndexRenderer,
   RouteLayoutRenderer,
-  RoutePath,
   Router,
   UnknownRoute,
 } from '@airlib/router';
-import type { JSX, ParentComponent } from 'solid-js';
+import type { Component, JSX, ParentComponent } from '../solid.js';
 
 /**
  * Represents any generic Route definition from the core router.
  */
-// biome-ignore lint/suspicious/noExplicitAny: Expected.
-export type AnyRoute = Route<RoutePath, any, any, any, any>;
+export type { AnyRoute };
 
 export type LinkDynamicProps<T, Params, Query> = Params extends None
   ? Query extends None
@@ -39,10 +39,12 @@ export type ComposedLinkProps<T> =
  */
 export type LinkProps<R> = JSX.AnchorHTMLAttributes<HTMLAnchorElement> &
   ComposedLinkProps<R> & {
-    preload?: 'hover' | 'always' | 'never';
+    preload?: PreloadMode;
     replace?: boolean;
     fullMatch?: boolean;
     activeClass?: string;
+    resetScroll?: boolean | 'smooth' | 'auto' | 'instant';
+    keepVisible?: boolean | 'smooth' | 'auto' | 'instant';
   };
 
 /**
@@ -114,15 +116,16 @@ export type RouteComponent<T> = ParentComponent & {
       : never;
 };
 
-export type RouteStacks = Map<UnknownRoute, () => JSX.Element>;
+export type RouteStacks = Map<UnknownRoute, Component>;
 
 /**
  * Props for the root UIRouter component.
  */
 export type UIRouterProps = {
   router: Router<JSX.Element>;
-  root: RouteComponent<AnyRoute>;
   url?: string;
+  root?: RouteComponent<AnyRoute>;
   headless?: boolean;
   resetScroll?: boolean | 'smooth' | 'auto' | 'instant';
+  children?: JSX.Element;
 };

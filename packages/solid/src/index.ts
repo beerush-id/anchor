@@ -134,11 +134,11 @@ export {
   UnknownError,
 } from '@airlib/router';
 
-export { For, onCleanup, onMount } from 'solid-js';
 export * from './binding.js';
 export * from './hoc.js';
 export * from './image.js';
 export { omitProps, pickProps, proxyProps } from './props.js';
 export * from './router/index.js';
+export * from './solid.js';
 export * from './switch.js';
 export * from './types.js';

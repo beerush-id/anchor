@@ -1,7 +1,7 @@
 import type { AnyType } from '@airlib/core';
 import type { CoreAppOptions, SSRContext, SSROptions, SSROutput, SSRRenderOptions } from '@airlib/ssr';
-import type { JSX } from 'solid-js';
 import type { BindableComponent } from '../hoc.js';
+import type { JSX } from '../solid.js';
 import type { BindableProps } from '../types.js';
 
 export type AppShell = BindableComponent<BindableProps<JSX.HTMLAttributes<HTMLElement>>>;

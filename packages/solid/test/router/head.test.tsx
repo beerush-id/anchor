@@ -1,5 +1,6 @@
 /** @jsxImportSource solid-js */
 
+import * as core from '@airlib/core';
 import { createLifecycle } from '@airlib/core';
 import { render } from '@solidjs/testing-library';
 import { createRoot } from 'solid-js';
@@ -243,6 +244,25 @@ describe('Anchor Solid - Head Components', () => {
       });
     });
 
+    it('stores HeadLink with hreflang normalization', () => {
+      render(() => <HeadLink href="/intl.css" hreflang="es" rel="alternate" />);
+
+      const entry = headings().get('link:/intl.css');
+      expect(entry).toBeDefined();
+
+      createRoot(() => {
+        const result = entry!.Renderer({});
+        expect(result).toBeDefined();
+      });
+    });
+
+    it('stores HeadLink with hrefLang attribute', () => {
+      render(() => <HeadLink href="/fr.css" hrefLang="fr" rel="alternate" />);
+
+      const entry = headings().get('link:/fr.css');
+      expect(entry).toBeDefined();
+    });
+
     it('stores Style Renderer that can be invoked for SSR', () => {
       render(() => <Style>{'body { color: red; }'}</Style>);
 
@@ -271,6 +291,19 @@ describe('Anchor Solid - Head Components', () => {
         const result = entry!.Renderer({});
         expect(result).toBeDefined();
       });
+    });
+
+    it('handles JsonLd with undefined data', () => {
+      render(() => <JsonLd />);
+      const keys = Array.from(headings().keys());
+      const emptyJsonLdKey = keys.find((k) => k.startsWith('jsonld:{}'));
+      expect(emptyJsonLdKey).toBeDefined();
+    });
+
+    it('stores Meta with property attribute for OpenGraph in SSR', () => {
+      render(() => <Meta property="og:title" content="OpenGraph Title" />);
+      const entry = headings().get('meta:og:title');
+      expect(entry).toBeDefined();
     });
   });
 
@@ -311,6 +344,13 @@ describe('Anchor Solid - Head Components', () => {
       ));
 
       expect(headings().has('title') || document.title === 'Solid SEO').toBe(true);
+    });
+
+    it('renders standalone JsonLd script in document head in browser mode', () => {
+      render(() => <JsonLd data={{ '@type': 'Corporation', name: 'Anchor' }} />);
+      const script = document.head.querySelector('script[type="application/ld+json"]');
+      expect(script).not.toBeNull();
+      expect(script?.textContent).toContain('Corporation');
     });
 
     it('returns null when Head receives neither meta nor children', () => {
@@ -392,6 +432,17 @@ describe('Anchor Solid - Head Components', () => {
         'summary_large_image'
       );
       unmount();
+    });
+
+    it('attaches meta tag using property key in SSR mode', () => {
+      const isBrowserSpy = vi.spyOn(core, 'isBrowser').mockReturnValue(false);
+      headings().clear();
+
+      attachHeading('meta', { property: 'og:site_name', content: 'AIR' }, (() => null) as any);
+      expect(headings().has('meta:og:site_name')).toBe(true);
+
+      headings().clear();
+      isBrowserSpy.mockRestore();
     });
   });
 });

@@ -1,8 +1,7 @@
-import { type AnyType, derived } from '@airlib/core';
-import { createUrl, Route } from '@airlib/router';
-import type { JSX } from 'solid-js';
-import { splitProps } from 'solid-js';
-import { navigate } from './navigate.js';
+import { classx, derived, untrack } from '@airlib/core';
+import { Route } from '@airlib/router';
+import { type JSX, onMount, splitProps } from '../solid.js';
+import { getCurrentUrl, uiRouterCtx } from './router.js';
 import type { AnyRoute, LinkProps, RouteComponent } from './types.js';
 
 type LinkComponent = <T>(props: LinkProps<T>) => JSX.Element;
@@ -12,50 +11,92 @@ type LinkComponent = <T>(props: LinkProps<T>) => JSX.Element;
  * Automatically handles `active` state and preloads route definitions on hover if configured.
  *
  * @param props Link properties including the target route (`to`), params, and query.
+ *   `href` acts as the fallback target when `to` is absent; when both are present, `to` wins.
  * @returns A reactive `<a>` element.
  */
 export const Link = ((allProps: LinkProps<AnyRoute>) => {
-  const [props, rest] = splitProps(allProps, [
+  const [props, restProps] = splitProps(allProps, [
     'to',
+    'href',
+    'params' as never,
+    'query' as never,
+    'onClick',
+    'onMouseEnter',
     'preload',
     'replace',
-    'fullMatch',
     'activeClass',
     'class',
     'children',
-    'onClick',
-    'onMouseEnter',
+    'fullMatch',
+    'keepVisible',
+    'resetScroll',
+    'ref',
   ]);
 
+  const ctx = uiRouterCtx.get();
+  const router = ctx?.router;
+
   const toProps = allProps as LinkProps<AnyRoute> & {
-    query: Record<string, unknown>;
-    params: Record<string, unknown>;
+    query?: Record<string, unknown>;
+    params?: Record<string, unknown>;
   };
 
-  const query = derived(() => toProps.query);
-  const params = derived(() => toProps.params);
-  const target = derived(() => {
-    const to = props.to;
-    if (!to) return undefined;
-    return to instanceof Route ? to : (to as RouteComponent<AnyRoute>).route;
-  });
-  const href = derived(() => createUrl(allProps.href ?? target.value?.path ?? '/', params.value, query.value));
-  const fullMatch = derived(() => props.fullMatch ?? target.value?.isIndex);
-  const isActive = derived(() => {
-    const route = target.value;
-    if (!route) return false;
+  const state = derived.as(() => {
+    const { href } = allProps;
+    const params = toProps.params;
+    const query = toProps.query;
 
-    if (route.active) return true;
+    const activeUrl = untrack(() => new URL(getCurrentUrl()));
 
-    // If this route is an Index child route, its native .active state drops when navigating
-    // into deep sibling dynamic routes (like /users/1).
-    // Visually, the NavLink should still be active if its true parent is active.
-    if (route.parent && (route.parent as AnyType).index === route && !fullMatch.value) {
-      return !!route.parent.active;
+    let route: AnyRoute | undefined;
+    let target: URL;
+
+    if (props.to) {
+      route = props.to instanceof Route ? props.to : (props.to as RouteComponent<AnyRoute>).route;
+      target = new URL(
+        untrack(() => route!.url(params, query)),
+        activeUrl
+      );
+    } else {
+      target = new URL(href || '/', activeUrl);
+
+      if (router && href) {
+        route = untrack(() => router.find(target, true)?.route);
+        /* istanbul ignore next */
+        if (route?.index) route = route.index as unknown as AnyRoute;
+      }
     }
 
-    return false;
+    if (target.pathname !== '/' && target.pathname.endsWith('/')) {
+      target.pathname = target.pathname.replace(/\/$/, '');
+    }
+
+    const hash = target.hash.substring(1);
+    return {
+      url: target,
+      hash,
+      route,
+      query,
+      params,
+      href: target.href,
+      search: target.search,
+      pathname: target.pathname,
+      fullPath: target.pathname + (target.hash ? target.hash : '') + target.search,
+    };
   });
+
+  const dispatchUrl = () => {
+    const data = {
+      from: { path: location.pathname, hash: location.hash, href: location.href, query: location.search },
+      to: { path: state.pathname, hash: state.hash, href: state.href, query: state.search },
+    };
+    if (props.replace) {
+      history.replaceState(data, '', state.href);
+    } else {
+      history.pushState(data, '', state.href);
+    }
+    window.dispatchEvent(new PopStateEvent('popstate', { state: data }));
+  };
 
   const handleClick: JSX.EventHandler<HTMLAnchorElement, MouseEvent> = (e) => {
     // Let the browser handle standard "open in new tab/window" modifiers and custom targets.
@@ -65,13 +106,13 @@ export const Link = ((allProps: LinkProps<AnyRoute>) => {
 
     e.preventDefault();
 
-    const current = `${location.pathname}${location.search}`;
-    if (current !== href.value) {
-      navigate(target.value?.path ?? href.value, {
-        query: query.value,
-        params: params.value,
-        replace: props.replace,
-      } as never);
+    if (state.href !== location.href) {
+      dispatchUrl();
+      const behavior = typeof props.resetScroll === 'string' ? props.resetScroll : 'auto';
+
+      if (!ctx?.resetScroll && props.resetScroll) {
+        document.body.scrollTo({ left: 0, top: 0, behavior });
+      }
     }
 
     if (typeof props.onClick === 'function') {
@@ -80,10 +121,8 @@ export const Link = ((allProps: LinkProps<AnyRoute>) => {
   };
 
   const handleHover: JSX.EventHandler<HTMLAnchorElement, MouseEvent> = (e) => {
-    const route = target.value;
-
-    if (route && (props.preload === 'hover' || route.options.preloadMode === 'hover')) {
-      route.router.preload(href.value);
+    if (state.route && (props.preload === 'hover' || state.route.options.preloadMode === 'hover')) {
+      void state.route.router.preload(state.fullPath);
     }
 
     if (typeof props.onMouseEnter === 'function') {
@@ -91,14 +130,33 @@ export const Link = ((allProps: LinkProps<AnyRoute>) => {
     }
   };
 
+  let anchorRef: HTMLAnchorElement | undefined;
+  const assignRef = (el: HTMLAnchorElement) => {
+    anchorRef = el;
+    if (typeof allProps.ref === 'function') {
+      (allProps.ref as (el: HTMLAnchorElement) => void)(el);
+    }
+  };
+
+  onMount(() => {
+    if (anchorRef && props.keepVisible && state.route?.active) {
+      anchorRef.scrollIntoView({
+        block: 'center',
+        inline: 'center',
+        behavior: typeof props.keepVisible === 'string' ? props.keepVisible : 'smooth',
+      });
+    }
+  });
+
   return (
     <a
-      {...rest}
-      href={href.value}
+      {...restProps}
+      ref={assignRef}
+      href={state.fullPath}
       onClick={handleClick}
       onMouseEnter={handleHover}
-      aria-current={isActive.value ? 'page' : undefined}
-      class={[props.class as string, isActive.value ? props.activeClass : ''].filter(Boolean).join(' ') || undefined}
+      aria-current={state.route?.active ? 'page' : undefined}
+      class={classx(props.class, state.route?.active ? props.activeClass : null)}
     >
       {props.children}
     </a>
