@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createStatic } from '../src/index.js';
+import { createStatic, nextStatic } from '../src/index.js';
 
 describe('createStatic', () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
@@ -14,6 +14,15 @@ describe('createStatic', () => {
   afterEach(() => {
     logSpy.mockRestore();
     vi.unstubAllGlobals();
+  });
+
+  it('should throw UnresolvedStatic error', () => {
+    expect(() => {
+      throw nextStatic();
+    }).toThrow('Unable to resolve static page.');
+    expect(() => {
+      throw nextStatic('Next');
+    }).toThrow('Next');
   });
 
   it('returns void for get and set when router is undefined', async () => {
