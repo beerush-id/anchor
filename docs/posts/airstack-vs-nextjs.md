@@ -12,7 +12,7 @@ next: false
 
 [Next.js](https://nextjs.org/) is the dominant React framework, bringing React Server Components (RSC), Server Actions, and file-system routing to the mainstream. It dictates a strict architecture where the server drives the initial UI and client-side boundaries (`"use client"`) must be explicitly declared.
 
-**AIR Stack** (Anchor, IRPC, Router) takes a completely different path. It embraces Isomorphic pure functions, explicit programmatic routing, and a decoupled reactive state graph. It treats the UI as an independent reactive layer where state and data seamlessly connect to backend logic without fighting server/client boundaries.
+**AIR Stack** (Anchor, IRPC, Reactive) takes a completely different path. It embraces Isomorphic pure functions, explicit programmatic routing, and a decoupled reactive state graph. It treats the UI as an independent reactive layer where state and data seamlessly connect to backend logic without fighting server/client boundaries.
 
 ## Framework comparison
 

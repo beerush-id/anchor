@@ -12,7 +12,7 @@ next: false
 
 [SolidStart](https://start.solidjs.com/) is the official meta-framework for SolidJS. It leverages Solid's incredibly fast, fine-grained reactivity (Signals) and extends it to the server using Server Functions (`"use server"`), `createResource`, and file-system routing.
 
-**AIR Stack** (Anchor, IRPC, Router) shares a nearly identical philosophy when it comes to performance: both bypass traditional Virtual DOM diffing in favor of direct, fine-grained DOM updates. However, while SolidStart's reactivity and routing are strictly bound to SolidJS, AIR Stack's reactive graph (Anchor) and Isomorphic RPC are entirely framework-agnostic. AIR Stack brings Solid-like performance to any framework (including React).
+**AIR Stack** (Anchor, IRPC, Reactive) shares a nearly identical philosophy when it comes to performance: both bypass traditional Virtual DOM diffing in favor of direct, fine-grained DOM updates. However, while SolidStart's reactivity and routing are strictly bound to SolidJS, AIR Stack's reactive graph (Anchor) and Isomorphic RPC are entirely framework-agnostic. AIR Stack brings Solid-like performance to any framework (including React).
 
 ## Framework comparison
 

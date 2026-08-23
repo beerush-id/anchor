@@ -12,7 +12,7 @@ next: false
 
 [Remix](https://remix.run/) (now unified with React Router) focuses heavily on Web Standards. It leverages HTTP caching, standard HTML `<form>` submissions, and nested routing to deliver a resilient user experience that works even before JavaScript loads. 
 
-**AIR Stack** (Anchor, IRPC, Router) takes a completely different path. While it also embraces full-stack React, it relies on Isomorphic pure functions, programmatic routing, and a decoupled reactive state graph rather than HTTP semantics. It treats the UI as an independent reactive layer where state and data seamlessly connect to backend logic via function calls instead of network boundaries.
+**AIR Stack** (Anchor, IRPC, Reactive) takes a completely different path. While it also embraces full-stack React, it relies on Isomorphic pure functions, programmatic routing, and a decoupled reactive state graph rather than HTTP semantics. It treats the UI as an independent reactive layer where state and data seamlessly connect to backend logic via function calls instead of network boundaries.
 
 ## Framework comparison
 

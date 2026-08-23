@@ -12,7 +12,7 @@ next: false
 
 [TanStack](https://tanstack.com/) is a collection of high-quality, headless utilities. To build a full-stack React application, developers typically assemble **TanStack Router** (for type-safe routing) and **TanStack Query** (for data fetching and caching), manually wiring them to a backend API (like tRPC or standard REST).
 
-**AIR Stack** (Anchor, IRPC, Router) takes a unified approach. Rather than assembling disparate libraries to handle routing, fetching, and state, it provides a cohesive ecosystem. The router and data fetching layer share the same reactive state graph, eliminating the need for complex query caching strategies or explicit network boundaries.
+**AIR Stack** (Anchor, IRPC, Reactive) takes a unified approach. Rather than assembling disparate libraries to handle routing, fetching, and state, it provides a cohesive ecosystem. The router and data fetching layer share the same reactive state graph, eliminating the need for complex query caching strategies or explicit network boundaries.
 
 ## Framework comparison
 
