@@ -1,4 +1,4 @@
-import { createPackage, IRPC_STORE } from '@irpclib/irpc';
+import { createPackage, encode, IRPC_STORE, type IRPCData, IRPCFile } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { WebSocketTransport } from '../../src/index.js';
 import { WebSocketRouter } from '../../src/router.js';
@@ -184,5 +184,71 @@ describe('WebSocketRouter Resolve & Middleware', () => {
     await router.resolve(JSON.stringify({ data: 'not a call' }), ws);
 
     expect(ws.send).not.toHaveBeenCalled();
+  });
+
+  it('should safely handle cancel for unknown req.id without entry', async () => {
+    const module = createPackage({ name: 'test', version: '1.0.0' });
+    const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
+    module.use(transport);
+
+    const router = new WebSocketRouter(module, transport);
+    const ws = { readyState: 1, send: vi.fn() } as AnyType;
+    const message = JSON.stringify({ call: { id: 'unknown-cancel-id', type: 'cancel' }, credentials: [] });
+
+    await router.resolve(message, ws);
+    expect(router['abortControllers'].has('unknown-cancel-id')).toBe(false);
+  });
+
+  it('should handle request with file pointers when no binary buffer was uploaded', async () => {
+    const module = createPackage({ name: 'test', version: '1.0.0' });
+    const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
+    module.use(transport);
+
+    const router = new WebSocketRouter(module, transport);
+    const testFile = module.declare<(f: any) => Promise<string>>({ name: 'testFile' } as AnyType);
+    module.construct(testFile, async (input) => input.blob?.meta?.name ?? 'no-file');
+
+    const file = new IRPCFile({ type: 'text/plain', name: 'missing.bin', size: 10 });
+    const encoded = encode([{ blob: file }] as IRPCData);
+
+    const ws = { readyState: 1, send: vi.fn() } as AnyType;
+    const message = JSON.stringify({
+      call: {
+        id: 'file-req-1',
+        name: 'testFile',
+        args: encoded.json.data,
+        files: encoded.json.files,
+      },
+      credentials: [],
+    });
+
+    await router.resolve(message, ws);
+    expect(ws.send).toHaveBeenCalled();
+  });
+
+  it('should not send error packet if ws is closed when hook errors', async () => {
+    errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
+    const module = createPackage({ name: 'test', version: '1.0.0' });
+    const transport = new WebSocketTransport({ url: 'ws://localhost:8080' });
+    module.use(transport);
+
+    const router = new WebSocketRouter(module, transport);
+    const ws = {
+      readyState: 3, // CLOSED
+      send: vi.fn(),
+    } as AnyType;
+
+    router.use(async () => {
+      throw new Error('Hook failure on closed ws');
+    });
+
+    const message = JSON.stringify({
+      call: { id: 'hook-err-closed', name: 'nonExistent', args: [] },
+      credentials: [],
+    });
+
+    await router.resolve(message, ws);
+    expect(ws.send).not.toHaveBeenCalled();
+    errSpy.mockRestore();
   });
 });
