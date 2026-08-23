@@ -3,11 +3,18 @@ import { resolveCacheControl } from './assets.js';
 import type { CacheControl } from './types.js';
 
 export type { StaticOptions };
+export type StaticOutput = { html: string; headers: Headers };
 
 export type StaticAdapter<E = unknown> = {
   get(url: URL, ctx?: Record<string, unknown>, env?: E): Promise<Response | undefined | null>;
   set(url: URL, body: string, ctx?: Record<string, unknown>, env?: E): Promise<Response | void | null>;
 };
+
+export class UnresolvedStatic extends Error {}
+
+export function nextStatic(message?: string) {
+  return new UnresolvedStatic(message ?? 'Unable to resolve static page.');
+}
 
 export type StaticResolverOptions<E = unknown> = {
   devMode?: boolean;
@@ -21,7 +28,7 @@ export type StaticResolverOptions<E = unknown> = {
 
 export function createStatic<E = unknown>(router: Router, options?: StaticResolverOptions<E>) {
   return {
-    async get(url: URL, env?: E): Promise<{ html: string; headers: Headers } | void> {
+    async get(url: URL, env?: E): Promise<StaticOutput | void> {
       if (!router || options?.devMode) return;
 
       const cacheDir = options?.cacheDir ?? './dist/client';
@@ -36,16 +43,20 @@ export function createStatic<E = unknown>(router: Router, options?: StaticResolv
 
       const adapter = options?.cacheAdapter ?? options?.adapter;
       if (adapter) {
-        const res = await adapter.get(url, ctx, env);
-        if (res && res.status === 200) {
-          const html = await res.text();
-          const resHeaders = new Headers(res.headers);
-          if (cacheControl && !resHeaders.has('Cache-Control')) {
-            resHeaders.set('Cache-Control', cacheControl);
+        try {
+          const res = await adapter.get(url, ctx, env);
+
+          if (res && res.status === 200) {
+            const html = await res.text();
+            const resHeaders = new Headers(res.headers);
+            if (cacheControl && !resHeaders.has('Cache-Control')) {
+              resHeaders.set('Cache-Control', cacheControl);
+            }
+            return { html, headers: resHeaders };
           }
-          return { html, headers: resHeaders };
-        }
-        return;
+
+          return;
+        } catch {}
       }
 
       const filePath = resolveStaticPath(cacheDir, url.pathname);
@@ -64,9 +75,11 @@ export function createStatic<E = unknown>(router: Router, options?: StaticResolv
 
       const adapter = options?.cacheAdapter ?? options?.adapter;
       if (adapter) {
-        const { ctx } = resolveStaticMetadata(match.route.options.static, url, options?.cache?.pages);
-        await adapter.set(url, content, ctx, env);
-        return;
+        try {
+          const { ctx } = resolveStaticMetadata(match.route.options.static, url, options?.cache?.pages);
+          await adapter.set(url, content, ctx, env);
+          return;
+        } catch {}
       }
 
       const filePath = resolveStaticPath(cacheDir, url.pathname);

@@ -5,17 +5,30 @@ export function wrapJsx(framework: Framework, head: string, body: string, templa
 
   if (framework === 'react') {
     return `
-import { getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink } from '@airlib/react';
+import { anchor as __airAnchor, getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink, onCleanup as __airOnCleanup } from '@airlib/react';
 
 ${head}
 
 export default function AirMdxPage({ state: $state, context: $context, children: $children }) {
   const __airMdxCtx = __airGetCtx('mdx-context');
   if (__airMdxCtx) {
+    const url = $context?.url;
     Object.assign(__airMdxCtx, {
-      url: $context?.url,
+      url,
       meta: airMdxMeta,
       headings: airMdxHeadings,
+    });
+    __airOnCleanup(() => {
+      const rawCtx = __airAnchor.get(__airMdxCtx);
+      if (rawCtx.url === url) {
+        delete __airMdxCtx.url;
+      }
+      if (rawCtx.headings === airMdxHeadings) {
+        delete __airMdxCtx.headings;
+      }
+      if (rawCtx.meta === airMdxMeta) {
+        delete __airMdxCtx.meta;
+      }
     });
   }
 
@@ -33,17 +46,30 @@ ${body}
 
   if (framework === 'solid') {
     return `
-import { getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink } from '@airlib/solid';
+import { anchor as __airAnchor, getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink, onCleanup as __airOnCleanup } from '@airlib/solid';
 
 ${head}
 
 export default function AirMdxPage({ state: $state, context: $context, children: $children }) {
   const __airMdxCtx = __airGetCtx('mdx-context');
   if (__airMdxCtx) {
+    const url = $context?.url;
     Object.assign(__airMdxCtx, {
-      url: $context.url,
+      url,
       meta: airMdxMeta,
       headings: airMdxHeadings,
+    });
+    __airOnCleanup(() => {
+      const rawCtx = __airAnchor.get(__airMdxCtx);
+      if (rawCtx.url === url) {
+        delete __airMdxCtx.url;
+      }
+      if (rawCtx.headings === airMdxHeadings) {
+        delete __airMdxCtx.headings;
+      }
+      if (rawCtx.meta === airMdxMeta) {
+        delete __airMdxCtx.meta;
+      }
     });
   }
 
