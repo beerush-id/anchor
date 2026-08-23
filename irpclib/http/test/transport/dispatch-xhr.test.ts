@@ -30,7 +30,9 @@ describe('HTTPTransport XHR Dispatch', () => {
       HEADERS_RECEIVED: 2,
     };
 
-    MockXHR = vi.fn().mockImplementation(() => xhrInstance);
+    MockXHR = vi.fn().mockImplementation(function () {
+      return xhrInstance;
+    });
     MockXHR.HEADERS_RECEIVED = 2;
     vi.stubGlobal('XMLHttpRequest', MockXHR);
   });
@@ -337,5 +339,134 @@ describe('HTTPTransport XHR Dispatch', () => {
 
     await transport['dispatch']([call]);
     expect(true).toBe(true);
+  });
+
+  it('should handle response headers without colon separator gracefully', async () => {
+    xhrInstance.getAllResponseHeaders.mockReturnValue('content-type: application/x-ndjson\r\nmalformed-header-without-colon\r\nx-custom: value');
+    const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+
+    xhrInstance.send.mockImplementation(() => {
+      xhrInstance.readyState = 2;
+      xhrInstance.status = 200;
+      xhrInstance.statusText = 'OK';
+      xhrInstance.onreadystatechange();
+      xhrInstance.onload();
+    });
+
+    const call = {
+      id: '1',
+      payload: { name: 'test', args: [] },
+      options: {},
+      enqueue: vi.fn(),
+    } as AnyType;
+
+    await transport['dispatch']([call]);
+    expect(xhrInstance.getAllResponseHeaders).toHaveBeenCalled();
+  });
+
+  it('should ignore empty progress chunks when responseText has not changed', async () => {
+    const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+
+    xhrInstance.send.mockImplementation(() => {
+      xhrInstance.readyState = 2;
+      xhrInstance.status = 200;
+      xhrInstance.statusText = 'OK';
+      xhrInstance.onreadystatechange();
+
+      xhrInstance.responseText = '';
+      xhrInstance.onprogress();
+      xhrInstance.onprogress();
+      xhrInstance.onload();
+    });
+
+    const call = {
+      id: '1',
+      payload: { name: 'test', args: [] },
+      options: {},
+      enqueue: vi.fn(),
+    } as AnyType;
+
+    await transport['dispatch']([call]);
+    expect(call.enqueue).not.toHaveBeenCalled();
+  });
+
+  it('should handle packets without data field in XHR stream and flush', async () => {
+    const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+    const packet1 = JSON.stringify({ id: '1', type: IRPC_PACKET_TYPE.ANSWER, status: IRPC_STATUS.SUCCESS });
+    const packet2 = JSON.stringify({ id: '2', type: IRPC_PACKET_TYPE.ANSWER, status: IRPC_STATUS.SUCCESS });
+
+    xhrInstance.send.mockImplementation(() => {
+      xhrInstance.readyState = 2;
+      xhrInstance.status = 200;
+      xhrInstance.statusText = 'OK';
+      xhrInstance.onreadystatechange();
+
+      xhrInstance.responseText = packet1 + '\n';
+      xhrInstance.onprogress();
+
+      xhrInstance.responseText = packet1 + '\n' + packet2;
+      xhrInstance.onload();
+    });
+
+    const call1 = { id: '1', payload: { name: 'test', args: [] }, options: {}, enqueue: vi.fn() } as AnyType;
+    const call2 = { id: '2', payload: { name: 'test', args: [] }, options: {}, enqueue: vi.fn() } as AnyType;
+
+    await transport['dispatch']([call1, call2]);
+    expect(call1.enqueue).toHaveBeenCalled();
+    expect(call2.enqueue).toHaveBeenCalled();
+  });
+
+  it('should support request method with default url parameter', async () => {
+    const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+
+    xhrInstance.send.mockImplementation(() => {
+      xhrInstance.readyState = 2;
+      xhrInstance.status = 200;
+      xhrInstance.statusText = 'OK';
+      xhrInstance.onreadystatechange();
+      xhrInstance.onload();
+    });
+
+    const response = await transport['request']({ method: 'POST' });
+    expect(response.status).toBe(200);
+  });
+
+  it('should ignore readyState changes other than HEADERS_RECEIVED', async () => {
+    const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+
+    xhrInstance.send.mockImplementation(() => {
+      xhrInstance.readyState = 1;
+      xhrInstance.onreadystatechange();
+      xhrInstance.readyState = 3;
+      xhrInstance.onreadystatechange();
+      xhrInstance.readyState = 2;
+      xhrInstance.status = 200;
+      xhrInstance.statusText = 'OK';
+      xhrInstance.onreadystatechange();
+      xhrInstance.onload();
+    });
+
+    const call = { id: '1', payload: { name: 'test', args: [] }, options: {}, enqueue: vi.fn() } as AnyType;
+    await transport['dispatch']([call]);
+    expect(xhrInstance.open).toHaveBeenCalled();
+  });
+
+  it('should skip unknown call id in final buffer flush', async () => {
+    const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+    const packet = JSON.stringify({ id: 'unknown-id', type: IRPC_PACKET_TYPE.ANSWER, status: IRPC_STATUS.SUCCESS });
+
+    xhrInstance.send.mockImplementation(() => {
+      xhrInstance.readyState = 2;
+      xhrInstance.status = 200;
+      xhrInstance.statusText = 'OK';
+      xhrInstance.onreadystatechange();
+
+      xhrInstance.responseText = packet;
+      xhrInstance.onload();
+    });
+
+    const call = { id: '1', payload: { name: 'test', args: [] }, options: {}, enqueue: vi.fn() } as AnyType;
+    await transport['dispatch']([call]);
+    expect(call.enqueue).not.toHaveBeenCalled();
   });
 });

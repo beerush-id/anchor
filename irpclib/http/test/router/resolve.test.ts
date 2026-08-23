@@ -1,4 +1,4 @@
-import { createPackage, credential, IRPC_FILE_STATUS, IRPC_STORE, type IRPCRequests } from '@irpclib/irpc';
+import { createPackage, credential, IRPC_FILE_STATUS, IRPC_STORE, IRPCResolver, type IRPCRequests } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HTTPTransport, IRPC_JSON_KEY } from '../../src/index.js';
 import { HTTPRouter } from '../../src/router.js'; // biome-ignore lint/suspicious/noExplicitAny: Expect any.
@@ -15,6 +15,7 @@ describe('HTTPRouter resolve (form/standard)', () => {
 
   afterEach(() => {
     errSpy.mockRestore();
+    vi.useRealTimers();
   });
 
   const createMockRequest = (payload: IRPCRequests) => {
@@ -195,7 +196,7 @@ describe('HTTPRouter resolve (form/standard)', () => {
     const response = await responsePromise;
 
     response.body?.getReader();
-    vi.runAllTimers();
+    vi.advanceTimersByTime(100);
     expect(response.status).toBe(200);
 
     vi.useRealTimers();
@@ -413,5 +414,110 @@ describe('HTTPRouter resolve (form/standard)', () => {
 
     expect(response.status).toBe(200);
     expect(receivedApiKey).toBeUndefined();
+  });
+
+  it('should emit heartbeat frame and handle stream cancellation', async () => {
+    vi.useFakeTimers();
+
+    const module = createPackage({ name: 'test', version: '1.0.0' });
+    const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+    module.use(transport);
+
+    const router = new HTTPRouter(module, transport, { heartbeat: 50 });
+
+    type TestFunc = () => Promise<string>;
+    const testFunc = module.declare<TestFunc>({ name: 'testHeartbeat', seed: () => '', stream: true } as AnyType);
+
+    const handler: TestFunc = async () => new Promise(() => {});
+    module.construct(testFunc, handler);
+
+    const request = createMockRequest({ calls: [{ id: '1', name: 'testHeartbeat', args: [] } as AnyType] });
+    const response = await router.resolve(request);
+
+    const reader = response.body?.getReader();
+    vi.advanceTimersByTime(60);
+
+    const readPromise = reader?.read();
+    const chunk = await readPromise;
+    expect(new TextDecoder().decode(chunk?.value)).toContain('\n');
+
+    await reader?.cancel();
+    vi.advanceTimersByTime(60);
+  });
+
+  it('should clear heartbeat timer if controller.enqueue throws', async () => {
+    vi.useFakeTimers();
+
+    const module = createPackage({ name: 'test', version: '1.0.0' });
+    const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+    module.use(transport);
+
+    const router = new HTTPRouter(module, transport, { heartbeat: 50 });
+
+    type TestFunc = () => Promise<string>;
+    const testFunc = module.declare<TestFunc>({ name: 'testHeartbeatErr', seed: () => '', stream: true } as AnyType);
+
+    const handler: TestFunc = async () => new Promise(() => {});
+    module.construct(testFunc, handler);
+
+    const enqueueSpy = vi.spyOn(ReadableStreamDefaultController.prototype, 'enqueue').mockImplementation(() => {
+      throw new Error('Controller closed');
+    });
+
+    const request = createMockRequest({ calls: [{ id: '1', name: 'testHeartbeatErr', args: [] } as AnyType] });
+    const response = await router.resolve(request);
+
+    vi.advanceTimersByTime(60);
+    enqueueSpy.mockRestore();
+    await response.body?.cancel();
+  });
+
+  it('should immediately abort if signal is already aborted', async () => {
+    const module = createPackage({ name: 'test', version: '1.0.0' });
+    const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+    module.use(transport);
+
+    const router = new HTTPRouter(module, transport);
+
+    const controller = new AbortController();
+    controller.abort('pre-aborted');
+
+    const fd = new FormData();
+    fd.append(IRPC_JSON_KEY, JSON.stringify({ calls: [{ id: '1', name: 'testAborted', args: [] }] }));
+    const request = new Request('https://api.example.com/rpc', { method: 'POST', body: fd, signal: controller.signal });
+    vi.spyOn(request, 'formData').mockResolvedValueOnce(fd);
+
+    const response = await router.resolve(request);
+    expect(response.status).toBe(200);
+  });
+
+  it('should support resolveForm called directly with default parameters', async () => {
+    const module = createPackage({ name: 'test', version: '1.0.0' });
+    const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+    module.use(transport);
+
+    const router = new HTTPRouter(module, transport, { heartbeat: 0 });
+
+    type TestFunc = () => Promise<string>;
+    const testFunc = module.declare<TestFunc>({ name: 'testFormDirect', seed: () => '' });
+    module.construct(testFunc, async () => 'ok');
+
+    const fd = new FormData();
+    fd.append(IRPC_JSON_KEY, JSON.stringify({ calls: [{ id: '1', name: 'testFormDirect', args: [] }] }));
+
+    const response = await router.resolveForm(fd);
+    expect(response.status).toBe(200);
+  });
+
+  it('should support resolveRequests called directly with default initContext', () => {
+    const module = createPackage({ name: 'test', version: '1.0.0' });
+    const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+    module.use(transport);
+
+    const router = new HTTPRouter(module, transport, { heartbeat: 0 });
+    const resolver = new IRPCResolver({ id: '1', name: 'testDirectReq', args: [] }, module);
+
+    const response = router['resolveRequests']([resolver]);
+    expect(response.status).toBe(200);
   });
 });

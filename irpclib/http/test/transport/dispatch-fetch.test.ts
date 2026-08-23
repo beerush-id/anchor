@@ -689,4 +689,60 @@ describe('HTTPTransport Fetch Dispatch', () => {
       delete (globalThis as AnyType).CustomEvent;
     }
   });
+
+  it('should decode blob payloads in streaming packets and final buffer flush', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(() => Promise.resolve(new Response(new Blob(['data']), { status: 200 })));
+
+    const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
+    const call1 = { id: 'call-1', enqueue: vi.fn(), options: {} } as AnyType;
+    const call2 = { id: 'call-2', enqueue: vi.fn(), options: {} } as AnyType;
+    const textEncoder = new TextEncoder();
+
+    const blobPayload = {
+      type: 'IRPC_PACKET_BLOB',
+      url: 'https://example.com/test.bin',
+      meta: { name: 'test.bin', size: 4, type: 'application/octet-stream' },
+    };
+
+    let count = 0;
+    const response = {
+      ok: true,
+      headers: { has: () => false },
+      body: {
+        getReader: () => ({
+          read: vi.fn().mockImplementation(() => {
+            count++;
+            if (count === 1) {
+              return Promise.resolve({
+                done: false,
+                value: textEncoder.encode(
+                  JSON.stringify({ id: 'call-1', type: IRPC_PACKET_TYPE.ANSWER, status: IRPC_STATUS.SUCCESS, data: { file: blobPayload } }) + '\n'
+                ),
+              });
+            }
+            if (count === 2) {
+              // emit without newline so it lands in done buffer
+              return Promise.resolve({
+                done: false,
+                value: textEncoder.encode(
+                  JSON.stringify({ id: 'call-2', type: IRPC_PACKET_TYPE.ANSWER, status: IRPC_STATUS.SUCCESS, data: { file: blobPayload } })
+                ),
+              });
+            }
+            return Promise.resolve({ done: true, value: undefined });
+          }),
+          releaseLock: vi.fn(),
+        }),
+      },
+    };
+
+    await transport['resolveAll']([call1, call2], response as AnyType);
+
+    expect(call1.enqueue).toHaveBeenCalled();
+    expect(call2.enqueue).toHaveBeenCalled();
+
+    fetchSpy.mockRestore();
+  });
 });
