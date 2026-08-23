@@ -24,7 +24,7 @@ describe('BroadcastTransport Dispatch & Response Handling', () => {
       module.use(transport);
 
       type TestFunc = () => Promise<string>;
-      const testFunc = module.declare<TestFunc>({ name: 'testFunc' });
+      const testFunc = module.declare<TestFunc>({ name: 'testFunc' } as any);
 
       testFunc().catch(() => {});
 
@@ -43,8 +43,8 @@ describe('BroadcastTransport Dispatch & Response Handling', () => {
       module.use(transport);
 
       type TestFunc = (arg: string) => Promise<string>;
-      const func1 = module.declare<TestFunc>({ name: 'func1' });
-      const func2 = module.declare<TestFunc>({ name: 'func2' });
+      const func1 = module.declare<TestFunc>({ name: 'func1' } as any);
+      const func2 = module.declare<TestFunc>({ name: 'func2' } as any);
 
       func1('test1').catch(() => {});
       func2('test2').catch(() => {});
@@ -63,7 +63,7 @@ describe('BroadcastTransport Dispatch & Response Handling', () => {
       module.use(transport);
 
       type TestFunc = (file: AnyType) => Promise<string>;
-      const testFunc = module.declare<TestFunc>({ name: 'fileUpload' });
+      const testFunc = module.declare<TestFunc>({ name: 'fileUpload' } as any);
 
       const blob = new Blob(['test data'], { type: 'text/plain' });
       const file = new IRPCFile({ name: 'test.txt', size: 9, type: 'text/plain' }, blob);
@@ -87,7 +87,7 @@ describe('BroadcastTransport Dispatch & Response Handling', () => {
       module.use(transport);
 
       type TestFunc = () => Promise<string>;
-      const testFunc = module.declare<TestFunc>({ name: 'testFunc' });
+      const testFunc = module.declare<TestFunc>({ name: 'testFunc' } as any);
 
       const promise = testFunc();
 
@@ -115,7 +115,7 @@ describe('BroadcastTransport Dispatch & Response Handling', () => {
       module.use(transport);
 
       type TestFunc = () => Promise<string>;
-      const testFunc = module.declare<TestFunc>({ name: 'testFunc' });
+      const testFunc = module.declare<TestFunc>({ name: 'testFunc' } as any);
 
       const promise = testFunc();
       promise.catch(() => {});
@@ -138,6 +138,35 @@ describe('BroadcastTransport Dispatch & Response Handling', () => {
       });
 
       await expect(promise).rejects.toThrow('Test error');
+    });
+
+    it('should ignore non-response incoming messages on transport', () => {
+      const transport = new BroadcastTransport({ channel: 'test-channel' });
+      const resolveSpy = vi.spyOn(transport as AnyType, 'resolveResponse');
+
+      mockChannel.onmessage({ data: { not: 'a response' } });
+      mockChannel.onmessage({ data: 'primitive-data' });
+      mockChannel.onmessage({ data: null });
+
+      expect(resolveSpy).not.toHaveBeenCalled();
+    });
+
+    it('should retain pending calls when intermediate streaming packet is received', () => {
+      const transport = new BroadcastTransport({ channel: 'test-channel' });
+      const call = { id: 'stream-call-1', enqueue: vi.fn() } as AnyType;
+      transport['pendingCalls'].set('stream-call-1', call);
+
+      mockChannel.onmessage({
+        data: {
+          id: 'stream-call-1',
+          type: IRPC_PACKET_TYPE.EVENT,
+          status: IRPC_STATUS.PENDING,
+          data: { type: 'mutation', keys: ['data'], value: 'live update' },
+        },
+      });
+
+      expect(call.enqueue).toHaveBeenCalled();
+      expect(transport['pendingCalls'].has('stream-call-1')).toBe(true);
     });
   });
 });

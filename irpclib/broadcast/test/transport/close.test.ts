@@ -26,13 +26,19 @@ describe('BroadcastTransport Close & Error Handling', () => {
       expect(mockChannel.close).toHaveBeenCalled();
     });
 
+    it('should safely call close multiple times idempotently', () => {
+      const transport = new BroadcastTransport({ channel: 'test-channel' });
+      transport.close();
+      expect(() => transport.close()).not.toThrow();
+    });
+
     it('should reject pending calls on close', async () => {
       const module = createPackage({ name: 'test', version: '1.0.0' });
       const transport = new BroadcastTransport({ channel: 'test-channel' });
       module.use(transport);
 
       type TestFunc = () => Promise<string>;
-      const testFunc = module.declare<TestFunc>({ name: 'testFunc' });
+      const testFunc = module.declare<TestFunc>({ name: 'testFunc' } as any);
 
       const promise = testFunc();
       promise.catch(() => {});
@@ -121,7 +127,7 @@ describe('BroadcastTransport Close & Error Handling', () => {
       module.use(transport);
 
       type TestFunc = () => Promise<string>;
-      const testFunc = module.declare<TestFunc>({ name: 'testFunc' });
+      const testFunc = module.declare<TestFunc>({ name: 'testFunc' } as any);
 
       transport.close();
 
@@ -137,7 +143,7 @@ describe('BroadcastTransport Close & Error Handling', () => {
       module.use(transport);
 
       type TestFunc = () => Promise<string>;
-      const testFunc = module.declare<TestFunc>({ name: 'testFunc' });
+      const testFunc = module.declare<TestFunc>({ name: 'testFunc' } as any);
 
       mockChannel.postMessage.mockImplementation(() => {
         throw new Error('postMessage failed');

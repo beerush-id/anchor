@@ -12,7 +12,10 @@ export const createMockBroadcastChannel = () => {
 
   vi.stubGlobal(
     'BroadcastChannel',
-    vi.fn().mockImplementation(() => mockChannel)
+    /* biome-ignore lint/complexity/useArrowFunction: expect mock */
+    vi.fn().mockImplementation(function () {
+      return mockChannel;
+    })
   );
 
   return mockChannel;

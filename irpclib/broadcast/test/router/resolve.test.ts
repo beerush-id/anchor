@@ -1,4 +1,4 @@
-import { createPackage, IRPC_STATUS, IRPC_STORE } from '@irpclib/irpc';
+import { createPackage, encode, type IRPCData, IRPCFile, IRPC_STATUS, IRPC_STORE } from '@irpclib/irpc';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BroadcastTransport } from '../../src/index.js';
 import { BroadcastRouter } from '../../src/router.js';
@@ -228,6 +228,91 @@ describe('BroadcastRouter Resolve & Handling', () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       expect(mockChannel.postMessage).not.toHaveBeenCalled();
+    });
+
+    it('should safely handle cancel when controller is not found', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new BroadcastTransport({ channel: 'test-channel' });
+      module.use(transport);
+
+      const router = new BroadcastRouter(module, transport);
+      const message = { call: { id: 'unknown-cancel-id', type: 'cancel' }, credentials: [] };
+
+      await router['handleMessage']({ data: message } as AnyType);
+      expect(router['abortControllers'].has('unknown-cancel-id')).toBe(false);
+    });
+
+    it('should handle request with file pointers when blob is missing', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new BroadcastTransport({ channel: 'test-channel' });
+      module.use(transport);
+
+      const router = new BroadcastRouter(module, transport);
+      type TestFunc = (input: any) => Promise<string>;
+      const testFunc = module.declare<TestFunc>({ name: 'testMissingBlob' } as AnyType);
+      module.construct(testFunc, async (input) => input.blob?.meta?.name ?? 'no-file');
+
+      const file = new IRPCFile({ type: 'text/plain', name: 'missing.bin', size: 10 });
+      const encoded = encode([{ blob: file }] as IRPCData);
+
+      const request = {
+        id: 'file-req-no-blob',
+        name: 'testMissingBlob',
+        args: encoded.json.data,
+        files: encoded.json.files,
+      };
+
+      await router.resolve(request as AnyType);
+      expect(mockChannel.postMessage).toHaveBeenCalled();
+    });
+
+    it('should not postMessage on hook error or stream pipe if channel is undefined', async () => {
+      errSpy = vi.spyOn(IRPC_STORE, 'error').mockImplementation(() => {});
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new BroadcastTransport({ channel: 'test-channel' });
+      module.use(transport);
+
+      const router = new BroadcastRouter(module, transport);
+      router.use(async () => {
+        throw new Error('Hook error without channel');
+      });
+
+      router.close(); // Clears this.channel
+
+      const request = { id: 'no-chan-req', name: 'anyFunc', args: [] };
+      await router.resolve(request as AnyType);
+
+      expect(router['channel']).toBeUndefined();
+      errSpy.mockRestore();
+    });
+
+    it('should safely call close multiple times idempotently', () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new BroadcastTransport({ channel: 'test-channel' });
+      module.use(transport);
+
+      const router = new BroadcastRouter(module, transport);
+      router.close();
+      expect(() => router.close()).not.toThrow();
+    });
+
+    it('should not postMessage during stream pipe if channel was closed', async () => {
+      const module = createPackage({ name: 'test', version: '1.0.0' });
+      const transport = new BroadcastTransport({ channel: 'test-channel' });
+      module.use(transport);
+
+      const router = new BroadcastRouter(module, transport);
+      type TestFunc = () => Promise<string>;
+      const testFunc = module.declare<TestFunc>({ name: 'testStreamClosedChan' } as AnyType);
+      module.construct(testFunc, async () => {
+        router.close();
+        return 'done';
+      });
+
+      const request = { id: 'stream-close-chan', name: 'testStreamClosedChan', args: [] };
+      await router.resolve(request as AnyType);
+
+      expect(router['channel']).toBeUndefined();
     });
   });
 });

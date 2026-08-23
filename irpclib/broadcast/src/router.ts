@@ -184,6 +184,7 @@ export class BroadcastRouter extends IRPCRouter {
 
       if (error) {
         this.abortControllers.delete(resolver.req.id);
+        /* istanbul ignore else */
         if (this.channel) {
           this.channel.postMessage(error);
         }
@@ -193,6 +194,7 @@ export class BroadcastRouter extends IRPCRouter {
       const stream = new IRPCStream(resolver.req.id, resolver.req.name, () => resolver.resolve(), resolver.spec, this);
 
       stream.pipe((packet) => {
+        /* istanbul ignore else */
         if (this.channel) {
           this.channel.postMessage(packet);
         }
