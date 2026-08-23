@@ -2,7 +2,7 @@
 
 > **Core IRPC patterns** (Adapters, Drivers, Context-based library config, Client SDKs, Export Maps) are covered in `skills/air-irpc/contents/library-authoring.md`. This file covers Solid-specific library authoring: bundling UI components, JSX compilation, peer dependencies, and package configuration.
 
-Building a reusable library using AirLib (Anchor, IRPC, Router) requires specific configurations to ensure your library is consumable by both client and server applications, preserves reactivity, and bundles correctly.
+Building a reusable library using AirLib (Anchor, IRPC, Reactive) requires specific configurations to ensure your library is consumable by both client and server applications, preserves reactivity, and bundles correctly.
 
 ### Core Architecture
 Libraries in AirLib are typically built using standard ESM modules. They export:

@@ -1,6 +1,6 @@
 ---
 name: air-stack-react
-description: "Use this skill when building web applications, backend APIs, or reusable front-end/backend libraries using AirLib (Anchor, IRPC, Router) and React. This skill is heavily modularized to prevent context pollution. Read ONLY the specific module that matches your current task using the view_file tool."
+description: "Use this skill when building web applications, backend APIs, or reusable front-end/backend libraries using AirLib (Anchor, IRPC, Reactive) and React. This skill is heavily modularized to prevent context pollution. Read ONLY the specific module that matches your current task using the view_file tool."
 ---
 
 # AirLib React Decision Router
