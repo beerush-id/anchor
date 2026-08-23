@@ -21,6 +21,12 @@ export class AirDurableLink {
       server.addEventListener('message', async (event) => {
         await resolver(event.data, server);
       });
+      server.addEventListener('close', () => {
+        resolver.close?.(server);
+      });
+      server.addEventListener('error', () => {
+        resolver.close?.(server);
+      });
 
       return new Response(null, {
         status: 101,

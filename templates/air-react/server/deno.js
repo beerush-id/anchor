@@ -13,6 +13,12 @@ Deno.serve({
       socket.addEventListener('message', async (event) => {
         await resolver(event.data, socket);
       });
+      socket.addEventListener('close', () => {
+        resolver.close?.(socket);
+      });
+      socket.addEventListener('error', () => {
+        resolver.close?.(socket);
+      });
       
       return response;
     } catch (e) {

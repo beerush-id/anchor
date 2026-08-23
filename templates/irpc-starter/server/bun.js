@@ -4,6 +4,9 @@ const port = process.env.PORT || 3000;
 
 Bun.serve({
   port,
+  // Long-lived IRPC streams go idle between packets; Bun's 10s default
+  // would close them. The router's heartbeat probes dead connections.
+  idleTimeout: 0,
   async fetch(req, server) {
     const url = new URL(req.url);
     
@@ -28,6 +31,9 @@ Bun.serve({
       if (ws.data?.resolver) {
         await ws.data.resolver(message, ws);
       }
+    },
+    close(ws) {
+      ws.data?.resolver?.close?.(ws);
     },
   },
 });

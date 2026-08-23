@@ -23,7 +23,7 @@ import {
   ResolveError,
   withContext,
 } from '@irpclib/irpc';
-import { IRPC_JSON_KEY, IRPC_WEB_PATH } from './enum.js';
+import { IRPC_DEFAULT_HEARTBEAT, IRPC_JSON_KEY, IRPC_WEB_PATH } from './enum.js';
 import { COOKIES_SYNC_KEY, type HTTPTransport } from './transport.js';
 
 /**
@@ -44,6 +44,8 @@ export type HTTPResolveConfig = {
   endpoint: string;
   /** Custom resolver function to handle requests */
   resolver: typeof defaultResolver;
+  /** Interval in ms that emits a no-op frame on open streams, so runtimes that kill idle requests keep them alive. Set to 0 to disable. Defaults to 15000. */
+  heartbeat?: number;
 };
 
 /**
@@ -121,7 +123,7 @@ export class HTTPRouter extends IRPCRouter {
       }
 
       const jar = decodeCookies(request.headers.get('cookie') ?? '');
-      return await this.resolveForm(await request.formData(), context, builder, jar);
+      return await this.resolveForm(await request.formData(), context, builder, jar, request.signal);
     } catch (error) {
       IRPC_STORE.error(error as Error, [{ method: request.method, url: request.url }]);
       return buildResponse(JSON.stringify(ResolveError.failed(error as Error).json()), {
@@ -168,13 +170,16 @@ export class HTTPRouter extends IRPCRouter {
    * @param body - The incoming HTTP request body
    * @param context - Optional context to initialize the resolver with
    * @param builder - Optional custom response builder function
+   * @param jar - Optional decoded cookie jar
+   * @param signal - Optional request signal that aborts the stream when the client disconnects
    * @returns A Response object with the resolved data
    */
   public async resolveForm(
     body: FormData,
     context: [string | symbol, unknown][] = [],
     builder?: HTTPResponseBuilder,
-    jar?: ReturnType<typeof decodeCookies>
+    jar?: ReturnType<typeof decodeCookies>,
+    signal?: AbortSignal
   ) {
     const irpcRequests = JSON.parse(body.get(IRPC_JSON_KEY) as string) as IRPCRequests;
 
@@ -195,7 +200,13 @@ export class HTTPRouter extends IRPCRouter {
     });
 
     const credStore = createCredentials(irpcRequests.credentials ?? []);
-    return this.resolveRequests(requests, [...context, [IRPC_BASE_CONTEXT.CREDENTIALS, credStore]], builder, jar);
+    return this.resolveRequests(
+      requests,
+      [...context, [IRPC_BASE_CONTEXT.CREDENTIALS, credStore]],
+      builder,
+      jar,
+      signal
+    );
   }
 
   /**
@@ -285,13 +296,16 @@ export class HTTPRouter extends IRPCRouter {
    * @param resolvers - The incoming HTTP request resolvers
    * @param initContext - Optional context to initialize the resolver with
    * @param builder - Optional custom response builder function
+   * @param jar - Optional decoded cookie jar
+   * @param signal - Optional request signal that aborts the stream when the client disconnects
    * @returns A Response object with the resolved data
    */
   private resolveRequests(
     resolvers: IRPCResolver[],
     initContext: [string | symbol, unknown][] = [],
     builder?: HTTPResponseBuilder,
-    jar?: ReturnType<typeof decodeCookies>
+    jar?: ReturnType<typeof decodeCookies>,
+    signal?: AbortSignal
   ): Response {
     const buildResponse = (body: BodyInit, init: ResponseInit) => {
       if (builder) return builder(body, init);
@@ -305,8 +319,30 @@ export class HTTPRouter extends IRPCRouter {
     const encoder = new TextEncoder();
     const abortController = new AbortController();
 
+    const onDisconnect = () => abortController.abort(signal?.reason);
+
+    if (signal) {
+      if (signal.aborted) onDisconnect();
+      else signal.addEventListener('abort', onDisconnect, { once: true });
+    }
+
+    let heartbeatTimer: ReturnType<typeof setInterval>;
+    const heartbeat = this.config.heartbeat ?? IRPC_DEFAULT_HEARTBEAT;
+
     const readable = new ReadableStream({
       start: (controller) => {
+        if (heartbeat) {
+          const frame = encoder.encode('\n');
+
+          heartbeatTimer = setInterval(() => {
+            try {
+              controller.enqueue(frame);
+            } catch {
+              clearInterval(heartbeatTimer);
+            }
+          }, heartbeat);
+        }
+
         const promises = resolvers.map((resolver) => {
           const ctx = createContextStore<string | symbol, unknown>([
             [IRPC_BASE_CONTEXT.ABORT_SIGNAL, abortController.signal],
@@ -356,11 +392,14 @@ export class HTTPRouter extends IRPCRouter {
         });
 
         Promise.allSettled(promises).finally(() => {
+          clearInterval(heartbeatTimer);
+          signal?.removeEventListener('abort', onDisconnect);
           if (abortController.signal.aborted) return;
           controller.close();
         });
       },
       cancel: (reason) => {
+        clearInterval(heartbeatTimer);
         abortController.abort(reason);
       },
     });

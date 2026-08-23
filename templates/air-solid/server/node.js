@@ -31,6 +31,12 @@ server.on('upgrade', async (request, socket, head) => {
           const data = isBinary ? message : message.toString('utf-8');
           await resolver(data, ws);
         });
+        ws.on('close', () => {
+          resolver.close?.(ws);
+        });
+        ws.on('error', () => {
+          resolver.close?.(ws);
+        });
       });
     } catch (e) {
       console.error('WebSocket upgrade failed:', e);

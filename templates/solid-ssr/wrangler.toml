@@ -1,9 +1,0 @@
-name = "solid-ssr"
-main = "./server/worker.js"
-compatibility_date = "2024-06-10"
-compatibility_flags = ["nodejs_compat"]
-
-[assets]
-directory = "./dist/client"
-binding = "ASSETS"
-html_handling = "drop-trailing-slash"

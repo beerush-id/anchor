@@ -1,0 +1,7 @@
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "irpc-starter",
+  "main": "./server/worker.js",
+  "compatibility_date": "2025-06-10",
+  "compatibility_flags": ["nodejs_compat", "enable_request_signal"]
+}
