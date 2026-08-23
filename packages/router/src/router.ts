@@ -1,4 +1,4 @@
-import { captureStack } from '@airlib/core';
+import { captureStack, inherit } from '@airlib/core';
 import { type RouteCacheSnapshot, URLCache } from './cache.js';
 import { DEFAULT_CONFIG, DYNAMIC_ROUTE_KEY, WILDCARD_ROUTE_KEY } from './constant.js';
 import { RouterContext } from './context.js';
@@ -121,7 +121,7 @@ export class Router<Output = any> {
    * @param options - Optional router configuration
    */
   constructor(options?: RouterOptions) {
-    this.options = { ...DEFAULT_CONFIG, ...options };
+    this.options = inherit(DEFAULT_CONFIG, options);
     this.rootRoute = new Route<'/', None, None>(this, '/', this.options, undefined, '/');
     this.rootRegistry = new RouteRegistry(this.rootRoute);
     this.routes.add(this.rootRegistry);

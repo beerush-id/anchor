@@ -467,7 +467,7 @@ export class Route<
     const child = new Route(
       this.router,
       path,
-      { ...this.options, ...options } as RouteOptions<TChildPath, TChildParams, TChildQueryParams>,
+      options as RouteOptions<TChildPath, TChildParams, TChildQueryParams>,
       this,
       path
     );
