@@ -182,10 +182,6 @@ export function UIRouter(props: UIRouterProps) {
     }
     const match = router.find(url ?? location.href);
 
-    if (isBrowser() && resetScroll !== false && !STACK_REGISTRY.has((match as MatchedRoute)?.route)) {
-      window.scrollTo({ top: 0, left: 0, behavior });
-    }
-
     try {
       await router.activate(to?.href ?? location.href);
     } catch (error) {
@@ -193,6 +189,10 @@ export function UIRouter(props: UIRouterProps) {
         console.error(error);
       }
       return;
+    }
+
+    if (isBrowser() && resetScroll !== false && !STACK_REGISTRY.has((match as MatchedRoute)?.route)) {
+      window.scrollTo({ top: 0, left: 0, behavior });
     }
 
     if (to?.hash) {
