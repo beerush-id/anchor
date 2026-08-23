@@ -453,6 +453,7 @@ describe('coverage tests for unreached branches', () => {
         include: MDX_DEFAULT_OPTIONS.include,
         extended: false,
         headingDepth: MDX_DEFAULT_OPTIONS.headingDepth,
+        cacheDir: '',
       });
 
       expect(file.metadata).toEqual({});
@@ -764,13 +765,20 @@ describe('coverage tests for unreached branches', () => {
       const rehypePlugin = airMdxRehype();
       expect(() => rehypePlugin(mockTree)).not.toThrow();
 
-      const compiled = await mdxFile('/test.mdx', '# Test');
+      dir = makeFixture({});
+      AIR_ENV.viteRoot = dir;
+      const compiled = await mdxFile(fixturePath(dir, 'test.mdx'), '# Test');
       expect(compiled.code).toBeDefined();
 
-      const compiledWithPost = await mdxFile('/test.mdx', '# Test', {
-        postProcesses: [async (c) => c],
+      const compiledWithPost = await mdxFile(fixturePath(dir, 'test.mdx'), '# Test', {
+        cacheDir: '',
+        postProcesses: [async (c) => {
+          c.output += '';
+        }],
       });
       expect(compiledWithPost.code).toBeDefined();
+      cleanFixture(dir);
+      AIR_ENV.viteRoot = '';
     });
   });
 });

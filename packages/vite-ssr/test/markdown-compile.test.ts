@@ -11,6 +11,7 @@ const PLAIN_OPTIONS = {
   include: MDX_DEFAULT_OPTIONS.include,
   extended: false,
   headingDepth: MDX_DEFAULT_OPTIONS.headingDepth,
+  cacheDir: '',
 };
 
 describe('mdx compilation — recompilation is driven by source changes', () => {
@@ -106,7 +107,7 @@ describe('mdx docs mode — extended plugins enrich markdown', () => {
     ].join('\n');
 
     const { file, code } = await mdxFile(id, source, {
-      include: MDX_DEFAULT_OPTIONS.include,
+      ...PLAIN_OPTIONS,
       extended: { remarkGfm: {} },
       headingDepth: 3,
     });
@@ -191,7 +192,7 @@ describe('mdx docs mode — extended plugins enrich markdown', () => {
     ].join('\n');
 
     const { code } = await mdxFile(id, source, {
-      include: MDX_DEFAULT_OPTIONS.include,
+      ...PLAIN_OPTIONS,
       extended: true,
       headingDepth: 3,
     });
@@ -220,7 +221,7 @@ describe('mdx docs mode — extended plugins enrich markdown', () => {
     const id = fixturePath(dir, 'pages/guide/page.mdx');
 
     const { code } = await mdxFile(id, '# Bare\n', {
-      include: MDX_DEFAULT_OPTIONS.include,
+      ...PLAIN_OPTIONS,
       extended: true,
       headingDepth: 3,
     });
@@ -484,6 +485,9 @@ describe('mdx compilation pipe — import deduplication and structure', () => {
 
     const result = await mdxFile(id, '# Disk Pre\n', { ...PLAIN_OPTIONS, cacheDir });
     expect(result.code).toContain('AirMdxContent');
+
+    const staleResult = await mdxFile(id, '# Changed Source\n', { ...PLAIN_OPTIONS, cacheDir });
+    expect(staleResult.code).toBeDefined();
 
     const noCacheResult = await mdxFile(fixturePath(dir, 'pages/other/page.mdx'), '# No Cache\n', {
       ...PLAIN_OPTIONS,

@@ -57,6 +57,7 @@ describe('mdx pages — MDX files are pages', () => {
         include: MDX_DEFAULT_OPTIONS.include,
         extended: false,
         headingDepth: MDX_DEFAULT_OPTIONS.headingDepth,
+        cacheDir: '',
       }
     );
 

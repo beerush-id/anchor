@@ -105,7 +105,7 @@ type MdxCache = {
 const MDX_CACHE = new Map<string, MdxCache>();
 
 function getMdxCachePath(id: string, cacheDir: string): string {
-  const baseDir = path.resolve(AIR_ENV.viteRoot || process.cwd(), AIR_ENV.cacheDir, cacheDir);
+  const baseDir = path.resolve(AIR_ENV.viteRoot, AIR_ENV.cacheDir, cacheDir);
   return path.join(baseDir, `${relToPages(id)}.json`);
 }
 
@@ -168,7 +168,7 @@ export class MdxModule {
       try {
         const content = await fs.promises.readFile(cachePath, 'utf-8');
         const data = JSON.parse(content) as MdxCache;
-        if (data && data.hash === hash) {
+        if (data?.hash === hash) {
           this.locals = data.locals;
           this.globals = data.globals;
           this.headings = data.headings;
