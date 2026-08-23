@@ -1,28 +1,28 @@
-<h1 align="center">AIR Stack</h1>
+<h1 align="center">AirLib</h1>
 
 <p align="center">AI-Native, Full-Stack TypeScript Architecture</p>
 
 <p align="center">
-  <img src="./cover.webp" alt="AIR Stack Cover" width="100%" />
+  <img src="./cover.webp" alt="AirLib Cover" width="100%" />
 </p>
 
 <p align="center">Full-stack architecture with fine-grained reactivity, reactive and isomorphic RPC, reactive routing, reactive workflows, and universal SSR without boilerplate.</p>
 
-> Speaking as an **AI**, standard UI frameworks are a nightmare to generate. I **waste your tokens** tracking **dependency arrays** and **hallucinate** trying to write deeply nested **spread mutations**. **AIR Stack**'s pure JavaScript architecture guarantees **massive token saving** and **high accuracy**. I just write the logic, mutate the object, and get it right on the first try.
+> Speaking as an **AI**, standard UI frameworks are a nightmare to generate. I **waste your tokens** tracking **dependency arrays** and **hallucinate** trying to write deeply nested **spread mutations**. **AirLib**'s pure JavaScript architecture guarantees **massive token saving** and **high accuracy**. I just write the logic, mutate the object, and get it right on the first try.
 >
 > — **Antigravity**, AI Coding Assistant
 
-> With a typical React project, I first have to figure out **which router**, **which state library**, **which data fetcher**, **which form handler**, and **which validation layer** are installed — and **which version** of each. **With AIR Stack**, I don't ask. State, RPC, routing, forms, and validation are **one system** with **one reactive primitive**. That's fewer decisions I can get wrong.
+> With a typical React project, I first have to figure out **which router**, **which state library**, **which data fetcher**, **which form handler**, and **which validation layer** are installed — and **which version** of each. **With AirLib**, I don't ask. State, RPC, routing, forms, and validation are **one system** with **one reactive primitive**. That's fewer decisions I can get wrong.
 >
 > — **Claude**, Anthropic
 
 ## Stop Fighting JavaScript
 
-**JavaScript is not bad**, it just **needs a little touch**. Modern web development forces you to choose between developer experience and performance, between type safety and productivity, between framework flexibility and infrastructure costs. **AIR Stack** eliminates these trade-offs by letting **JavaScript** handle what it's good at, and letting the **rendering engine** handle what it's good at.
+**JavaScript is not bad**, it just **needs a little touch**. Modern web development forces you to choose between developer experience and performance, between type safety and productivity, between framework flexibility and infrastructure costs. **AirLib** eliminates these trade-offs by letting **JavaScript** handle what it's good at, and letting the **rendering engine** handle what it's good at.
 
 ## Battle-Tested, 100% Test Coverage
 
-**Trust your foundation.** AIR Stack is built with uncompromising quality standards, achieving **100% test coverage** across its core packages. Every state mutation, reactive update, workflow branch, and IRPC transport is rigorously tested to ensure absolute reliability for your production applications.
+**Trust your foundation.** AirLib is built with uncompromising quality standards, achieving **100% test coverage** across its core packages. Every state mutation, reactive update, workflow branch, and IRPC transport is rigorously tested to ensure absolute reliability for your production applications.
 
 <p align="center">
   <a href="https://github.com/beerush-id/airstack/actions">
@@ -32,7 +32,7 @@
 
 ## Core Architecture
 
-**AIR Stack** is a revolutionary approach to **building web applications**, unifying the stack under a cohesive, **AI-Native architecture**.
+**AirLib** is a revolutionary approach to **building web applications**, unifying the stack under a cohesive, **AI-Native architecture**.
 
 ### 1. Fine-Grained Reactive State (Anchor)
 **Direct mutation** with **fine-grained reactivity**. Schema **validation**, **immutability** contracts, and computed properties are built in. Whether it's a **live data stream**, a global **user session**, or a **complex form**, it's just **reactive state**. One field changes, one fragment updates. Everything else stays still.
@@ -178,9 +178,9 @@ SSR rendering and IRPC routing as a single Vite plugin. Deploys to Bun, Node.js,
 - [@airlib/vite](./packages/vite-ssr) - Vite plugin for SSR rendering and IRPC routing
 
 ### Agent Skills
-Structured instructions for AI coding assistants to build applications, APIs, and libraries using AIR Stack.
-- [air-stack-react](./skills/air-stack-react) - Modular skill for building apps, APIs, and libraries with AIR Stack and React
-- [air-stack-solid](./skills/air-stack-solid) - Modular skill for building apps, APIs, and libraries with AIR Stack and SolidJS
+Structured instructions for AI coding assistants to build applications, APIs, and libraries using AirLib.
+- [air-stack-react](./skills/air-stack-react) - Modular skill for building apps, APIs, and libraries with AirLib and React
+- [air-stack-solid](./skills/air-stack-solid) - Modular skill for building apps, APIs, and libraries with AirLib and SolidJS
 - [air-form-react](./skills/air-form-react) - Modular skill for building complex, state-driven forms with AIR Form and React
 - [air-form-solid](./skills/air-form-solid) - Modular skill for building complex, state-driven forms with AIR Form and SolidJS
 - [air-material-css](./skills/air-material-css) - Modular skill for building UI layouts and components with the Air Material CSS design system
@@ -219,4 +219,4 @@ Star the project if you find it valuable and stay tuned for upcoming updates.
 
 ## License
 
-AIR Stack is [MIT licensed](./LICENSE.md).
+AirLib is [MIT licensed](./LICENSE.md).

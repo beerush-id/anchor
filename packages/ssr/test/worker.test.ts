@@ -1,3 +1,5 @@
+/* @ts-expect-error */
+import fs from 'node:fs/promises';
 import { safeRun, sleep } from '@airlib/core';
 import { createRouter } from '@airlib/router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,9 +8,9 @@ import {
   createWorker,
   deferScript,
   SSR_ENV_KEY,
-  ssrEnv,
   type SSROutput,
   type SSRRenderer,
+  ssrEnv,
 } from '../src/index.js';
 
 function createMockRenderer(output?: Partial<SSROutput>): SSRRenderer {
@@ -885,7 +887,7 @@ describe('createFullWorker', () => {
       const worker = createFullWorker(router, renderer, { template: TEMPLATE });
 
       await expect(worker.upgrade(createRequest('http://localhost/'))).rejects.toThrow(
-        "[AIR Stack] WebSocket upgrade failed: 'wsRouter' is not defined"
+        "[AirLib] WebSocket upgrade failed: 'wsRouter' is not defined"
       );
     });
 
@@ -1062,7 +1064,6 @@ describe('defaultAssetResolver', () => {
   });
 
   it('resolves assets via Node fs', async () => {
-    const fs = await import('node:fs/promises');
     await fs.mkdir('./dist/client', { recursive: true });
     await fs.writeFile('./dist/client/real-node-style.css', 'real-node-css');
 
@@ -1074,7 +1075,6 @@ describe('defaultAssetResolver', () => {
   });
 
   it('returns application/octet-stream for unknown extensions in Node', async () => {
-    const fs = await import('node:fs/promises');
     await fs.mkdir('./dist/client', { recursive: true });
     await fs.writeFile('./dist/client/unknown.xyz', 'unknown-data');
 
@@ -1086,7 +1086,6 @@ describe('defaultAssetResolver', () => {
   });
 
   it('returns application/octet-stream for path with no extension in Node', async () => {
-    const fs = await import('node:fs/promises');
     await fs.mkdir('./dist/client', { recursive: true });
     await fs.writeFile('./dist/client/noextension', 'no-ext-data');
 

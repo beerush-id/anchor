@@ -3,7 +3,7 @@ import type { UserConfig } from 'vite';
 export { AIR_ENV, type AirEnv, detectFramework, type Framework, initEnv } from '../modules/env.js';
 
 /**
- * Returns Vite resolve alias configuration for the AIR Stack project root.
+ * Returns Vite resolve alias configuration for the AirLib project root.
  *
  * @param root Project root directory.
  */

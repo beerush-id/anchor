@@ -1,6 +1,6 @@
 # @airlib/vite
 
-Vite plugin that handles SSR rendering and IRPC routing for AIR Stack applications.
+Vite plugin that handles SSR rendering and IRPC routing for AirLib applications.
 
 ## Features
 

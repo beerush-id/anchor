@@ -1,6 +1,6 @@
 ## Image Architecture (`@airlib/solid` & `@airlib/vite`)
 
-The AIR stack provides a dedicated image architecture that spans the UI, the build pipeline, and TypeScript.
+AirLib provides a dedicated image architecture that spans the UI, the build pipeline, and TypeScript.
 
 ### 1. AirImage Interface
 

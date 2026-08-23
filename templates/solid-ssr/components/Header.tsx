@@ -28,7 +28,7 @@ export default function Header(props: { children?: JSX.Element }) {
       {props.children}
       <ul class="header-socials">
         <li>
-          <a href="https://github.com/beerush-id/airlib" target="_blank">
+          <a href="https://github.com/beerush-id/airstack" target="_blank">
             <svg class="button-icon" role="presentation" aria-hidden="true">
               <use href="/icons.svg#github-icon"></use>
             </svg>

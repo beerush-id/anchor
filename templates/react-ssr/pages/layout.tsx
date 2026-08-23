@@ -51,7 +51,7 @@ export default page(rootRoute).render(({ children }) => (
           <p>Join the Vite community</p>
           <ul>
             <li>
-              <a href="https://github.com/beerush-id/airlib" target="_blank">
+              <a href="https://github.com/beerush-id/airstack" target="_blank">
                 <svg className="button-icon" role="presentation" aria-hidden="true">
                   <use href="/icons.svg#github-icon"></use>
                 </svg>

@@ -1,6 +1,6 @@
 ## 11. Testing
 
-AIR Stack testing is straightforward. Your stubs are functions. Your state is objects. Your guards are functions. Import them, call them, assert.
+AirLib testing is straightforward. Your stubs are functions. Your state is objects. Your guards are functions. Import them, call them, assert.
 
 ### Test Setup
 

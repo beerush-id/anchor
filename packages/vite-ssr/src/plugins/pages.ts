@@ -140,7 +140,7 @@ const VIRTUAL_ROUTES = 'virtual:air/routes';
 const RESOLVED_VIRTUAL_ROUTES = '\0air-pages/routes';
 
 /**
- * File-based routing for AIR Stack applications.
+ * File-based routing for AirLib applications.
  *
  * Watches the pages directory, generates per-folder `route.ts` files (folders
  * define URLs), exposes `virtual:air/routes` (eager glob of all page/layout

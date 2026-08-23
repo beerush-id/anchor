@@ -1,11 +1,11 @@
 ---
 name: air-stack-react
-description: "Use this skill when building web applications, backend APIs, or reusable front-end/backend libraries using the AIR Stack (Anchor, IRPC, Router) and React. This skill is heavily modularized to prevent context pollution. Read ONLY the specific module that matches your current task using the view_file tool."
+description: "Use this skill when building web applications, backend APIs, or reusable front-end/backend libraries using AirLib (Anchor, IRPC, Router) and React. This skill is heavily modularized to prevent context pollution. Read ONLY the specific module that matches your current task using the view_file tool."
 ---
 
-# AIR Stack React Decision Router
+# AirLib React Decision Router
 
-AIR Stack is a reactive and isomorphic architecture for building web applications, backend APIs, and reusable libraries. It encompasses Isomorphic RPC (IRPC), Workflows, fine-grained State Management, Routing, and UI components.
+AirLib is a reactive and isomorphic architecture for building web applications, backend APIs, and reusable libraries. It encompasses Isomorphic RPC (IRPC), Workflows, fine-grained State Management, Routing, and UI components.
 
 To work effectively without polluting your context, use the `view_file` tool to read the specific markdown file that aligns with your current task.
 

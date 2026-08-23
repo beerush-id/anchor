@@ -418,7 +418,7 @@ export const Tabs = setup<{ default?: number, children?: ReactNode }>((props) =>
 ```
 
 #### Component Props
-In the AIR Stack, `props` is reactive state and the **source of truth** of your component. Read from it and write directly back to it. 
+In AirLib, `props` is reactive state and the **source of truth** of your component. Read from it and write directly back to it. 
 
 Create a separate internal `mutable()` state only for data that belongs strictly to the component itself (e.g., local loading status, intermediate buffering, or internal toggles).
 

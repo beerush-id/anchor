@@ -17,13 +17,13 @@ export function ensureSymlink(
   cacheDir: string = AIR_ENV.cacheDir,
   cacheScope: string = AIR_ENV.cacheScope
 ): void {
-  const absAirStackDir = path.join(viteRoot, cacheDir);
+  const absAirLibDir = path.join(viteRoot, cacheDir);
   const nodeModulesDir = path.join(viteRoot, 'node_modules');
   const target = path.join(nodeModulesDir, cacheScope);
   fs.mkdirSync(nodeModulesDir, { recursive: true });
 
   const isWin32 = process.platform === 'win32';
-  const expectedTarget = isWin32 ? absAirStackDir : path.relative(nodeModulesDir, absAirStackDir);
+  const expectedTarget = isWin32 ? absAirLibDir : path.relative(nodeModulesDir, absAirLibDir);
 
   try {
     const stat = fs.lstatSync(target);

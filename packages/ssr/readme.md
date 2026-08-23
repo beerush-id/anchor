@@ -1,6 +1,6 @@
 # @airlib/ssr
 
-A framework-agnostic Server-Side Rendering core for the AIR stack. Part of the Anchor library ecosystem.
+A framework-agnostic Server-Side Rendering core for AirLib. Part of the Anchor library ecosystem.
 
 ## Features
 

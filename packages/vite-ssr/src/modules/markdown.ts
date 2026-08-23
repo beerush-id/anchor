@@ -409,7 +409,7 @@ export const importExtended = (): Promise<AnyType> => {
       })
       .catch(() => {
         throw new Error(
-          `\n\n[AIR Stack] Docs mode is enabled, but required plugins are missing.\n` +
+          `\n\n[AirLib] Docs mode is enabled, but required plugins are missing.\n` +
             `Please ensure the following plugins are in your plugin catalog and installed:\n\n` +
             `  - remark-gfm\n` +
             `  - remark-directive\n` +

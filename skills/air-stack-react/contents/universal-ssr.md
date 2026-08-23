@@ -1,5 +1,5 @@
 ## 5. Universal SSR
-This guide covers SSR in AIR Stack for React. An app needs three files: `App.tsx` (client hydration), `vite.config.ts` (dev server via plugin), and `worker.ts` (production worker).
+This guide covers SSR in AirLib for React. An app needs three files: `App.tsx` (client hydration), `vite.config.ts` (dev server via plugin), and `worker.ts` (production worker).
 
 ### SSR: API Signatures
 ```typescript

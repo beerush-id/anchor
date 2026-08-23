@@ -1,9 +1,9 @@
 ---
 name: air-irpc
-description: "Use this skill when implementing Isomorphic RPC (IRPC) in the AIR Stack. It covers deep-dive knowledge into API declarations, handlers, setup, streaming, CRUD, and testing. Read ONLY the specific module that matches your current task using the view_file tool."
+description: "Use this skill when implementing Isomorphic RPC (IRPC) in AirLib. It covers deep-dive knowledge into API declarations, handlers, setup, streaming, CRUD, and testing. Read ONLY the specific module that matches your current task using the view_file tool."
 ---
 
-# AIR Stack IRPC Decision Router
+# AirLib IRPC Decision Router
 
 IRPC (Isomorphic RPC) is a universal reactive network abstraction. It entirely divorces *what* a function does from *where* it executes by separating API signatures (stubs) from their implementations (constructors) and their network layers (transports).
 

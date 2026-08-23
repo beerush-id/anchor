@@ -242,7 +242,7 @@ export function createFullWorker<E = AnyType>(
     async upgrade(request: Request, env?: E) {
       if (!options.wsRouter) {
         throw new Error(
-          "[AIR Stack] WebSocket upgrade failed: 'wsRouter' is not defined. Please pass an instance of WebSocketRouter in the worker options to enable real-time features."
+          "[AirLib] WebSocket upgrade failed: 'wsRouter' is not defined. Please pass an instance of WebSocketRouter in the worker options to enable real-time features."
         );
       }
 

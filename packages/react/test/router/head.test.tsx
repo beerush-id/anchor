@@ -83,7 +83,7 @@ describe('Anchor React - Head APIs', () => {
             title: 'SEO Title',
             description: 'SEO description',
             keywords: ['react', 'seo', 'anchor'],
-            author: 'AIR Stack',
+            author: 'AirLib',
             canonical: 'https://airlib.dev',
             robots: 'index, follow',
             themeColor: '#000000',
@@ -91,18 +91,18 @@ describe('Anchor React - Head APIs', () => {
             og: {
               type: 'website',
               image: 'https://airlib.dev/og.png',
-              imageAlt: 'AIR Stack Banner',
-              siteName: 'AIR Stack Docs',
+              imageAlt: 'AirLib Banner',
+              siteName: 'AirLib Docs',
               locale: 'en_US',
             },
             twitter: {
               card: 'summary_large_image',
               site: '@airlib',
               creator: '@beerush',
-              imageAlt: 'AIR Stack Twitter Banner',
+              imageAlt: 'AirLib Twitter Banner',
             },
             alternates: [{ href: 'https://airlib.dev/es', hreflang: 'es' }],
-            jsonLd: { '@context': 'https://schema.org', '@type': 'WebSite', name: 'AIR Stack' },
+            jsonLd: { '@context': 'https://schema.org', '@type': 'WebSite', name: 'AirLib' },
             custom: { 'custom-tag': 'custom-value' },
           }}
         >
@@ -115,14 +115,14 @@ describe('Anchor React - Head APIs', () => {
       expect(document.title).toBe('SEO Title');
       expect(document.head.querySelector('meta[name="description"]')?.getAttribute('content')).toBe('SEO description');
       expect(document.head.querySelector('meta[name="keywords"]')?.getAttribute('content')).toBe('react, seo, anchor');
-      expect(document.head.querySelector('meta[name="author"]')?.getAttribute('content')).toBe('AIR Stack');
+      expect(document.head.querySelector('meta[name="author"]')?.getAttribute('content')).toBe('AirLib');
       expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe('https://airlib.dev');
       expect(document.head.querySelector('meta[property="og:title"]')?.getAttribute('content')).toBe('SEO Title');
       expect(document.head.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe(
         'https://airlib.dev'
       );
       expect(document.head.querySelector('meta[property="og:site_name"]')?.getAttribute('content')).toBe(
-        'AIR Stack Docs'
+        'AirLib Docs'
       );
       expect(document.head.querySelector('meta[name="twitter:card"]')?.getAttribute('content')).toBe(
         'summary_large_image'
@@ -136,7 +136,7 @@ describe('Anchor React - Head APIs', () => {
       expect(JSON.parse(jsonLdScript?.textContent || '{}')).toEqual({
         '@context': 'https://schema.org',
         '@type': 'WebSite',
-        name: 'AIR Stack',
+        name: 'AirLib',
       });
 
       expect(document.head.querySelector('link[rel="author"]')?.getAttribute('href')).toBe('/author');

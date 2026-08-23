@@ -1,6 +1,6 @@
 /**
  * Ambient declaration for images imported with `?airimg` suffix.
- * Used by the AIR Stack image plugin to provide image metadata.
+ * Used by the AirLib image plugin to provide image metadata.
  */
 declare module '*?airimg' {
   /** Basic image metadata structure. */

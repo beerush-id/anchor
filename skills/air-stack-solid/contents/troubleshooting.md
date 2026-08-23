@@ -1,4 +1,4 @@
-## Troubleshooting — Common Solid AIR Stack Mistakes
+## Troubleshooting — Common Solid AirLib Mistakes
 
 ### 1. Forgot `.use()` on Dynamic Styles for Anchor Components
 

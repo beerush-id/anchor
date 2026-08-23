@@ -34,7 +34,7 @@ export async function getHighlighterSingleton(): Promise<Highlighter> {
       .catch(() => {
         highlighterPromise = undefined;
         throw new Error(
-          `\n\n[AIR Stack] Shiki is not installed.\n` +
+          `\n\n[AirLib] Shiki is not installed.\n` +
             `Please run \`npm install shiki @shikijs/rehype @shikijs/transformers\` or add them to your package manager.\n\n`
         );
       });

@@ -377,7 +377,7 @@ describe('Anchor Solid - Head Components', () => {
               url: 'https://airlib.dev/og',
               image: 'https://airlib.dev/img.jpg',
               imageAlt: 'OG Image Alt',
-              siteName: 'AIR Stack',
+              siteName: 'AirLib',
               locale: 'en_US',
             },
             twitter: {

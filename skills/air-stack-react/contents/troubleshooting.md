@@ -1,4 +1,4 @@
-## Troubleshooting — Common React AIR Stack Mistakes
+## Troubleshooting — Common React AirLib Mistakes
 
 ### 1. Forgot `.use()` on Dynamic Styles for Anchor Components
 
