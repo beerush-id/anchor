@@ -1,15 +1,17 @@
-import type { AnyType } from '@airlib/core';
 import {
   $do,
+  $symbol,
   anchor,
+  type AnyType,
   captureStack,
   createObserver,
   getContextStore,
   isBrowser,
+  isFunction,
   microtask,
   setContextStore,
 } from '@airlib/core';
-import type { FC, FunctionComponent, ReactNode } from 'react';
+import { type FC, Fragment, type FunctionComponent, type ReactElement, type ReactNode } from 'react';
 import type { RenderContext } from './context.js';
 import { createEffect, createState, memoize } from './hooks.js';
 import { createLifecycle } from './lifecycle.js';
@@ -17,7 +19,10 @@ import { getProps, proxyProps } from './props.js';
 import type {
   Component,
   ComponentProps,
+  ComponentSlots,
+  ComponentWithSnippet,
   GenericProps,
+  SlottedComponent,
   SnippetNode,
   SnippetView,
   StableComponent,
@@ -28,6 +33,28 @@ import type {
 
 const RENDERER_INIT_VERSION = 1;
 const CLEANUP_DEBOUNCE_TIME = 0;
+const COMPONENT_SNIPPET_KEY = $symbol('component-snippet');
+
+/**
+ * Higher-Order Component that creates a stable setup component following the modern component lifecycle.
+ *
+ * @param {ComponentWithSnippet<P, S>} Component - The component to wrap with stable lifecycle management
+ * @param {string} [displayName] - Optional display name for debugging purposes
+ * @returns {SlottedComponent<P, S>} A memoized component that only re-renders when props change
+ */
+export function setup<P, S extends ComponentSlots>(
+  Component: ComponentWithSnippet<P, S>,
+  displayName?: string
+): SlottedComponent<P, S>;
+
+/**
+ * Higher-Order Component that creates a stable setup component following the modern component lifecycle.
+ *
+ * @param {Component<P>} Component - The component to wrap with stable lifecycle management
+ * @param {string} [displayName] - Optional display name for debugging purposes
+ * @returns {StableComponent<P>} A memoized component that only re-renders when props change
+ */
+export function setup<P>(Component: Component<P>, displayName?: string): StableComponent<P>;
 
 /**
  * Higher-Order Component that creates a stable setup component following the modern component lifecycle.
@@ -46,7 +73,10 @@ const CLEANUP_DEBOUNCE_TIME = 0;
  * @param {string} [displayName] - Optional display name for debugging purposes
  * @returns {C} A memoized component that only re-renders when props change
  */
-export function setup<P>(Component: Component<P>, displayName?: string): StableComponent<P> {
+export function setup<P, S extends ComponentSlots>(
+  Component: Component<P> | ComponentWithSnippet<P, S>,
+  displayName?: string
+): StableComponent<P> {
   if (typeof Component !== 'function') {
     const error = new Error('Component must be a function.');
     captureStack.violation.general(
@@ -59,7 +89,7 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
 
     const Factory = () => error.message;
     Factory.displayName = `Error(${displayName || 'Anonymous'})`;
-    return Factory as StableComponent<P>;
+    return Factory as unknown as StableComponent<P>;
   }
 
   if (displayName && !(Component as FunctionComponent).displayName) {
@@ -68,7 +98,7 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
 
   const componentName = displayName || (Component as FunctionComponent).displayName || Component.name || 'Anonymous';
 
-  const render = Component as (props: unknown) => ReactNode;
+  const render = Component as (props: unknown, snippets: ComponentSlots) => ReactNode;
   const propsMap = new WeakMap();
 
   const Finish: FC<{ context: RenderContext }> = ({ context }) => {
@@ -114,7 +144,7 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
 
     const children = () => {
       try {
-        return lifecycle.render(() => render(props));
+        return lifecycle.render(() => render(props, findSlots(props.children as ReactElement[])));
       } catch (error) {
         const newErr = new Error(`[${componentName}] failed to render.`);
         captureStack.error.external(
@@ -150,8 +180,29 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
     return true;
   });
 
+  const SetupSlot = () => null;
+  SetupSlot.displayName = `Snippet(${componentName})`;
+
+  Object.assign(SetupSlot, { [COMPONENT_SNIPPET_KEY]: true });
+  Object.assign(Setup, { Snippet: SetupSlot });
+
   Setup.displayName = `Component(${componentName})`;
   return Setup as StableComponent<P>;
+}
+
+function findSlots(nodes: ReactElement[] | ReactElement) {
+  if (!nodes) return {} as ComponentSlots;
+  if (!Array.isArray(nodes)) nodes = [nodes];
+  if (nodes[0]?.type === Fragment) return findSlots((nodes[0] as AnyType).props.children);
+
+  const slots = {} as ComponentSlots;
+  for (const node of nodes.filter(Boolean)) {
+    const props = node.props as AnyType;
+    if (node.type?.[COMPONENT_SNIPPET_KEY as never] && props.for && isFunction(props.children)) {
+      slots[props.for] = props.children;
+    }
+  }
+  return slots;
 }
 
 let scheduleUpdate = queueMicrotask;

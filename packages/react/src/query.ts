@@ -1,13 +1,13 @@
 import { $symbol, type AsyncStatus } from '@airlib/core';
 import type { ReactNode } from 'react';
-import { createSwitch, type SlotNode, type SwitchProps } from './switch.js';
+import { createSwitch, type SwitchProps, type SwitchSlotNode } from './switch.js';
 
 export type QueryState = {
   status: AsyncStatus;
 };
 
 export type QueryNode = (<S extends QueryState>(props: SwitchProps<S>) => ReactNode) & {
-  Slot: SlotNode<AsyncStatus>;
+  Slot: SwitchSlotNode<AsyncStatus>;
 };
 
 const QUERY_CTX = $symbol('query-slot');

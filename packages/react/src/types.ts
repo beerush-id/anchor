@@ -1,5 +1,5 @@
-import type { AsyncStore, RefStack, ValueGetterType } from '@airlib/core';
-import type { FC, FunctionComponent, HTMLAttributes, MemoExoticComponent, ReactNode, RefObject } from 'react';
+import type { AnyType, AsyncStore, RefStack, ValueGetterType } from '@airlib/core';
+import type { FC, HTMLAttributes, ReactNode, RefObject } from 'react';
 
 export type MountHandler = () => void | CleanupHandler;
 export type CleanupHandler = () => void;
@@ -160,6 +160,43 @@ export type ViewProps<P> = ComponentProps<P>;
 export type GenericProps = { [key: string]: unknown };
 
 /**
+ * Collection of named slot renderers provided to a slotted component.
+ */
+export type ComponentSlots = Record<string, (...args: AnyType[]) => ReactNode>;
+
+/**
+ * Component definition that consumes reactive props and slot renderers to produce view output.
+ *
+ * @template P Component props type
+ * @template S Available slot definitions
+ * @param props Component props
+ * @param snippets Named slot renderers
+ * @returns Rendered view
+ */
+export type ComponentWithSnippet<P, S extends ComponentSlots> = (props: ComponentProps<P>, snippets: S) => ReactNode;
+
+/**
+ * Target slot identifier and renderer content passed when declaring a snippet.
+ *
+ * @template S Available slot definitions
+ */
+export type ComponentSnippetProps<S extends ComponentSlots> = {
+  [K in keyof S]: {
+    for: K;
+    children: S[K];
+  };
+}[keyof S];
+
+/**
+ * Slot container component used to declare and inject snippet content into matching component slots.
+ *
+ * @template S Available slot definitions
+ * @param props Snippet slot mapping and renderer
+ * @returns Rendered snippet content
+ */
+export type ComponentSnippet<S extends ComponentSlots> = (props: ComponentSnippetProps<S>) => ReactNode;
+
+/**
  * A setup component function that takes ComponentProps and returns a ReactNode.
  *
  * @template P - The props type
@@ -169,27 +206,93 @@ export type GenericProps = { [key: string]: unknown };
 export type Component<P> = (props: ComponentProps<P>) => ReactNode;
 
 /**
- * Represents a stable component that is either memoized or a regular function component.
+ * Reactive component that preserves render stability across updates.
  *
- * @template P - The props type
+ * @template P Component props type
  */
-export type StableComponent<P> =
-  | MemoExoticComponent<FunctionComponent<ReactiveProps<P>>>
-  | FunctionComponent<ReactiveProps<P>>;
+export type StableComponent<P> = {
+  /**
+   * Render the stable component with reactive props.
+   *
+   * @param props Reactive component props
+   * @returns Rendered view
+   */
+  (props: ReactiveProps<P>): ReactNode;
+
+  /**
+   * Component display name for debugging and profiling.
+   */
+  displayName?: string;
+};
 
 /**
- * A functional component that accepts reactive props.
+ * Reactive component supporting declarative slot injection through an attached Snippet component.
  *
- * @template P - The props type
+ * @template P Component props type
+ * @template S Available slot definitions
  */
-export type SnippetView<P> = FunctionComponent<ReactiveProps<P>>;
+export interface SlottedComponent<P, S extends ComponentSlots> {
+  /**
+   * Render the component with reactive props.
+   *
+   * @param props Reactive component props
+   * @returns Rendered view
+   */
+  (props: ReactiveProps<P>): ReactNode;
+
+  /**
+   * Component display name for debugging and profiling.
+   */
+  displayName?: string;
+
+  /**
+   * Slot container component used to declare and inject snippet content into matching component slots.
+   *
+   * @param props Snippet slot mapping and renderer
+   * @returns Rendered snippet content
+   */
+  Snippet: ComponentSnippet<S>;
+}
 
 /**
- * A functional component that accepts reactive props for templates.
+ * Reactive view component representing a slot snippet body.
  *
- * @template P - The props type
+ * @template P Component props type
  */
-export type TemplateView<P> = FunctionComponent<ReactiveProps<P>>;
+export interface SnippetView<P> {
+  /**
+   * Render the snippet view with reactive props.
+   *
+   * @param props Reactive component props
+   * @returns Rendered view
+   */
+  (props: ReactiveProps<P>): ReactNode;
+
+  /**
+   * Component display name for debugging and profiling.
+   */
+  displayName?: string;
+}
+
+/**
+ * Reusable template component designed for parameterized dynamic rendering.
+ *
+ * @template P Component props type
+ */
+export interface TemplateView<P> {
+  /**
+   * Render the template view with reactive props.
+   *
+   * @param props Reactive component props
+   * @returns Rendered view
+   */
+  (props: ReactiveProps<P>): ReactNode;
+
+  /**
+   * Component display name for debugging and profiling.
+   */
+  displayName?: string;
+}
 
 /**
  * A function that takes component props and parent props, returning a React node.

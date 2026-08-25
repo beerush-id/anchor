@@ -23,8 +23,8 @@ export const mdxCtx = {
   get() {
     return getContext<MdxContext>('mdx-context');
   },
-  set(ctx?: MdxContext) {
+  set(ctx?: MdxContext): MdxContext {
     setContext('mdx-context', mutable({ ...ctx }));
-    return getContext('mdx-context');
+    return getContext('mdx-context')!;
   },
 };

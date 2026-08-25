@@ -1,5 +1,5 @@
 import type { HTMLAttributes, ReactNode } from 'react';
-import { type Bindable, classx, render, Show, Snippet, setup, snippet, uIndex } from '../index.js';
+import { type Bindable, classx, render, setup, Show, Snippet, snippet, uIndex } from '../index.js';
 
 export type InteractivePanel = 'source' | 'preview';
 
@@ -20,7 +20,7 @@ const DEFAULT_ICON = (
 );
 
 export const Interactive = setup<InteractiveProps>((props) => {
-  const $restProps = props.$omit(['title', 'icon', 'panel', 'children', 'className', 'id', 'standalone']);
+  const $restProps = props.$omit(['title', 'icon', 'panel', 'children', 'className', 'id']);
   const name = props.id ?? `air-interactive-${uIndex(INTERACTIVE_INDEX)}`;
   props.panel = props.panel ?? 'preview';
 

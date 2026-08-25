@@ -2,12 +2,12 @@ import { getContext, setContext } from '@airlib/core';
 import type { ReactNode } from 'react';
 import { render, setup, snippet } from './hoc.js';
 
-export type SlotProps<K> = {
+export type SwitchSlotProps<K> = {
   for: K;
   children?: ReactNode | (() => ReactNode);
 };
 
-export type SlotNode<K> = (props: SlotProps<K>) => ReactNode;
+export type SwitchSlotNode<K> = (props: SwitchSlotProps<K>) => ReactNode;
 
 export type SwitchProps<T> = {
   for: T;
@@ -16,7 +16,7 @@ export type SwitchProps<T> = {
 
 export type SwitchNode<T, K> = ((props: SwitchProps<T>) => ReactNode) & {
   displayName: string;
-  Slot: SlotNode<K>;
+  Slot: SwitchSlotNode<K>;
 };
 
 /**
@@ -28,7 +28,7 @@ export type SwitchNode<T, K> = ((props: SwitchProps<T>) => ReactNode) & {
  * @returns A Slot component.
  */
 export function createSlot<K>(ctx: string | symbol, key: string | symbol, displayName = 'Anonymous') {
-  return snippet<SlotProps<string>>(
+  return snippet<SwitchSlotProps<string>>(
     (props) => {
       const state = getContext(ctx) as Record<string, unknown>;
       if (!state) return '<>[Slot Error: Slot rendered outside of Switch]</>';
@@ -36,9 +36,9 @@ export function createSlot<K>(ctx: string | symbol, key: string | symbol, displa
       return state[key as string] === props.for ? children : null;
     },
     displayName,
-    'Slot',
+    'SwitchSlot',
     false
-  ) as SlotNode<K>;
+  ) as SwitchSlotNode<K>;
 }
 
 /**
@@ -59,7 +59,7 @@ export function createSwitch<T, K>(
   const Switch = setup((props) => {
     setContext(ctx, (props as never as SwitchProps<T>).for);
     return render(() => (props as never as SwitchProps<T>).children);
-  }, displayName) as SwitchNode<T, K>;
+  }, displayName) as unknown as SwitchNode<T, K>;
 
   Switch.displayName = `${scopeName}(${displayName})`;
   Switch.Slot = createSlot<K>(ctx, key, displayName);
@@ -98,6 +98,27 @@ export const Show = snippet<ShowProps<boolean>>(
   'Slot',
   false
 ) as ShowNode;
+
+export type SlotProps = {
+  for: () => ReactNode;
+  children?: ReactNode | (() => ReactNode);
+};
+
+/**
+ * Renders content based on a slot function.
+ *
+ * @param props.for - The slot function to render.
+ * @param props.children - Optional content to render if no slot function is provided.
+ * @returns The rendered content from the slot function or children.
+ */
+export const Slot = snippet<SlotProps>(
+  (props) => {
+    return props.for?.() ?? (typeof props.children === 'function' ? props.children() : props.children);
+  },
+  'Fragment',
+  'Slot',
+  false
+);
 
 export type ForProps<T> = {
   each: T[] | (() => T[]) | undefined | null;
