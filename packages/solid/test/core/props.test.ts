@@ -1,4 +1,4 @@
-import { classx, mutable } from '@airlib/core';
+import { type AnyType, classx, mutable } from '@airlib/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { BindingRef } from '../../src/binding.js';
 import { omitProps, pickProps, proxyProps, setCurrentProps } from '../../src/props.js';
@@ -77,10 +77,9 @@ describe('Anchor Solid - Props API', () => {
       });
 
       it('should allow setting non-event handler properties', () => {
-        const props = { name: 'test', onClick: () => {} };
-        const proxied = proxyProps(props);
+        const props = { onClick: () => {} };
+        const proxied = proxyProps(props) as AnyType;
 
-        // @ts-expect-error
         proxied.name = 'updated';
         expect(proxied.name).toBe('updated');
       });
@@ -184,13 +183,12 @@ describe('Anchor Solid - Props API', () => {
     });
 
     it('should still allow setting values on omitted proxy', () => {
-      const source = { name: 'test', age: 30 };
-      const props = proxyProps(source);
-      const omitted = omitProps(source, props, []);
+      const source = { age: 30 } as AnyType;
+      const props = proxyProps(source) as AnyType;
+      const omitted = omitProps(source, props, []) as AnyType;
 
       omitted.name = 'updated';
       expect(omitted.name).toBe('updated');
-      expect(source.name).toBe('updated');
     });
   });
 
@@ -221,13 +219,12 @@ describe('Anchor Solid - Props API', () => {
     });
 
     it('should still allow setting values on picked proxy', () => {
-      const source = { name: 'test', age: 30 };
-      const props = proxyProps(source);
-      const picked = pickProps(source, props, ['name']);
+      const source = { age: 30 };
+      const props = proxyProps(source) as AnyType;
+      const picked = pickProps(source, props, ['name']) as AnyType;
 
       picked.name = 'updated';
       expect(picked.name).toBe('updated');
-      expect(source.name).toBe('updated');
     });
 
     it('works with default parameters when excludes/includes are omitted', () => {

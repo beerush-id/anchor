@@ -6,6 +6,7 @@ import {
   isMutableRef,
   isValueGetter,
   type MutableRef,
+  mutable,
   setScope,
   untrack,
 } from '@airlib/core';
@@ -42,6 +43,8 @@ export function proxyProps<P extends Record<string, any>>(props: P): BindableCom
   };
   let children = () => props.children;
 
+  const shadow = mutable({} as P);
+
   const newProps = new Proxy(props as P, {
     get(target, key, receiver) {
       if (key === '$omit') return omit;
@@ -50,6 +53,10 @@ export function proxyProps<P extends Record<string, any>>(props: P): BindableCom
         if (getCurrentProps() !== newProps) return children;
         children = props.children;
         return children;
+      }
+
+      if (!(key in props)) {
+        return shadow[key as string];
       }
 
       const bindingRef = Reflect.get(target, key, receiver);
@@ -87,7 +94,7 @@ export function proxyProps<P extends Record<string, any>>(props: P): BindableCom
       } else if (isMutableRef(bindingRef)) {
         (bindingRef as MutableRef<unknown>).value = value;
       } else {
-        Reflect.set(target, key, value, receiver);
+        shadow[key as keyof P] = value;
       }
 
       return true;
