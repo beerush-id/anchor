@@ -22,7 +22,6 @@ import heroImg from '@/assets/hero.png?asset' with { sizes: '170' };
 import reactLogo from '@/assets/react.svg';
 import viteLogo from '@/assets/vite.svg';
 import { TextInput } from '@/components/TextInput.tsx';
-import HighlightedCode from './route.ts?highlight' with { title: 'Homepage' };
 import { type Visitor, visitor } from './function.ts';
 import { rootIndexRoute } from './route.ts';
 
@@ -104,7 +103,7 @@ export default page(rootIndexRoute).render(() => {
           </Show>
         )}
       </For>
-      <section id="center">
+      <section id="center" className="air-center">
         <div className="hero-list">
           <img src={airLogo} className="airlib" width="179" height="179" alt="AirLib logo" />
           <div className="hero">
@@ -114,9 +113,10 @@ export default page(rootIndexRoute).render(() => {
           </div>
         </div>
         <div>
-          <h1>Get started</h1>
+          <h1 className="air-display">Get started</h1>
           <p>
-            Edit <code>src/pages/page.tsx</code> and save to test <code>HMR</code>
+            Edit <code className="air-code">src/pages/page.tsx</code> and save to test{' '}
+            <code className="air-code">HMR</code>
           </p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -132,16 +132,13 @@ export default page(rootIndexRoute).render(() => {
       </section>
 
       <div className="ticks"></div>
-      <div className="air-mdx">
-        <HighlightedCode />
-      </div>
 
       <section id="next-steps">
         <div id="docs">
           <svg className="icon" role="presentation" aria-hidden="true">
             <use href="/icons.svg#documentation-icon"></use>
           </svg>
-          <h2>Documentation</h2>
+          <h2 className="air-title">Documentation</h2>
           <p>Your questions, answered</p>
           <ul>
             <li>
@@ -168,7 +165,7 @@ export default page(rootIndexRoute).render(() => {
           <svg className="icon" role="presentation" aria-hidden="true">
             <use href="/icons.svg#social-icon"></use>
           </svg>
-          <h2>Connect with us</h2>
+          <h2 className="air-title">Connect with us</h2>
           <p>Join the Vite community</p>
           <ul>
             <li>

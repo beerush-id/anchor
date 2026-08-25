@@ -15,11 +15,20 @@ keywords:
   - full-stack TypeScript
 ---
 
+```tsx executable="hidden"
+import { setup, render, Snippet, mutable, effect, plan, sleep } from '@airlib/react';
+import { LIVE_SELECTION, LIVE_KEYBOARD } from '@airlib/react/browser';
+import { getUser, watchPrice } from './function.js';
+```
+
 # Overview
 
 **Zero-Boilerplate, AI-Native Reactive Application Stack**
 
-You want to build an app that is **highly reactive**, **performant**, and **maintainable**, you are forced to stitch together:
+At its core, every web application exists to do three fundamental things: manage **state**, communicate with **backend logic**, and present a reactive **user interface**.
+
+:::details[The modern web development dilemma]
+Yet to achieve these three simple goals today, developers are traditionally forced to stitch together a dozen disparate tools:
 
 - A UI framework — **React**, **Solid**, **Vue**, **Svelte**.
 - A state library — **Zustand**, **Redux**, **MobX**, **Pinia**.
@@ -28,57 +37,76 @@ You want to build an app that is **highly reactive**, **performant**, and **main
 - A streaming transport — **Socket.io**, **ws**, **Ably**.
 - A form library — **React Hook Form**, **Formik**.
 - A validation library — **Zod**, **Yup**, **Joi**.
-- A runtime — **Node**, **Bun**, **Deno**.
+- A runtime — **Node.js**, **Bun**, **Deno**.
 - A deployment target — **Vercel**, **Cloudflare**, **AWS**.
 
-Each with its own **mental model**, its own **lifecycle**, and its own **failure modes**. And even then, you often end up sacrificing **maintainability** just to keep the **performance** intact.
+Each layer introduces its own mental model, its own lifecycle, and its own failure modes. And even then, you often end up sacrificing **developer experience** just to keep the **user experience (UX)** intact, or sacrificing maintainability to preserve performance.
+:::
+
+When basic application architecture requires navigating multiple libraries and bespoke glue code, the stack gets in the way of building the product.
 
 :::tip[What if:]
 **Building an application is just writing functions and calling them?**
 :::
 
-```ts
+**Your API is just a `function`**
+```ts [src/function.ts]
+import { demoRpc } from './api.ts';
+
 type GetUserFn = (id: string) => Promise<User | undefined>;
-const getUser = irpc.declare<GetUserFn>('getUser');
+
+// Declare your API as a function.
+export const getUser = demoRpc.declare<GetUserFn>('getUser');
 ```
 
-```ts
-irpc.construct(getUser, async (id) => {
+**Implementation is just binding a `function`**
+```ts [src/constructor.ts]
+import { demoRpc } from './api.ts';
+import { getUser } from './function.ts';
+
+// Bind logic to your declared function.
+demoRpc.construct(getUser, async (id: string) => {
   return await db.users.find(id);
 });
 ```
 
-:::code-group
+**Using the API is just calling a `function`**
 
-```tsx [React]
-const UserCard = setup((props) => {
-  const user = getUser.once(props.id]);
+:::code-group[IRPC function call]
+```tsx [React] executable
+const UserCard = setup((props: { id: string }) => {
+  const user = getUser.with(() => [props.id]);
 
   return (
     <div className="user-card">
-      <Show when={() => user.status === 'pending'}>
-        <span>Loading...</span>
-      </Show>
-      <Show when={() => user.status === 'success' && user.data}>
-        {({ name }) => <h1>{name}</h1>}  
-      </Show>
+      <Snippet data={() => user.data ?? {}}>
+        {({ name, email, role }) => (
+          <div className="user-card-info">
+            <span className="user-card-name">{name ?? '...'}</span>
+            <span className="user-card-email">{email ?? '...'}</span>
+            <span className="user-card-role">{role ?? '...'}</span>
+          </div>
+        )}
+      </Snippet>
     </div>
   );
 });
 ```
-
-```tsx [Solid]
-const UserCard = setup((props) => {
-  const user = getUser.once(props.id]);
+```tsx [SolidJS]
+const UserCard = setup((props: { id: string }) => {
+  const user = getUser.with(() => [props.id]);
 
   return (
     <div class="user-card">
-      <Show when={user.status === 'pending'}>
-        <span>Loading...</span>
-      </Show>
-      <Show when={user.status === 'success' && user.data}>
-        {({ name }) => <h1>{name}</h1>}
-      </Show>
+      <Snippet data={() => user.data ?? {}}>
+        {({ name, email, role }) => (
+          <div class="user-card-info">
+            <span class="user-card-name">{name ?? '...'}</span>
+            <span class="user-card-email">{email ?? '...'}</span>
+            <span class="user-card-role">{role ?? '...'}</span>
+          </div>
+        )}
+      </Snippet>
     </div>
   );
 });
@@ -86,22 +114,190 @@ const UserCard = setup((props) => {
 
 ```ts [Provider]
 profileRoute.provide('user', async ({ params }) => {
+  // Call your API as a Promise.
   return await getUser(params.id);
 });
 ```
 
 ```ts [Anywhere]
+// Call your API as a Promise.
 const user = await getUser('1');
 console.log(user);
 ```
 
 :::
 
-With AirLib, you don't need to install a million libraries to build an app that is **highly reactive**, **performant**, and **maintainable**—all **without making sacrifices**.
+:::interactive[See it in action]
+```tsx
+const UserCardPreview = setup(() => {
+  const state = mutable({ id: '1' });
+
+  return render(() => (
+    <div className="flex flex-col items-center gap-4">
+      <UserCard id={state.id} />
+      <div className="flex items-center gap-2">
+        <button
+          className={['air-mdx-btn text-xs', state.id === '1' && 'active'].filter(Boolean).join(' ')}
+          onClick={() => (state.id = '1')}
+        >
+          User 1
+        </button>
+        <button
+          className={['air-mdx-btn text-xs', state.id === '2' && 'active'].filter(Boolean).join(' ')}
+          onClick={() => (state.id = '2')}
+        >
+          User 2
+        </button>
+        <button
+          className={['air-mdx-btn text-xs', state.id === '3' && 'active'].filter(Boolean).join(' ')}
+          onClick={() => (state.id = '3')}
+        >
+          User 3
+        </button>
+      </div>
+    </div>
+  ));
+});
+```
+
+<div className="air-demos flex items-center justify-center p-4">
+  <UserCardPreview />
+</div>
+:::
+
+With AirLib, you don't need to install a million libraries to build an app that is **highly reactive**, **performant**, and **maintainable**—delivering a **balanced developer and user experience (UX)** without sacrifices, fully **reactive** and **strongly typed** end-to-end.
+
+## Anchor: Reactive State Engine
+
+Every application is fundamentally driven by state. Whether you are managing local UI interactions, streaming server data, or coordinating backend workflows, state is the single source of truth that powers your entire system.
+
+:::details[The problem with fragmented state solutions]
+To manage state today, you typically pick a UI framework and layer several specialized tools on top:
+
+- **React** — huge ecosystem, but you battle hook cascades, stale closures, and component re-renders.
+- **Solid**, **Vue**, or **Svelte** — fine-grained reactivity without the re-render battles, but they each invent their own reactive primitives.
+
+Whichever you pick, state is still locked inside client code, and you still need to:
+
+- Wire a separate **server state** library — **React Query**, **SWR**, or **Apollo** — to fetch and cache data.
+- Wire a separate **global state** library — **Zustand**, **Redux**, **Pinia**, or **MobX** — to hold data outside components.
+- Wire a separate **form state** library — **React Hook Form**, **Formik**, or **VeeValidate** — to manage inputs and validation.
+- Write bridging logic and effects to keep all these fragmented state libraries in sync.
+- Wrap your application in a nested tree of **Context** providers or **Stores** just to share state across components.
+- Trace through multiple stores, caching layers, and subscription chains to debug why the UI is out of sync with the data.
+:::
+
+When state lives across so many disconnected tools, keeping your application in sync becomes an endless wiring exercise.
+
+:::tip[What if:]
+**One reactive state engine handles them all?**
+:::
+
+:::code-group{group="framework"}
+
+```tsx [React] name="react" executable
+import { setup, mutable, render } from '@airlib/react';
+
+const Counter = setup(() => {
+  const state = mutable({ count: 0 });
+
+  return render(() => (
+    <button className="air-mdx-btn" onClick={() => state.count++}>
+      Clicks: {state.count}
+    </button>
+  ));
+});
+```
+
+```tsx [SolidJS] name="solid"
+import { setup, mutable } from '@airlib/solid';
+
+const Counter = setup(() => {
+  const state = mutable({ count: 0 });
+
+  return (
+    <button onClick={() => state.count++}>
+      Clicks: {state.count}
+    </button>
+  );
+});
+```
+
+:::
+
+:::interactive[Counter Preview]
+<div className="air-demos flex items-center justify-center p-4">
+  <Counter />
+</div>
+:::
+
+### Fine-Grained Reactivity
+
+Reactivity in Anchor operates at the individual property level rather than across whole components or coarse state stores. When a property mutates, only the exact listeners and DOM nodes subscribed to that property update—from server-side streaming to client rendering.
+
+:::code-group
+
+```tsx [React]
+import { setup, Snippet } from '@airlib/react';
+
+export const MetricsCard = setup(() => {
+  const metrics = watchMetrics.once();
+
+  return (
+    <div className="card">
+      {/* Isolates the read so only this fragment re-renders on mutation */}
+      <Snippet data={metrics.data}>
+        {({ cpu }) => <span>CPU: {cpu}%</span>}
+      </Snippet>
+    </div>
+  );
+});
+```
+
+```tsx [SolidJS]
+import { setup } from '@airlib/solid';
+
+export const MetricsCard = setup(() => {
+  const metrics = watchMetrics.once();
+
+  return (
+    <div class="card">
+      {/* Natively updates only this text node */}
+      <span>CPU: {metrics.data?.cpu}%</span>
+    </div>
+  );
+});
+```
+
+```ts [Server Code]
+stream((state) => {
+  state.data = { cpu: 45 };
+
+  setInterval(() => {
+    // Transmits only this single property mutation over the wire
+    state.data.cpu = Math.floor(Math.random() * 100);
+  }, 1000);
+});
+```
+
+:::
+
+:::tip[Universal Reactivity]
+State is **decoupled from the UI framework**. The exact same **reactive state** runs seamlessly across **React**, **SolidJS**, **Node.js**, **Bun**, **Deno**, and **Cloudflare Workers**.
+:::
+
+:::note[Learn more about State Management]
+- **Mutable & Immutable State** — Manage deeply nested objects with automatic tracking and immutable snapshots. Learn more in [State Management](/docs/state-management/mutable).
+- **Derived Values & Effects** — Compose computed properties and declarative side-effects with automatic dependency tracking. Learn more in [Side Effects](/docs/state-management/side-effect).
+- **Form Handling & Validation** — Validate form state with built-in schema validation and dirty tracking. Learn more in [Form Handling](/docs/state-management/form-handling).
+:::
 
 ## IRPC: Reactive Network Abstraction
 
-To use server data in the UI, you pick:
+Connecting user interfaces to backend logic is central to full-stack development. Whether executing asynchronous queries or subscribing to real-time event streams, network communication should feel as direct and strongly typed as calling local functions.
+
+:::details[The friction of traditional network layers]
+To use server data in the UI today, you typically pick a transport and routing library:
 
 - **Express** — define routes, handlers, middleware, no type inference across the boundary.
 - **Hono** — define routes, handlers, RPC mode still needs a separate caching layer.
@@ -110,16 +306,19 @@ To use server data in the UI, you pick:
 - **GraphQL** — write schemas, resolvers, run code generation for every change.
 - **gRPC** — write protobuf definitions, generate client stubs, handle browser incompatibility.
 
-Whichever you pick, you still:
+Whichever you pick, you still need to:
 
 - Wire a **caching** layer — **React Query**, **SWR**, **Apollo Client** — and manually track cache keys.
 - Set up **streaming** — **Socket.io**, **ws**, **Ably**, **Pusher** — with its own connection lifecycle.
-- Manage **loading**, **error**, and **success** states in every component.
+- Manage **loading**, **error**, and **success** states across every component.
 - Configure **retry** and **deduplication** logic per query.
 - Handle **serialization** and **error formatting** between server and client.
-- Write the same **boilerplate** for every new endpoint — route, handler, validation, fetch wrapper, loading state.
-- **Rename** a route — then hunt through every controller, every `fetch('/api/old-name')`, every `queryClient.invalidateQueries(['old-name'])` to update them.
+- Write repetitive boilerplate for every new endpoint — route, handler, validation, fetch wrapper, loading state.
+- Hunt through controllers and fetch strings every time you rename a route.
 - Keep server and client **types in sync** manually — or run **code generation** on every change.
+:::
+
+When network communication requires so much manual plumbing, APIs become brittle and disconnected from application state.
 
 :::tip[What if:]
 **Using server data is just writing a function and calling it?**
@@ -127,84 +326,113 @@ Whichever you pick, you still:
 
 ### Async Function
 
-**Declare** the function signature:
-```ts
+An async remote procedure starts with a shared contract declaring the input and return types:
+
+```ts [src/api.ts]
 type PriceFn = (ticker: string) => Promise<number>;
-const getPrice = irpc.declare<PriceFn>('getPrice', () => 0);
+const getPrice = irpc.declare<PriceFn>('getPrice', {
+  seed: () => 0,
+});
 ```
 
-**Construct** the function implementation:
-```ts
+On the server, you attach the database logic or business execution:
+
+```ts [src/server.ts]
 irpc.construct(getPrice, async (ticker) => {
   return db.prices.find(ticker);
 });
 ```
 
-**Call** the function:
-```ts
+Any client or backend service calls it directly as a typed Promise:
+
+```ts [src/client.ts]
 const price = await getPrice('AAPL');
 ```
 
 ### Streaming
 
-Now look at streaming — a completely different problem that normally needs **WebSocket** servers, connection lifecycle, and reconnection logic:
+Streaming follows the exact same pattern. You declare a streaming contract with real-time state:
 
-**Declare** a streaming function:
-```ts
+```ts [src/function.ts]
 type WatchPriceFn = (symbol: string) => RemoteState<Stock>;
-const watchPrice = irpc.declare<WatchPriceFn>('watchPrice', () => ({
-  symbol: '', price: 0,
-}));
-```
 
-**Construct** the streaming handler:
-```ts
-irpc.construct(watchPrice, (symbol) => {
-  return stream((state, resolve) => {
-    state.data = { symbol, price: 50 }; // [!code highlight]
-
-    const interval = setInterval(() => {
-      state.data?.price += Math.random() * 2 - 1; // [!code highlight]
-    }, 100);
-
-    return () => clearInterval(interval);
-  });
+// Declare your streaming API.
+export const watchPrice = demoRpc.declare<WatchPriceFn>('watchPrice', {
+  seed: (symbol) => ({ symbol, price: 0 }),
 });
 ```
 
-**Call** the streaming function and observe:
+The server opens a stream session and pushes mutations as events occur:
+
+```ts [src/constructor.ts]
+// Bind real-time streaming logic.
+demoRpc.construct(watchPrice, (symbol: string) => stream((state, resolve) => {
+  state.data = { symbol, price: 150 };
+  let ticks = 0;
+
+  const interval = setInterval(() => {
+    if (++ticks >= 25) {
+      clearInterval(interval);
+      return resolve(); // Closes the stream session.
+    }
+
+    if (state.data) {
+      const change = (Math.random() * 2 - 1) * 0.5;
+      state.data.price = Number((state.data.price + change).toFixed(2));
+    }
+  }, 500);
+
+  return () => clearInterval(interval);
+}));
+```
+
+Consuming live streams in your application is fully reactive. The client automatically manages connection lifecycles, background heartbeats, and state synchronization across the UI:
 
 :::code-group
 
-```tsx [React]
-const StockCard = setup((props) => {
+```tsx [React] executable
+const StockCard = setup((props: { symbol: string }) => {
   const stock = watchPrice.with(() => [props.symbol]);
 
   return (
     <div className="stock-card">
-      <Show when={() => stock.data}>
-        {({ symbol, price }) => <h1>{symbol}: {price}</h1>}
-      </Show>
+      <Snippet data={() => stock.data?.symbol}>
+        {(symbol) => <span className="stock-card-symbol">{symbol}</span>}
+      </Snippet>
+      <Snippet data={() => stock.data?.price}>
+        {(price) => (
+          <span className="stock-card-price">
+            ${price ? price.toFixed(2) : '...'}
+          </span>
+        )}
+      </Snippet>
     </div>
   );
 });
 ```
 
-```tsx [Solid]
-const StockCard = setup((props) => {
+```tsx [SolidJS]
+const StockCard = setup((props: { symbol: string }) => {
   const stock = watchPrice.with(() => [props.symbol]);
 
   return (
     <div class="stock-card">
-      <Show when={stock.data}>
-        {({ symbol, price }) => <h1>{symbol}: {price}</h1>}
-      </Show>
+      <Snippet data={() => stock.data?.symbol}>
+        {(symbol) => <span class="stock-card-symbol">{symbol}</span>}
+      </Snippet>
+      <Snippet data={() => stock.data?.price}>
+        {(price) => (
+          <span class="stock-card-price">
+            ${price ? price.toFixed(2) : '...'}
+          </span>
+        )}
+      </Snippet>
     </div>
   );
 });
 ```
 
-```tsx [Anywhere]
+```ts [Anywhere]
 watchPrice('AAPL').subscribe((stock) => {
   console.log('Stock:', stock.data?.symbol, stock.data?.price);
 });
@@ -212,262 +440,69 @@ watchPrice('AAPL').subscribe((stock) => {
 
 :::
 
+:::interactive[See it in action]
+```tsx
+const StockCardPreview = setup(() => {
+  const state = mutable({ symbol: '' });
+
+  return render(() => (
+    <div className="flex flex-col items-center gap-4">
+      {state.symbol ? (
+        <StockCard symbol={state.symbol} />
+      ) : (
+        <div className="stock-card flex items-center justify-center text-sm text-on-surface-variant">
+          Select a ticker below to start live stream
+        </div>
+      )}
+      <div className="flex items-center gap-2">
+        <button
+          className={['air-mdx-btn text-xs', state.symbol === 'AAPL' && 'active'].filter(Boolean).join(' ')}
+          onClick={() => (state.symbol = 'AAPL')}
+        >
+          AAPL
+        </button>
+        <button
+          className={['air-mdx-btn text-xs', state.symbol === 'GOOG' && 'active'].filter(Boolean).join(' ')}
+          onClick={() => (state.symbol = 'GOOG')}
+        >
+          GOOG
+        </button>
+        <button
+          className={['air-mdx-btn text-xs', state.symbol === 'NVDA' && 'active'].filter(Boolean).join(' ')}
+          onClick={() => (state.symbol = 'NVDA')}
+        >
+          NVDA
+        </button>
+      </div>
+      <p className="text-xs text-on-surface-variant/80 italic text-center">
+        Open your browser's Network tab to inspect the real-time streaming chunks as they arrive.
+      </p>
+    </div>
+  ));
+});
+```
+
+<div className="air-demos flex items-center justify-center p-4">
+  <StockCardPreview />
+</div>
+:::
+
 :::tip[Isomorphic RPC]
-Same API. Two different worlds — one pattern. **Batching**, **caching**, **retry logic**, and **call coalescing** are built into the protocol.
+Same API across client and server. **Batching**, **caching**, **retry logic**, and **call coalescing** are built directly into the protocol.
 :::
 
-### Guards & Middlewares
-
-Need to protect an endpoint? The IRPC pipeline supports strict **request validation (Guards)**. You can intercept requests and enforce authentication before they ever reach your main handlers.
-
-### File Transfers & WebSockets
-
-IRPC is not limited to simple JSON objects. You can seamlessly return secure file references for uploads and downloads using `IRPCBlob`, or spin up native **WebSocket** handlers side-by-side with your HTTP transports.
-
-## Workflows: Promise-like Execution Pipelines
-
-You want to build a reliable payment processor, an AI agent loop, or a complex background job. To handle it safely, you are forced to:
-
-- Write massive, deeply nested **`try/catch`** blocks to handle intermediate failures.
-- Manually pass **mutable state** from one asynchronous operation to the next.
-- Wire bespoke **`if/else`** branching logic that makes the function impossible to read.
-
-Whichever way you structure it, business logic is quickly **buried** under error handling, logging, and data validation.
-
-:::tip[What if:]
-Multi-step asynchronous logic was just a predictable, **Promise-like chaining?**
+:::note[Learn more about IRPC features]
+- **Guards & Interceptors** — Protect endpoints, validate payloads, and authenticate requests before handlers run. Learn more in [Interceptors](/docs/remote-function/interceptors).
+- **Transports & WebSockets** — Seamlessly transfer binary data and switch between HTTP, WebSockets, and BroadcastChannels without modifying function signatures. Learn more in [Transports](/docs/remote-function/transport).
+- **API Overview & CRUD** — Explore durable procedures, distribution, and auto-generated CRUD schemas. Learn more in [Remote Functions](/docs/remote-function).
 :::
-
-**Define** the pipeline:
-```ts
-type ChatInput = {
-  prompt: string
-  model: 'gpt-4' | 'claude-3'
-};
-
-export const chatWorkflow = plan<ChatInput>()
-  .then(async (input) => {
-    const system = 'You are a helpful assistant.';
-    return { ...input, system };
-  })
-  .switch('model', {
-    'gpt-4': (resolve) => resolve((input) => openai.chat(input.prompt, input.system)),
-    'claude-3': (resolve) => resolve((input) => anthropic.chat(input.prompt, input.system)),
-  })
-  .catch((error) => {
-    console.error('AI Request failed!', error);
-    return { text: 'An error occurred.', error: true };
-  });
-```
-
-**Execute** the pipeline:
-```ts
-const response = await chatWorkflow({ 
-  prompt: 'Hello!', 
-  model: 'gpt-4' 
-});
-
-console.log(response.text);
-```
-
-Because the **Workflow API** is just JavaScript, you can **orchestrate complex logic anywhere** JavaScript runs—in the **browser**, **Bun**, **Deno**, **Node.js**, or **Cloudflare Workers**.
-
-## Anchor: Reactive State Engine
-
-To present data on the screen, you pick a UI library or framework:
-
-- **React** — huge ecosystem, but you battle hook cascades, stale closures, and component re-renders.
-- **Solid**, **Vue**, or **Svelte** — fine-grained reactivity without the re-render battles, but they each invent their own reactive primitives.
-
-Whichever you pick, your state is still locked inside client code, and you still need to:
-
-- Wire a separate **server state** library — **React Query**, **SWR**, or **Apollo** — to fetch and cache data.
-- Wire a separate **global state** library — **Zustand**, **Redux**, **Pinia**, or **MobX** — to hold data outside components.
-- Wire a separate **form state** library — **React Hook Form**, **Formik**, or **VeeValidate** — to manage inputs and validation.
-- Write bridging logic and effects to keep all these fragmented state libraries in sync.
-- Wrap your application in a nested tree of **Context** providers or **Stores** just to share state across components.
-- Trace through multiple stores, caching layers, and subscription chains to debug why the UI is out of sync with the data.
-
-:::tip[What if:]
-**One library can do them all?**
-:::
-
-:::code-group
-
-```tsx [React]
-import { setup, Show } from '@airlib/react';
-import { watchPrice } from './function.js';
-
-const PriceCard = setup(() => {
-  const stream = watchPrice.with(() => ['AAPL']);
-
-  return (
-    <div className="price-card">
-      <h2>AAPL</h2>
-      <Show when={() => stream.data}>
-        {({ price }) => <span>${price.toFixed(2)} {stream.status === 'pending' ? '🟢' : '🛑'}</span>}
-      </Show>
-    </div>
-  );
-});
-```
-
-```tsx [Solid]
-import { setup, Show } from '@airlib/solid';
-import { watchPrice } from './function.js';
-
-const PriceCard = setup(() => {
-  const stream = watchPrice.with(() => ['AAPL']);
-
-  return (
-    <div class="price-card">
-      <h2>AAPL</h2>
-      <Show when={stream.data}>
-        {({ price }) => <span>${price.toFixed(2)} {stream.status === 'pending' ? '🟢' : '🛑'}</span>}
-      </Show>
-    </div>
-  );
-});
-```
-
-:::
-
-### Fine-Grained Reactivity
-
-When you want to defer state reads without extracting UI into smaller components, use the `<Snippet>` component to create an inline reactive boundary. Fast updates are isolated automatically.
-
-:::code-group
-
-```tsx [React]
-import { setup, Snippet } from '@airlib/react';
-
-export const UserProfile = setup(() => {
-  const state = mutable({ cpu: 45 });
-  
-  return (
-    <div className="card">
-      {/* Isolate fast updates while deferring the property read */}
-      <Snippet data={state}>
-        {({ cpu }) => <span>CPU: {cpu}%</span>}
-      </Snippet>
-    </div>
-  );
-});
-```
-
-```tsx [Solid]
-import { setup, mutable } from '@airlib/solid';
-
-export const UserProfile = setup(() => {
-  const state = mutable({ cpu: 45 });
-  
-  return (
-    <div class="card">
-      {/* Solid natively isolates the update to this specific text node */}
-      <span>CPU: {state.cpu}%</span>
-    </div>
-  );
-});
-```
-
-:::
-
-With Anchor, you stop wiring libraries together. Whether it's a **live data stream**, a **global user session**, or a **complex form**, it's just **reactive state**. One field changes, one fragment updates. Everything else stays still. You get **fine-grained updates**, **controlled write contracts**, and **schema validation** through Zod — all for free.
-
-## Browser: Reactive DOM Primitives
-
-Listening to global DOM events like pointer tracking, scrolling, or dragging usually requires manual lifecycle management to avoid memory leaks, especially during Server-Side Rendering (SSR).
-
-:::tip[What if:]
-**Handling browser events is just writing `if`?**
-:::
-
-:::code-group
-
-```tsx [React]
-import { setup, mutable, effect, Show } from '@airlib/react';
-import { LIVE_SELECTION as selection, LIVE_KEYBOARD as key } from '@airlib/react/browser';
-
-export const CopyCapture = setup(() => {
-  const clip = mutable('');
-
-  // Declarative event composition without manual listeners
-  effect(() => {
-    if (selection.text && key.is('ctrl', 'c')) {
-      clip.value = selection.text;
-      console.log('Text copied to clipboard...');
-    }
-  });
-
-  return (
-    <div className="copy-capture">
-      <p>Select some text and press Ctrl+C anywhere on the page.</p>
-      
-      <Show when={() => clip.value}>
-        {(text) => (
-          <div className="clipboard-toast">
-            Copied: {text}
-          </div>
-        )}
-      </Show>
-    </div>
-  );
-});
-```
-
-```tsx [Solid]
-import { setup, mutable, effect, Show } from '@airlib/solid';
-import { LIVE_SELECTION as selection, LIVE_KEYBOARD as key } from '@airlib/solid/browser';
-
-export const CopyCapture = setup(() => {
-  const clip = mutable('');
-
-  // Declarative event composition without manual listeners
-  effect(() => {
-    if (selection.text && key.is('ctrl', 'c')) {
-      clip.value = selection.text;
-      console.log('Text copied to clipboard...');
-    }
-  });
-
-  return (
-    <div class="copy-capture">
-      <p>Select some text and press Ctrl+C anywhere on the page.</p>
-      
-      <Show when={clip.value}>
-        {(text) => (
-          <div class="clipboard-toast">
-            Copied: {text}
-          </div>
-        )}
-      </Show>
-    </div>
-  );
-});
-```
-
-:::
-
-:::tip[What's happening?]
-As you can see, handling multiple events is as natural as saying **If there is a text selected and the key ctrl+c is pressed**. Normally, this would require attaching `selectionchange` and `keydown` listeners to the document, manually checking `event.ctrlKey`, syncing the result to state, and crucially—remembering to call `removeEventListener` on unmount.
-:::
-
-With Anchor's browser primitives, you stop writing manual event listeners and cleanup functions. You can compose DOM events **globally**, **within a component**, or under **specific conditions**—the browser simply becomes another part of your reactive state graph.
-
-- **`LIVE_CURSOR`** & **`cursorRef()`**: Track pointer coordinates and active buttons globally or within a specific container.
-- **`LIVE_SCROLL`** & **`scrollRef()`**: Monitor scroll offsets and direction reactively without layout thrashing.
-- **`LIVE_SELECTION`**: Capture multi-line text selection boundaries and extract precise SVG selection paths.
-- **`LIVE_DND`**: Declarative drag-and-drop primitives with reactive drag coordinates and payloads.
-- **`LIVE_MEDIA`** & **`LIVE_WINDOW`**: React to device media queries (dark mode, mobile, touch) and viewport dimensions.
-- **`LIVE_KEYBOARD`** & **`LIVE_CLIPBOARD`**: Manage keyboard shortcuts and clipboard payloads asynchronously.
-
-These utilities automatically defer listener registration until client hydration is complete, keeping your application SSR-safe.
 
 ## Router: Reactive Routing Engine
 
-You have a page. You need it to always reflect the current state of your application.
+Routing is more than matching URL paths—it coordinates page access, data loading, and layout composition across the entire user journey.
 
-Whether you use **React Router**, **Next.js**, **TanStack Router**, or **Solid Router**, routing is fundamentally driven by the URL. When a user navigates, the route fetches data and renders. But once the page is loaded, you still have to:
+:::details[The limits of URL-only routers]
+Whether you use **React Router**, **Next.js**, **TanStack Router**, or **Solid Router**, traditional routers treat routing purely as static URL matching. Once a page loads, you still have to:
 
 - Write **imperative redirects** inside component effects to kick the user out if their session expires.
 - Manually trigger **data revalidation** when global state changes, or force a hard page refresh.
@@ -475,14 +510,47 @@ Whether you use **React Router**, **Next.js**, **TanStack Router**, or **Solid R
 - Coordinate **loading spinners** manually for every async transition across your component tree.
 - Wire up separate **subscription tracking** just to keep the route's data in sync with live state.
 - Scatter **guard logic** across middlewares, loaders, and component render functions.
+:::
+
+When routing is disconnected from your reactive state graph, keeping page data and authorization synchronized becomes an endless manual chore.
 
 :::tip[What if:]
 **The route reacts to the state, not just the URL?**
 :::
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React] {3,4,8}
+```tsx [React] name="react"
+export const aboutRoute = rootRoute.route('/about').render(() => (
+  <div className="about-page">
+    <h1>About Us</h1>
+    <p>Zero-boilerplate full-stack routing.</p>
+  </div>
+));
+```
+
+```tsx [SolidJS] name="solid"
+export const aboutRoute = rootRoute.route('/about').render(() => (
+  <div class="about-page">
+    <h1>About Us</h1>
+    <p>Zero-boilerplate full-stack routing.</p>
+  </div>
+));
+```
+
+:::
+
+:::note[Looking for the Router live preview?]
+You're already in it! Every page navigation, sidebar transition, and SSR response on this documentation site is driven live by the AirLib Router.
+:::
+
+### Reactive Guards & Data Providers
+
+When routes need authorization or asynchronous data, you chain `.guard()` and `.provide()` directly onto the route definition. Guards and providers re-evaluate automatically when their reactive dependencies change:
+
+:::code-group{group="framework"}
+
+```tsx [React] name="react" {3,4,8}
 export const userRoute = usersRoute.route('/:user_id')
   .guard(() => {
     if (!auth.isAuthenticated) {
@@ -492,16 +560,16 @@ export const userRoute = usersRoute.route('/:user_id')
   .provide('profile', async ({ params }) => {
     return await getUser(params.user_id);
   })
-  .render((state) => (
+  .render(({ state }) => (
     <div className="profile-view">
       <Show when={() => state.status === 'pending'}>
         <span>Loading...</span>
       </Show>
-      <Show when={() => state.status === 'success' && state.data}>
-        {({ profile }) => (
+      <Show when={() => state.status === 'success' && state.data.profile}>
+        {({ name, email }) => (
           <>
-            <h1>{profile.name}</h1>
-            <span>{profile.email}</span>
+            <h1>{name}</h1>
+            <span>{email}</span>
           </>
         )}
       </Show>
@@ -509,7 +577,7 @@ export const userRoute = usersRoute.route('/:user_id')
   ));
 ```
 
-```tsx [Solid] {3,4,8}
+```tsx [SolidJS] name="solid" {3,4,8}
 export const userRoute = usersRoute.route('/:user_id')
   .guard(() => {
     if (!auth.isAuthenticated) {
@@ -519,16 +587,16 @@ export const userRoute = usersRoute.route('/:user_id')
   .provide('profile', async ({ params }) => {
     return await getUser(params.user_id);
   })
-  .render((state) => (
+  .render(({ state }) => (
     <div class="profile-view">
       <Show when={state.status === 'pending'}>
         <span>Loading...</span>
       </Show>
-      <Show when={state.status === 'success' && state.data}>
-        {({ profile }) => (
+      <Show when={state.status === 'success' && state.data.profile}>
+        {({ name, email }) => (
           <>
-            <h1>{profile.name}</h1>
-            <span>{profile.email}</span>
+            <h1>{name}</h1>
+            <span>{email}</span>
           </>
         )}
       </Show>
@@ -538,70 +606,317 @@ export const userRoute = usersRoute.route('/:user_id')
 
 :::
 
-With Anchor's router, navigation is just reactive state. **Guards** and **providers** automatically re-evaluate when their **dependencies change**. If `auth.isAuthenticated` becomes false while the user is sitting on the page, the guard instantly kicks them out. **Loading**, **error**, and **authorization** states are handled centrally. Everything is fully type-safe with zero code generation, and the exact same route definition works seamlessly in both React and Solid.
+:::tip[Reactive Navigation]
+Navigation is just **reactive state**. **Guards** and **data providers** automatically re-evaluate when their dependencies change—if authentication state changes while a user is on the page, the guard responds instantly without manual effects.
+:::
+
+:::note[Learn more about Routing]
+- **Routes & Layouts** — Define strongly typed route trees and nested layouts with zero code generation. Learn more in [Routes & Layouts](/docs/routing/routes-layouts).
+- **Reactive Guards** — Intercept navigation and enforce authorization driven by reactive state dependencies. Learn more in [Guards](/docs/routing/guards).
+- **Data Providers & Loaders** — Provide scoped, type-safe data to route trees with built-in loading and error states. Learn more in [Data Loaders](/docs/routing/data-loaders).
+:::
+
+## Browser: Reactive DOM Primitives
+
+Rich user interactions often require listening to global browser events—keyboard hotkeys, mouse pointer movements, scroll positions, or clipboard selections.
+
+:::details[The friction of manual DOM event listeners]
+Handling global browser events in component trees typically forces you to write repetitive lifecycle plumbing:
+
+- Attach imperative `addEventListener` calls inside `useEffect` or `onMount` hooks.
+- Manually manage cleanup functions with `removeEventListener` to prevent memory leaks.
+- Wrap event access in `typeof window !== 'undefined'` checks to avoid breaking Server-Side Rendering (SSR).
+- Write custom debounce and throttle logic to avoid layout thrashing.
+- Manually synchronize raw DOM events into local component state.
+:::
+
+When browser interactions require so much manual lifecycle coordination, building responsive gestures and shortcuts becomes verbose and prone to memory leaks.
+
+:::tip[What if:]
+**Handling browser events is just writing `if`?**
+:::
+
+:::code-group{group="framework"}
+
+```tsx [React] name="react" executable
+const CopyCapture = setup(() => {
+  const clip = mutable('');
+
+  // Declarative event composition without manual listeners
+  effect(() => {
+    if (LIVE_SELECTION.text && (LIVE_KEYBOARD.is('ctrl', 'c') || LIVE_KEYBOARD.is('meta', 'c'))) {
+      clip.value = LIVE_SELECTION.text;
+    }
+  });
+
+  return (
+    <div className="copy-capture">
+      <span className="copy-hint">Select any text on this page and press Ctrl+C (or ⌘+C)</span>
+      <Snippet data={() => clip.value}>
+        {(text) => (
+          <div className="clipboard-toast">
+            {text ? `Captured: "${text}"` : 'Nothing copied yet'}
+          </div>
+        )}
+      </Snippet>
+    </div>
+  );
+});
+```
+
+```tsx [SolidJS] name="solid"
+const CopyCapture = setup(() => {
+  const clip = mutable('');
+
+  // Declarative event composition without manual listeners
+  effect(() => {
+    if (LIVE_SELECTION.text && (LIVE_KEYBOARD.is('ctrl', 'c') || LIVE_KEYBOARD.is('meta', 'c'))) {
+      clip.value = LIVE_SELECTION.text;
+    }
+  });
+
+  return (
+    <div class="copy-capture">
+      <span class="copy-hint">Select any text on this page and press Ctrl+C (or ⌘+C)</span>
+      <Snippet data={() => clip.value}>
+        {(text) => (
+          <div class="clipboard-toast">
+            {text ? `Captured: "${text}"` : 'Nothing copied yet'}
+          </div>
+        )}
+      </Snippet>
+    </div>
+  );
+});
+```
+
+:::
+
+:::interactive[See it in action]
+<div className="air-demos flex items-center justify-center p-4">
+  <CopyCapture />
+</div>
+:::
+
+:::tip[Observable Browser Primitives]
+Browser events are modeled as **continuously active, observable signals**. You bind your UI directly to pointer locations, scroll positions, or hotkeys with zero runtime memory overhead and automatic SSR safety.
+:::
+
+:::note[Learn more about Browser Utilities]
+- **Cursor & Selection** — Track mouse coordinates and text selection boundaries reactively. Learn more in [Cursor & Selection](/docs/user-interface/browser#cursor).
+- **Keyboard & Shortcuts** — Evaluate simultaneous key combinations and track keyboard modifiers without global listeners. Learn more in [Keyboard & Shortcuts](/docs/user-interface/browser#keyboard).
+- **Drag & Drop & Clipboard** — Compose drag-and-drop interactions and clipboard payloads asynchronously. Learn more in [Drag & Drop](/docs/user-interface/browser#drag--drop).
+:::
+
+## Server-Side Rendering
+
+Most real-world applications need to balance public pages that demand instant load times and search indexing with rich, authenticated dashboards that require dynamic interactivity.
+
+:::details[The friction of modern meta-framework SSR]
+Yet with modern meta-frameworks, bridging server rendering and client state fractures your architecture:
+
+- Sprinkle **`'use client'`** and **`'use server'`** directives everywhere, fracturing your codebase across **arbitrary execution boundaries**.
+- Lose access to **reactive hooks** and state on the server because traditional server components are strictly static.
+- Manually parse request cookies, track mutations during render, and manually reconstruct `Set-Cookie` headers.
+- Configure complex server adapters and runtime-specific shims for edge deployments.
+:::
+
+When server rendering forces you to split your application across two incompatible component paradigms, full-stack development becomes fragmented and difficult to maintain.
+
+:::tip[What if:]
+**The server just isolates the request and runs the exact same code?**
+:::
+
+:::code-group{group="framework"}
+
+```tsx [React] name="react"
+import { page, Head, mutable, render } from '@airlib/react';
+import { counterRoute } from './route.js';
+
+export default page(counterRoute).render(() => {
+  const state = mutable({ count: 0 });
+
+  return render(() => (
+    <>
+      <Head meta={{ title: 'Counter | AirLib', description: 'Interactive SSR counter.' }} />
+      <div className="counter-page">
+        <h1>Count: {state.count}</h1>
+        <button onClick={() => state.count++}>Increment</button>
+      </div>
+    </>
+  ));
+});
+```
+
+```tsx [SolidJS] name="solid"
+import { page, Head, mutable } from '@airlib/solid';
+import { counterRoute } from './route.js';
+
+export default page(counterRoute).render(() => {
+  const state = mutable({ count: 0 });
+
+  return (
+    <>
+      <Head meta={{ title: 'Counter | AirLib', description: 'Interactive SSR counter.' }} />
+      <div class="counter-page">
+        <h1>Count: {state.count}</h1>
+        <button onClick={() => state.count++}>Increment</button>
+      </div>
+    </>
+  );
+});
+```
+
+:::
+
+:::tip[Request-Isolated Universal SSR]
+State is automatically scoped to the request lifecycle with **zero `'use client'` splits**. The server renders the reactive graph, **injects document metadata**, and client hydration re-activates the router seamlessly across **Node.js**, **Bun**, **Deno**, and **Cloudflare Workers**.
+:::
+
+:::note[Learn more about Universal SSR]
+- **Production Worker & Pipeline** — Configure `createApp`, assets, and runtime deployments. Learn more in [Universal SSR](/docs/universal-ssr).
+- **Static Site Generation & ISR** — Pre-render pages at build time or on-demand with caching strategies. Learn more in [Static Pre-rendering](/docs/universal-ssr#static-pages).
+:::
+
+## Extended Markdown: Native Content Engine
+
+Documentation, blogs, and content-rich pages require more than static text—they need interactive examples, multi-language code snippets, and custom callouts.
+
+:::details[The friction of third-party documentation frameworks]
+Building content and documentation in modern stacks usually forces you into fragmented architectures:
+
+- Maintain a separate documentation app and repository using standalone tools like **VitePress**, **Docusaurus**, or **Nextra**.
+- Struggle to share live UI components, design tokens, or backend client libraries with your docs.
+- Assemble complex AST compiler pipelines, remark plugins, and rehype transforms just to get tabbed code blocks.
+- Deal with disconnected build steps, duplicate routing configurations, and fragmented deployments.
+:::
+
+When content authoring is isolated in a separate documentation tool, keeping examples in sync with your real application codebase becomes a continuous maintenance burden.
+
+:::tip[What if:]
+**Your application framework is already a full-featured, zero-config MDX documentation engine?**
+:::
+
+AirLib compiles `.mdx` files directly into full-stack routes with native support for admonitions, synchronized framework tabs, and executable components:
+
+````mdx [example.page.mdx]
+---
+title: "Interactive Counter"
+description: "Live component directly inside Markdown."
+---
+
+# Interactive Counter
+
+:::code-group{group="framework"}
+```tsx [React] name="react"
+const Counter = setup(() => {
+  const state = mutable({ count: 0 });
+  return <button onClick={() => state.count++}>Count: {state.count}</button>;
+});
+```
+:::
+
+:::interactive[See it in action]
+<div className="air-demos flex items-center justify-center p-4">
+  <Counter />
+</div>
+:::
+````
+
+:::note[Looking for the MDX live preview?]
+You're already in it! Every synchronized code tab, collapsible details block, custom callout, and live interactive widget across this documentation site is rendered natively by the AirLib Extended Markdown engine.
+:::
+
+:::tip[Native Isomorphic MDX Runtime]
+Every `.mdx` file renders through the standard AirLib route pipeline. You get **YAML frontmatter routing**, **admonitions** (`:::tip`, `:::note`, `:::warning`), **synced multi-framework code blocks**, and **executable JSX components** with full Server-Side Rendering (SSR) out of the box.
+:::
+
+:::note[Learn more about Extended Markdown]
+- **Admonitions & Directives** — Explore `:::note`, `:::tip`, `:::details`, and `:::interactive` syntax. Learn more in [Admonitions](/docs/extended-markdown#admonitions).
+- **Code Groups & Tabs** — Synchronize framework selection across your entire site. Learn more in [Code Groups](/docs/extended-markdown#code-groups).
+- **Executable Components** — Embed live running components with toggleable source views. Learn more in [Interactive Demos](/docs/extended-markdown#interactive-demos).
+:::
 
 ## Built-in SEO & Sitemaps
 
-You want your application to be discoverable by search engines.
+Search engine discoverability and automated sitemaps are essential for ensuring content is indexed accurately across languages and dynamic paths.
 
-Whether you use React Router or Solid Router, client-side routers are traditionally blind to SEO. You are forced to:
+:::details[The friction of manual sitemap maintenance]
+Keeping search engines up to date in modern full-stack web apps traditionally requires tedious manual tooling:
 
-- Hunt for third-party sitemap generator plugins.
-- Write bespoke build scripts to crawl your own file system and generate XML files.
-- Hardcode language alternates (`hreflang`) manually across every single page.
-- Keep your sitemap script constantly in sync every time you rename or move a route.
+- Hunt for third-party sitemap generator plugins or standalone crawlers.
+- Write bespoke build scripts to scan file directories and assemble XML templates.
+- Manually hardcode language alternates (`hreflang`) across every localized URL.
+- Maintain separate dynamic generators whenever route parameters or database structures change.
+:::
+
+When sitemap generation lives outside your routing system, search index metadata inevitably falls out of sync with actual application routes.
 
 :::tip[What if:]
-**The routing engine generated your sitemap automatically out of the box?**
+**Your router generates your sitemap automatically from your route tree?**
 :::
 
-:::code-group
+Static routes configure priority and change frequency directly in the route definition:
 
-```ts [Static Route]
-// Static routes are included automatically. 
-// You can pass an object to customize properties.
+```ts [src/routes/about.ts]
 export const aboutRoute = rootRoute.route('/about', {
-  sitemap: { priority: 0.8, changefreq: 'monthly' }
+  sitemap: { priority: 0.8, changefreq: 'monthly' },
 });
 ```
 
-```ts [Dynamic Route]
+Dynamic routes fetch their records asynchronously and construct URLs using the typed route instance:
+
+```ts [src/routes/blog.ts]
 export const postRoute = rootRoute.route('/blog/:slug', {
-  // Dynamically generate entries using the route instance
   sitemap: async (route) => {
     const posts = await getPosts();
-    return posts.map(p => ({
-      loc: route.url({ slug: p.slug }), // MUST use route.url()
-      lastmod: p.updatedAt
+    return posts.map((p) => ({
+      loc: route.url({ slug: p.slug }),
+      lastmod: p.updatedAt,
     }));
-  }
+  },
 });
 ```
 
+:::interactive[See it in action]
+<a href="/docs/sitemap.xml" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline">
+  Open this documentation's live <strong>Sitemap</strong> &rarr;
+</a>
 :::
 
-With Anchor, your router *is* your sitemap. Because the route tree is strongly typed and centrally defined, the SSR engine intercepts `/sitemap.xml` automatically. It deeply collects your static routes, executes your dynamic generators, and natively cross-links multi-lingual alternates (`<xhtml:link>`) across your entire app—all with **zero configuration**. You can also generate sitemaps programmatically for custom server setups.
+:::tip[Zero-Config Sitemap Interception]
+Because routes form an interconnected route tree, the SSR worker automatically serves `/sitemap.xml` out of the box. It traverses static routes, executes dynamic generators, and cross-links multi-language alternates (`<xhtml:link>`) with **zero extra build scripts**.
+:::
+
+:::note[Learn more about Sitemaps]
+- **Multi-Language Sitemaps** — Automatic `hreflang` cross-referencing across localized routes. Learn more in [Sitemap Generation](/docs/routing/sitemap#multi-language-sitemaps).
+- **Programmatic Generation** — Export XML or generate custom subtrees for dedicated services. Learn more in [Programmatic Sitemaps](/docs/routing/sitemap#programmatic-generation).
+:::
 
 ## Asset Optimization & Caching
 
-Serving images efficiently across multiple screen sizes is traditionally a complex task, requiring manual variant generation and tedious `srcset` markup. 
+Delivering modern web applications requires optimizing static assets and serving responsive images across a wide variety of device viewports.
 
-With the `airPages()` plugin and the universal `<Image>` component, responsive asset generation is completely automated from the build pipeline directly into your UI components.
+:::details[The friction of manual image optimization]
+Serving optimized images across multiple screen resolutions is traditionally a tedious process:
 
-```ts [vite.config.ts]
-import { defineConfig } from 'vite';
-import { airPages } from '@airlib/vite';
+- Manually generate and store multiple image variants at varying dimensions.
+- Hand-write complex `<picture>`, `<source srcset="...">`, and `sizes` attributes for every asset.
+- Rely on expensive third-party image CDNs or separate transformation microservices.
+- Deal with Cumulative Layout Shift (CLS) when aspect ratios and dimensions are miscalculated.
+:::
 
-export default defineConfig({
-  plugins: [airPages()],
-});
-```
+When responsive media requires bespoke build pipelines or external cloud services, optimizing images slows down development and inflates operational costs.
 
-Then, seamlessly consume the generated assets in your UI:
+:::tip[What if:]
+**Importing an image automatically generates responsive WebP variants at build time?**
+:::
 
-:::code-group
+Importing any image with `?asset` generates modern WebP variants across multiple breakpoints, consumed directly with the universal `<Image>` component:
 
-```tsx [React]
+:::code-group{group="framework"}
+
+```tsx [React] name="react"
 import { Image } from '@airlib/react';
 import heroImage from './assets/hero.jpg?asset' with { sizes: '350' };
 
@@ -612,7 +927,7 @@ export function Hero() {
 }
 ```
 
-```tsx [Solid]
+```tsx [SolidJS] name="solid"
 import { Image } from '@airlib/solid';
 import heroImage from './assets/hero.jpg?asset' with { sizes: '350' };
 
@@ -625,64 +940,291 @@ export function Hero() {
 
 :::
 
-In addition, the SSR environment provides a robust **asset resolver** with configurable **caching strategies**. You can easily define granular cache lifetimes per route or static asset directly within your `createApp` worker, providing maximum performance on edge environments like Cloudflare and Node.js.
+:::tip[Automated Responsive Variants]
+The Vite asset pipeline automatically converts `?asset` imports into optimized WebP variants during build time. The universal `<Image>` component injects the correct `srcset`, `sizes`, and intrinsic aspect ratios to eliminate layout shift out of the box.
+:::
 
-## Server-Side Rendering
+:::note[Learn more about Image Optimization]
+- **Image Component & Props** — Explore dimensions, lazy loading, and custom breakpoint overrides. Learn more in [Image Component](/docs/user-interface/image).
+- **Asset Pipeline Configuration** — Configure default sizes, formats, and quality settings in Vite. Learn more in [Configuring the Pipeline](/docs/universal-ssr#image-defaults).
+:::
 
-You want to render your application on the server for speed and SEO.
+## Workflows: Promise-like Execution Pipelines
 
-With modern meta-frameworks, moving client-side state to the server fractures your application. You still have to:
+Complex multi-step processes—like AI generation pipelines, checkout sequences, and background tasks—require coordinating asynchronous operations, conditional branches, and error recovery.
 
-- Sprinkle **`'use client'`** and **`'use server'`** directives everywhere, fracturing your codebase across **arbitrary execution boundaries**.
-- Lose access to **reactive hooks** on the server because traditional **server components** are strictly static.
-- Manually parse request cookies, track mutations during render, and manually reconstruct `Set-Cookie` headers.
+:::details[The fragility of ad-hoc async pipelines]
+Writing multi-step asynchronous logic with plain functions quickly devolves into hard-to-maintain boilerplate:
+
+- Write deeply nested `try/catch` blocks across every intermediate stage.
+- Manually pass mutable state objects from one async function to the next.
+- Hand-roll complex `switch` or `if/else` branching that obscures the core business logic.
+- Re-implement retry policies, timeout handlers, and error fallbacks for each flow.
+:::
+
+When multi-step execution is buried under defensive error handling and imperative branching, orchestrating complex logic becomes fragile and difficult to test.
 
 :::tip[What if:]
-**The server just isolates the request and runs the exact same code?**
+**Multi-step asynchronous logic is just a declarative, Promise-like pipeline?**
 :::
+
+You define multi-step pipelines with typed inputs, declarative branching, and centralized error recovery:
+
+:::code-group{group="framework"}
+
+```ts [React] name="react" executable
+type ChatInput = {
+  prompt: string;
+  model: 'gpt-4' | 'claude-3';
+};
+
+const chatWorkflow = plan<ChatInput>()
+  .then(
+    async (input) => {
+      // Step 1: Preprocessing & Context Enrichment
+      await sleep(350);
+      return { ...input, system: 'You are a helpful assistant.' };
+    },
+    { name: 'Enriching prompt context...' }
+  )
+  .switch(
+    'model',
+    {
+      'gpt-4': (resolve) =>
+        resolve(
+          async (input) => {
+            await sleep(450);
+            return { text: `[GPT-4] Responding to: "${input.prompt}"` };
+          },
+          { name: 'Generating GPT-4 response...' }
+        ),
+      'claude-3': (resolve) =>
+        resolve(
+          async (input) => {
+            await sleep(450);
+            return { text: `[Claude-3] Reasoning on: "${input.prompt}"` };
+          },
+          { name: 'Generating Claude-3 response...' }
+        ),
+    },
+    { name: 'Routing to AI model...' }
+  )
+  .catch((error) => {
+    return { text: 'An error occurred.', error: true };
+  });
+```
+
+```ts [SolidJS] name="solid"
+type ChatInput = {
+  prompt: string;
+  model: 'gpt-4' | 'claude-3';
+};
+
+const chatWorkflow = plan<ChatInput>()
+  .then(
+    async (input) => {
+      // Step 1: Preprocessing & Context Enrichment
+      await sleep(350);
+      return { ...input, system: 'You are a helpful assistant.' };
+    },
+    { name: 'Enriching prompt context...' }
+  )
+  .switch(
+    'model',
+    {
+      'gpt-4': (resolve) =>
+        resolve(
+          async (input) => {
+            await sleep(450);
+            return { text: `[GPT-4] Responding to: "${input.prompt}"` };
+          },
+          { name: 'Generating GPT-4 response...' }
+        ),
+      'claude-3': (resolve) =>
+        resolve(
+          async (input) => {
+            await sleep(450);
+            return { text: `[Claude-3] Reasoning on: "${input.prompt}"` };
+          },
+          { name: 'Generating Claude-3 response...' }
+        ),
+    },
+    { name: 'Routing to AI model...' }
+  )
+  .catch((error) => {
+    return { text: 'An error occurred.', error: true };
+  });
+```
+
+:::
+
+You can execute the pipeline reactively inside UI components or invoke it directly as a Promise anywhere JavaScript runs:
 
 :::code-group
 
-```ts [vite.config.ts]
-import { defineConfig } from 'vite';
-import { airPages } from '@airlib/vite';
+```tsx [React] executable
+const ChatBox = setup((props: { prompt: string; model: 'gpt-4' | 'claude-3' }) => {
+  const chat = chatWorkflow.with(() => ({ prompt: props.prompt, model: props.model }));
 
-export default defineConfig({
-  plugins: [airPages()],
+  return (
+    <div className="chat-box">
+      <Snippet data={() => ({ status: chat.status, step: chat.current?.name, data: chat.data })}>
+        {({ status, step, data }) => (
+          <div className="chat-response">
+            {status === 'pending' ? step : data.text}
+          </div>
+        )}
+      </Snippet>
+    </div>
+  );
 });
 ```
 
-```tsx [React (worker.ts)]
-import { createApp } from '@airlib/react/ssr';
-import { HTTPRouter } from '@irpclib/http/router';
-import { httpTransport } from './irpc.js';
-import App from './app.js';
-import router from './router.js';
+```tsx [SolidJS]
+const ChatBox = setup((props: { prompt: string; model: 'gpt-4' | 'claude-3' }) => {
+  const chat = chatWorkflow.with(() => ({ prompt: props.prompt, model: props.model }));
 
-// The backend IRPC router
-const irpcRouter = new HTTPRouter(httpTransport);
-
-// A single universal worker handles SSR and IRPC with shared context isolation!
-export default createApp(router, App, { httpRouter: irpcRouter });
+  return (
+    <div class="chat-box">
+      <Snippet data={() => ({ status: chat.status, step: chat.current?.name, data: chat.data })}>
+        {({ status, step, data }) => (
+          <div class="chat-response">
+            {status === 'pending' ? step : data.text}
+          </div>
+        )}
+      </Snippet>
+    </div>
+  );
+});
 ```
 
-```tsx [Solid (worker.ts)]
-import { createApp } from '@airlib/solid/ssr';
-import { HTTPRouter } from '@irpclib/http/router';
-import { httpTransport } from './irpc.js';
-import App from './app.js';
-import router from './router.js';
+```ts [Anywhere]
+const response = await chatWorkflow({ 
+  prompt: 'Hello!', 
+  model: 'gpt-4',
+});
 
-// The backend IRPC router
-const irpcRouter = new HTTPRouter(httpTransport);
-
-// A single universal worker handles SSR and IRPC with shared context isolation!
-export default createApp(router, App, { httpRouter: irpcRouter });
+console.log(response.text);
 ```
 
 :::
 
-With Anchor, state is automatically scoped to the request lifecycle. There are no **`'use client'` directives**, no **arbitrary server boundaries**, and full access to **reactive states** on the server. The reactive graph serializes itself, **cookie mutations are automatically tracked**, and client hydration automatically rebuilds the state by simply re-activating the router. Because it relies purely on standard Web APIs, the exact same code deploys seamlessly to **Bun**, **Node.js**, **Cloudflare Workers**, and **Deno**.
+:::interactive[See it in action]
+```tsx
+const ChatBoxPreview = setup(() => {
+  const state = mutable({ model: '' as 'gpt-4' | 'claude-3' | '' });
+
+  return render(() => (
+    <div className="flex flex-col items-center gap-4">
+      {state.model ? (
+        <ChatBox prompt="Hello AirLib!" model={state.model} />
+      ) : (
+        <div className="chat-box flex items-center justify-center text-sm text-on-surface-variant">
+          Select a model below to execute workflow
+        </div>
+      )}
+      <div className="chat-models">
+        <button
+          className={['air-mdx-btn text-xs', state.model === 'gpt-4' && 'active'].filter(Boolean).join(' ')}
+          onClick={() => (state.model = 'gpt-4')}
+        >
+          GPT-4
+        </button>
+        <button
+          className={['air-mdx-btn text-xs', state.model === 'claude-3' && 'active'].filter(Boolean).join(' ')}
+          onClick={() => (state.model = 'claude-3')}
+        >
+          Claude-3
+        </button>
+      </div>
+    </div>
+  ));
+});
+```
+
+<div className="air-demos flex items-center justify-center p-4">
+  <ChatBoxPreview />
+</div>
+:::
+
+:::tip[Universal Pipeline Orchestration]
+Workflows are pure JavaScript pipelines that run anywhere—in the **browser**, **Node.js**, **Bun**, **Deno**, or **Cloudflare Workers**. They provide type-safe data transitions, declarative branching, and centralized error handling with zero external runtime dependencies.
+:::
+
+:::note[Learn more about Workflows]
+- **Pipeline Composition & Retry** — Chain steps, configure retry policies, and handle fallbacks. Learn more in [Plan & Chaining](/docs/workflow/plan).
+- **Conditional Branching** — Declare multi-branch switch matrices with typed resolution. Learn more in [Switch & Branching](/docs/workflow/switch).
+- **Reactive Workflows** — Observe workflow progress, step state, and execution status live in the UI. Learn more in [Reactive Workflows](/docs/workflow/reactive).
+:::
+
+## Multi-Runtime Deployment
+
+Every application eventually needs to be deployed somewhere—whether on a dedicated Node.js or Bun server, inside a container, on Deno Deploy, or across Cloudflare Workers edge.
+
+:::details[The vendor lock-in of runtime-specific adapters]
+In traditional meta-frameworks, deploying across different runtimes requires fragmented tooling and platform lock-in:
+
+- Install and configure separate adapter packages (`adapter-node`, `adapter-cloudflare`, `adapter-bun`, etc.).
+- Rewrite streaming or WebSocket code because runtime adapter APIs differ.
+- Lock your codebase into proprietary runtime APIs that break local development.
+- Re-architect state and session storage whenever switching between Node.js and edge workers.
+:::
+
+When deployment requires separate adapter packages and runtime-specific shims, choosing where to host your app becomes a major technical liability.
+
+:::tip[What if:]
+**The build output is a universal Web Standard that runs natively on any runtime?**
+:::
+
+AirLib compiles to standard Web APIs (`Request`, `Response`, `fetch`, `WebSocket`). You run the exact same `dist/server/worker.js` artifact across every major runtime without adapters:
+
+:::code-group[Universal Runtime Deployment]
+
+```js [Bun]
+import worker from './dist/server/worker.js';
+
+Bun.serve({
+  port: process.env.PORT || 3000,
+  fetch: (req) => worker.fetch(req),
+});
+```
+
+```js [Node.js]
+import { serve } from '@hono/node-server';
+import worker from './dist/server/worker.js';
+
+serve({
+  fetch: worker.fetch,
+  port: process.env.PORT || 3000,
+});
+```
+
+```js [Deno]
+import worker from './dist/server/worker.js';
+
+Deno.serve({
+  port: Number(Deno.env.get('PORT')) || 3000,
+}, (req) => worker.fetch(req));
+```
+
+```js [Cloudflare]
+import worker from './dist/server/worker.js';
+
+export default {
+  fetch: (req, env) => worker.fetch(req, env),
+};
+```
+
+:::
+
+:::tip[Zero-Adapter Architecture]
+No adapter packages, no proprietary runtime shims. The exact same build artifact serves SSR pages, static assets, IRPC procedures, and real-time WebSockets natively across **Bun**, **Node.js**, **Deno**, and **Cloudflare Workers**.
+:::
+
+:::note[Learn more about Multi-Runtime Deployment]
+- **Production Deployment** — Explore complete server scripts for Bun, Node.js, Deno, and Cloudflare. Learn more in [Universal SSR](/docs/universal-ssr#the-pipeline-at-a-glance).
+- **Realtime & WebSockets** — Handle WebSocket upgrades and Durable Objects across runtimes. Learn more in [Transports](/docs/remote-function/transport).
+:::
 
 ## Portability
 

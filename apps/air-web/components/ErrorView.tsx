@@ -7,7 +7,7 @@ import rootRoute from '../pages/route.ts';
 
 export function ErrorView({ error }: { error?: RouteError }) {
   return (
-    <section id="center">
+    <section id="center" className="air-center">
       <div className="hero-list">
         <img src={airLogo} className="airlib" width="179" height="179" alt="AirLib logo" />
         <div className="hero">
@@ -17,7 +17,7 @@ export function ErrorView({ error }: { error?: RouteError }) {
         </div>
       </div>
 
-      <h1>{error instanceof NotFoundError ? '404' : '500'}</h1>
+      <h1 className="air-display">{error instanceof NotFoundError ? '404' : '500'}</h1>
       <p>{error?.message}</p>
       <div className="ticks error-section">
         <Link to={rootRoute}>Back to Home</Link>

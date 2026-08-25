@@ -19,42 +19,50 @@ AirLib can be scaffolded instantly via `create airlib` or added manually to any 
 
 The fastest way to scaffold a full-stack AirLib application is using the official CLI:
 
-:::code-group
-
-```bash [NPX]
-npx create airlib my-air-app
-```
-
-```bash [Bun]
+:::code-group{group="pm"}
+```bash [Bun] name="bun"
 bun create airlib my-air-app
 ```
 
-```bash [PNPM]
+```bash [NPM] name="npm"
+npx create airlib my-air-app
+```
+
+```bash [PNPM] name="pnpm"
 pnpm create airlib my-air-app
 ```
 
+```bash [Yarn] name="yarn"
+yarn create airlib my-air-app
+```
 :::
 
 Once scaffolded, start the local development server:
 
-:::code-group
+:::code-group{group="pm"}
 
-```bash [Bun]
+```bash [Bun] name="bun"
 cd my-air-app
 bun install
 bun dev
 ```
 
-```bash [NPM]
+```bash [NPM] name="npm"
 cd my-air-app
 npm install
 npm run dev
 ```
 
-```bash [PNPM]
+```bash [PNPM] name="pnpm"
 cd my-air-app
 pnpm install
 pnpm dev
+```
+
+```bash [Yarn] name="yarn"
+cd my-air-app
+yarn install
+yarn dev
 ```
 
 :::
@@ -68,7 +76,7 @@ my-air-app/
 ├── assets/                # Bundled media, SVGs, and images
 ├── components/            # Reusable UI components
 ├── pages/                 # File-based routes & layouts
-│   ├── (docs)/            # Slave route (independent top-level tree with its own layout)
+│   ├── (docs)/            # Slave route (isolated tree with independent layout, guards, & providers)
 │   ├── layout.tsx         # Main app layout wrapper
 │   └── page.tsx           # Main landing / home page
 ├── public/                # Static assets served untouched
@@ -106,59 +114,12 @@ export default defineConfig({
 });
 ```
 
-## Manual Installation
-
-If adding AirLib to an existing Vite application, install the framework integration, RPC transports, and Vite plugin:
-
-### React
-
-:::code-group
-
-```bash [Bun]
-bun add @airlib/react @irpclib/irpc @irpclib/http @irpclib/ws
-bun add -d @airlib/vite
-```
-
-```bash [NPM]
-npm install @airlib/react @irpclib/irpc @irpclib/http @irpclib/ws
-npm install -D @airlib/vite
-```
-
-```bash [PNPM]
-pnpm add @airlib/react @irpclib/irpc @irpclib/http @irpclib/ws
-pnpm add -D @airlib/vite
-```
-
-:::
-
-### SolidJS
-
-:::code-group
-
-```bash [Bun]
-bun add @airlib/solid @irpclib/irpc @irpclib/http @irpclib/ws
-bun add -d @airlib/vite
-```
-
-```bash [NPM]
-npm install @airlib/solid @irpclib/irpc @irpclib/http @irpclib/ws
-npm install -D @airlib/vite
-```
-
-```bash [PNPM]
-pnpm add @airlib/solid @irpclib/irpc @irpclib/http @irpclib/ws
-pnpm add -D @airlib/vite
-```
-
-:::
-
 ## Production Build
 
 To build the client bundle and server bundle for production deployment:
 
-:::code-group
-
-```bash [Bun]
+:::code-group[Runtime engine]{group="runtime"}
+```bash [Bun] name="bun"
 # Build client and server bundles
 bun run build
 
@@ -166,15 +127,15 @@ bun run build
 bun start
 ```
 
-```bash [Node]
+```bash [Node.js] name="node"
 # Build client and server bundles
 npm run build
 
-# Start production Node server
+# Start production Node.js server
 npm run start:node
 ```
 
-```bash [Deno]
+```bash [Deno] name="deno"
 # Build client and server bundles
 npm run build
 
@@ -182,12 +143,230 @@ npm run build
 npm run start:deno
 ```
 
+```bash [Cloudflare] name="cloudflare"
+# Build client and server bundles
+npm run build
+
+# Deploy to Cloudflare Worker
+npx wrangler deploy
+```
 :::
+
+## Manual Installation
+
+If adding AirLib to an existing Vite application, follow these steps to install the packages and wire the universal entries:
+
+### 1. Install Dependencies
+
+:::code-group{group="framework"}
+
+```bash [React] name="react"
+# React dependencies
+npm install @airlib/react @irpclib/irpc @irpclib/http react react-dom
+npm install -D @airlib/vite @vitejs/plugin-react typescript vite @types/react @types/react-dom
+```
+
+```bash [SolidJS] name="solid"
+# SolidJS dependencies
+npm install @airlib/solid @irpclib/irpc @irpclib/http solid-js
+npm install -D @airlib/vite vite-plugin-solid typescript vite
+```
+
+:::
+
+:::tip[WebSocket Transport]
+Standard RPC procedures and real-time streaming work over `@irpclib/http` out of the box. If your application specifically requires bidirectional stateful WebSockets, you can also install `@irpclib/ws`.
+:::
+
+### 2. Create the HTML Shell
+
+Every page renders into `index.html`. Two comment markers designate where the server injects the document head and the rendered outlet:
+
+```html [index.html]
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--ssr-head-->
+  </head>
+  <body>
+    <div id="root" style="display: contents;"><!--ssr-outlet--></div>
+    <script type="module" src="/src/client.tsx"></script>
+  </body>
+</html>
+```
+
+### 3. Create the Router
+
+Create `src/router.ts` to initialize the root router instance:
+
+:::code-group{group="framework"}
+
+```typescript [React] name="react"
+// src/router.ts
+import { createRouter } from '@airlib/react';
+
+const router = createRouter();
+export default router;
+```
+
+```typescript [SolidJS] name="solid"
+// src/router.ts
+import { createRouter } from '@airlib/solid';
+
+const router = createRouter();
+export default router;
+```
+
+:::
+
+:::tip[File-based Route Generation]
+A folder defines a URL. `airPages()` watches your `pages/` directory and generates a `route.ts` per folder — `pages/route.ts` exports the `rootRoute` and `indexRoute` your layout and page import.
+:::
+
+### 4. Create the App Entry
+
+Create `src/app.tsx` to render the root layout with the router:
+
+:::code-group{group="framework"}
+
+```tsx [React] name="react"
+// src/app.tsx
+import { type AppEntry, UIRouter } from '@airlib/react';
+import RootLayout from '@/pages/layout.tsx';
+import router from './router.ts';
+
+export default (({ url }) => (
+  <UIRouter router={router} root={RootLayout} url={url} />
+)) satisfies AppEntry;
+```
+
+```tsx [SolidJS] name="solid"
+// src/app.tsx
+import { type AppEntry, UIRouter } from '@airlib/solid';
+import RootLayout from '@/pages/layout.tsx';
+import router from './router.ts';
+
+export default (({ url }) => (
+  <UIRouter router={router} root={RootLayout} url={url} />
+)) satisfies AppEntry;
+```
+
+:::
+
+### 5. Create the Client Hydration Entry
+
+Create `src/client.tsx` to hydrate the app in the browser:
+
+:::code-group{group="framework"}
+
+```tsx [React] name="react"
+// src/client.tsx
+import '@airlib/react/client'; // must be first import
+
+import { hydrateRoot } from 'react-dom/client';
+import { acceptInteractions } from '@airlib/react/browser';
+import App from './app.js';
+import router from './router.js';
+
+router.activate(window.location.href).then(() => {
+  hydrateRoot(document.getElementById('root')!, <App />);
+}).then(() => acceptInteractions());
+```
+
+```tsx [SolidJS] name="solid"
+// src/client.tsx
+import '@airlib/solid/client'; // must be first import
+
+import { hydrate } from 'solid-js/web';
+import { acceptInteractions } from '@airlib/solid/browser';
+import App from './app.js';
+import router from './router.js';
+
+router.activate(window.location.href).then(() => {
+  hydrate(() => <App />, document.getElementById('root')!);
+}).then(() => acceptInteractions());
+```
+
+:::
+
+### 6. Create the SSR Worker Entry
+
+Create `src/worker.ts` to export the universal request handler:
+
+:::code-group{group="framework"}
+
+```typescript [React] name="react"
+// src/worker.ts
+import { createApp } from '@airlib/react/ssr';
+import App from './app.js';
+import router from './router.js';
+
+export default createApp(router, App);
+```
+
+```typescript [SolidJS] name="solid"
+// src/worker.ts
+import { createApp } from '@airlib/solid/ssr';
+import App from './app.js';
+import router from './router.js';
+
+export default createApp(router, App);
+```
+
+:::
+
+### 7. Configure Vite
+
+Add `airPages()` to your `vite.config.ts`:
+
+:::code-group{group="framework"}
+
+```typescript [React] name="react"
+// vite.config.ts
+import { airPages } from '@airlib/vite';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  plugins: [react(), airPages()],
+});
+```
+
+```typescript [SolidJS] name="solid"
+// vite.config.ts
+import { airPages } from '@airlib/vite';
+import { defineConfig } from 'vite';
+import solid from 'vite-plugin-solid';
+
+export default defineConfig({
+  plugins: [solid({ ssr: true }), airPages()],
+});
+```
+
+:::
+
+### 8. Add Package Scripts
+
+Add standard build and dev scripts to your `package.json`:
+
+```json [package.json]
+{
+  "scripts": {
+    "dev": "vite",
+    "build:client": "vite build --outDir dist/client",
+    "build:server": "vite build --ssr --outDir dist/server",
+    "build": "bun run build:client && bun run build:server",
+    "start": "bun run dist/server/worker.js"
+  }
+}
+```
 
 ## Next Steps
 
 Now that your project is ready, explore the core concepts:
 
-- [Getting Started](./getting-started) — Build your first reactive feature end-to-end.
-- [State Management](./state-management) — Master mutable proxies, signals, and derived state.
-- [Routing](./routing) — Learn file-based routes, loaders, and slave routes.
+- [Getting Started](/docs/getting-started) — Build your first reactive feature end-to-end.
+- [State Management](/docs/state-management) — Master mutable proxies, signals, and derived state.
+- [Routing](/docs/routing) — Learn file-based routes, loaders, and slave routes.

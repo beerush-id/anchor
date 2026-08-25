@@ -15,124 +15,46 @@ keywords:
 
 AirLib is a universal full-stack TypeScript framework: state, routing, remote functions, and server rendering in one reactive system. The core is framework-agnostic — the same logic runs in React or SolidJS, and only the view-layer import differs.
 
-## **Application Structure**
-
-Here is the structure the guide builds. It's the same shape whether you start from a template or wire it manually — each section below creates or explains one piece of it:
-
-```
-my-air-app/
-├── index.html             The HTML shell — the server injects the head and the page here
-├── vite.config.ts         The `airPages()` plugin
-├── package.json
-└── src/
-    ├── router.ts          The router instance — every route hangs off it
-    ├── app.tsx            The app entry — used by the client and the worker
-    ├── client.tsx         Hydrates the app in the browser
-    ├── worker.ts          The server entry — SSR and static assets
-    └── pages/
-        ├── route.ts       Generated per folder — exports `rootRoute`, `indexRoute`
-        ├── layout.tsx     The root layout — the frame every page renders inside
-        ├── page.tsx       The landing page
-        ├── products/      The product listing and detail pages
-        ├── docs/          The documentation page (MDX)
-        ├── dashboard/     The admin area — guarded and data-fed
-        ├── function.ts    IRPC declarations
-        └── constructor.ts IRPC implementations
-```
-
-## **Quick Start (Templates)**
-
-The fastest way to start is the official template. It ships with the layout, pages, and worker already wired, so you go straight to building:
-
-:::code-group
-
-```bash [React]
-npx degit beerush-id/airlib/templates/air-react my-air-app
-cd my-air-app
-```
-
-```bash [SolidJS]
-npx degit beerush-id/airlib/templates/air-solid my-air-app
-cd my-air-app
-```
-
+:::tip[Need to install or scaffold first?]
+If you haven't created your project yet, check out the [Installation Guide](/docs/installation) to scaffold instantly with `create airlib` or add AirLib manually to an existing Vite setup.
 :::
 
-Then install and run:
+## Assisted File-Based Routing
 
-:::code-group
+AirLib bridges the gap between **file-system convenience** and **programmatic control** through the `@airlib/vite` plugin (`airPages()`):
 
-```bash [Bun]
-bun install
-bun run dev
+- **Automatic Route Scaffolding** — When the dev server runs, creating an empty `page.tsx` or `layout.tsx` in any folder automatically generates and wires the local `route.ts` file for you, including starter boilerplate.
+- **Zero Black Boxes** — Once generated, the code is 100% yours. AirLib does not hide route trees inside opaque compiler virtual modules.
+- **Full Programmatic Power** — Having an explicit `route.ts` alongside your component allows you to attach typed access guards (`.guard()`), asynchronous data loaders (`.provide()`), and custom route metadata with full TypeScript autocomplete.
+
+Every scaffolded `route.ts` contains an AirLib-managed block and clean user exports:
+
+```typescript
+// pages/route.ts
+import router from '@/src/router.js';
+
+/** AirLib managed */
+const route = router.route();
+const indexRoute = route.route('/');
+/** AirLib managed */
+
+export const rootRoute = route;
+export const rootIndexRoute = indexRoute;
+
+export default rootRoute;
 ```
 
-```bash [npm]
-npm install
-npm run dev
-```
+## Layouts
 
-:::
+Layouts define the persistent shell of your application. The layout stays mounted across navigation—while page content swaps dynamically inside `{children}`.
 
-When you're ready to ship, build and run the server:
+### The Root Layout
 
-:::code-group
+The root layout wraps your entire application. It holds global navigation, headers, and footers that remain mounted across all route transitions. Create `pages/layout.tsx`:
 
-```bash [Bun]
-bun run build
-bun run start
-```
+:::code-group[Root Layout]{group="framework"}
 
-```bash [Node.js]
-npm run build
-npm run start:node
-```
-
-```bash [Deno]
-npm run build
-npm run start:deno
-```
-
-```bash [Cloudflare]
-npm run build
-npx wrangler deploy
-```
-
-:::
-
-Prefer to wire it yourself? The manual setup below installs and connects the same pieces.
-
-## **Agent Skills (AI Coding Assistants)**
-
-If you use AI coding assistants (Gemini, Claude, etc.), install the AirLib skills so they generate accurate code:
-
-:::code-group
-
-```bash [React]
-npx degit beerush-id/airlib/skills/airlib-react ~/.gemini/config/skills/airlib-react
-npx degit beerush-id/airlib/skills/air-form-react ~/.gemini/config/skills/air-form-react
-npx degit beerush-id/airlib/skills/air-material-css ~/.gemini/config/skills/air-material-css
-```
-
-```bash [SolidJS]
-npx degit beerush-id/airlib/skills/airlib-solid ~/.gemini/config/skills/airlib-solid
-npx degit beerush-id/airlib/skills/air-form-solid ~/.gemini/config/skills/air-form-solid
-npx degit beerush-id/airlib/skills/air-material-css ~/.gemini/config/skills/air-material-css
-```
-
-:::
-
-## **Layouts**
-
-Layout is the structure of your app. It wraps the pages that render inside it — the page is the content, the layout is the frame around it.
-
-### **The Root Layout**
-
-The root layout is the main structure of your app. It holds the UI that is visible on every route and gives the location where the page content renders. Create `src/pages/layout.tsx`:
-
-:::code-group
-
-```tsx [React]
+```tsx [React] name="react"
 import { page } from '@airlib/react';
 import { rootRoute } from './route.js';
 
@@ -145,7 +67,7 @@ export default page(rootRoute).render(({ children }) => (
 ));
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { page } from '@airlib/solid';
 import { rootRoute } from './route.js';
 
@@ -164,13 +86,13 @@ export default page(rootRoute).render(({ children }) => (
 The layout renders once and stays mounted — `{children}` is where the matched page renders, so navigation swaps only the page inside the frame, not the frame itself.
 :::
 
-### **Nested Layouts**
+### Nested Layouts
 
-Sometimes a nested route also needs its own structure — a section with its own header or sidebar. In that case, give the route its own layout. Create `src/pages/products/layout.tsx`, and it wraps every page under `/products`, inside the root layout:
+Nested sections can declare their own sub-layouts. Creating `pages/products/layout.tsx` wraps all child routes under `/products` inside a scoped sidebar frame while remaining nested inside the root layout:
 
-:::code-group
+:::code-group[Products Layout]{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { page } from '@airlib/react';
 import { productsRoute } from './route.js';
 
@@ -182,7 +104,7 @@ export default page(productsRoute).render(({ children }) => (
 ));
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { page } from '@airlib/solid';
 import { productsRoute } from './route.js';
 
@@ -196,21 +118,25 @@ export default page(productsRoute).render(({ children }) => (
 
 :::
 
-## **Pages**
+:::note[Want to dive deeper?]
+Explore how isolated slave trees and parallel sub-layouts work in [Routes & Layouts](/docs/routing/routes-layouts).
+:::
 
-Page is the content of a route — what the visitor sees at that URL. The layout is the frame; the page is what renders inside it.
+## Pages
 
-### **The Root Index Page**
+Pages define the content and document metadata for specific URL paths.
 
-`/` is the home page. Create `src/pages/page.tsx` with a title and description — they show in the browser tab and search results:
+### The Root Index Page
 
-:::code-group
+`/` is the home page. Create `pages/page.tsx` with document metadata:
 
-```tsx [React]
+:::code-group[Root Page]{group="framework"}
+
+```tsx [React] name="react"
 import { Head, page } from '@airlib/react';
-import { indexRoute } from './route.js';
+import { rootIndexRoute } from './route.js';
 
-export default page(indexRoute).render(() => (
+export default page(rootIndexRoute).render(() => (
   <>
     <Head meta={{ title: 'Home | AirLib', description: 'Welcome to my AirLib application' }} />
     <h1>Welcome Home</h1>
@@ -218,11 +144,11 @@ export default page(indexRoute).render(() => (
 ));
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { Head, page } from '@airlib/solid';
-import { indexRoute } from './route.js';
+import { rootIndexRoute } from './route.js';
 
-export default page(indexRoute).render(() => (
+export default page(rootIndexRoute).render(() => (
   <>
     <Head meta={{ title: 'Home | AirLib', description: 'Welcome to my AirLib application' }} />
     <h1>Welcome Home</h1>
@@ -236,20 +162,20 @@ export default page(indexRoute).render(() => (
 `<Head>` doesn't render in the page — it injects the title, the meta description, and the social tags into the document head, and it works the same during SSR.
 :::
 
-### **Nested Index Pages**
+### Nested Index Pages
 
-A folder with a layout also gets an index page — `src/pages/products/page.tsx` renders at `/products`, inside the products layout:
+A folder with a layout also gets an index page — `pages/products/page.tsx` renders at `/products`, inside the products layout:
 
-:::code-group
+:::code-group[Products Index Page]{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { page } from '@airlib/react';
 import { productsIndexRoute } from './route.js';
 
 export default page(productsIndexRoute).render(() => <h1>Products</h1>);
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { page } from '@airlib/solid';
 import { productsIndexRoute } from './route.js';
 
@@ -258,20 +184,20 @@ export default page(productsIndexRoute).render(() => <h1>Products</h1>);
 
 :::
 
-### **Standalone Pages**
+### Standalone Pages
 
-A folder with a page but no layout is its own route — `src/pages/checkout/page.tsx` renders at `/checkout`. The page is the route itself:
+A folder with a page but no layout is its own route — `pages/checkout/page.tsx` renders at `/checkout`. The page is the route itself:
 
-:::code-group
+:::code-group[Checkout Page]{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { page } from '@airlib/react';
 import { checkoutRoute } from './route.js';
 
 export default page(checkoutRoute).render(() => <h1>Checkout</h1>);
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { page } from '@airlib/solid';
 import { checkoutRoute } from './route.js';
 
@@ -280,20 +206,20 @@ export default page(checkoutRoute).render(() => <h1>Checkout</h1>);
 
 :::
 
-### **Named Pages**
+### Named Pages
 
-A page that doesn't need its own folder: `src/pages/sale.page.tsx` renders at `/sale`:
+Single-file routes do not need a dedicated directory: `pages/sale.page.tsx` renders directly at `/sale`:
 
-:::code-group
+:::code-group[Named Sale Page]{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { page } from '@airlib/react';
 import { saleRoute } from './route.js';
 
 export default page(saleRoute).render(() => <h1>Sale</h1>);
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { page } from '@airlib/solid';
 import { saleRoute } from './route.js';
 
@@ -302,9 +228,13 @@ export default page(saleRoute).render(() => <h1>Sale</h1>);
 
 :::
 
-### **Markdown Pages**
+:::note[File Organization Convention]
+Named pages (`[name].page.tsx` / `[name].page.mdx`) and directory pages (`[name]/page.tsx`) are purely file organization conventions—neither is universally better. For simple, self-contained endpoints, named files keep your project tree flat. For routes with complex logic, multiple sub-components, or local assets, a dedicated folder isolates those files and avoids cluttering parent directories.
+:::
 
-Sometimes a page is a static document — a docs page, an FAQ, a policy. In that case, use MDX instead of JSX. Create a `page.mdx`; the `title` and `description` at the top of the file are what the browser tab and search results show:
+### Markdown Pages
+
+For content-rich documents (documentation, guides, blogs), use MDX. Creating `page.mdx` lets you write rich prose with live embedded JSX components, with frontmatter defining route metadata:
 
 ```mdx
 ---
@@ -323,13 +253,13 @@ A Markdown page still runs through the same route pipeline as a TSX page — rou
 `$state` is the route's live reactive state, available right in the markup — when the data changes, the page updates.
 :::
 
-### **Dynamic & Catch-all Pages**
+### Dynamic & Catch-all Pages
 
-A folder in square brackets is a dynamic segment — `src/pages/products/[id]/page.tsx` renders at `/products/:id`, and the segment is available as `state.params.id`:
+A folder in square brackets is a dynamic segment — `pages/products/[id]/page.tsx` renders at `/products/:id`, and the segment is available as `state.params.id`:
 
-:::code-group
+:::code-group[Dynamic Product Route]{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { page } from '@airlib/react';
 import { productsDynamicRoute } from './route.js';
 
@@ -338,7 +268,7 @@ export default page(productsDynamicRoute).render(({ state }) => (
 ));
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { page } from '@airlib/solid';
 import { productsDynamicRoute } from './route.js';
 
@@ -349,24 +279,24 @@ export default page(productsDynamicRoute).render(({ state }) => (
 
 :::
 
-A `[...rest]` folder is a catch-all — the rare route whose URL you can't know upfront, because the path itself is undeterministic: a file browser, a wiki, an import path. `src/pages/[...rest]/page.tsx` matches any path under it, and the segments arrive in `state.params['*']`:
+A `[...rest]` folder is a catch-all — the rare route whose URL you can't know upfront, because the path itself is undeterministic: a file browser, a wiki, an import path. `pages/[...rest]/page.tsx` matches any path under it, and the segments arrive in `state.params['*']`:
 
-:::code-group
+:::code-group[Catch-all Dynamic Route]{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { page } from '@airlib/react';
-import { DynamicRoute } from './route.js';
+import { catchAllRoute } from './route.js';
 
-export default page(DynamicRoute).render(({ state }) => (
+export default page(catchAllRoute).render(({ state }) => (
   <h1>{state.params['*'].join(' / ')}</h1>
 ));
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { page } from '@airlib/solid';
-import { DynamicRoute } from './route.js';
+import { catchAllRoute } from './route.js';
 
-export default page(DynamicRoute).render(({ state }) => (
+export default page(catchAllRoute).render(({ state }) => (
   <h1>{state.params['*'].join(' / ')}</h1>
 ));
 ```
@@ -377,239 +307,14 @@ export default page(DynamicRoute).render(({ state }) => (
 A catch-all isn't for missing pages — it's for paths whose shape you can't predict, so the route can't declare named segments. Every remaining segment lands in `state.params['*']` as an array, and the page interprets the path itself.
 :::
 
-## **Guards & Providers**
-
-Not every page is for every visitor, and most pages need data before they render. Both belong on the route, not in the page: a guard blocks the route, a provider loads its data — the page mounts only after its guards pass and its data is ready. Attach them in the folder's `route.ts`, so every route below the folder inherits the same check and data.
-
-### **Guards**
-
-A section that only some visitors may see — an admin panel, a private dashboard. Put the guard on the section's route; throw a redirect when the visitor doesn't qualify, and navigation halts before any page under it mounts:
-
-:::code-group
-
-```ts [React]
-// src/pages/dashboard/route.ts
-import { redirect } from '@airlib/react';
-import rootRoute from '../route.js';
-import { loginRoute } from '../login/route.js';
-
-export const dashboardRoute = rootRoute.route('/dashboard').guard(async () => {
-  if (!(await isLoggedIn())) throw redirect(loginRoute);
-});
-
-export default dashboardRoute;
-```
-
-```ts [SolidJS]
-// src/pages/dashboard/route.ts
-import { redirect } from '@airlib/solid';
-import rootRoute from '../route.js';
-import { loginRoute } from '../login/route.js';
-
-export const dashboardRoute = rootRoute.route('/dashboard').guard(async () => {
-  if (!(await isLoggedIn())) throw redirect(loginRoute);
-});
-
-export default dashboardRoute;
-```
-
+:::note[Want to dive deeper?]
+- **Dynamic Segments & Catch-all** — Parameter matching and wildcard routes in [Dynamic Routing](/docs/routing/routes-layouts#dynamic-routes).
+- **Extended Markdown Engine** — Native admonitions, interactive widgets, and frontmatter in [Extended Markdown](/docs/extended-markdown).
 :::
 
-:::tip[What we learn]
-The guard lives on the route, not on the page — the visitor never sees the page, not even a flash. A guard on a folder's route protects every page under that folder, so one check secures a whole section.
-:::
+## Building Navigation
 
-### **Providers**
-
-A route that needs server data to render — a dashboard that shows sales. Put the provider on the route; it fetches before the page mounts, and the page reads the result typed:
-
-:::code-group
-
-```ts [React]
-// src/pages/dashboard/route.ts
-import { redirect } from '@airlib/react';
-import rootRoute from '../route.js';
-import { loginRoute } from '../login/route.js';
-
-export const dashboardRoute = rootRoute
-  .route('/dashboard')
-  .guard(async () => {
-    if (!(await isLoggedIn())) throw redirect(loginRoute);
-  })
-  .provide('stats', async () => {
-    const res = await fetch('/api/dashboard/stats');
-    return res.json();
-  });
-
-export default dashboardRoute;
-```
-
-```ts [SolidJS]
-// src/pages/dashboard/route.ts
-import { redirect } from '@airlib/solid';
-import rootRoute from '../route.js';
-import { loginRoute } from '../login/route.js';
-
-export const dashboardRoute = rootRoute
-  .route('/dashboard')
-  .guard(async () => {
-    if (!(await isLoggedIn())) throw redirect(loginRoute);
-  })
-  .provide('stats', async () => {
-    const res = await fetch('/api/dashboard/stats');
-    return res.json();
-  });
-
-export default dashboardRoute;
-```
-
-:::
-
-:::code-group
-
-```tsx [React]
-// src/pages/dashboard/page.tsx
-import { page, Show } from '@airlib/react';
-import { dashboardRoute } from './route.js';
-
-export default page(dashboardRoute).render(({ state }) => (
-  <Show when={() => state.data.stats}>
-    {({ totalSales, orders }) => (
-      <div>
-        <h1>{totalSales} in sales</h1>
-        <p>{orders} orders</p>
-      </div>
-    )}
-  </Show>
-));
-```
-
-```tsx [SolidJS]
-// src/pages/dashboard/page.tsx
-import { page, Show } from '@airlib/solid';
-import { dashboardRoute } from './route.js';
-
-export default page(dashboardRoute).render(({ state }) => (
-  <Show when={state.data.stats}>
-    {(stats) => (
-      <div>
-        <h1>{stats.totalSales} in sales</h1>
-        <p>{stats.orders} orders</p>
-      </div>
-    )}
-  </Show>
-));
-```
-
-:::
-
-:::tip[What we learn]
-An async provider makes navigation wait for its data — the user stays on the current page until it resolves (on the initial load, that's the browser's native loading indicator). `state.data` holds this route's providers only; child pages and layouts read the merged tree — every provider up the chain — via `context.data`.
-:::
-
-### **Provider Feedback**
-
-Navigation waits while providers resolve. Show that it's moving — render a progress bar from the router's own progress, `router.state.progress` over `router.state.steps`:
-
-```tsx
-<Snippet>
-  {() => (
-    <div
-      class="progress"
-      style={{ width: `${(router.state.progress / router.state.steps) * 100}%` }}
-    />
-  )}
-</Snippet>
-```
-
-### **Progressive Data Loading**
-
-A route that needs several independent pieces of data — a dashboard with sales, orders, and alerts from sources of different speeds — doesn't have to wait for the slowest. IRPC streams push each piece as it becomes ready, and the page renders each as it lands:
-
-```typescript
-// src/pages/function.ts
-import type { RemoteState } from '@irpclib/irpc';
-import { irpc } from '../api.js';
-
-export type DashboardData = {
-  sales?: SalesSummary;
-  orders?: Order[];
-  alerts?: Alert[];
-};
-
-export const loadDashboard = irpc.declare<() => RemoteState<DashboardData>>(
-  'dashboard.load',
-  { seed: () => ({}), keepAlive: true }
-);
-```
-
-```typescript
-// src/pages/constructor.ts
-import { stream } from '@irpclib/irpc';
-import { irpc } from '../api.js';
-import { loadDashboard } from './function.js';
-
-irpc.construct(loadDashboard, () =>
-  stream((state) => {
-    fetchSales().then((sales) => {
-      state.data.sales = sales;
-    });
-    fetchOrders().then((orders) => {
-      state.data.orders = orders;
-    });
-    fetchAlerts().then((alerts) => {
-      state.data.alerts = alerts;
-    });
-  })
-);
-```
-
-```tsx
-// src/pages/dashboard/page.tsx
-import { page, Show } from '@airlib/react';
-import { dashboardRoute } from './route.js';
-import { loadDashboard } from './function.js';
-
-export default page(dashboardRoute).render(() => {
-  const dashboard = loadDashboard.once();
-
-  return (
-    <div>
-      <Show when={() => dashboard.data.sales}>{(sales) => <SalesSummary sales={sales} />}</Show>
-      <Show when={() => dashboard.data.orders}>{(orders) => <OrdersTable orders={orders} />}</Show>
-      <Show when={() => dashboard.data.alerts}>{(alerts) => <AlertsFeed alerts={alerts} />}</Show>
-    </div>
-  );
-});
-```
-
-## **Responsive Images**
-
-An image imported with `?asset` ships as optimized WebP/AVIF variants at the sizes you specify, with `srcset`, `width`, and `height` filled in — `<Image>` renders the right one:
-
-:::code-group
-
-```tsx [React]
-import { Image } from '@airlib/react';
-import product from './assets/product.jpg?asset' with { sizes: '350' };
-
-<Image from={product} alt="Product" />
-```
-
-```tsx [SolidJS]
-import { Image } from '@airlib/solid';
-import product from './assets/product.jpg?asset' with { sizes: '350' };
-
-<Image from={product} alt="Product" />
-```
-
-:::
-
-Pass `format` and `quality` the same way to control the output.
-
-## **Building Navigation**
-
-You need a menu of your pages — and you don't want to maintain it by hand. Import the generated route manifest: every content page is in it, so adding a page adds it to the menu automatically:
+To generate dynamic navigation menus without manual list maintenance, import the route manifest generated by `airPages()`:
 
 ```tsx
 import routes from '@airlib-cache/manifest'; // generated by airPages
@@ -628,7 +333,7 @@ export function Nav() {
 }
 ```
 
-A section sidebar is the same manifest scoped to a folder — `import docsRoutes from '@airlib-cache/manifest/docs'`. To show a friendly name instead of the path, set a label on the route; the keys are typed through `AirRouteMeta` in the `global.d.ts` that `airPages` scaffolds:
+A section sidebar is the same manifest scoped to a folder: `import docsRoutes from '@airlib-cache/manifest/docs'`. Route metadata keys are typed through `AirRouteMeta` in `global.d.ts`:
 
 ```ts
 // global.d.ts
@@ -640,168 +345,456 @@ interface AirRouteMeta {
 }
 ```
 
-## **Remote Functions**
+:::note[Want to dive deeper?]
+- **Route Manifest & Navigation** — Dynamic navigation links and tree inspection in [Routes & Layouts](/docs/routing/routes-layouts#manifest).
+- **Automated Sitemaps** — Automatic multi-lingual and static XML sitemap generation in [Sitemap Generation](/docs/routing/sitemap).
+:::
 
-Your page needs code that runs on the server — and you want it called, typed, and synchronized as if it were local. IRPC is that bridge: declare the contract once, implement it on the server, call it from the page. Realtime is one of its features — a function that streams its state instead of returning once — and that's what this example uses.
+## Responsive Images
 
-Install the network packages, declare the contract, implement it, and subscribe:
+An image imported with `?asset` generates optimized WebP/AVIF variants at build time with automatic `srcset`, `width`, and `height` calculation:
 
-:::code-group
+:::code-group[Responsive Image Component]{group="framework"}
 
-```bash [React]
-npm install @irpclib/irpc @irpclib/http @irpclib/ws
+```tsx [React] name="react"
+import { Image } from '@airlib/react';
+import product from './assets/product.jpg?asset' with { sizes: '350' };
+
+<Image from={product} alt="Product" />
 ```
 
-```bash [SolidJS]
-npm install @irpclib/irpc @irpclib/http @irpclib/ws
+```tsx [SolidJS] name="solid"
+import { Image } from '@airlib/solid';
+import product from './assets/product.jpg?asset' with { sizes: '350' };
+
+<Image from={product} alt="Product" />
 ```
 
 :::
 
-Create the transport — the bridge between the app and the server:
+:::note[Want to dive deeper?]
+- **Image Component & Props** — Dimensions, lazy loading, and blur placeholders in [Image Component](/docs/user-interface/image).
+- **Asset Pipeline Configuration** — Formats, sizes, and compression rules in [Vite Configuration](/docs/universal-ssr#image-defaults).
+:::
+
+## Remote Functions
+
+When your application requires server logic, IRPC provides end-to-end type-safe remote procedure calls without manual API client code or schema boilerplate.
+
+An IRPC function works anywhere:
+- **As a standard async Promise** — Call `await getStats()` in route guards, providers, or actions.
+- **As a reactive UI reader** — Call `getStats.once()` inside components for fine-grained `data`, `status`, and `error` tracking.
+- **As a real-time stream** — Return `stream()` on the server to push live or progressive updates over HTTP.
+
+### Declare the Function Contract
+
+Declare the typed procedure using the pre-configured `irpc` package from `src/api.ts`:
 
 ```typescript
-// src/api.ts
-import { HTTPTransport } from '@irpclib/http';
-import { createPackage } from '@irpclib/irpc';
-import { WebSocketTransport } from '@irpclib/ws';
+// src/dashboard.api.ts
+import { irpc } from './api.js';
 
-export const irpc = createPackage({ name: 'irpc', version: '1.0.0' });
-export const httpTransport = new HTTPTransport({ endpoint: `/api/${irpc.href}` });
-export const wsTransport = new WebSocketTransport({ url: `/ws/${irpc.href}` });
+export type Stats = { totalSales: string; orders: number };
 
-// Switch to `wsTransport` for near-zero latency.
-irpc.use(httpTransport);
-```
-
-Declare the function contract — typed once, available on both sides:
-
-```typescript
-// src/pages/function.ts
-import type { RemoteState } from '@irpclib/irpc';
-import { irpc } from '../api.js';
-
-export type Visitor = { id: string; cursor: { x: number; y: number } };
-
-export const join = irpc.declare<(visitor: Visitor) => RemoteState<Record<string, Visitor>>>(
-  'visitor.join',
-  {
-    seed: () => ({}),
-    keepAlive: true,
-  }
-);
+export const getStats = irpc.declare<() => Promise<Stats>>('dashboard.stats');
 ```
 
 :::tip[What we learn]
-`declare` defines the contract once — the same stub becomes the server implementation with `construct` and the client call with `once()`, with the types flowing to both sides.
+`declare` defines the function signature once. The same stub is used to implement the backend with `irpc.construct()`, invoke standard Promises (`await getStats()`), or subscribe reactively in components with `getStats.once()`.
 :::
 
-Implement it — the stream stays open and pushes every change to connected clients:
+### Implement on the Server
+
+Bind the backend implementation using `irpc.construct()`:
 
 ```typescript
-// src/pages/constructor.ts
-import { mutable } from '@airlib/react/core';
+// server/dashboard.ts
+import { irpc } from '../src/api.js';
+import { getStats } from '../src/dashboard.api.js';
+
+irpc.construct(getStats, async () => {
+  return await db.fetchDashboardStats();
+});
+```
+
+### Reactive Component Calling
+
+Invoke the procedure in a component with `.once()`. It returns a reactive reader that tracks network `status` and `data` automatically without manual `fetch` or effect hooks:
+
+:::code-group[Reactive RPC Call]{group="framework"}
+
+```tsx [React] name="react"
+import { page, Show } from '@airlib/react';
+import { rootIndexRoute } from './route.js';
+import { getStats } from '@/dashboard.api.js';
+
+export default page(rootIndexRoute).render(() => {
+  const stats = getStats.once();
+
+  return (
+    <div>
+      <Show when={() => stats.data}>
+        {({ totalSales, orders }) => (
+          <div>
+            <h1>{totalSales} in sales</h1>
+            <p>{orders} orders</p>
+          </div>
+        )}
+      </Show>
+    </div>
+  );
+});
+```
+
+```tsx [SolidJS] name="solid"
+import { page, Show } from '@airlib/solid';
+import { rootIndexRoute } from './route.js';
+import { getStats } from '@/dashboard.api.js';
+
+export default page(rootIndexRoute).render(() => {
+  const stats = getStats.once();
+
+  return (
+    <div>
+      <Show when={() => stats.data}>
+        {({ totalSales, orders }) => (
+          <div>
+            <h1>{totalSales} in sales</h1>
+            <p>{orders} orders</p>
+          </div>
+        )}
+      </Show>
+    </div>
+  );
+});
+```
+
+:::
+
+### Real-Time Streaming
+
+When you need continuous live updates (presence counters, live chat, cursor sync) or progressive chunks, return `stream()` inside `irpc.construct()`:
+
+```typescript
+// src/visitor.api.ts
+import type { RemoteState } from '@irpclib/irpc';
+import { irpc } from './api.js';
+
+export type Visitor = { id: string; cursor: { x: number; y: number } };
+export type JoinFn = (visitor: Visitor) => RemoteState<Record<string, Visitor>>;
+
+export const join = irpc.declare<JoinFn>('visitor.join', {
+  seed: () => ({}),
+  keepAlive: true,
+});
+```
+
+```typescript
+// server/visitor.ts
+import { mutable } from '@airlib/core';
 import { stream } from '@irpclib/irpc';
-import { irpc } from '../api.js';
-import { type Visitor, join } from './function.js';
+import { irpc } from '../src/api.js';
+import { type Visitor, join } from '../src/visitor.api.js';
 
 const VISITORS = mutable({} as Record<string, Visitor>);
 
-irpc.construct(join, (visitor: Visitor) =>
-  stream((state) => {
-    VISITORS[visitor.id] = visitor;
-    state.data = VISITORS;
+irpc.construct(join, (visitor: Visitor) => stream((state) => {
+  VISITORS[visitor.id] = visitor;
+  state.data = VISITORS;
 
-    return () => {
-      delete VISITORS[visitor.id];
-    };
+  return () => {
+    delete VISITORS[visitor.id];
+  };
+}));
+```
+
+```tsx
+// pages/page.tsx
+const visitors = join.once({ id: 'me', cursor: { x: 0, y: 0 } });
+
+<Snippet>{() => `${Object.keys(visitors.data ?? {}).length} online`}</Snippet>
+```
+
+:::note[Want to dive deeper?]
+- **RPC Declaration & Lifecycle** — Function declarations and state caching in [Remote Functions](/docs/remote-function).
+- **HTTP & WebSocket Transports** — Switching between streams, HTTP, and WebSockets in [Transports](/docs/remote-function/transport).
+- **Security & Interceptors** — Schema validation and request security in [Interceptors](/docs/remote-function/interceptors).
+:::
+
+## Guards & Providers
+
+Route protection and data fetching belong at the routing layer. Guards authenticate or redirect before components mount, while providers fetch asynchronous data so views receive typed data immediately.
+
+### Guards
+
+To secure private sections (such as an admin dashboard), attach `.guard()` to the route. Throwing a redirect halts navigation before child components mount:
+
+:::code-group[Guarded Dashboard Route]{group="framework"}
+
+```ts [React] name="react"
+// pages/dashboard/route.ts
+import { redirect } from '@airlib/react';
+import { loginRoute } from '../login/route.js';
+import rootRoute from '../route.js';
+
+/** AirLib managed */
+const route = rootRoute.route('/dashboard');
+const indexRoute = route.route('/');
+/** AirLib managed */
+
+export const dashboardRoute = route.guard(async () => {
+  if (!(await isLoggedIn())) throw redirect(loginRoute);
+});
+
+export const dashboardIndexRoute = indexRoute;
+
+export default dashboardRoute;
+```
+
+```ts [SolidJS] name="solid"
+// pages/dashboard/route.ts
+import { redirect } from '@airlib/solid';
+import { loginRoute } from '../login/route.js';
+import rootRoute from '../route.js';
+
+/** AirLib managed */
+const route = rootRoute.route('/dashboard');
+const indexRoute = route.route('/');
+/** AirLib managed */
+
+export const dashboardRoute = route.guard(async () => {
+  if (!(await isLoggedIn())) throw redirect(loginRoute);
+});
+
+export const dashboardIndexRoute = indexRoute;
+
+export default dashboardRoute;
+```
+
+:::
+
+:::tip[What we learn]
+The guard lives on the route, not on the page — the visitor never sees the page, not even a flash. A guard on a folder's route protects every page under that folder, so one check secures a whole section.
+:::
+
+### Providers
+
+When a route requires server data before rendering, attach `.provide()`. Navigation awaits the data and passes typed results to the page component:
+
+:::code-group[Data-Provided Route]{group="framework"}
+
+```ts [React] name="react"
+// pages/dashboard/route.ts
+import { redirect } from '@airlib/react';
+import { getStats } from '@/dashboard.api.js';
+import { loginRoute } from '../login/route.js';
+import rootRoute from '../route.js';
+
+/** AirLib managed */
+const route = rootRoute.route('/dashboard');
+const indexRoute = route.route('/');
+/** AirLib managed */
+
+export const dashboardRoute = route
+  .guard(async () => {
+    if (!(await isLoggedIn())) throw redirect(loginRoute);
   })
-);
+  .provide('stats', async () => {
+    return await getStats();
+  });
+
+export const dashboardIndexRoute = indexRoute;
+
+export default dashboardRoute;
 ```
+
+```ts [SolidJS] name="solid"
+// pages/dashboard/route.ts
+import { redirect } from '@airlib/solid';
+import { getStats } from '@/dashboard.api.js';
+import { loginRoute } from '../login/route.js';
+import rootRoute from '../route.js';
+
+/** AirLib managed */
+const route = rootRoute.route('/dashboard');
+const indexRoute = route.route('/');
+/** AirLib managed */
+
+export const dashboardRoute = route
+  .guard(async () => {
+    if (!(await isLoggedIn())) throw redirect(loginRoute);
+  })
+  .provide('stats', async () => {
+    return await getStats();
+  });
+
+export const dashboardIndexRoute = indexRoute;
+
+export default dashboardRoute;
+```
+
+:::
+
+:::code-group[Dashboard View Component]{group="framework"}
+
+```tsx [React] name="react"
+// pages/dashboard/page.tsx
+import { page, Show } from '@airlib/react';
+import { dashboardIndexRoute } from './route.js';
+
+export default page(dashboardIndexRoute).render(({ state }) => (
+  <Show when={() => state.data.stats}>
+    {({ totalSales, orders }) => (
+      <div>
+        <h1>{totalSales} in sales</h1>
+        <p>{orders} orders</p>
+      </div>
+    )}
+  </Show>
+));
+```
+
+```tsx [SolidJS] name="solid"
+// pages/dashboard/page.tsx
+import { page, Show } from '@airlib/solid';
+import { dashboardIndexRoute } from './route.js';
+
+export default page(dashboardIndexRoute).render(({ state }) => (
+  <Show when={state.data.stats}>
+    {(stats) => (
+      <div>
+        <h1>{stats.totalSales} in sales</h1>
+        <p>{stats.orders} orders</p>
+      </div>
+    )}
+  </Show>
+));
+```
+
+:::
 
 :::tip[What we learn]
-Joining is just mutating the shared state — writing the visitor into `VISITORS` broadcasts the change to every connected client. Returning a cleanup function is all it takes to leave: it runs when the page closes or the connection drops, removing the visitor.
+An async provider makes navigation wait for its data — the user stays on the current page until it resolves (on the initial load, that's the browser's native loading indicator). `state.data` holds this route's providers only; child pages and layouts read the merged tree — every provider up the chain — via `context.data`.
 :::
 
-Wire the routers into the worker:
+### Provider & Navigation Feedback
 
-:::code-group
+AirLib provides fine-grained reactive status for both individual data providers and global navigation progress:
 
-```typescript [React]
-// src/worker.ts
-import { createApp } from '@airlib/react/ssr';
-import { HTTPRouter } from '@irpclib/http/router';
-import { WebSocketRouter } from '@irpclib/ws/router';
-import { httpTransport, wsTransport } from './api.js';
-import App from './app.js';
-import router from './router.js';
+- **Provider Resolution State** — `state.resolving` is a reactive `Set<string>`. Check `state.resolving.has('stats')` to display a skeleton loader or spinner while a specific provider is fetching:
 
-const httpRouter = new HTTPRouter(httpTransport);
-const wsRouter = new WebSocketRouter(wsTransport);
-
-export default createApp(router, App, { httpRouter, wsRouter });
+```tsx
+<Show when={() => state.resolving.has('stats')}>
+  <p className="loading-spinner">Refreshing stats...</p>
+</Show>
 ```
 
-```typescript [SolidJS]
-// src/worker.ts
-import { createApp } from '@airlib/solid/ssr';
-import { HTTPRouter } from '@irpclib/http/router';
-import { WebSocketRouter } from '@irpclib/ws/router';
-import { httpTransport, wsTransport } from './api.js';
-import App from './app.js';
-import router from './router.js';
+- **Global Transition Progress** — `router.state.progress` and `router.state.steps` track the overall navigation progress across all executed guards and providers:
 
-const httpRouter = new HTTPRouter(httpTransport);
-const wsRouter = new WebSocketRouter(wsTransport);
-
-export default createApp(router, App, { httpRouter, wsRouter });
+```tsx
+<Snippet>
+  {() => (
+    <div
+      class="progress-bar"
+      style={{ width: `${(router.state.progress / router.state.steps) * 100}%` }}
+    />
+  )}
+</Snippet>
 ```
 
-:::
+### Progressive Data Loading
 
-Then subscribe from a page — `stub.once()` joins the stream, and `<Snippet>` keeps the updates fine-grained, so only the value re-renders:
+Fetching data inside nested client components often leads to **request waterfalls**—where each component triggers its own sequential HTTP request over high-latency networks.
 
-:::code-group
+AirLib eliminates client waterfalls by combining **parallel server execution** with **progressive streaming over a single connection**:
 
-```tsx [React]
-import { page, Snippet } from '@airlib/react';
-import { indexRoute } from './route.js';
-import { join } from './function.js';
+1. **Single Client Stream** — The browser opens one stream via `loadDashboard.once()`.
+2. **Parallel Server Execution** — The server dispatches all independent database queries concurrently over internal sub-millisecond networks.
+3. **Progressive UI Updates** — As each server task resolves, it pushes chunks down the open stream, updating the reactive state and rendering widgets progressively without blocking on the slowest query:
 
-export default page(indexRoute).render(() => {
-  const visitors = join.once({ id: 'me', cursor: { x: 0, y: 0 } });
+```typescript
+// src/dashboard.api.ts
+import type { RemoteState } from '@irpclib/irpc';
+import { irpc } from './api.js';
 
-  return <Snippet>{() => `${Object.keys(visitors.data).length} online`}</Snippet>;
+export type DashboardData = {
+  sales?: SalesSummary;
+  orders?: Order[];
+  alerts?: Alert[];
+};
+
+export type LoadDashboardFn = () => RemoteState<DashboardData>;
+
+export const loadDashboard = irpc.declare<LoadDashboardFn>('dashboard.load', {
+  seed: () => ({}),
+  keepAlive: true,
 });
 ```
 
-```tsx [SolidJS]
-import { page, Snippet } from '@airlib/solid';
-import { indexRoute } from './route.js';
-import { join } from './function.js';
+```typescript
+// server/dashboard.ts
+import { stream } from '@irpclib/irpc';
+import { irpc } from '../src/api.js';
+import { loadDashboard } from '../src/dashboard.api.js';
 
-export default page(indexRoute).render(() => {
-  const visitors = join.once({ id: 'me', cursor: { x: 0, y: 0 } });
+irpc.construct(loadDashboard, () => stream((state, resolve) => {
+  const sales = fetchSales().then((sales) => {
+    state.data.sales = sales;
+  });
+  const orders = fetchOrders().then((orders) => {
+    state.data.orders = orders;
+  });
+  const alerts = fetchAlerts().then((alerts) => {
+    state.data.alerts = alerts;
+  });
 
-  return <Snippet>{() => `${Object.keys(visitors.data).length} online`}</Snippet>;
+  Promise.all([sales, orders, alerts]).then(() => resolve());
+}));
+```
+
+```tsx
+// pages/dashboard/page.tsx
+import { page, Show } from '@airlib/react';
+import { dashboardIndexRoute } from './route.js';
+import { loadDashboard } from '@/dashboard.api.js';
+
+export default page(dashboardIndexRoute).render(() => {
+  const dashboard = loadDashboard.once();
+
+  return (
+    <div>
+      <Show when={() => dashboard.data?.sales}>
+        {(sales) => <SalesSummary sales={sales} />}
+      </Show>
+      <Show when={() => dashboard.data?.orders}>
+        {(orders) => <OrdersTable orders={orders} />}
+      </Show>
+      <Show when={() => dashboard.data?.alerts}>
+        {(alerts) => <AlertsFeed alerts={alerts} />}
+      </Show>
+    </div>
+  );
 });
 ```
 
+:::tip[Automatic Request Batching]
+You do not have to write dedicated wrapper functions just to prevent network overhead. If you call multiple atomic procedures in the same tick (`const sales = getSales.once(); const orders = getOrders.once();`), IRPC automatically batches them into a single network payload behind the scenes. Using individual batched calls or a unified progressive stream is pure architectural preference.
 :::
 
-:::tip[What we learn]
-`once()` joins the stream and returns a live `RemoteState` — `visitors.data` updates as the server pushes changes. `<Snippet>` re-renders only the value, so the count updates without re-rendering the page.
+:::note[Want to dive deeper?]
+- **Reactive Route Guards** — Authentication and route transition interception in [Guards](/docs/routing/guards).
+- **Scoped Data Providers** — Asynchronous data loading and waterfall prevention in [Data Loaders](/docs/routing/data-loaders).
 :::
 
-## **Browser States**
+## Browser States
 
 The browser is reactive state too. Want the UI to follow the pointer, or a page to react to a keypress — without a single event listener. `LIVE_CURSOR` and `LIVE_KEYBOARD` expose the mouse and keyboard as live state; read them in a `<Show>` or `<Snippet>` and the UI updates as they change.
 
 Track the pointer declaratively — the cursor follows the mouse, and the button state swaps the icon:
 
-:::code-group
+:::code-group[Live Cursor Tracking]{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { Show } from '@airlib/react';
 import { LIVE_CURSOR } from '@airlib/react/browser';
 import mouse from '../assets/cursor.svg';
@@ -819,7 +812,7 @@ import mouseDown from '../assets/cursor-down.svg';
 </Show>
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { Show } from '@airlib/solid';
 import { LIVE_CURSOR } from '@airlib/solid/browser';
 import mouse from '../assets/cursor.svg';
@@ -841,22 +834,32 @@ import mouseDown from '../assets/cursor-down.svg';
 
 React to a keypress the same way — a shortcut badge that appears while the combination is held:
 
-:::code-group
+:::code-group[Live Keyboard Shortcut]{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { Show } from '@airlib/react';
 import { LIVE_KEYBOARD } from '@airlib/react/browser';
 
-<Show when={() => (LIVE_KEYBOARD.is('ctrl', 's') || LIVE_KEYBOARD.is('meta', 's')) && LIVE_KEYBOARD}>
+<Show
+  when={() =>
+    (LIVE_KEYBOARD.is('ctrl', 's') || LIVE_KEYBOARD.is('meta', 's')) &&
+    LIVE_KEYBOARD
+  }
+>
   {({ key }) => <p className="save-toast">Saved via shortcut ({key})!</p>}
 </Show>
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { Show } from '@airlib/solid';
 import { LIVE_KEYBOARD } from '@airlib/solid/browser';
 
-<Show when={() => (LIVE_KEYBOARD.is('ctrl', 's') || LIVE_KEYBOARD.is('meta', 's')) && LIVE_KEYBOARD}>
+<Show
+  when={() =>
+    (LIVE_KEYBOARD.is('ctrl', 's') || LIVE_KEYBOARD.is('meta', 's')) &&
+    LIVE_KEYBOARD
+  }
+>
   {({ key }) => <p class="save-toast">Saved via shortcut ({key})!</p>}
 </Show>
 ```
@@ -864,22 +867,31 @@ import { LIVE_KEYBOARD } from '@airlib/solid/browser';
 :::
 
 :::tip[What we learn]
-No listeners, no subscriptions — the LIVE objects are state. Reading them inside `<Show>` tracks the pointer position, buttons, and modifiers automatically, and the rendered output updates when they change. They need `acceptInteractions()` in the client entry to be active.
+No listeners, no subscriptions — the `LIVE` objects are reactive state. Reading them inside `<Show>` tracks the pointer position, buttons, and modifiers automatically. These utilities require `acceptInteractions()` in your client entry point to activate.
 :::
 
-Beyond the cursor and keyboard: live scroll, selection, drag & drop, network, media, and geolocation — see [Browser Utilities](/docs/user-interface/browser).
+:::note[Want to dive deeper?]
+- **Live Pointer & Keyboard** — Reactive browser observables under the hood in [Browser Utilities](/docs/user-interface/browser).
+- **Drag, Drop & Selection** — Composing clipboard and drag-and-drop state in [Drag & Drop](/docs/user-interface/browser#drag--drop).
+:::
 
-## **Static Site Generation**
+## Static Site Generation
 
-Pre-render pages to plain HTML at build time. Mark routes `static` and the server build pre-renders them — requests are served straight from disk (or a pluggable cache adapter) with proper `Cache-Control` headers.
+Pre-render pages to plain HTML at build time. Mark routes `static` and the server build pre-renders them — requests are served straight from disk with proper `Cache-Control` headers.
 
 Mark the route itself `static` in the folder's `route.ts` — the docs page never changes, so it's served as a plain file:
 
 ```typescript
-// src/pages/mdx/route.ts
+// pages/docs/route.ts
 import rootRoute from '../route.js';
 
-export const docsRoute = rootRoute.route('/docs', { static: true });
+/** AirLib managed */
+const route = rootRoute.route('/docs');
+const indexRoute = route.route('/');
+/** AirLib managed */
+
+export const docsRoute = route.config({ static: true });
+export const docsIndexRoute = indexRoute;
 
 export default docsRoute;
 ```
@@ -895,15 +907,21 @@ The build writes the pre-rendered pages as plain HTML into `dist/client` — one
 
 Only URLs known at build time can be pre-rendered — a dynamic route like `/products/:id` is skipped, because its pages aren't discoverable until they exist.
 
-## **Incremental Static Regeneration**
+## Incremental Static Regeneration
 
 You want dynamic pages served as static HTML. Build-time pre-rendering can't cover them — the URLs don't exist yet. Mark the route `static` and it pre-renders on demand: the first request to each URL renders it and writes it to disk, and every later request is served from that file:
 
 ```typescript
-// src/pages/products/[id]/route.ts
+// pages/products/[id]/route.ts
 import productsRoute from '../route.js';
 
-export const productsDynamicRoute = productsRoute.route('/:id', { static: true });
+/** AirLib managed */
+const route = productsRoute.route('/:id');
+const indexRoute = route.route('/');
+/** AirLib managed */
+
+export const productsDynamicRoute = route.config({ static: true });
+export const productsDynamicIndexRoute = indexRoute;
 
 export default productsDynamicRoute;
 ```
@@ -911,15 +929,26 @@ export default productsDynamicRoute;
 When the content changes — a price update, a stock change — a file served from disk stays stale. Give the route a `maxAge`: the file is served until it's older than `maxAge`, then the next request re-renders it and refreshes the file. New content shows up without a rebuild:
 
 ```typescript
-// src/pages/products/[id]/route.ts
+// pages/products/[id]/route.ts
 import productsRoute from '../route.js';
 
-export const productsDynamicRoute = productsRoute.route('/:id', { static: { maxAge: 3600 } });
+/** AirLib managed */
+const route = productsRoute.route('/:id');
+const indexRoute = route.route('/');
+/** AirLib managed */
+
+export const productsDynamicRoute = route.config({ static: { maxAge: 3600 } });
+export const productsDynamicIndexRoute = indexRoute;
 
 export default productsDynamicRoute;
 ```
 
-## **Ship Zero JavaScript**
+:::note[Want to dive deeper?]
+- **Static Generation & Caching** — Build-time pre-rendering and ISR invalidation in [Universal SSR](/docs/universal-ssr#static-pages).
+- **Multi-Runtime Deployment** — Server scripts for Bun, Node.js, Deno, and Cloudflare in [Production Deployment](/docs/universal-ssr#the-pipeline-at-a-glance).
+:::
+
+## Ship Zero JavaScript
 
 Ship pages with zero JavaScript and no hydration script — the build strips every script from the output, so browsers receive pure HTML, Astro-style, while you keep the full authoring experience:
 
@@ -932,229 +961,7 @@ export default defineConfig({
 });
 ```
 
-## **Manual Setup**
-
-Install the framework and the plugin, create the entry files, then run.
-
-### **1. Install Dependencies**
-
-:::code-group
-
-```bash [React]
-npm install @airlib/react react react-dom
-npm install -D @airlib/vite @vitejs/plugin-react typescript vite @types/react @types/react-dom
-```
-
-```bash [SolidJS]
-npm install @airlib/solid solid-js
-npm install -D @airlib/vite vite-plugin-solid typescript vite
-```
-
-:::
-
-### **2. Create the HTML Shell**
-
-Every page renders into one `index.html`. Two comments mark where the server injects the document head and the rendered page:
-
-```html
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!--ssr-head-->
-  </head>
-  <body>
-    <div id="root" style="display: contents;"><!--ssr-outlet--></div>
-    <script type="module" src="/src/client.tsx"></script>
-  </body>
-</html>
-```
-
-### **3. Create the Router**
-
-The router is the single instance every route in the app is created from:
-
-:::code-group
-
-```typescript [React]
-// src/router.ts
-import { createRouter } from '@airlib/react';
-
-const router = createRouter();
-export default router;
-```
-
-```typescript [SolidJS]
-// src/router.ts
-import { createRouter } from '@airlib/solid';
-
-const router = createRouter();
-export default router;
-```
-
-:::
-
-:::tip[What we learn]
-A folder defines a URL. `airPages()` watches `src/pages` and generates a `route.ts` per folder — `src/pages/route.ts` exports the `rootRoute` and `indexRoute` your layout and page import. You write pages, not route trees.
-:::
-
-### **4. Create the App Entry**
-
-The entry both the client hydrates and the worker renders. It renders the root layout with the router:
-
-:::code-group
-
-```tsx [React]
-// src/app.tsx
-import { type AppEntry, UIRouter } from '@airlib/react';
-import RootLayout from './pages/layout.tsx';
-import router from './router.ts';
-
-export default (({ url }) => (
-  <UIRouter router={router} root={RootLayout} url={url} />
-)) satisfies AppEntry;
-```
-
-```tsx [SolidJS]
-// src/app.tsx
-import { type AppEntry, UIRouter } from '@airlib/solid';
-import RootLayout from './pages/layout.tsx';
-import router from './router.ts';
-
-export default (({ url }) => (
-  <UIRouter router={router} root={RootLayout} url={url} />
-)) satisfies AppEntry;
-```
-
-:::
-
-`RootLayout` is the root layout — the structure every page renders inside, created in the Layouts section below.
-
-### **5. Create the Client Entry**
-
-Hydrate the app in the browser:
-
-:::code-group
-
-```tsx [React]
-// src/client.tsx
-import '@airlib/react/client'; // must be first import
-
-import { hydrateRoot } from 'react-dom/client';
-import { acceptInteractions } from '@airlib/react/browser';
-import App from './app.js';
-import router from './router.js';
-
-router.activate(window.location.href).then(() => {
-  hydrateRoot(document.getElementById('root')!, <App />);
-}).then(() => acceptInteractions());
-```
-
-```tsx [SolidJS]
-// src/client.tsx
-import '@airlib/solid/client'; // must be first import
-
-import { hydrate } from 'solid-js/web';
-import { acceptInteractions } from '@airlib/solid/browser';
-import App from './app.js';
-import router from './router.js';
-
-router.activate(window.location.href).then(() => {
-  hydrate(() => <App />, document.getElementById('root')!);
-}).then(() => acceptInteractions());
-```
-
-:::
-
-:::tip[What we learn]
-- The server already sent a complete page — the user sees the full content before any JavaScript runs.
-- `activate()` runs the route again on the client, re-checking its guards and providers — if a guard no longer passes (an auth check expired, a provider failed), the client follows the redirect instead of hydrating a page that shouldn't render.
-- `hydrate()` re-constructs the existing DOM instead of building it from scratch — the client rebuilds exactly what the server rendered, so the two can never mismatch.
-- `acceptInteractions()` is optional — it enables the live browser objects (`LIVE_CURSOR`, `LIVE_KEYBOARD`, …; see [Browser Utilities](/docs/user-interface/browser)). Omit it and the page still works; the live objects just stay off.
-:::
-
-### **6. Create the Worker**
-
-The server entry — one worker that serves SSR and static assets:
-
-:::code-group
-
-```typescript [React]
-// src/worker.ts
-import { createApp } from '@airlib/react/ssr';
-import App from './app.js';
-import router from './router.js';
-
-export default createApp(router, App);
-```
-
-```typescript [SolidJS]
-// src/worker.ts
-import { createApp } from '@airlib/solid/ssr';
-import App from './app.js';
-import router from './router.js';
-
-export default createApp(router, App);
-```
-
-:::
-
-:::tip[What we learn]
-- The worker exposes a standard `fetch()` handler — any runtime that speaks web standards (Bun, Node, Deno, Cloudflare) can hook into it with minimal setup.
-- On Bun, `bun run dist/server/worker.js` just works, because the file exports the `fetch()` handler directly.
-:::
-
-### **7. Configure Vite**
-
-Add `airPages()` — your framework is detected automatically:
-
-:::code-group
-
-```typescript [React]
-// vite.config.ts
-import { airPages } from '@airlib/vite';
-import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
-
-export default defineConfig({
-  plugins: [react(), airPages()],
-});
-```
-
-```typescript [SolidJS]
-// vite.config.ts
-import { airPages } from '@airlib/vite';
-import { defineConfig } from 'vite';
-import solid from 'vite-plugin-solid';
-
-export default defineConfig({
-  plugins: [solid({ ssr: true }), airPages()],
-});
-```
-
-:::
-
-### **8. Run It**
-
-Wire the scripts, then start the dev server:
-
-```json
-{
-  "scripts": {
-    "dev": "vite",
-    "build:client": "vite build --outDir dist/client",
-    "build:server": "vite build --ssr --outDir dist/server",
-    "build": "bun run build:client && bun run build:server",
-    "start": "bun run dist/server/worker.js"
-  }
-}
-```
-
-Run `bun run dev` (or `npm run dev`) once so the plugin generates the per-folder `route.ts` files. While it runs, an empty `page.tsx` you create in any folder is filled with a working starter. Then add the layout and the index page in the next two sections and the app renders.
-
-
-## **Next Steps**
+## Next Steps
 
 You now have a running AirLib application. From here you can go deeper:
 

@@ -6,6 +6,12 @@ title: 'User Interface'
 description: 'Autonomous, self-governing UI components — the AirLib architecture spanning static markup, reactive views, and stateful components.'
 ---
 
+:::interactive{rendered=false}
+```tsx
+import { mutable, template, $use } from '@airlib/react';
+```
+:::
+
 # User Interface
 
 In the **AirLib**, the User Interface is built from **autonomous, self-governing components** — each one carries its own **state**, its own **behavior**, and its own **responsibility**. The parent doesn't control it; it **coordinates** with it.
@@ -26,33 +32,32 @@ To keep your application **fast** and **maintainable** while building these auto
 
 Static UI is just standard markup (`<h1>`, `<p>`, `<div>`). It renders once, has no state or behavior, and never updates. It belongs inline wherever you need it.
 
-:::code-group
-```tsx [React]
-// Native elements belong inline. No component needed.
-<div className="header">
-  <h1>Dashboard</h1>
-</div>
-```
-```tsx [SolidJS]
-// Native elements belong inline. No component needed.
-<div class="header">
-  <h1>Dashboard</h1>
-</div>
-```
-:::
-
-:::interactive[Static UI Demo]
-```tsx
-function StaticUI() {
-  return (
-    <details open className="bg-blue-50/50 border border-blue-200 rounded-xl p-4">
+:::code-group[Static HTML elements]
+```tsx [React] executable
+const StaticUI = () => (
+  <div className="header flex flex-col gap-4">
+    <h3>Static UI</h3>
+    <details open className="bg-primary/10 rounded-xl p-4">
       <summary className="cursor-pointer">Native HTML Element</summary>
       <p>Static UI is just standard markup. It renders once, has no state or behavior, and never updates. It belongs inline wherever you need it.</p>
     </details>
-  );
-}
+  </div>
+);
 ```
+```tsx [SolidJS]
+const StaticUI = () => (
+  <div class="header flex flex-col gap-4">
+    <h3>Static UI</h3>
+    <details open class="bg-primary/10 rounded-xl p-4">
+      <summary class="cursor-pointer">Native HTML Element</summary>
+      <p>Static UI is just standard markup. It renders once, has no state or behavior, and never updates. It belongs inline wherever you need it.</p>
+    </details>
+  </div>
+);
+```
+:::
 
+:::interactive[Static UI]
 <StaticUI />
 :::
 
@@ -67,46 +72,52 @@ We just learned how to use native HTML features when the UI doesn't depend on re
 
 A Reactive UI is a piece of UI that presents reactive data without owning it (e.g., a simple `Label`). It reads data from a source (a `prop`, a global `store`, or a `context`) and updates itself when that data changes, but it never modifies the data or maintains its own internal state.
 
-:::code-group
-```tsx [React]
-import { $use } from '@airlib/react';
-
-// Passes data by reference ($use). Reactive UI updates automatically when `userName` changes.
-<Label text={$use(appState, 'userName')} type="primary" />
+:::code-group[Reactive template]
+```tsx [React] executable
+const ReactiveLabel = template(({ text }) => (
+  <p className="text-lg text-center font-bold">Current: {text}</p>
+));
 ```
 ```tsx [SolidJS]
-// Expressions are automatically tracked. Reactive UI updates automatically when `userName` changes.
-<Label text={appState.userName} type="primary" />
+const ReactiveLabel = (props) => (
+  <p class="text-lg text-center font-bold">Current: {props.text}</p>
+);
 ```
 :::
 
-:::interactive[Reactive UI Demo]
-```tsx
-import { $use, mutable, template } from '@airlib/react';
-
+:::code-group[One-way data binding]
+```tsx [React] executable
 // Shared state, lives outside the component.
-const appState = mutable({ count: 0 });
+const counter = mutable({ count: 0 });
+const increment = () => counter.count++;
 
-// Reactive UI that reads from props or external source.
-const ReactiveUI = template<{ count?: number }>(({ count }) => (
-  <p className="text-lg text-center font-bold">Current count: {count ?? appState.count}</p>
-));
+const ReactiveUI = () => (
+  <div className="flex flex-col gap-2 items-center">
+    <ReactiveLabel text={$use(counter, 'count')} />
+    <button onClick={increment}>Local Increment</button>
+  </div>
+);
 ```
+```tsx [SolidJS]
+// Shared state, lives outside the component.
+const counter = mutable({ count: 0 });
+const increment = () => counter.count++;
 
+const ReactiveUI = () => (
+  <div className="flex flex-col gap-2 items-center">
+    <ReactiveLabel text={counter.count} />
+    <button onClick={increment}>Local Increment</button>
+  </div>
+);
+```
+:::
+
+:::interactive[Reactive UI]
 <ReactiveUI />
 :::
 
-:::interactive{rendered="false"}
-```tsx
-function ReactiveIncrement() {
-  return (
-    <button className="air-mdx-btn" onClick={() => appState.count++}>Increment From Outside</button>
-  );
-}
-```
-:::
-
-<ReactiveIncrement />
+<button className="air-mdx-btn" onClick={increment}>Increment From Outside</button>
+<div className="air-mdx-separator" />
 
 :::tip[What we learn]
 We just learned how a Reactive UI presents data without owning it, automatically updating its display whenever external state changes.
@@ -311,8 +322,6 @@ We just learned how autonomous components decouple state management from side ef
 - `value` is a **state contract**. When a `NavButton` writes to `props.value`, the binding propagates the change to `state.active` in the parent — reactively. Any component reading `state.active` sees the update automatically. There is no need for an event listener to track the change.
 - `onClick` is an **event** — its purpose is for side effects. It allows external code to run side effects — logging, analytics, closing a menu — when the button is clicked. It is never meant to control the component's behavior or state. The state is handled through the binding; the event is for everything else.
 :::
-
-
 
 ## Learn More
 

@@ -6,6 +6,8 @@ import { Search } from '@/components/Search.js';
 import { navs } from './nav.js';
 import docsRoute from './route.js';
 
+import './docs.css';
+
 docsRoute.catch(({ error }) => {
   const status = error instanceof NotFoundError ? 404 : 500;
   const label = status === 404 ? 'Page Not Found' : 'Something Went Wrong';

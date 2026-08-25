@@ -14,25 +14,17 @@ import utilitiesMeta from '@airlib-cache/metadata/(docs)/utilities/material-css/
 import workflowMeta from '@airlib-cache/metadata/(docs)/workflow/index.js';
 import type { ComponentType } from 'react';
 import {
-  AccountTreeIcon,
   ArticleIcon,
   BuildIcon,
-  CallIcon,
   ChecklistIcon,
-  DataObjectIcon,
-  DnsIcon,
-  DownloadIcon,
   ExtensionIcon,
   GettingStartedIcon,
   GridViewIcon,
-  HomeIcon,
   InstallIcon,
   MarkdownIcon,
   NewspaperIcon,
   OverviewIcon,
-  PaletteIcon,
   RemoteFunctionIcon,
-  RocketLaunchIcon,
   RouteIcon,
   SsrIcon,
   StateManagementIcon,
@@ -124,17 +116,6 @@ export const navs: NavItem[] = [
   ...toNavItems(docsMeta, true),
   { separator: true },
   {
-    text: 'Posts',
-    route: postsRoute,
-    icon: () => <ArticleIcon />,
-  },
-  {
-    text: 'Releases',
-    route: releasesRoute,
-    icon: () => <NewspaperIcon />,
-  },
-  { separator: true },
-  {
     text: 'State Management',
     icon: () => <StateManagementIcon />,
     collapsed: true,
@@ -198,6 +179,17 @@ export const navs: NavItem[] = [
         items: toNavItems(utilitiesMeta),
       },
     ],
+  },
+  { separator: true },
+  {
+    text: 'Posts',
+    route: postsRoute,
+    icon: () => <ArticleIcon />,
+  },
+  {
+    text: 'Releases',
+    route: releasesRoute,
+    icon: () => <NewspaperIcon />,
   },
   { separator: true },
   {

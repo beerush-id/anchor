@@ -174,10 +174,10 @@ const result = await fetch('/api/data');
 
 ### Titles
 
-Add a title to a code block by placing it after the language tag inside curly braces:
+Add a title to a code block by placing it in square brackets after the language tag:
 
 ````mdx
-```ts {data-title="src/router.ts"}
+```ts [src/router.ts]
 import { createRouter } from '@airlib/react';
 const router = createRouter();
 ```
@@ -189,8 +189,28 @@ The title appears as a floating label next to the language badge.
 
 Every code block has a copy button that appears on hover. No configuration needed — the `<CodeCopy>` component handles it automatically.
 
+### Executable Code Blocks
+
+Code blocks can execute inline logic directly within the page by adding execution attributes:
+
+````mdx
+```tsx executable
+const message = 'Hello from component scope';
+```
+
+```tsx executable="hidden"
+const secretValue = 42;
+```
+
+```tsx module
+export const metadata = { version: '1.0.0' };
+```
+````
+
+The `executable` attribute executes the code block inside the markdown component body, making defined variables available to subsequent JSX. Adding `executable="hidden"` runs the code block while hiding the code fence display from the page. Marking a block with `module` executes the code at the module level, allowing exports or top-level declarations that apply across the entire file.
+
 :::tip[What we learn]
-Titles and language labels are automatic — just use the fence syntax and the renderer handles the rest. Readers copy code more often when the button is visible on hover, so never hide it.
+Titles and language labels are automatic — just use the fence syntax and the renderer handles the rest. Use `executable` to run logic in the component body, `executable="hidden"` to run logic without showing the fence, and `module` to evaluate code at module scope for exports. Readers copy code more often when the button is visible on hover, so never hide it.
 :::
 
 ## Code Groups
@@ -234,12 +254,16 @@ The text in square brackets after the language tag becomes the tab label. Use de
 bun install
 ```
 
-```bash [npm]
+```bash [NPM]
 npm install
 ```
 
-```bash [pnpm]
+```bash [PNPM]
 pnpm install
+```
+
+```bash [Yarn]
+yarn install
 ```
 
 :::
@@ -255,8 +279,8 @@ Tabs support keyboard navigation — arrow keys switch between tabs, Home/End ju
 import { CodeGroup } from '@airlib/react/mdx';
 
 <CodeGroup>
-  <pre data-title="React">...</pre>
-  <pre data-title="SolidJS">...</pre>
+  <pre title="React">...</pre>
+  <pre title="SolidJS">...</pre>
 </CodeGroup>
 ```
 
@@ -272,11 +296,31 @@ Interactive demos embed live, runnable React components directly in the document
 
 An interactive demo is an `:::interactive[Title]` admonition containing:
 
-1. A fenced `tsx` block that defines the component — it's compiled and executed at build time.
-2. A fenced `svelte` block (or any non-tsx fence) showing the JSX usage — rendered as the component's template.
-3. JSX after the code blocks — the live rendered output that readers interact with directly.
+- A fenced `tsx` block that defines the component — compiled and executed at build time.
+- A fenced markup block showing the JSX usage — rendered as the component's template.
+- JSX after the code blocks — the live rendered output that readers interact with directly.
 
 The `tsx` block must define the component **and** the JSX after the code fences must reference it. The component is scoped to the `:::interactive` block — it doesn't leak into the rest of the page.
+
+### Standalone Demos
+
+Interactive blocks support standalone rendering when code snippets should be executed without showing their code fences:
+
+````mdx
+:::interactive[Counter Preview]{standalone}
+
+```tsx
+const Counter = setup(() => {
+  const count = mutable(0);
+  return render(() => <button onClick={() => count.value++}>Count: {count.value}</button>);
+});
+```
+
+<Counter />
+:::
+````
+
+Adding the `{standalone}` attribute executes all enclosed code blocks while hiding them from the rendered page output. When an `:::interactive` block contains only JSX without any code fences, it automatically becomes standalone.
 
 Let's look at the markdown source before seeing it live:
 
