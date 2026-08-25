@@ -107,9 +107,15 @@ export class HTTPRouter extends IRPCRouter {
    * @param request - The incoming HTTP request
    * @param context - Optional context to initialize the resolver with
    * @param builder - Optional custom response builder function
+   * @param signal - Optional AbortSignal to attach
    * @returns A Response object with the resolved data
    */
-  public async resolve(request: Request, context: [string | symbol, unknown][] = [], builder?: HTTPResponseBuilder) {
+  public async resolve(
+    request: Request,
+    context: [string | symbol, unknown][] = [],
+    builder?: HTTPResponseBuilder,
+    signal?: AbortSignal
+  ) {
     const buildResponse = (body: BodyInit, init: ResponseInit) => {
       if (builder) return builder(body, init);
       return new Response(body, init);
@@ -123,7 +129,7 @@ export class HTTPRouter extends IRPCRouter {
       }
 
       const jar = decodeCookies(request.headers.get('cookie') ?? '');
-      return await this.resolveForm(await request.formData(), context, builder, jar, request.signal);
+      return await this.resolveForm(await request.formData(), context, builder, jar, signal);
     } catch (error) {
       IRPC_STORE.error(error as Error, [{ method: request.method, url: request.url }]);
       return buildResponse(JSON.stringify(ResolveError.failed(error as Error).json()), {
