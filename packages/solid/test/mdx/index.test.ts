@@ -16,6 +16,7 @@ describe('MDX Package Exports', () => {
     expect(mdxExports.CodeBlock).toBeDefined();
     expect(mdxExports.CodeCopy).toBeDefined();
     expect(mdxExports.CodeGroup).toBeDefined();
+    expect(mdxExports.Interactive).toBeDefined();
     expect(mdxExports.Layout).toBeDefined();
     expect(mdxExports.Pagination).toBeDefined();
     expect(mdxExports.Sidebar).toBeDefined();

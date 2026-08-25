@@ -6,7 +6,14 @@ export interface TocHeading {
   depth: number;
 }
 
+export interface MdxStore {
+  [key: string]: unknown;
+  pm: string;
+  framework: string;
+}
+
 export interface MdxContext {
+  store: MdxStore;
   url?: string;
   meta?: Record<string, unknown>;
   headings?: TocHeading[];
@@ -18,5 +25,6 @@ export const mdxCtx = {
   },
   set(ctx?: MdxContext) {
     setContext('mdx-context', mutable({ ...ctx }));
+    return getContext('mdx-context');
   },
 };

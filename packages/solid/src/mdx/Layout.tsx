@@ -1,5 +1,5 @@
-import { classx } from '@airlib/core';
 import type { PreloadMode } from '@airlib/router';
+import { classx, cookies } from '../index.js';
 import { type JSX, splitProps } from '../solid.js';
 import { Show } from '../switch.js';
 import { mdxCtx } from './context.js';
@@ -24,7 +24,8 @@ export function Layout(allProps: LayoutProps): JSX.Element {
     'class',
     'preload',
   ]);
-  mdxCtx.set();
+  const store = cookies('mdx-store', { pm: 'bun', framework: 'solid', runtime: 'bun' });
+  mdxCtx.set({ store });
 
   return (
     <main {...restProps} class={classx('air-mdx air-mdx-container', props.class)}>

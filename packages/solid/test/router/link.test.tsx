@@ -424,18 +424,33 @@ describe('Anchor Solid - Link Component', () => {
       const dashboardRoute = router.route('/dashboard');
       dashboardRoute.active = true;
 
-      render(() => (
-        <Link to={dashboardRoute} keepVisible>
-          Dashboard
-        </Link>
-      ));
+      const scrollToSpy = vi.fn();
+      HTMLElement.prototype.scrollTo = scrollToSpy;
+      const originalScrollHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollHeight');
+      const originalClientHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight');
 
-      await Promise.resolve();
-      expect(scrollIntoViewSpy).toHaveBeenCalledWith({
-        block: 'center',
-        inline: 'center',
-        behavior: DEFAULT_ROUTER_CONFIGS.scrollBehavior,
-      });
+      Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, value: 500 });
+      Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 200 });
+
+      try {
+        render(() => (
+          <div style={{ 'overflow-y': 'auto' }}>
+            <Link to={dashboardRoute} keepVisible>
+              Dashboard
+            </Link>
+          </div>
+        ));
+
+        await Promise.resolve();
+        expect(scrollToSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            behavior: DEFAULT_ROUTER_CONFIGS.scrollBehavior,
+          })
+        );
+      } finally {
+        if (originalScrollHeight) Object.defineProperty(HTMLElement.prototype, 'scrollHeight', originalScrollHeight);
+        if (originalClientHeight) Object.defineProperty(HTMLElement.prototype, 'clientHeight', originalClientHeight);
+      }
     });
 
     it('uses the string keepVisible value as scroll behavior', async () => {
@@ -443,14 +458,33 @@ describe('Anchor Solid - Link Component', () => {
       const dashboardRoute = router.route('/dashboard');
       dashboardRoute.active = true;
 
-      render(() => (
-        <Link to={dashboardRoute} keepVisible="auto">
-          Dashboard
-        </Link>
-      ));
+      const scrollToSpy = vi.fn();
+      HTMLElement.prototype.scrollTo = scrollToSpy;
+      const originalScrollHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollHeight');
+      const originalClientHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight');
 
-      await Promise.resolve();
-      expect(scrollIntoViewSpy).toHaveBeenCalledWith({ block: 'center', inline: 'center', behavior: 'auto' });
+      Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, value: 500 });
+      Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 200 });
+
+      try {
+        render(() => (
+          <div style={{ 'overflow-y': 'auto' }}>
+            <Link to={dashboardRoute} keepVisible="auto">
+              Dashboard
+            </Link>
+          </div>
+        ));
+
+        await Promise.resolve();
+        expect(scrollToSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            behavior: 'auto',
+          })
+        );
+      } finally {
+        if (originalScrollHeight) Object.defineProperty(HTMLElement.prototype, 'scrollHeight', originalScrollHeight);
+        if (originalClientHeight) Object.defineProperty(HTMLElement.prototype, 'clientHeight', originalClientHeight);
+      }
     });
 
     it('does not scroll inactive links into view even with keepVisible', async () => {
@@ -458,14 +492,19 @@ describe('Anchor Solid - Link Component', () => {
       const dashboardRoute = router.route('/dashboard');
       dashboardRoute.active = false;
 
+      const scrollToSpy = vi.fn();
+      HTMLElement.prototype.scrollTo = scrollToSpy;
+
       render(() => (
-        <Link to={dashboardRoute} keepVisible>
-          Dashboard
-        </Link>
+        <div style={{ 'overflow-y': 'auto' }}>
+          <Link to={dashboardRoute} keepVisible>
+            Dashboard
+          </Link>
+        </div>
       ));
 
       await Promise.resolve();
-      expect(scrollIntoViewSpy).not.toHaveBeenCalled();
+      expect(scrollToSpy).not.toHaveBeenCalled();
     });
   });
 
@@ -534,40 +573,64 @@ describe('Anchor Solid - Link Component', () => {
       const router = createRouter();
       const activeRoute = router.route('/active-visible');
       activeRoute.active = true;
-      const scrollIntoViewMock = vi.fn();
-      Element.prototype.scrollIntoView = scrollIntoViewMock;
+      const scrollToSpy = vi.fn();
+      HTMLElement.prototype.scrollTo = scrollToSpy;
+      const originalScrollHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollHeight');
+      const originalClientHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight');
 
-      render(() => (
-        <Link to={activeRoute} keepVisible>
-          Active Item
-        </Link>
-      ));
+      Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, value: 500 });
+      Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 200 });
 
-      expect(scrollIntoViewMock).toHaveBeenCalledWith({
-        block: 'center',
-        inline: 'center',
-        behavior: DEFAULT_ROUTER_CONFIGS.scrollBehavior,
-      });
+      try {
+        render(() => (
+          <div style={{ 'overflow-y': 'auto' }}>
+            <Link to={activeRoute} keepVisible>
+              Active Item
+            </Link>
+          </div>
+        ));
+
+        expect(scrollToSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            behavior: DEFAULT_ROUTER_CONFIGS.scrollBehavior,
+          })
+        );
+      } finally {
+        if (originalScrollHeight) Object.defineProperty(HTMLElement.prototype, 'scrollHeight', originalScrollHeight);
+        if (originalClientHeight) Object.defineProperty(HTMLElement.prototype, 'clientHeight', originalClientHeight);
+      }
     });
 
     it('scrolls into view using custom behavior string when keepVisible is a string', () => {
       const router = createRouter();
       const activeRoute = router.route('/active-instant');
       activeRoute.active = true;
-      const scrollIntoViewMock = vi.fn();
-      Element.prototype.scrollIntoView = scrollIntoViewMock;
+      const scrollToSpy = vi.fn();
+      HTMLElement.prototype.scrollTo = scrollToSpy;
+      const originalScrollHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollHeight');
+      const originalClientHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight');
 
-      render(() => (
-        <Link to={activeRoute} keepVisible="instant">
-          Instant Item
-        </Link>
-      ));
+      Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, value: 500 });
+      Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 200 });
 
-      expect(scrollIntoViewMock).toHaveBeenCalledWith({
-        block: 'center',
-        inline: 'center',
-        behavior: 'instant',
-      });
+      try {
+        render(() => (
+          <div style={{ 'overflow-y': 'auto' }}>
+            <Link to={activeRoute} keepVisible="instant">
+              Instant Item
+            </Link>
+          </div>
+        ));
+
+        expect(scrollToSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            behavior: 'instant',
+          })
+        );
+      } finally {
+        if (originalScrollHeight) Object.defineProperty(HTMLElement.prototype, 'scrollHeight', originalScrollHeight);
+        if (originalClientHeight) Object.defineProperty(HTMLElement.prototype, 'clientHeight', originalClientHeight);
+      }
     });
 
     it('handles mouseEnter on link without active route', () => {

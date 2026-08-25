@@ -30,7 +30,7 @@ describe('Documentation Callouts and Admonitions', () => {
     });
 
     it('assigns note role to informational callouts to avoid interrupting the reader unnecessarily', () => {
-      const infoTypes = ['note', 'tip', 'info', 'important', 'interactive'] as const;
+      const infoTypes = ['note', 'tip', 'info', 'important'] as const;
 
       for (const type of infoTypes) {
         const { container } = render(() => (
@@ -123,15 +123,6 @@ describe('Documentation Callouts and Admonitions', () => {
       expect(container.querySelector('.air-mdx-admonition-title')?.textContent).toBe('Petunjuk Penting');
     });
 
-    it('renders interactive admonition with default icon', () => {
-      const { container } = render(() => (
-        <Admonition type="interactive">
-          <p>Try it out</p>
-        </Admonition>
-      ));
-      expect(container.querySelector('.air-mdx-admonition-icon svg')).not.toBeNull();
-    });
-
     it('omits header container when both icon and title are empty', () => {
       const { container } = render(() => (
         <Admonition type={'custom' as never} title="">
@@ -182,17 +173,6 @@ describe('Documentation Callouts and Admonitions', () => {
       const details = container.querySelector('details');
       expect(details).not.toBeNull();
       expect(details?.getAttribute('role')).toBe('alert');
-    });
-
-    it('renders interactive type with Live Demo title', () => {
-      const { container } = render(() => (
-        <Admonition type="interactive">
-          <div>Widget</div>
-        </Admonition>
-      ));
-
-      const title = container.querySelector('.air-mdx-admonition-title');
-      expect(title?.textContent).toBe('Live Demo');
     });
 
     it('keeps standard div container when collapsible is passed as string false', () => {

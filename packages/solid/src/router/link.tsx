@@ -151,12 +151,29 @@ export const Link = ((allProps: LinkProps<AnyRoute>) => {
   };
 
   onMount(() => {
-    if (anchorRef && props.keepVisible && state.route?.active) {
-      anchorRef.scrollIntoView({
-        block: 'center',
-        inline: 'center',
-        behavior: typeof props.keepVisible === 'string' ? props.keepVisible : DEFAULT_ROUTER_CONFIGS.scrollBehavior,
-      });
+    if (!anchorRef || !props.keepVisible || !state.route?.active) return;
+
+    const el = anchorRef;
+    const behavior = typeof props.keepVisible === 'string' ? props.keepVisible : DEFAULT_ROUTER_CONFIGS.scrollBehavior;
+
+    let container = el.parentElement;
+
+    while (container && container !== document.body) {
+      const scrollable = container.scrollHeight > container.clientHeight;
+
+      if (scrollable && /(auto|scroll)/.test(getComputedStyle(container).overflowY)) {
+        const elRect = el.getBoundingClientRect();
+        const boxRect = container.getBoundingClientRect();
+
+        container.scrollTo({
+          top: container.scrollTop + elRect.top - boxRect.top - (container.clientHeight - elRect.height) / 2,
+          behavior,
+        });
+
+        return;
+      }
+
+      container = container.parentElement;
     }
   });
 

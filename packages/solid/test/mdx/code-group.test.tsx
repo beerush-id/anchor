@@ -1,5 +1,6 @@
 /** @jsxImportSource solid-js */
 
+import type { AnyType } from '@airlib/core';
 import '../../src/client/index.js';
 import { fireEvent, render } from '@solidjs/testing-library';
 import { describe, expect, it, vi } from 'vitest';
@@ -329,6 +330,64 @@ describe('Multi-Variant Code Groups', () => {
       expect(tabs[0].textContent).toBe('DOM Code In AST');
       expect(tabs[1].textContent).toBe('Tab 2');
       expect(tabs[2].textContent).toBe('Tab 3');
+    });
+  });
+
+  describe('Shared Group Synchronization', () => {
+    it('syncs active tab selection across code groups with identical group names', async () => {
+      const { mdxCtx } = await import('../../src/mdx/context.js');
+      mdxCtx.set({ store: {} as AnyType });
+
+      const { container } = render(() => (
+        <div>
+          <CodeGroup id="group-1" group="pkg-manager" title="Group 1 Title">
+            <pre>
+              <code data-title="pnpm" {...({ name: 'pnpm' } as AnyType)}>
+                pnpm add a
+              </code>
+            </pre>
+            <pre>
+              <code data-title="npm" {...({ name: 'npm' } as AnyType)}>
+                npm i a
+              </code>
+            </pre>
+          </CodeGroup>
+          <CodeGroup id="group-2" group="pkg-manager">
+            <pre>
+              <code data-title="pnpm" {...({ name: 'pnpm' } as AnyType)}>
+                pnpm add b
+              </code>
+            </pre>
+            <pre>
+              <code data-title="npm" {...({ name: 'npm' } as AnyType)}>
+                npm i b
+              </code>
+            </pre>
+          </CodeGroup>
+        </div>
+      ));
+
+      const groups = container.querySelectorAll('.air-mdx-codegroup');
+      const group1Tabs = groups[0].querySelectorAll('[role="tab"]');
+      const group2Tabs = groups[1].querySelectorAll('[role="tab"]');
+
+      expect(container.querySelector('.air-mdx-codegroup-title')?.textContent).toBe('Group 1 Title');
+      expect(group1Tabs[0].getAttribute('aria-selected')).toBe('true');
+      expect(group2Tabs[0].getAttribute('aria-selected')).toBe('true');
+
+      fireEvent.click(group1Tabs[1]);
+      await Promise.resolve();
+
+      expect(group1Tabs[1].getAttribute('aria-selected')).toBe('true');
+      expect(group2Tabs[1].getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('handles empty code group with group prop gracefully', async () => {
+      const { mdxCtx } = await import('../../src/mdx/context.js');
+      mdxCtx.set({ store: {} as AnyType });
+
+      const { container } = render(() => <CodeGroup group="pkg-manager" />);
+      expect(container.querySelector('.air-mdx-codegroup-tabs')).not.toBeNull();
     });
   });
 });
