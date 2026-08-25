@@ -13,7 +13,7 @@ export function createWorker<E = AnyType>(renderer: SSRRenderer, options: AppWor
   return {
     router: renderer.router,
     options,
-    async fetch(request: Request, env?: E, ssg?: boolean) {
+    async fetch(request: Request, env?: E, _signal?: AbortSignal, ssg?: boolean) {
       const {
         template = '',
         headTag = '<!--ssr-head-->',
@@ -114,7 +114,7 @@ export function createFullWorker<E = AnyType>(
   return {
     router: renderer.router,
     options,
-    async fetch(request: Request, env?: E, ssg?: boolean) {
+    async fetch(request: Request, env?: E, signal?: AbortSignal, ssg?: boolean) {
       const {
         template = '',
         headTag = '<!--ssr-head-->',
@@ -144,7 +144,7 @@ export function createFullWorker<E = AnyType>(
           request.method === 'POST' &&
           url.pathname.startsWith((router.transport as HTTPTransport).endpoint!)
         ) {
-          const response = await router.resolve(request, contextSeed);
+          const response = await router.resolve(request, contextSeed, undefined, signal);
           return createResponse(response);
         }
 
