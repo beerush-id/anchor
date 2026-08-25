@@ -81,9 +81,20 @@ export function setUUIDProvider(provider: UUIDProvider) {
  * Creates a unique index within the current scope.
 
  * @param name - The name of the unique index.
+ * @param scoped - Use the nearest index store.
  * @returns The next unique index value.
  */
-export const uIndex = (name: symbol) => {
+export const uIndex = (name: symbol, scoped?: boolean) => {
+  if (scoped) {
+    let store = getContext<{ value: number }>(name);
+    if (!store) {
+      store = { value: 0 };
+      setContext(name, store);
+    }
+    store.value += 1;
+    return store.value;
+  }
+
   let value = getContext<number>(name);
 
   if (typeof value !== 'number') {
