@@ -6,6 +6,7 @@ import type { Plugin } from 'vite';
 import { color, setLogLevel, taggedLogger } from '../logger.js';
 import { AIR_ENV, initEnv } from '../modules/env.js';
 import { META_STORE } from '../modules/metadata.js';
+import { canonicalPath } from '../utils/mapper.js';
 
 const log = taggedLogger('air-search');
 
@@ -187,7 +188,7 @@ function toSearchDocument(file: string, meta: Record<string, unknown>, content: 
   if (url === 'page') {
     url = '/';
   } else {
-    url = `/${url.replace(/\/page$/, '')}`;
+    url = canonicalPath(url.replace(/\/page$/, '')).replace(/\(|\)/g, '');
   }
 
   const clean = content
