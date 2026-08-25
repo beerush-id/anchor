@@ -1,6 +1,6 @@
 import type { PreloadMode } from '@airlib/router';
 import type { HTMLAttributes, ReactNode } from 'react';
-import { classx, render, Show, Snippet, setup } from '../index.js';
+import { classx, cookies, render, Show, Snippet, setup } from '../index.js';
 import { mdxCtx } from './context.js';
 import { Pagination } from './Pagination.js';
 import { type NavItem, Sidebar } from './Sidebar.js';
@@ -16,7 +16,8 @@ export interface LayoutProps extends HTMLAttributes<HTMLElement> {
 
 export const Layout = setup<LayoutProps>((props) => {
   const $restProps = props.$omit(['nav', 'children', 'disableTOC', 'disablePagination', 'className', 'preload']);
-  mdxCtx.set();
+  const store = cookies('mdx-store', { pm: 'bun', framework: 'react', runtime: 'bun' });
+  mdxCtx.set({ store });
 
   return render(
     () => (

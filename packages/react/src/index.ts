@@ -92,6 +92,7 @@ export {
   setCookieContext,
   setReactive,
   shortId,
+  sleep,
   snapshot,
   streamState,
   stringify,
