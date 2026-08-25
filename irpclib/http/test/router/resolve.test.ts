@@ -494,8 +494,12 @@ describe('HTTPRouter resolve (form/standard)', () => {
     const request = new Request('https://api.example.com/rpc', { method: 'POST', body: fd, signal: controller.signal });
     vi.spyOn(request, 'formData').mockResolvedValueOnce(fd);
 
-    const response = await router.resolve(request);
+    const response = await router.resolve(request, undefined, undefined, controller.signal);
     expect(response.status).toBe(200);
+
+    const nController = new AbortController();
+    const response2 = await router.resolve(request, undefined, undefined, nController.signal);
+    expect(response2.status).toBe(200);
   });
 
   it('should support resolveForm called directly with default parameters', async () => {
