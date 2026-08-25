@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inherit } from '../src/engine/proxy.js';
+import { inherit } from '../../src/engine/proxy.js';
 
 describe('Configuration Inheritance (inherit)', () => {
   type AppConfig = {

@@ -72,5 +72,19 @@ describe('uid', () => {
       });
       scope.destroy();
     });
+
+    it('should initialize and increment index sequence for symbol keys within a scope context', () => {
+      const scope = createLifecycle();
+      scope.run(() => {
+        const keyA = Symbol('uid-a');
+        const keyB = Symbol('uid-b');
+
+        expect(uIndex(keyA, true)).toBe(1);
+        expect(uIndex(keyA, true)).toBe(2);
+        expect(uIndex(keyB, true)).toBe(1);
+        expect(uIndex(keyA, true)).toBe(3);
+      });
+      scope.destroy();
+    });
   });
 });
