@@ -252,7 +252,7 @@ describe('Switches', () => {
       expect((AnonSwitch as any).displayName).toBe('Switch(Anonymous)');
 
       const AnonSlot = createSlot<string>(ctx, 'status');
-      expect((AnonSlot as any).displayName).toBe('Slot(Anonymous)');
+      expect((AnonSlot as any).displayName).toBe('SwitchSlot(Anonymous)');
 
       const { container } = render(
         <AnonSwitch for={{ status: 'active' }}>

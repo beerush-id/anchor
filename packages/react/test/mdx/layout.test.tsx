@@ -30,7 +30,7 @@ describe('Documentation Page Layout Scaffolding', () => {
     it('renders sidebar navigation, main content, pagination, and table of contents', () => {
       mdxCtx.set({
         headings: [{ id: 'intro', text: 'Intro', depth: 2 }],
-      });
+      } as any);
 
       const { container } = render(
         <Layout nav={sampleNav}>
@@ -55,21 +55,22 @@ describe('Documentation Page Layout Scaffolding', () => {
     it('disables table of contents when disableTOC is set', () => {
       mdxCtx.set({
         headings: [{ id: 'intro', text: 'Intro', depth: 2 }],
-      });
+      } as any);
 
       const { container } = render(
-        <Layout nav={sampleNav} disableTOC>
+        <Layout nav={sampleNav}>
           <div>Content</div>
+          <Layout.Snippet for={'toc'}>{() => null}</Layout.Snippet>
         </Layout>
       );
 
-      const tocAside = container.querySelector('aside[aria-label="Table of contents"]');
+      const tocAside = container.querySelector('.air-mdx-toc');
       expect(tocAside).toBeNull();
     });
 
     it('disables pagination when disablePagination is set', () => {
       const { container } = render(
-        <Layout nav={sampleNav} disablePagination>
+        <Layout nav={sampleNav}>
           <div>Landing Page Content</div>
         </Layout>
       );

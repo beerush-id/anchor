@@ -20,7 +20,7 @@ const DEFAULT_ICON = (
 );
 
 export const Interactive = setup<InteractiveProps>((props) => {
-  const $restProps = props.$omit(['title', 'icon', 'panel', 'children', 'className', 'id']);
+  const $restProps = props.$omit(['title', 'icon', 'panel', 'children', 'className', 'id', 'standalone']);
   const name = props.id ?? `air-interactive-${uIndex(INTERACTIVE_INDEX)}`;
   props.panel = props.panel ?? 'preview';
 
@@ -80,7 +80,11 @@ export const Interactive = setup<InteractiveProps>((props) => {
 
   return render(
     () => (
-      <div {...$restProps} id={props.id} className={classx('air-interactive', props.className)}>
+      <div
+        {...$restProps}
+        id={props.id}
+        className={classx('air-interactive', props.className, { 'air-interactive-standalone': props.standalone })}
+      >
         <InteractiveHeader />
         <div className="air-interactive-content">{props.children}</div>
       </div>

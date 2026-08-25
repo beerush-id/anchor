@@ -826,7 +826,7 @@
     background-color: var(--air-mdx-bg-inner);
     overflow: hidden;
 
-    &[standalone] .air-interactive-preview {
+    &.air-interactive-standalone .air-interactive-preview {
       display: block;
     }
   }
