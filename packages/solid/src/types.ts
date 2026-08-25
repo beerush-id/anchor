@@ -1,4 +1,74 @@
+import type { AnyType } from '@airlib/core';
 import type { Component, JSX } from 'solid-js';
+
+/**
+ * Collection of named slot renderers provided to a slotted component.
+ */
+export type ComponentSlots = Record<string, (...args: AnyType[]) => JSX.Element>;
+
+/**
+ * Component definition that consumes reactive props and slot renderers to produce view output.
+ *
+ * @template P Component props type
+ * @template S Available slot definitions
+ * @param props Component props
+ * @param snippets Named slot renderers
+ * @returns Rendered view
+ */
+export type ComponentWithSnippet<P, S extends ComponentSlots> = (
+  props: BindableComponentProps<P>,
+  snippets: S
+) => JSX.Element;
+
+/**
+ * Target slot identifier and renderer content passed when declaring a snippet.
+ *
+ * @template S Available slot definitions
+ */
+export type ComponentSnippetProps<S extends ComponentSlots> = {
+  [K in keyof S]: {
+    for: K;
+    children: S[K];
+  };
+}[keyof S];
+
+/**
+ * Slot container component used to declare and inject snippet content into matching component slots.
+ *
+ * @template S Available slot definitions
+ * @param props Snippet slot mapping and renderer
+ * @returns Rendered snippet content
+ */
+export type ComponentSnippet<S extends ComponentSlots> = (props: ComponentSnippetProps<S>) => JSX.Element;
+
+/**
+ * Reactive component supporting declarative slot injection through an attached Snippet component.
+ *
+ * @template P Component props type
+ * @template S Available slot definitions
+ */
+export interface SlottedComponent<P, S extends ComponentSlots> {
+  /**
+   * Render the component with reactive props.
+   *
+   * @param props Reactive component props
+   * @returns Rendered view
+   */
+  (props: BindableProps<P>): JSX.Element;
+
+  /**
+   * Component display name for debugging and profiling.
+   */
+  displayName?: string;
+
+  /**
+   * Slot container component used to declare and inject snippet content into matching component slots.
+   *
+   * @param props Snippet slot mapping and renderer
+   * @returns Rendered snippet content
+   */
+  Snippet: ComponentSnippet<S>;
+}
 
 export type StateRef<T> = {
   value: T;

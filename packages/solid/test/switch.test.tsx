@@ -3,7 +3,7 @@
 import { mutable } from '@airlib/core';
 import { render } from '@solidjs/testing-library';
 import { describe, expect, it } from 'vitest';
-import { Show, Snippet } from '../src/index.js';
+import { Show, Slot, Snippet } from '../src/index.js';
 
 describe('Show Component', () => {
   it('should conditionally render static children based on truthy condition', () => {
@@ -118,5 +118,24 @@ describe('Snippet Component', () => {
     state.name = 'Bob';
     expect(container.textContent).toContain('Name: Bob');
     expect(container.textContent).toContain('Age: 31');
+  });
+});
+
+describe('Slot Component', () => {
+  it('should render functional fallback Slot', () => {
+    const { container } = render(() => <Slot for={undefined as never}>{() => <span>Default</span>}</Slot>);
+    expect(container.textContent).toContain('Default');
+  });
+
+  it('should render slot function output when provided', () => {
+    const { container } = render(() => (
+      <Slot for={() => <span>Injected Function</span>}>{() => <span>Default</span>}</Slot>
+    ));
+    expect(container.textContent).toContain('Injected Function');
+  });
+
+  it('should render direct JSX element when provided', () => {
+    const { container } = render(() => <Slot for={<span>Injected Element</span>}>{() => <span>Default</span>}</Slot>);
+    expect(container.textContent).toContain('Injected Element');
   });
 });

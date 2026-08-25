@@ -5,7 +5,7 @@ import type { JSX } from 'solid-js';
 import { describe, expect, it, vi } from 'vitest';
 import { BindingRef } from '../../src/binding.js';
 import { bindable, setup } from '../../src/hoc.js';
-import { type BindableComponentProps, classx, getContext, setContext } from '../../src/index.js';
+import { type BindableComponentProps, classx, getContext, Slot, setContext } from '../../src/index.js';
 
 describe('Anchor Solid - HOC API', () => {
   describe('bindable', () => {
@@ -284,6 +284,74 @@ describe('Anchor Solid - HOC API', () => {
       const Comp = setup(() => <div>Direct</div>);
       const res = Comp({});
       expect(res).toBeDefined();
+    });
+
+    it('handles slotted components with snippets', () => {
+      type SlottedProps = { children?: JSX.Element };
+      type Slots = { header?: () => JSX.Element; footer?: () => JSX.Element };
+
+      const Card = setup<SlottedProps, Slots>((props, snippets) => {
+        return (
+          <div>
+            <div data-testid="header">
+              <Slot for={snippets.header?.()}>
+                <span>Default Header</span>
+              </Slot>
+            </div>
+            <div data-testid="body">{props.children}</div>
+            <div data-testid="footer">
+              <Slot for={snippets.footer?.()}>
+                <span>Default Footer</span>
+              </Slot>
+            </div>
+          </div>
+        );
+      });
+
+      const { getByTestId, unmount } = render(() => (
+        <Card>
+          <Card.Snippet for={'header'}>{() => <span>Custom Header</span>}</Card.Snippet>
+          <span>Body Content</span>
+        </Card>
+      ));
+
+      expect(getByTestId('header').textContent).toBe('Custom Header');
+      expect(getByTestId('body').textContent).toBe('Body Content');
+      expect(getByTestId('footer').textContent).toBe('Default Footer');
+      unmount();
+    });
+
+    it('handles snippet with function children and edge cases', () => {
+      type SlottedProps = { children?: JSX.Element | (() => JSX.Element) };
+      type Slots = { custom?: () => JSX.Element };
+
+      const Slotted = setup<SlottedProps, Slots>((props, snippets) => {
+        return (
+          <div>
+            <Slot for={snippets.custom?.()}>
+              <span>none</span>
+            </Slot>
+            {typeof props.children === 'function' ? (props.children as () => JSX.Element)() : props.children}
+          </div>
+        );
+      });
+
+      // Snippet without for or non-function children
+      const { container, unmount } = render(() => (
+        <Slotted>
+          {() => (
+            <>
+              <Slotted.Snippet for={undefined as never}>{() => <span>No For</span>}</Slotted.Snippet>
+              <Slotted.Snippet for={'custom'}>{'Not a function' as never}</Slotted.Snippet>
+              <span>Fallback Children</span>
+            </>
+          )}
+        </Slotted>
+      ));
+
+      expect(container.textContent).toContain('none');
+      expect(container.textContent).toContain('Fallback Children');
+      unmount();
     });
   });
 });

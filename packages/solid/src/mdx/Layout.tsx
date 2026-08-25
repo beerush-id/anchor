@@ -1,56 +1,60 @@
 import type { PreloadMode } from '@airlib/router';
+import { setup } from '../hoc.js';
 import { classx, cookies } from '../index.js';
-import { type JSX, splitProps } from '../solid.js';
-import { Show } from '../switch.js';
-import { mdxCtx } from './context.js';
+import type { JSX } from '../solid.js';
+import { Slot } from '../switch.js';
+import type { SlottedComponent } from '../types.js';
+import { type MdxContext, mdxCtx } from './context.js';
 import { Pagination } from './Pagination.js';
 import { type NavItem, Sidebar } from './Sidebar.js';
 import { TableOfContent } from './TableOfContent.js';
 
 export interface LayoutProps extends JSX.HTMLAttributes<HTMLElement> {
-  nav: NavItem[];
+  nav?: NavItem[];
   children?: JSX.Element;
-  disableTOC?: boolean;
-  disablePagination?: boolean;
   preload?: PreloadMode;
 }
 
-export function Layout(allProps: LayoutProps): JSX.Element {
-  const [props, restProps] = splitProps(allProps, [
-    'nav',
-    'children',
-    'disableTOC',
-    'disablePagination',
-    'class',
-    'preload',
-  ]);
+export type LayoutSlots = {
+  toc?: (ctx?: MdxContext) => JSX.Element;
+  sidebar?: (ctx?: MdxContext) => JSX.Element;
+  pagination?: (ctx?: MdxContext) => JSX.Element;
+};
+
+/**
+ * The main layout component for Extended Markdown.
+ *
+ * @return {SlottedComponent<LayoutProps, LayoutSlots>}
+ */
+export const Layout: SlottedComponent<LayoutProps, LayoutSlots> = setup<LayoutProps, LayoutSlots>((props, snippets) => {
+  const $restProps = props.$omit(['nav', 'children', 'class', 'preload']);
   const store = cookies('mdx-store', { pm: 'bun', framework: 'solid', runtime: 'bun' });
-  mdxCtx.set({ store });
+  const ctx = mdxCtx.set({ store });
 
   return (
-    <main {...restProps} class={classx('air-mdx air-mdx-container', props.class)}>
+    <main {...$restProps} class={classx('air-mdx air-mdx-container', props.class)}>
       <div class="air-mdx-layout">
         <aside class="air-mdx-aside-left" aria-label="Documentation navigation">
-          <Show when={props.nav}>
-            <Sidebar nav={props.nav} preload={props.preload} collapsible />
-          </Show>
+          <Slot for={snippets.sidebar?.(ctx)}>
+            <Sidebar nav={props.nav ?? []} preload={props.preload} />
+          </Slot>
         </aside>
 
         <div class="air-mdx-main">
           <div class="air-mdx-main-inner">
             {props.children}
-            <Show when={!props.disablePagination}>
-              <Pagination nav={props.nav} preload={props.preload} />
-            </Show>
+            <Slot for={snippets.pagination?.(ctx)}>
+              <Pagination nav={props.nav ?? []} preload={props.preload} />
+            </Slot>
           </div>
 
-          <Show when={!props.disableTOC}>
-            <aside class="air-mdx-aside-right" aria-label="Table of contents">
+          <aside class="air-mdx-aside-right" aria-label="Table of contents">
+            <Slot for={snippets.toc?.(ctx)}>
               <TableOfContent />
-            </aside>
-          </Show>
+            </Slot>
+          </aside>
         </div>
       </div>
     </main>
   );
-}
+}, 'Layout');

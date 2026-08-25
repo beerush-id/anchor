@@ -1,7 +1,21 @@
-import { $symbol, type AsyncKey, AsyncStore, CONTEXT_STORE, getContextStore } from '@airlib/core';
+import {
+  $symbol,
+  type AnyType,
+  type AsyncKey,
+  AsyncStore,
+  CONTEXT_STORE,
+  getContextStore,
+  isFunction,
+} from '@airlib/core';
 import { type Component, getOwner, type JSX, type Owner } from 'solid-js';
 import { proxyProps, setCurrentProps } from './props.js';
-import type { BindableComponentProps, BindableProps } from './types.js';
+import type {
+  BindableComponentProps,
+  BindableProps,
+  ComponentSlots,
+  ComponentWithSnippet,
+  SlottedComponent,
+} from './types.js';
 
 export type BindableComponent<P> = (props: P) => JSX.Element;
 
@@ -26,12 +40,26 @@ export function bindable<P extends Record<string, any>>(
 
 export const SETUP_NAME = $symbol('hoc-setup');
 export const STORE_SYMBOL = $symbol('hoc-store');
+const COMPONENT_SNIPPET_KEY = $symbol('component-snippet');
 
 type ContextOwner = Owner & {
   [SETUP_NAME]: string;
   [STORE_SYMBOL]: AsyncStore;
   owner?: ContextOwner;
 };
+
+/**
+ * Creates a bindable component with slot support that initializes a new {@link AsyncStore} in the current owner context.
+ *
+ * @param Component - The component with snippets to wrap.
+ * @param displayName - The display name of the component.
+ * @returns Slotted component.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: library
+export function setup<P extends Record<string, any>, S extends ComponentSlots>(
+  Component: ComponentWithSnippet<P, S>,
+  displayName?: string
+): SlottedComponent<P, S>;
 
 /**
  * Creates a bindable component that initializes a new {@link AsyncStore} in the current owner context.
@@ -44,6 +72,19 @@ type ContextOwner = Owner & {
 // biome-ignore lint/suspicious/noExplicitAny: library
 export function setup<P extends Record<string, any>>(
   Component: Component<BindableComponentProps<P>>,
+  displayName?: string
+): BindableComponent<BindableProps<P>>;
+
+/**
+ * Creates a bindable component that initializes a new {@link AsyncStore} in the current owner context.
+ *
+ * @param Component - The component to wrap.
+ * @param displayName - The display name of the component.
+ * @returns Bindable component.
+ */
+// biome-ignore lint/suspicious/noExplicitAny: library
+export function setup<P extends Record<string, any>, S extends ComponentSlots>(
+  Component: Component<BindableComponentProps<P>> | ComponentWithSnippet<P, S>,
   displayName?: string
 ): BindableComponent<BindableProps<P>> {
   const Setup = (props: BindableComponentProps<P>) => {
@@ -58,10 +99,35 @@ export function setup<P extends Record<string, any>>(
       self[SETUP_NAME] = name;
     }
 
-    return Component(bindableProps as never);
+    const slots = findSlots((props as AnyType).children);
+    return (Component as ComponentWithSnippet<P, S>)(bindableProps as never, slots as never);
   };
 
+  const SetupSlot = (props: AnyType) => {
+    return Object.assign(() => null, { [COMPONENT_SNIPPET_KEY]: true, props });
+  };
+  SetupSlot.displayName = `Snippet(${displayName || Component.name || 'Anonymous'})`;
+
+  Object.assign(SetupSlot, { [COMPONENT_SNIPPET_KEY]: true });
+  Object.assign(Setup, { Snippet: SetupSlot });
+
   return Setup as never;
+}
+
+function findSlots(children: unknown) {
+  if (!children) return {} as ComponentSlots;
+  const resolved = typeof children === 'function' ? (children as () => unknown)() : children;
+  const nodes = Array.isArray(resolved) ? resolved : [resolved];
+  const slots = {} as ComponentSlots;
+
+  for (const node of nodes.flat(Infinity).filter(Boolean)) {
+    const props = (node as AnyType)?.props;
+    if ((node as AnyType)?.[COMPONENT_SNIPPET_KEY] && props?.for && isFunction(props.children)) {
+      slots[props.for] = props.children;
+    }
+  }
+
+  return slots;
 }
 
 /**

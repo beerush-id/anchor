@@ -28,7 +28,11 @@ export const Interactive = setup<InteractiveProps>((props) => {
   props.panel = props.panel ?? 'preview';
 
   return (
-    <div {...$restProps} id={props.id} class={classx('air-interactive', props.class)}>
+    <div
+      {...$restProps}
+      id={props.id}
+      class={classx('air-interactive', props.class, { 'air-interactive-standalone': props.standalone })}
+    >
       <div class="air-interactive-header">
         <span class="air-interactive-controls" aria-hidden="true">
           <i />

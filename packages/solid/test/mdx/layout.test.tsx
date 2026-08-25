@@ -42,7 +42,7 @@ describe('Documentation Page Layout Scaffolding', () => {
           {(() => {
             mdxCtx.set({
               headings: [{ id: 'intro', text: 'Intro', depth: 2 }],
-            });
+            } as any);
             return (
               <article>
                 <h1>Getting Started</h1>
@@ -67,21 +67,36 @@ describe('Documentation Page Layout Scaffolding', () => {
     it('disables table of contents when disableTOC is set', () => {
       mdxCtx.set({
         headings: [{ id: 'intro', text: 'Intro', depth: 2 }],
-      });
+      } as any);
 
       const { container } = render(() => (
-        <Layout nav={sampleNav} disableTOC>
+        <Layout nav={sampleNav}>
           <div>Content</div>
+          <Layout.Snippet for={'toc'}>{() => null}</Layout.Snippet>
         </Layout>
       ));
 
-      const tocAside = container.querySelector('aside[aria-label="Table of contents"]');
+      const tocAside = container.querySelector('.air-mdx-toc');
+      expect(tocAside).toBeNull();
+    });
+
+    it('overrides default props and slots', () => {
+      const { container } = render(() => (
+        <Layout>
+          <div>Content</div>
+          <Layout.Snippet for={'sidebar'}>{() => <span>Injected Sidebar</span>}</Layout.Snippet>
+          <Layout.Snippet for={'pagination'}>{() => <span>Injected Pagination</span>}</Layout.Snippet>
+          <Layout.Snippet for={'toc'}>{() => <span>Injected TOC</span>}</Layout.Snippet>
+        </Layout>
+      ));
+
+      const tocAside = container.querySelector('.air-mdx-toc');
       expect(tocAside).toBeNull();
     });
 
     it('disables pagination when disablePagination is set', () => {
       const { container } = render(() => (
-        <Layout nav={sampleNav} disablePagination>
+        <Layout nav={sampleNav}>
           <div>Landing Page Content</div>
         </Layout>
       ));
@@ -114,7 +129,7 @@ describe('Documentation Page Layout Scaffolding', () => {
       expect(asideNav?.querySelector('.air-mdx-sidebar')).toBeNull();
     });
 
-    it('supports explicit disableTOC=false, disablePagination=false, and preload prop', () => {
+    it('supports explicit preload prop', () => {
       const router = createRouter<JSX.Element>();
       const route1 = router.route('/docs/intro');
       (route1 as any).active = true;
@@ -126,7 +141,7 @@ describe('Documentation Page Layout Scaffolding', () => {
 
       const { container } = render(() => (
         <UIRouter router={router}>
-          <Layout nav={navWithRoute} disableTOC={false} disablePagination={false} preload="hover">
+          <Layout nav={navWithRoute} preload="hover">
             <div>Page</div>
           </Layout>
         </UIRouter>
@@ -146,21 +161,6 @@ describe('Documentation Page Layout Scaffolding', () => {
     it('renders correctly when children prop is omitted', () => {
       const { container } = render(() => <Layout nav={sampleNav} />);
       expect(container.querySelector('.air-mdx-main-inner')).not.toBeNull();
-    });
-
-    it('disables both pagination and TOC simultaneously when flags are true', () => {
-      mdxCtx.set({
-        headings: [{ id: 'intro', text: 'Intro', depth: 2 }],
-      });
-
-      const { container } = render(() => (
-        <Layout nav={sampleNav} disableTOC disablePagination>
-          <div>Only Content</div>
-        </Layout>
-      ));
-
-      expect(container.querySelector('aside[aria-label="Table of contents"]')).toBeNull();
-      expect(container.querySelector('.air-mdx-pagination')).toBeNull();
     });
   });
 });

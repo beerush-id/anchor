@@ -58,3 +58,28 @@ export function Snippet<T extends Record<string | symbol, AnyType>>(props: Snipp
 
   return props.children(dataProxy as T);
 }
+
+export type SlotProps = {
+  for: JSX.Element | (() => JSX.Element);
+  children?: JSX.Element | (() => JSX.Element);
+};
+
+/**
+ * Renders content based on a slot function or expression.
+ *
+ * @param props.for - The slot content or function to render.
+ * @param props.children - Optional content to render if no slot content is provided.
+ * @returns The rendered content from the slot function or children.
+ */
+export function Slot(props: SlotProps): JSX.Element {
+  const content = createMemo(() => (typeof props.for === 'function' ? (props.for as () => JSX.Element)() : props.for));
+
+  return createMemo(() => {
+    const value = content();
+    if (value !== undefined && value !== null) {
+      return value;
+    }
+    const fallback = props.children;
+    return typeof fallback === 'function' ? (fallback as () => JSX.Element)() : fallback;
+  }) as unknown as JSX.Element;
+}
