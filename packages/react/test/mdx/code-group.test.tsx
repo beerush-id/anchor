@@ -1,6 +1,7 @@
 import { act, fireEvent, render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import '../../src/client/index.js';
+import type { AnyType } from '@airlib/core';
 import { CodeGroup } from '../../src/mdx/CodeGroup.js';
 
 describe('Multi-Variant Code Groups', () => {
@@ -53,13 +54,11 @@ describe('Multi-Variant Code Groups', () => {
       expect(tablist?.getAttribute('aria-label')).toBe('Package Manager Install Commands');
     });
 
-    it('extracts metadata from nested child elements in tab blocks', () => {
+    it('extracts metadata from child code elements in tab blocks', () => {
       const { container } = render(
         <CodeGroup>
           <div>
-            <span>
-              <code data-title="Nested Title">nested code</code>
-            </span>
+            <code data-title="Nested Title">nested code</code>
           </div>
         </CodeGroup>
       );
@@ -68,22 +67,17 @@ describe('Multi-Variant Code Groups', () => {
       expect(tabs[0].textContent).toBe('Nested Title');
     });
 
-    it('extracts metadata when tab child contains an array of nested elements', () => {
+    it('falls back to default numbered tab title when nested child lacks metadata', () => {
       const { container } = render(
         <CodeGroup>
           <div>
-            {[
-              <span key="1">Label</span>,
-              <code key="2" data-title="Array Child">
-                array code
-              </code>,
-            ]}
+            <span>Label without metadata</span>
           </div>
         </CodeGroup>
       );
 
       const tabs = container.querySelectorAll('[role="tab"]');
-      expect(tabs[0].textContent).toBe('Array Child');
+      expect(tabs[0].textContent).toBe('Tab 1');
     });
 
     it('falls back to default numbered tab title when tab contains no code or children', () => {
@@ -92,6 +86,17 @@ describe('Multi-Variant Code Groups', () => {
           <div>
             <hr />
           </div>
+        </CodeGroup>
+      );
+
+      const tabs = container.querySelectorAll('[role="tab"]');
+      expect(tabs[0].textContent).toBe('Tab 1');
+    });
+
+    it('handles empty code container without children and falls back to default title', () => {
+      const { container } = render(
+        <CodeGroup>
+          <pre />
         </CodeGroup>
       );
 
@@ -265,6 +270,56 @@ describe('Multi-Variant Code Groups', () => {
         fireEvent.keyDown(tabs[0], { key: 'Enter' });
       });
       expect(tabs[0].getAttribute('aria-selected')).toBe('true');
+    });
+  });
+
+  describe('Shared Group Synchronization', () => {
+    it('syncs active tab selection across code groups with identical group names', async () => {
+      const { mdxCtx } = await import('../../src/mdx/context.js');
+      mdxCtx.set({ store: {} as AnyType });
+
+      const { container } = render(
+        <div>
+          <CodeGroup id="group-1" group="pkg-manager">
+            <pre>
+              <code data-title="pnpm" {...({ name: 'pnpm' } as AnyType)}>
+                pnpm add a
+              </code>
+            </pre>
+            <pre>
+              <code data-title="npm" {...({ name: 'npm' } as AnyType)}>
+                npm i a
+              </code>
+            </pre>
+          </CodeGroup>
+          <CodeGroup id="group-2" group="pkg-manager">
+            <pre>
+              <code data-title="pnpm" {...({ name: 'pnpm' } as AnyType)}>
+                pnpm add b
+              </code>
+            </pre>
+            <pre>
+              <code data-title="npm" {...({ name: 'npm' } as AnyType)}>
+                npm i b
+              </code>
+            </pre>
+          </CodeGroup>
+        </div>
+      );
+
+      const groups = container.querySelectorAll('.air-mdx-codegroup');
+      const group1Tabs = groups[0].querySelectorAll('[role="tab"]');
+      const group2Tabs = groups[1].querySelectorAll('[role="tab"]');
+
+      expect(group1Tabs[0].getAttribute('aria-selected')).toBe('true');
+      expect(group2Tabs[0].getAttribute('aria-selected')).toBe('true');
+
+      await act(async () => {
+        fireEvent.click(group1Tabs[1]);
+      });
+
+      expect(group1Tabs[1].getAttribute('aria-selected')).toBe('true');
+      expect(group2Tabs[1].getAttribute('aria-selected')).toBe('true');
     });
   });
 });

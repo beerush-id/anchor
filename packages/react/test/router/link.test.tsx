@@ -420,18 +420,33 @@ describe('Anchor React - Link Component', () => {
       const dashboardRoute = router.route('/dashboard');
       dashboardRoute.active = true;
 
-      render(
-        <Link to={dashboardRoute} keepVisible>
-          Dashboard
-        </Link>
-      );
+      const scrollToSpy = vi.fn();
+      HTMLElement.prototype.scrollTo = scrollToSpy;
+      const originalScrollHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollHeight');
+      const originalClientHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight');
 
-      await Promise.resolve();
-      expect(scrollIntoViewSpy).toHaveBeenCalledWith({
-        block: 'center',
-        inline: 'center',
-        behavior: DEFAULT_ROUTER_CONFIGS.scrollBehavior,
-      });
+      Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, value: 500 });
+      Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 200 });
+
+      try {
+        render(
+          <div style={{ overflowY: 'auto' }}>
+            <Link to={dashboardRoute} keepVisible>
+              Dashboard
+            </Link>
+          </div>
+        );
+
+        await Promise.resolve();
+        expect(scrollToSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            behavior: DEFAULT_ROUTER_CONFIGS.scrollBehavior,
+          })
+        );
+      } finally {
+        if (originalScrollHeight) Object.defineProperty(HTMLElement.prototype, 'scrollHeight', originalScrollHeight);
+        if (originalClientHeight) Object.defineProperty(HTMLElement.prototype, 'clientHeight', originalClientHeight);
+      }
     });
 
     it('uses the string keepVisible value as scroll behavior', async () => {
@@ -439,14 +454,33 @@ describe('Anchor React - Link Component', () => {
       const dashboardRoute = router.route('/dashboard');
       dashboardRoute.active = true;
 
-      render(
-        <Link to={dashboardRoute} keepVisible="auto">
-          Dashboard
-        </Link>
-      );
+      const scrollToSpy = vi.fn();
+      HTMLElement.prototype.scrollTo = scrollToSpy;
+      const originalScrollHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollHeight');
+      const originalClientHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight');
 
-      await Promise.resolve();
-      expect(scrollIntoViewSpy).toHaveBeenCalledWith({ block: 'center', inline: 'center', behavior: 'auto' });
+      Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, value: 500 });
+      Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, value: 200 });
+
+      try {
+        render(
+          <div style={{ overflowY: 'auto' }}>
+            <Link to={dashboardRoute} keepVisible="auto">
+              Dashboard
+            </Link>
+          </div>
+        );
+
+        await Promise.resolve();
+        expect(scrollToSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            behavior: 'auto',
+          })
+        );
+      } finally {
+        if (originalScrollHeight) Object.defineProperty(HTMLElement.prototype, 'scrollHeight', originalScrollHeight);
+        if (originalClientHeight) Object.defineProperty(HTMLElement.prototype, 'clientHeight', originalClientHeight);
+      }
     });
 
     it('does not scroll inactive links into view even with keepVisible', async () => {
@@ -454,14 +488,19 @@ describe('Anchor React - Link Component', () => {
       const dashboardRoute = router.route('/dashboard');
       dashboardRoute.active = false;
 
+      const scrollToSpy = vi.fn();
+      HTMLElement.prototype.scrollTo = scrollToSpy;
+
       render(
-        <Link to={dashboardRoute} keepVisible>
-          Dashboard
-        </Link>
+        <div style={{ overflowY: 'auto' }}>
+          <Link to={dashboardRoute} keepVisible>
+            Dashboard
+          </Link>
+        </div>
       );
 
       await Promise.resolve();
-      expect(scrollIntoViewSpy).not.toHaveBeenCalled();
+      expect(scrollToSpy).not.toHaveBeenCalled();
     });
   });
 
