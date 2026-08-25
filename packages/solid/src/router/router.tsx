@@ -270,7 +270,16 @@ const createRenderer = <TPath, TParams, TQueryParams, TData, PParams, PQuery, PD
   return setup((props) => {
     setContext(ROUTE_CTX, route.state);
     return renderer(props as never) as never;
-  }, `Route(${route.path})`) as RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>;
+  }, `Route(${route.path})`) as unknown as RouteRenderer<
+    TPath,
+    TParams,
+    TQueryParams,
+    TData,
+    PParams,
+    PQuery,
+    PData,
+    TOutput
+  >;
 };
 
 const createExceptionRenderer = <TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>(
@@ -280,7 +289,7 @@ const createExceptionRenderer = <TParams, TQueryParams, TData, PParams, PQuery, 
   return setup((props) => {
     setContext(ROUTE_CTX, route.state);
     return renderer(props as never) as never;
-  }, `Exception(${route.path})`) as RouteExceptionRenderer<
+  }, `Exception(${route.path})`) as unknown as RouteExceptionRenderer<
     TParams,
     TQueryParams,
     TData,
