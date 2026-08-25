@@ -1,6 +1,5 @@
-/* @ts-expect-error */
 import fs from 'node:fs/promises';
-import { safeRun, sleep } from '@airlib/core';
+import { type AnyType, safeRun, sleep } from '@airlib/core';
 import { createRouter } from '@airlib/router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
@@ -8,9 +7,9 @@ import {
   createWorker,
   deferScript,
   SSR_ENV_KEY,
+  ssrEnv,
   type SSROutput,
   type SSRRenderer,
-  ssrEnv,
 } from '../src/index.js';
 
 function createMockRenderer(output?: Partial<SSROutput>): SSRRenderer {
@@ -436,7 +435,7 @@ describe('createWorker', () => {
       },
     });
 
-    const response = await worker.fetch(createRequest('http://localhost/style.css'), undefined, true);
+    const response = await worker.fetch(createRequest('http://localhost/style.css'), undefined, undefined, true);
 
     expect(response.status).toBe(200);
     expect(renderer).toHaveBeenCalled();
@@ -637,7 +636,7 @@ describe('createFullWorker', () => {
       })
     );
 
-    expect(router.resolve).toHaveBeenCalledWith(expect.any(Request), customContext);
+    expect(router.resolve).toHaveBeenCalledWith(expect.any(Request), customContext, undefined, undefined);
   });
 
   it('resolves assets before SSR in full worker', async () => {
@@ -831,7 +830,7 @@ describe('createFullWorker', () => {
       },
     });
 
-    const response = await worker.fetch(createRequest('http://localhost/style.css'), undefined, true);
+    const response = await worker.fetch(createRequest('http://localhost/style.css'), undefined, undefined, true);
     expect(response.status).toBe(200);
     expect(renderer).toHaveBeenCalled();
     expect(router.isolate).toHaveBeenCalled();
@@ -896,6 +895,7 @@ describe('createFullWorker', () => {
       const router = createMockRouter();
       const wsRouter = {
         resolve: vi.fn(async () => {}),
+        disconnect: vi.fn(),
       };
 
       const customContext: [string | symbol, unknown][] = [['auth', 'test-user']];
@@ -923,6 +923,7 @@ describe('createFullWorker', () => {
         [SSR_ENV_KEY, env],
         ['cookie', 'session=xyz'],
       ]);
+      (resolve as AnyType).close();
     });
 
     it('returns a resolver function with default context if resolveContext is undefined and no cookie is provided', async () => {
