@@ -68,6 +68,22 @@ describe('Documentation Page Layout Scaffolding', () => {
       expect(tocAside).toBeNull();
     });
 
+    it('overrides default props and slots', () => {
+      const { container } = render(
+        <Layout>
+          <>
+            <div>Content</div>
+            <Layout.Snippet for={'sidebar'}>{() => <span>Injected Sidebar</span>}</Layout.Snippet>
+            <Layout.Snippet for={'pagination'}>{() => <span>Injected Pagination</span>}</Layout.Snippet>
+            <Layout.Snippet for={'toc'}>{() => <span>Injected TOC</span>}</Layout.Snippet>
+          </>
+        </Layout>
+      );
+
+      const tocAside = container.querySelector('.air-mdx-toc');
+      expect(tocAside).toBeNull();
+    });
+
     it('disables pagination when disablePagination is set', () => {
       const { container } = render(
         <Layout nav={sampleNav}>

@@ -2,7 +2,7 @@ import { act, render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import '../src/client/index';
 import { mutable } from '@airlib/core';
-import { $use, createSlot, createSwitch, For, Show, Snippet, stubScheduler } from '../src/index.js';
+import { $use, createSlot, createSwitch, For, Show, Slot, Snippet, stubScheduler } from '../src/index.js';
 
 stubScheduler();
 
@@ -244,6 +244,11 @@ describe('Switches', () => {
       const { container } = render(<Snippet data={{ name: 'Alice' }}>{'' as never}</Snippet>);
 
       expect(container.textContent).toContain('[Snippet Error: Snippet must pass function as the children]');
+    });
+
+    it('should render functional fallback Slot', () => {
+      const { container } = render(<Slot for={undefined as never}>{() => <span>Default</span>}</Slot>);
+      expect(container.textContent).toContain('Default');
     });
 
     it('should use default displayName and scopeName when omitted', () => {
