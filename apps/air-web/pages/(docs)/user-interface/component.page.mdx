@@ -738,6 +738,292 @@ Building a **dynamic structure** from configuration, then managing **two-way int
 - **SolidJS:** **`Index`** renders a fixed list **without re-creating DOM nodes**; only `classList` bindings update reactively
   :::
 
+## Component Slots
+
+A component often needs to allow consumers to customize specific regions of its layout without relinquishing control over structural hierarchy and styling. Passing JSX elements as individual props creates awkward prop drilling and bloats component signatures. Named slots solve this by letting components define distinct placeholders that consumers populate declaratively.
+
+### Defining Slots
+
+A slotted component declares its available slot renderers through its second type parameter and receives `snippets` as the second argument in `setup()`. Placeholders are rendered using `<Slot>` with optional fallback content.
+
+:::code-group
+
+```tsx [React]
+import { setup, render, Slot, Snippet } from '@airlib/react';
+import type { ReactNode } from 'react';
+import { Sidebar } from './Sidebar.js';
+import { TableOfContent } from './TableOfContent.js';
+
+export type LayoutProps = {
+  children?: ReactNode;
+};
+
+export type LayoutSlots = {
+  sidebar?: () => ReactNode;
+  toc?: () => ReactNode;
+};
+
+export const Layout = setup<LayoutProps, LayoutSlots>((props, snippets) => {
+  return render(() => (
+    <div className="layout">
+      <aside className="layout-sidebar">
+        <Slot for={() => snippets.sidebar?.()}>
+          <Sidebar />
+        </Slot>
+      </aside>
+
+      <main className="layout-content">
+        <Snippet>{() => props.children}</Snippet>
+      </main>
+
+      <aside className="layout-toc">
+        <Slot for={() => snippets.toc?.()}>
+          <TableOfContent />
+        </Slot>
+      </aside>
+    </div>
+  ));
+});
+```
+
+```tsx [SolidJS]
+import { setup, Slot } from '@airlib/solid';
+import type { JSX } from 'solid-js';
+import { Sidebar } from './Sidebar.js';
+import { TableOfContent } from './TableOfContent.js';
+
+export type LayoutProps = {
+  children?: JSX.Element;
+};
+
+export type LayoutSlots = {
+  sidebar?: () => JSX.Element;
+  toc?: () => JSX.Element;
+};
+
+export const Layout = setup<LayoutProps, LayoutSlots>((props, snippets) => {
+  return (
+    <div class="layout">
+      <aside class="layout-sidebar">
+        <Slot for={snippets.sidebar?.()}>
+          <Sidebar />
+        </Slot>
+      </aside>
+
+      <main class="layout-content">
+        {props.children}
+      </main>
+
+      <aside class="layout-toc">
+        <Slot for={snippets.toc?.()}>
+          <TableOfContent />
+        </Slot>
+      </aside>
+    </div>
+  );
+});
+```
+
+:::
+
+:::details[What you learned]
+
+Declaring slot signatures on a component and providing default fallback views.
+
+**From these two examples, you know:**
+
+- **`setup<Props, Slots>()`** infers the slotted component type and attaches the static **`.Snippet`** component automatically
+- `snippets` contains the typed slot functions ready for consumption inside the component
+- **`<Slot for={() => snippets.name?.()}>`** renders the injected snippet if provided, or falls back to its own children
+- Standard child elements remain accessible via `props.children`
+:::
+
+### Populating Slots
+
+Consumers inject custom content into specific slots by declaring `<Component.Snippet>` elements as direct children of the component.
+
+:::code-group
+
+```tsx [React]
+import { Layout } from './Layout.js';
+import { DocsSelector } from './DocsSelector.js';
+import { Sidebar } from './Sidebar.js';
+
+export function DocsPage({ children }) {
+  return (
+    <Layout>
+      <Layout.Snippet for="sidebar">
+        {() => (
+          <>
+            <div className="docs-selectors">
+              <DocsSelector name="framework" label="Framework" />
+              <DocsSelector name="pm" label="Package Manager" />
+            </div>
+            <Sidebar collapsible />
+          </>
+        )}
+      </Layout.Snippet>
+
+      {children}
+    </Layout>
+  );
+}
+```
+
+```tsx [SolidJS]
+import { Layout } from './Layout.js';
+import { DocsSelector } from './DocsSelector.js';
+import { Sidebar } from './Sidebar.js';
+
+export function DocsPage(props) {
+  return (
+    <Layout>
+      <Layout.Snippet for="sidebar">
+        {() => (
+          <>
+            <div class="docs-selectors">
+              <DocsSelector name="framework" label="Framework" />
+              <DocsSelector name="pm" label="Package Manager" />
+            </div>
+            <Sidebar collapsible />
+          </>
+        )}
+      </Layout.Snippet>
+
+      {props.children}
+    </Layout>
+  );
+}
+```
+
+:::
+
+:::details[What you learned]
+
+Injecting slot content declaratively into component layouts.
+
+**From these two examples, you know:**
+
+- **`<Component.Snippet>`** must be a direct child of `<Component>` (or wrapped inside a Fragment) so the parent component can discover and collect the named slots
+- The `for` attribute specifies which slot target receives the snippet content
+- Snippet content is provided as a render function returning JSX
+:::
+
+### Contextual Slots
+
+Slots can pass runtime context and state to the snippet renderer, enabling scoped customization based on component internals.
+
+:::code-group
+
+```tsx [React]
+import { setup, render, Slot, Snippet, mutable } from '@airlib/react';
+import type { ReactNode } from 'react';
+
+export type CollapsibleProps = {
+  title: string;
+  children?: ReactNode;
+};
+
+export type CollapsibleSlots = {
+  header?: (state: { expanded: boolean }) => ReactNode;
+};
+
+export const Collapsible = setup<CollapsibleProps, CollapsibleSlots>(
+  (props, snippets) => {
+    const state = mutable({ expanded: false });
+    const toggle = () => { state.expanded = !state.expanded; };
+
+    return render(() => (
+      <div className="collapsible">
+        <div className="collapsible-header" onClick={toggle}>
+          <Slot for={() => snippets.header?.({ expanded: state.expanded })}>
+            <span>{props.title} {state.expanded ? '▲' : '▼'}</span>
+          </Slot>
+        </div>
+        {state.expanded && <div className="collapsible-body"><Snippet>{() => props.children}</Snippet></div>}
+      </div>
+    ));
+  }
+);
+```
+
+```tsx [SolidJS]
+import { setup, Slot, mutable } from '@airlib/solid';
+import type { JSX } from 'solid-js';
+
+export type CollapsibleProps = {
+  title: string;
+  children?: JSX.Element;
+};
+
+export type CollapsibleSlots = {
+  header?: (state: { expanded: boolean }) => JSX.Element;
+};
+
+export const Collapsible = setup<CollapsibleProps, CollapsibleSlots>(
+  (props, snippets) => {
+    const state = mutable({ expanded: false });
+    const toggle = () => { state.expanded = !state.expanded; };
+
+    return (
+      <div class="collapsible">
+        <div class="collapsible-header" onClick={toggle}>
+          <Slot for={snippets.header?.({ expanded: state.expanded })}>
+            <span>{props.title} {state.expanded ? '▲' : '▼'}</span>
+          </Slot>
+        </div>
+        {state.expanded && <div class="collapsible-body">{props.children}</div>}
+      </div>
+    );
+  }
+);
+```
+
+:::
+
+:::code-group
+
+```tsx [React]
+<Collapsible title="Advanced Settings">
+  <Collapsible.Snippet for="header">
+    {({ expanded }) => (
+      <button className={expanded ? 'active' : 'idle'}>
+        {expanded ? 'Hide Advanced Options' : 'Show Advanced Options'}
+      </button>
+    )}
+  </Collapsible.Snippet>
+
+  <AdvancedForm />
+</Collapsible>
+```
+
+```tsx [SolidJS]
+<Collapsible title="Advanced Settings">
+  <Collapsible.Snippet for="header">
+    {({ expanded }) => (
+      <button class={expanded ? 'active' : 'idle'}>
+        {expanded ? 'Hide Advanced Options' : 'Show Advanced Options'}
+      </button>
+    )}
+  </Collapsible.Snippet>
+
+  <AdvancedForm />
+</Collapsible>
+```
+
+:::
+
+:::details[What you learned]
+
+Passing contextual data from the component into custom slot renderers.
+
+**From these two examples, you know:**
+
+- Slot functions can accept arguments, allowing the component to provide state or context to the snippet
+- Consumers receive the provided arguments inside the render function of `<Component.Snippet>`
+- The component maintains ownership of state while delegating visual presentation to the consumer
+:::
+
 ## Calling Remote Functions
 
 IRPC functions are declared on the server and called on the client like local functions. How you call them determines **when** they execute and **whether** they react to changes.

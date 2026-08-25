@@ -1,5 +1,6 @@
 import { Link, NotFoundError, page } from '@airlib/react';
-import { Layout } from '@airlib/react/mdx';
+import { Layout, Sidebar } from '@airlib/react/mdx';
+import { DocsSelector } from '@/components/DocsSelector.js';
 import Header from '@/components/Header.js';
 import { RouterProgress } from '@/components/RouterProgress.js';
 import { Search } from '@/components/Search.js';
@@ -7,6 +8,18 @@ import { navs } from './nav.js';
 import docsRoute from './route.js';
 
 import './docs.css';
+
+const frameworkOptions = [
+  { value: 'react', label: 'React' },
+  { value: 'solid', label: 'SolidJS' },
+];
+
+const pmOptions = [
+  { value: 'bun', label: 'Bun' },
+  { value: 'npm', label: 'NPM' },
+  { value: 'pnpm', label: 'PNPM' },
+  { value: 'yarn', label: 'Yarn' },
+];
 
 docsRoute.catch(({ error }) => {
   const status = error instanceof NotFoundError ? 404 : 500;
@@ -30,6 +43,19 @@ export default page(docsRoute).render(({ children }) => (
     <Header>
       <Search />
     </Header>
-    <Layout nav={navs}>{children}</Layout>
+    <Layout nav={navs}>
+      <Layout.Snippet for={'sidebar'}>
+        {() => (
+          <>
+            <div className="docs-selectors">
+              <DocsSelector name="framework" label="Framework" icon="framework" options={frameworkOptions} />
+              <DocsSelector name="pm" label="Package Manager" icon="pm" options={pmOptions} />
+            </div>
+            <Sidebar nav={navs} collapsible />
+          </>
+        )}
+      </Layout.Snippet>
+      {children}
+    </Layout>
   </>
 ));

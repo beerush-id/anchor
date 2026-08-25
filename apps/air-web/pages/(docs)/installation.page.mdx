@@ -156,7 +156,7 @@ npx wrangler deploy
 
 If adding AirLib to an existing Vite application, follow these steps to install the packages and wire the universal entries:
 
-### 1. Install Dependencies
+### Install Dependencies
 
 :::code-group{group="framework"}
 
@@ -178,7 +178,7 @@ npm install -D @airlib/vite vite-plugin-solid typescript vite
 Standard RPC procedures and real-time streaming work over `@irpclib/http` out of the box. If your application specifically requires bidirectional stateful WebSockets, you can also install `@irpclib/ws`.
 :::
 
-### 2. Create the HTML Shell
+### Create the HTML Shell
 
 Every page renders into `index.html`. Two comment markers designate where the server injects the document head and the rendered outlet:
 
@@ -197,7 +197,7 @@ Every page renders into `index.html`. Two comment markers designate where the se
 </html>
 ```
 
-### 3. Create the Router
+### Create the Router
 
 Create `src/router.ts` to initialize the root router instance:
 
@@ -225,7 +225,7 @@ export default router;
 A folder defines a URL. `airPages()` watches your `pages/` directory and generates a `route.ts` per folder — `pages/route.ts` exports the `rootRoute` and `indexRoute` your layout and page import.
 :::
 
-### 4. Create the App Entry
+### Create the App Entry
 
 Create `src/app.tsx` to render the root layout with the router:
 
@@ -255,7 +255,7 @@ export default (({ url }) => (
 
 :::
 
-### 5. Create the Client Hydration Entry
+### Create the Client Hydration Entry
 
 Create `src/client.tsx` to hydrate the app in the browser:
 
@@ -291,7 +291,7 @@ router.activate(window.location.href).then(() => {
 
 :::
 
-### 6. Create the SSR Worker Entry
+### Create the SSR Worker Entry
 
 Create `src/worker.ts` to export the universal request handler:
 
@@ -317,7 +317,7 @@ export default createApp(router, App);
 
 :::
 
-### 7. Configure Vite
+### Configure Vite
 
 Add `airPages()` to your `vite.config.ts`:
 
@@ -347,7 +347,7 @@ export default defineConfig({
 
 :::
 
-### 8. Add Package Scripts
+### Add Package Scripts
 
 Add standard build and dev scripts to your `package.json`:
 
@@ -367,6 +367,9 @@ Add standard build and dev scripts to your `package.json`:
 
 Now that your project is ready, explore the core concepts:
 
-- [Getting Started](/docs/getting-started) — Build your first reactive feature end-to-end.
-- [State Management](/docs/state-management) — Master mutable proxies, signals, and derived state.
-- [Routing](/docs/routing) — Learn file-based routes, loaders, and slave routes.
+- **[Getting Started](/docs/getting-started)** — Step-by-step tutorial building a full reactive application end-to-end.
+- **[Routing](/docs/routing)** — File-based routes, navigation guards, async data loaders, and nested layouts.
+- **[Remote Functions](/docs/remote-function)** — End-to-end type-safe RPC, real-time streaming, and transports.
+- **[State Management](/docs/state-management)** — Granular reactivity, mutable state proxies, signals, and derived state.
+- **[User Interface](/docs/user-interface)** — Live browser observables, responsive image optimization, and reactive components.
+- **[AirLib Form](/docs/form)** — Declarative form state management, automated validation, and schema integrations.
