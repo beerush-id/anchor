@@ -17,7 +17,7 @@ import { hashBlock } from '../utils/hash.js';
 import { wrapJsx } from '../utils/jsx.js';
 import { createMatcher } from '../utils/matcher.js';
 import { AIR_ENV, type FileMap, type Framework } from './env.js';
-import { getAirTransformers, getHighlighterSingleton } from './highlight.js';
+import { getAirTransformers, getHighlighterSingleton, getNodeTitle } from './highlight.js';
 import { META_STORE } from './metadata.js';
 import type { RouteResolution } from './route-store.js';
 
@@ -152,19 +152,21 @@ export class MdxModule {
     const started = performance.now();
 
     const hash = hashBlock(code);
-    const cache = MDX_CACHE.get(this.id);
-
-    if (cache && cache.hash === hash) {
-      this.locals = cache.locals;
-      this.globals = cache.globals;
-      this.headings = cache.headings;
-      this.metadata = META_STORE.resolve(this.id, code);
-      log.debug(color.event('Loaded cache for'), color.file(relToPages(this.id)));
-      return;
-    }
 
     if (this.options.cacheDir) {
+      const cache = MDX_CACHE.get(this.id);
+
+      if (cache && cache.hash === hash) {
+        this.locals = cache.locals;
+        this.globals = cache.globals;
+        this.headings = cache.headings;
+        this.metadata = META_STORE.resolve(this.id, code);
+        log.debug(color.event('Loaded cache for'), color.file(relToPages(this.id)));
+        return;
+      }
+
       const cachePath = getMdxCachePath(this.id, this.options.cacheDir);
+
       try {
         const content = await fs.promises.readFile(cachePath, 'utf-8');
         const data = JSON.parse(content) as MdxCache;
@@ -208,7 +210,7 @@ export class MdxModule {
     if (this.extended) {
       const compSource = `@airlib/${AIR_ENV.framework}/mdx`;
       this.globals.push(
-        `import { CodeGroup as AirCodeGroup, CodeBlock as AirCodeBlock, Admonition as AirAdmonition, Badge as AirBadge } from '${compSource}';`
+        `import { CodeGroup as AirCodeGroup, CodeBlock as AirCodeBlock, Admonition as AirAdmonition, Badge as AirBadge, Interactive as AirInteractive } from '${compSource}';`
       );
       log.verbose(color.event('Injected'), 'mdx component imports');
     }
@@ -260,16 +262,15 @@ export class MdxModule {
       color.timing(`${Math.round(performance.now() - started)}ms`)
     );
 
-    const cacheData: MdxCache = {
-      hash,
-      locals: this.locals,
-      globals: this.globals,
-      headings: this.headings,
-    };
-
-    MDX_CACHE.set(this.id, cacheData);
-
     if (this.options.cacheDir) {
+      const cacheData: MdxCache = {
+        hash,
+        locals: this.locals,
+        globals: this.globals,
+        headings: this.headings,
+      };
+      MDX_CACHE.set(this.id, cacheData);
+
       const cachePath = getMdxCachePath(this.id, this.options.cacheDir);
       try {
         await fs.promises.mkdir(path.dirname(cachePath), { recursive: true });
@@ -552,27 +553,38 @@ const ADMONITION_TYPES = new Set(['note', 'tip', 'info', 'warning', 'danger', 'i
 export function airMdxRemark(module?: MdxModule) {
   return (tree: MarkdownNode) => {
     visit(tree, (node: MarkdownNode) => {
-      const data = node.data || (node.data = {});
+      const data = (node.data || (node.data = {})) as AnyType;
+
+      if (node.meta) {
+        node.attributes = node.attributes || {};
+
+        node.meta.split(/\s+/g).forEach((candidate) => {
+          const [key, value] = candidate.split('=');
+
+          if (/^[\w\d\-_]+$/.test(key)) {
+            try {
+              data[key] = JSON.parse(value ?? '');
+            } catch {
+              data[key] = '';
+            }
+
+            node.attributes![key] = data[key];
+          }
+        });
+      }
 
       if (node.type === 'containerDirective' || node.type === 'leafDirective' || node.type === 'textDirective') {
         if (node.name === 'code-group') {
           data.hName = 'AirCodeGroup';
           data.hProperties = {
-            ...node.properties,
+            ...node.attributes,
+            title: getNodeTitle(node),
           };
         } else if (ADMONITION_TYPES.has(node.name!)) {
-          const firstChild = node.children?.[0] as AnyType;
-          let title: string | undefined = node.attributes?.title;
-
-          if (firstChild?.data?.directiveLabel) {
-            title = getLeafNode(firstChild)?.value ?? title;
-            node.children = node.children!.slice(1);
-          }
-
           data.hName = 'AirAdmonition';
           data.hProperties = {
-            title,
             ...node.attributes,
+            title: getNodeTitle(node),
             type: node.name,
           };
         } else if (node.name === 'badge') {
@@ -594,6 +606,13 @@ export function airMdxRemark(module?: MdxModule) {
             variant,
             ...node.attributes,
             children: text || node.attributes?.text,
+          };
+        } else if (node.name === 'separator') {
+          data.hName = 'div';
+          data.hProperties = {
+            ...node.attributes,
+            role: 'separator',
+            class: ['air-mdx-separator', (node.attributes as AnyType)?.class].filter(Boolean).join(' '),
           };
         } else {
           data.hName = 'div';
@@ -649,32 +668,44 @@ export function airMdxRemark(module?: MdxModule) {
               source.shift();
             }
 
-            data.hName = 'AirAdmonition';
+            data.hName = 'AirInteractive';
             data.hProperties = {
               title,
-              open: true,
               ...node.attributes,
-              type: 'interactive',
             };
 
-            node.children = [
-              {
-                type: 'paragraph',
-                data: {
-                  hName: 'div',
-                  hProperties: { class: 'air-mdx-interactive-source' },
+            if (source.length) {
+              node.children = [
+                {
+                  type: 'paragraph',
+                  data: {
+                    hName: 'div',
+                    hProperties: { class: 'air-interactive-source' },
+                  },
+                  children: source,
                 },
-                children: source,
-              },
-              {
-                type: 'paragraph',
-                data: {
-                  hName: 'div',
-                  hProperties: { class: 'air-mdx-interactive-render' },
+                {
+                  type: 'paragraph',
+                  data: {
+                    hName: 'div',
+                    hProperties: { class: 'air-interactive-preview' },
+                  },
+                  children: render,
                 },
-                children: render,
-              },
-            ];
+              ];
+            } else {
+              data.hProperties.standalone = '';
+              node.children = [
+                {
+                  type: 'paragraph',
+                  data: {
+                    hName: 'div',
+                    hProperties: { class: 'air-interactive-preview' },
+                  },
+                  children: render,
+                },
+              ];
+            }
           } else {
             node.type = 'paragraph';
             node.value = '';
@@ -685,6 +716,24 @@ export function airMdxRemark(module?: MdxModule) {
 
       if (node.type === 'code' && node.meta) {
         data.meta = node.meta;
+        const isExecutable = 'executable' in data && data.executable !== false;
+        const isModule = 'module' in data && data.module !== false;
+
+        if (module && isExecutable && node.value && ['js', 'ts', 'tsx', 'jsx'].includes(node.lang as string)) {
+          const { head, body } = splitImportsAndBody(node.value);
+
+          if (head) {
+            module.globals.push(head);
+          }
+
+          if (body) {
+            if (isModule) {
+              module.globals.push(body);
+            } else {
+              module.locals.push(body);
+            }
+          }
+        }
       }
     });
   };
@@ -732,17 +781,14 @@ export function airMdxRehype(module?: MdxModule) {
     const headings = [] as MdxHeading[];
 
     visit(tree, (node: HTMLNode) => {
-      const data = (node.data || (node.data = {})) as AnyType;
-
-      const props = node.properties || (node.properties = {});
-
       if (node.tagName === 'figure') {
-        node.tagName = 'AirCodeBlock';
-        delete props['data-rehype-pretty-code-figure'];
-      }
-
-      if (node.tagName === 'code' && data.meta) {
-        props['data-title'] = data.meta.replace(/\[/, '').replace(/\]/, '');
+        if (node.properties?.executable === 'hidden') {
+          node.value = '';
+          node.tagName = 'executable';
+          node.children = [];
+        } else {
+          node.tagName = 'AirCodeBlock';
+        }
       }
     });
 

@@ -198,13 +198,13 @@ describe('mdx docs mode — extended plugins enrich markdown', () => {
     });
 
     expect(code).toContain('<AirAdmonition title="Custom Title"');
-    expect(code).toContain('<AirAdmonition title="Attribute Title"');
-    expect(code).toContain('<AirAdmonition title="Empty Label"');
+    expect(code).toContain('<AirInteractive title="Attribute Title"');
+    expect(code).toContain('<AirInteractive title="Empty Label"');
     expect(code).toContain('<AirBadge variant="success"');
     expect(code).toContain('<AirBadge variant="neutral"');
     expect(code).toContain('children="Text Only"');
-    expect(code).toContain('air-mdx-interactive-source');
-    expect(code).toContain('air-mdx-interactive-render');
+    expect(code).toContain('air-interactive-source');
+    expect(code).toContain('air-interactive-preview');
   });
 
   it('compiles markdown sources from outside the pages directory', async () => {

@@ -1,6 +1,8 @@
 import type { BundledLanguage, CodeToHastOptions, Highlighter, ShikiTransformer } from 'shiki';
 import { color, taggedLogger } from '../logger.js';
+import type { AnyType } from '../types.js';
 import type { Framework } from './env.js';
+import { getLeafNode } from './markdown.js';
 
 const log = taggedLogger('air-highlight');
 
@@ -88,18 +90,18 @@ export function airEmulatePrettyCode(): ShikiTransformer {
     name: 'air:emulate-pretty-code',
     code(node) {
       const options = (this as unknown as { options: ShikiContextOptions }).options;
+      node.properties = node.properties || {};
 
       if (options.meta?.__raw) {
         node.data = node.data || {};
         (node.data as Record<string, unknown>).meta = options.meta.__raw;
+        Object.assign(node.properties, getMetaAttributes(node.data.meta!));
       }
 
       if (options.lang) {
-        node.properties = node.properties || {};
         node.properties['data-language'] = options.lang as string;
       }
 
-      node.properties = node.properties || {};
       node.properties.style = `${node.properties.style ?? ''}display: grid;`;
     },
     line(node) {
@@ -111,13 +113,20 @@ export function airEmulatePrettyCode(): ShikiTransformer {
       }
     },
     root(node) {
-      const preElement = node.children?.[0];
-      if (preElement && 'tagName' in preElement && preElement.tagName === 'pre') {
+      const preElement = node.children?.[0] as AnyType;
+
+      if (preElement?.tagName === 'pre') {
+        const code = preElement.children?.[0] as AnyType;
+        if (code?.properties?.executable === 'hidden') {
+          node.children = [];
+          return;
+        }
+
         node.children = [
           {
             type: 'element',
             tagName: 'figure',
-            properties: { 'data-rehype-pretty-code-figure': '' },
+            properties: { ...code?.properties },
             children: [preElement],
           },
         ];
@@ -158,4 +167,34 @@ export default function HighlightedCode(props) {
   return <div class="air-code-hihlight" innerHTML={${JSON.stringify(innerHTML)}} {...props} />;
 }
 `;
+}
+
+export function getMetaAttributes(meta: string) {
+  const attributes = {
+    'data-title': meta.split(']')[0].replace(/\[/, ''),
+  } as Record<string, AnyType>;
+
+  meta.split(/\s+/g).forEach((candidate) => {
+    const [key, value] = candidate.split('=');
+
+    if (/^[\w\d\-_]+$/.test(key)) {
+      try {
+        attributes[key] = JSON.parse(value ?? '');
+      } catch {
+        attributes[key] = '';
+      }
+    }
+  });
+
+  return attributes;
+}
+
+export function getNodeTitle(node: AnyType) {
+  const firstChild = node.children?.[0] as AnyType;
+  let title: string | undefined = node.attributes?.title;
+  if (firstChild?.data?.directiveLabel) {
+    title = getLeafNode(firstChild)?.value ?? title;
+    node.children = node.children!.slice(1);
+  }
+  return title;
 }

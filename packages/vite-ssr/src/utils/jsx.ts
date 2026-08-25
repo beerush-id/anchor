@@ -5,9 +5,11 @@ export function wrapJsx(framework: Framework, head: string, body: string, templa
 
   if (framework === 'react') {
     return `
-import { anchor as __airAnchor, getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink, onCleanup as __airOnCleanup } from '@airlib/react';
+import { anchor as __airAnchor, getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink, onCleanup as __airOnCleanup, uIndex as __airUIndex } from '@airlib/react';
 
 ${head}
+
+const AIR_CG_INDEX_KEY = Symbol.for('air.mdx.codegroup');
 
 export default function AirMdxPage({ state: $state, context: $context, children: $children }) {
   const __airMdxCtx = __airGetCtx('mdx-context');
@@ -33,6 +35,8 @@ export default function AirMdxPage({ state: $state, context: $context, children:
   }
 
 ${body}
+
+__airUIndex(AIR_CG_INDEX_KEY, true);
 
   return (
     <>
@@ -46,9 +50,11 @@ ${body}
 
   if (framework === 'solid') {
     return `
-import { anchor as __airAnchor, getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink, onCleanup as __airOnCleanup } from '@airlib/solid';
+import { anchor as __airAnchor, getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink, onCleanup as __airOnCleanup, uIndex as __airUIndex } from '@airlib/solid';
 
 ${head}
+
+const AIR_CG_INDEX_KEY = Symbol.for('air.mdx.codegroup');
 
 export default function AirMdxPage({ state: $state, context: $context, children: $children }) {
   const __airMdxCtx = __airGetCtx('mdx-context');
@@ -74,6 +80,8 @@ export default function AirMdxPage({ state: $state, context: $context, children:
   }
 
 ${body}
+
+__airUIndex(AIR_CG_INDEX_KEY, true);
 
   return (
     <>

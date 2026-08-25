@@ -90,7 +90,7 @@ describe('highlight module', () => {
     expect(rootNode.children[0]).toMatchObject({
       type: 'element',
       tagName: 'figure',
-      properties: { 'data-rehype-pretty-code-figure': '' },
+      properties: {},
     });
 
     // Root when first child is not pre

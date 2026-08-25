@@ -336,7 +336,7 @@ async function runSsrWorkerSsg(config: ResolvedConfig): Promise<void> {
           }, 5000);
 
           worker
-            .fetch(request, undefined, true)
+            .fetch(request, undefined, undefined, true)
             .then((res: Response) => {
               clearTimeout(timer);
               resolve(res);
