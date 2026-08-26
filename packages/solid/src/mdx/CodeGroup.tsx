@@ -3,7 +3,10 @@ import { For, type JSX, splitProps } from '../solid.js';
 import { Show } from '../switch.js';
 import { mdxCtx } from './context.js';
 
-const CODE_GROUP_INDEX = $symbol('air.mdx.codegroup');
+/**
+ * IMPORTANT: THE SYMBOL IS SHARED WITH JSX GENERATOR ON THE MARKDOWN MODULE!
+ */
+export const CODE_GROUP_INDEX = $symbol('air.mdx.codegroup');
 
 export interface CodeGroupProps extends JSX.HTMLAttributes<HTMLDivElement> {
   title?: string;

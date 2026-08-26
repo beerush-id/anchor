@@ -380,6 +380,11 @@
     &:active {
       background: var(--air-mdx-primary-active);
     }
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+      pointer-events: none;
+    }
   }
 
   /* Copy Button */

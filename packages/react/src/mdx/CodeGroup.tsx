@@ -1,11 +1,11 @@
 import type { HTMLAttributes, KeyboardEvent, ReactElement, ReactNode } from 'react';
-import { type AnyType, classx, For, mutable, render, Show, setup, uIndex } from '../index.js';
+import { type AnyType, classx, For, mutable, render, setup, Show, uIndex } from '../index.js';
 import { mdxCtx } from './context.ts';
 
 /**
  * IMPORTANT: THE SYMBOL IS SHARED WITH JSX GENERATOR ON THE MARKDOWN MODULE!
  */
-const CODE_GROUP_INDEX = Symbol.for('air.mdx.codegroup');
+export const CODE_GROUP_INDEX = Symbol.for('air.mdx.codegroup');
 
 export interface CodeGroupProps extends HTMLAttributes<HTMLDivElement> {
   title?: string;
