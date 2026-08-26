@@ -1,0 +1,46 @@
+:::interactive[Reactive cookie live demo]
+```tsx
+import { classx, cookies, For, setup } from '@airlib/react';
+
+// The site's real theme cookie — the same reactive state the floating toggler renders
+const ThemeCookie = setup(() => {
+  const theme = cookies('app-theme', { mode: 'system' as ThemeMode });
+
+  return (
+    <div className="flex w-full flex-col items-center gap-4 text-center">
+      <h5>Select Theme</h5>
+      <div className="flex gap-2">
+        <For each={() => Object.entries(MODES)}>
+          {([mode, label]) => (
+            <button
+              type="button"
+              className={classx(classes.btn, { [classes.activeBtn]: theme.mode === mode })}
+              onClick={() => (theme.mode = mode)}
+            >
+              {label}
+            </button>
+          )}
+        </For>
+      </div>
+      <p className={classes.hint}>Pick a mode — the whole app follows, floating toggler included. Reload and it sticks.</p>
+    </div>
+  );
+});
+
+type ThemeMode = 'system' | 'light' | 'dark';
+
+const MODES: { [K in ThemeMode]: string } = {
+  system: 'System',
+  light: 'Light',
+  dark: 'Dark',
+};
+
+const classes = {
+  btn: 'rounded-md border border-border px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors duration-200 ease-in-out hover:text-on-surface',
+  activeBtn: 'active border-primary text-primary',
+  hint: 'text-xs text-on-surface-variant',
+};
+```
+
+<ThemeCookie />
+:::

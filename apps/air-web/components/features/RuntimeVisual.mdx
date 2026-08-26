@@ -1,0 +1,41 @@
+:::code-group
+```js [Bun]
+// server/bun.js
+import worker from '../dist/server/worker.js';
+
+Bun.serve({
+  port: process.env.PORT || 3000,
+  fetch: (req) => worker.fetch(req),
+});
+```
+
+```js [Node]
+// server/node.js
+import { serve } from '@hono/node-server';
+import worker from '../dist/server/worker.js';
+
+serve({
+  fetch: worker.fetch,
+  port: process.env.PORT || 3000,
+});
+```
+
+```js [Deno]
+// server/deno.js
+import worker from '../dist/server/worker.js';
+
+Deno.serve({ port: Deno.env.get('PORT') || 3000 }, (req) => {
+  return worker.fetch(req);
+});
+```
+
+```js [Workers]
+// server/worker.js
+import worker from '../dist/server/worker.js';
+
+export default {
+  // Cloudflare aborts via the request-level signal
+  fetch: (req, env) => worker.fetch(req, env, req.signal),
+};
+```
+:::

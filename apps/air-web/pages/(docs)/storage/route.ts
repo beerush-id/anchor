@@ -1,3 +1,4 @@
+import { redirect } from '@airlib/react';
 import parentRoute from '../route.js';
 
 /** AirLib managed */
@@ -19,3 +20,7 @@ export const storageTableRoute = tableRoute;
 export const storageUsageRoute = usageRoute;
 
 export default storageRoute;
+
+storageRoute.route('/').guard(() => {
+  throw redirect(storageGettingStartedRoute);
+});

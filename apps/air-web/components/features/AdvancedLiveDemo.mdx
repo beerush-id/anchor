@@ -1,0 +1,46 @@
+:::interactive[LIVE objects live demo]
+```tsx
+import { effect, setup, Snippet } from '@airlib/react';
+import { LIVE_KEYBOARD } from '@airlib/react/browser';
+
+const LiveDemo = setup(() => {
+  // Declarative shortcut handling without manual addEventListener
+  effect.client(() => {
+    if (LIVE_KEYBOARD.is('ctrl', '/') || LIVE_KEYBOARD.is('meta', '/')) {
+      const input = document.querySelector<HTMLInputElement>('.air-search input');
+      input?.focus();
+    }
+  });
+
+  return (
+    <div className="flex w-full flex-col items-center gap-4 text-center">
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <div className={classes.box}>
+          <span>Focus Search</span>
+          <kbd className={classes.kbd}>Ctrl</kbd>
+          <span>+</span>
+          <kbd className={classes.kbd}>/</kbd>
+        </div>
+
+        <div className={classes.box}>
+          <span>Pressed key</span>
+          <Snippet>
+            {() => <kbd className={classes.kbd}>{LIVE_KEYBOARD.key || '—'}</kbd>}
+          </Snippet>
+        </div>
+      </div>
+
+      <p className={classes.hint}>Press the shortcut anywhere on the page to focus the search bar.</p>
+    </div>
+  );
+});
+
+const classes = {
+  box: 'inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 font-mono text-sm text-on-surface',
+  kbd: 'rounded border border-border bg-surface-variant px-2 py-0.5 text-xs font-semibold text-on-surface',
+  hint: 'text-xs text-on-surface-variant',
+};
+```
+
+<LiveDemo />
+:::

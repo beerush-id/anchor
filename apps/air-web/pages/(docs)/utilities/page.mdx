@@ -1,0 +1,233 @@
+---
+nav: 'Overview'
+nav-icon: build
+nav-priority: 90
+title: 'Utilities'
+description: 'Everyday reactive helpers and primitives built directly into the core — undoable state, class merging, async timing, and task scheduling.'
+keywords:
+  - AirLib
+  - Anchor
+  - Utilities
+  - undoable
+  - classx
+  - stylex
+  - sleep
+  - debouncer
+  - microtask
+  - microbatch
+  - uuid
+  - shortId
+  - uIndex
+---
+
+# Utilities
+
+Anchor ships a collection of everyday helpers and primitives built directly into the core. Instead of pulling in dozens of tiny dependencies for class merging, transaction rollbacks, or timing helpers, everything is maintained with zero-overhead integration into Anchor's reactive model.
+
+## Optimistic Updates
+
+`undoable` creates an isolated transaction boundary around state mutations. When invoked, it takes an instant snapshot of the affected state and returns `[undo, commit]`.
+
+- **Instant mutations**: The UI updates immediately without waiting for a server round-trip.
+- **Rollback on failure**: Calling `undo()` rolls back the exact mutated state to its pre-transaction values.
+- **Commit on success**: Calling `commit()` seals the change and discards the undo snapshot.
+
+:::code-group
+
+```tsx [React]
+import { mutable, setup, undoable } from '@airlib/react';
+
+const LikeButton = setup(() => {
+  const post = mutable({ id: '101', liked: false, likes: 42 });
+
+  const handleLike = async () => {
+    // 1. Optimistic snapshot and mutation
+    const [undo, commit] = undoable(() => {
+      post.liked = !post.liked;
+      post.likes += post.liked ? 1 : -1;
+    });
+
+    try {
+      await api.likePost(post.id);
+      commit();
+    } catch (err) {
+      // 2. Automatically restore pre-mutation state on failure
+      undo();
+    }
+  };
+
+  return (
+    <button type="button" onClick={handleLike}>
+      {post.liked ? '♥' : '♡'} {post.likes}
+    </button>
+  );
+});
+```
+
+```tsx [SolidJS]
+import { mutable, undoable } from '@airlib/solid';
+
+const post = mutable({ id: '101', liked: false, likes: 42 });
+
+const handleLike = async () => {
+  const [undo, commit] = undoable(() => {
+    post.liked = !post.liked;
+    post.likes += post.liked ? 1 : -1;
+  });
+
+  try {
+    await api.likePost(post.id);
+    commit();
+  } catch (err) {
+    undo();
+  }
+};
+```
+
+:::
+
+## Class and Style Composition
+
+Anchor includes zero-dependency class name and style object merging utilities that understand strings, arrays, conditionals, and object keys.
+
+### Class Names
+
+Combines class strings conditionally with support for strings, booleans, objects, and nested arrays:
+
+```typescript
+import { classx } from '@airlib/react/utils';
+
+// Basic conditionals and object maps
+const className = classx(
+  'btn font-medium',
+  { 'btn-active bg-primary': isActive },
+  isDisabled && 'opacity-50 cursor-not-allowed',
+  ['custom-class', dynamicVariants]
+);
+```
+
+### Style Objects
+
+Merges inline style objects, filtering out undefined or null values:
+
+```typescript
+import { stylex } from '@airlib/react/utils';
+
+const styles = stylex(
+  { display: 'flex', gap: '1rem' },
+  isExpanded && { height: 'auto', opacity: 1 },
+  customStyle
+);
+```
+
+## Async and Timing
+
+### Delay
+
+Promise-based delay helper to pause execution in async functions, workflows, or test pipelines:
+
+```typescript
+import { sleep } from '@airlib/react/utils';
+
+const delayOperation = async () => {
+  console.log('Starting...');
+  await sleep(1000); // Pause for 1 second
+  console.log('Resumed!');
+};
+```
+
+### Debouncer
+
+Creates a `[schedule, cancel]` tuple to delay execution until a quiet period has elapsed:
+
+```typescript
+import { debouncer } from '@airlib/react/utils';
+
+const [debounceSearch, cancelSearch] = debouncer(300);
+
+const onInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+  debounceSearch(() => {
+    fetchResults(e.target.value);
+  });
+};
+```
+
+### Microtask
+
+Batches multiple invocations within a window, executing only the final callback with initial and latest context:
+
+```typescript
+import { microtask } from '@airlib/react/utils';
+
+const [scheduleTask, cancelTask] = microtask<number>(50);
+
+// Schedules with context; executes once after timeout with (firstContext, lastContext)
+scheduleTask((init, current) => {
+  console.log(`Updated from ${init} to ${current}`);
+}, count);
+```
+
+### Microbatch
+
+Schedules multiple distinct functions within a timeframe into a unified batch:
+
+```typescript
+import { microbatch } from '@airlib/react/utils';
+
+const [scheduleBatch, clearBatch] = microbatch(20);
+
+scheduleBatch(() => syncUserMetrics());
+scheduleBatch(() => syncActivityLog());
+```
+
+## Unique Identifiers
+
+### Standard UUID
+
+Generates a random UUID v4 string with native `crypto.randomUUID()` fallback support:
+
+```typescript
+import { uuid } from '@airlib/react/utils';
+
+const id = uuid();
+// e.g. "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+```
+
+### Compact Short ID
+
+Generates a URL-friendly, compact identifier combining timestamps and random entropy:
+
+```typescript
+import { shortId } from '@airlib/react/utils';
+
+const id = shortId();
+// e.g. "m1k8s000a1b2"
+```
+
+### Scoped Unique Index
+
+Generates auto-incrementing integers keyed by a `symbol`. By default, `uIndex` increments within the current active context (such as the current component closure when called inside `setup()`):
+
+```typescript
+import { setup } from '@airlib/react';
+import { uIndex } from '@airlib/react/utils';
+
+const ITEM_INDEX = Symbol('item-index');
+
+export const ItemList = setup(() => {
+  // Scoped to this component instance
+  const firstId = uIndex(ITEM_INDEX); // 1
+  const secondId = uIndex(ITEM_INDEX); // 2
+
+  return (...);
+});
+```
+
+Passing `scoped: true` creates or reads a shared counter container across child scopes (useful for compound components like tabs or code groups):
+
+```typescript
+const GROUP_INDEX = Symbol('group-index');
+
+// Shares an index sequence with nested child scopes
+const groupId = uIndex(GROUP_INDEX, true);
+```

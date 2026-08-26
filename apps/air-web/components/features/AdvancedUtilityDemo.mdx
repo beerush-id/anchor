@@ -1,0 +1,84 @@
+:::interactive[Utility belt live demo]
+```tsx
+import { classx, mutable, setup, Show, sleep, Snippet, undoable } from '@airlib/react';
+import { Badge } from '@airlib/react/mdx';
+
+const UserCard = setup(() => {
+  const user = mutable({ name: 'Aria Chen', handle: '@aria', likes: 128, liked: false });
+  const demo = mutable({ pending: false, result: '' as '' | 'settled' | 'rolled back' });
+
+  const toggleLike = async () => {
+    demo.pending = true;
+
+    // Optimistic mutation with undoable snapshot
+    const [undo, settled] = undoable(() => {
+      user.liked = !user.liked;
+      user.likes += user.liked ? 1 : -1;
+    });
+
+    await sendLike().then(
+      () => {
+        settled();
+        demo.result = 'settled';
+      },
+      () => {
+        undo();
+        demo.result = 'rolled back';
+      }
+    );
+
+    demo.pending = false;
+  };
+
+  return (
+    <div className="flex w-full flex-col items-center gap-4">
+      <div className={classes.card}>
+        <div className={classes.avatar}>AC</div>
+        <div className={classes.info}>
+          <b>{user.name}</b>
+          <small>{user.handle}</small>
+        </div>
+
+        <Snippet>
+          {() => (
+            <button
+              type="button"
+              className={classx(classes.btn, { [classes.active]: user.liked })}
+              disabled={demo.pending}
+              onClick={toggleLike}
+            >
+              {user.liked ? '♥' : '♡'} {user.likes}
+            </button>
+          )}
+        </Snippet>
+      </div>
+
+      <Show when={() => demo.result}>
+        {(result) => <Badge variant={result === 'settled' ? 'tip' : 'destructive'}>{result}</Badge>}
+      </Show>
+
+      <p className={classes.hint}>Optimistic updates apply instantly — if the request fails, undoable cleanly rolls them back.</p>
+    </div>
+  );
+});
+
+/**
+ * Simulates a network request with latency and random rejection.
+ */
+const sendLike = () =>
+  sleep(600).then(() => {
+    if (Math.random() < 0.4) throw new Error('rejected');
+  });
+
+const classes = {
+  card: 'flex w-full max-w-80 items-center gap-4 rounded-2xl border border-border bg-surface p-5',
+  avatar: 'flex size-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary',
+  info: 'flex flex-1 flex-col text-left text-sm text-on-surface',
+  btn: 'inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors duration-200 hover:text-on-surface',
+  active: 'active border-primary text-primary',
+  hint: 'max-w-100 text-center text-xs text-on-surface-variant',
+};
+```
+
+<UserCard />
+:::

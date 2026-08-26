@@ -1,61 +1,69 @@
-import { type AnyRoute, classx, For, Link } from '@airlib/react';
-import routes from '@airlib-cache/manifest';
-import type { ComponentProps } from 'react';
+import { type AnyRoute, classx, For, Link, setup, Slot } from '@airlib/react';
+import type { ComponentProps, ReactNode } from 'react';
 import airLogo from '../assets/airlib.svg';
+import postsRoute from '../pages/(docs)/posts/route.js';
+import releasesRoute from '../pages/(docs)/releases/route.js';
+import docsRoute from '../pages/(docs)/route.js';
 import rootRoute from '../pages/route.js';
+import { DiscordIcon, GitHubIcon } from './icons.js';
+import { Search } from './Search.js';
 
-const navs = ['/about', '/docs']
-  .map((name) => {
-    const route = routes.find((route) => route.path === name);
-    if (route)
-      return {
-        path: route.path,
-        route: route.route.isIndex ? route.route.parent : route.route,
-        meta: route.route.metadata,
-      };
-  })
-  .filter(Boolean) as Array<{
-  path: string;
-  route: AnyRoute;
-  meta: AirRouteMeta;
-}>;
+const navs = [
+  {
+    text: 'Docs',
+    route: docsRoute,
+  },
+  {
+    text: 'Posts',
+    route: postsRoute,
+  },
+  {
+    text: 'Releases',
+    route: releasesRoute,
+  },
+];
 
-export default function Header({ children, className }: ComponentProps<'header'>) {
+type HeaderProps = ComponentProps<'header'>;
+type HeaderSlots = {
+  nav?: () => ReactNode;
+  search?: () => ReactNode;
+};
+
+const Header = setup<HeaderProps, HeaderSlots>((props, snippets) => {
   return (
-    <header className={classx('air-header', className)}>
+    <header className={classx('air-header', props.className)}>
       <div className="air-header-inner">
         <Link to={rootRoute} className="air-header-logo">
           <img src={airLogo} width="36" alt="AirLib Logo" />
-          <span>AirLib</span>
+          <span className={'text-2xl font-normal tracking-wide'}>AirLib</span>
         </Link>
-        <div className="md:w-44"></div>
-
-        {children}
-
-        <div className="flex-1"></div>
-        <nav className="air-header-nav mx-10">
-          <For each={() => navs}>
-            {({ route, path, meta }) => (
-              <Link to={route} className="air-header-link" activeClass="active">
-                {meta.label ?? path}
-              </Link>
-            )}
-          </For>
-        </nav>
+        <Slot for={() => snippets.nav?.()}>
+          <nav className="air-header-nav mx-10">
+            <For each={() => navs}>
+              {({ route, text }) => (
+                <Link to={route as AnyRoute} className="air-header-link" activeClass="active">
+                  {text}
+                </Link>
+              )}
+            </For>
+          </nav>
+        </Slot>
+        <div className="flex-1">{props.children}</div>
+        <Slot for={() => snippets.search?.()}>
+          <div className="mx-5">
+            <Search />
+          </div>
+        </Slot>
         <ul className="air-header-socials">
           <li>
             <a href="https://github.com/beerush-id/airlib" target="_blank">
-              <svg className="button-icon" role="presentation" aria-hidden="true">
-                <use href="/icons.svg#github-icon"></use>
-              </svg>
+              <GitHubIcon />
               <span>GitHub</span>
             </a>
           </li>
           <li>
             <a href="https://discord.gg/GJSXpKjxFR" target="_blank">
-              <svg className="button-icon" role="presentation" aria-hidden="true">
-                <use href="/icons.svg#discord-icon"></use>
-              </svg>
+              <DiscordIcon />
               <span>Discord</span>
             </a>
           </li>
@@ -63,4 +71,6 @@ export default function Header({ children, className }: ComponentProps<'header'>
       </div>
     </header>
   );
-}
+}, 'Header');
+
+export default Header;

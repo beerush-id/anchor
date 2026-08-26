@@ -1,0 +1,47 @@
+:::interactive[Immutable state live demo]
+```tsx
+import { immutable, setup, Snippet, writable } from '@airlib/react';
+import { Badge } from '@airlib/react/mdx';
+
+const ImmutableDemo = setup(() => {
+  // Public state is read-only; writes go through an explicit contract
+  const settings = immutable({ theme: 'system', locale: 'en' });
+  const control = writable(settings, ['theme']);
+
+  // Direct mutation trapped by immutable contract and logged to console
+  const directWrite = () => {
+    (settings as { theme: string }).theme = 'dark';
+  };
+
+  return (
+    <div className="flex w-full flex-col items-center gap-4 text-center">
+      <div className={classes.readout}>
+        <span className="mr-2">settings.theme</span>
+        <Snippet data={() => settings.theme}>{(theme) => <Badge variant="tip">{theme}</Badge>}</Snippet>
+      </div>
+
+      <div className="flex gap-2">
+        <button type="button" className="air-mdx-btn" onClick={() => (control.theme = 'light')}>
+          Light (allowed)
+        </button>
+        <button type="button" className="air-mdx-btn" onClick={() => (control.theme = 'dark')}>
+          Dark (allowed)
+        </button>
+        <button type="button" className="air-mdx-btn" onClick={directWrite}>
+          Rejected (trapped)
+        </button>
+      </div>
+
+      <p className={classes.hint}>True immutability without clone overhead — press Rejected and check the console for the exact line of the attempt.</p>
+    </div>
+  );
+});
+
+const classes = {
+  readout: 'inline-flex items-center gap-1 rounded-lg border border-border p-2 pl-4 font-mono text-sm text-on-surface',
+  hint: 'max-w-100 text-xs text-on-surface-variant',
+};
+```
+
+<ImmutableDemo />
+:::

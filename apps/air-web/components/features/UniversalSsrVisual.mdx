@@ -1,0 +1,35 @@
+:::code-group
+```ts [Vite Config]
+// vite.config.ts
+import { airPages } from '@airlib/vite';
+import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  plugins: [
+    react(),
+    tailwindcss(),
+    airPages({
+      markdown: { extended: true },
+      searchIndex: true,
+    }),
+  ],
+});
+```
+
+```ts [Static & ISG]
+// pages/(docs)/route.ts — pre-rendered at build time
+export const docsRoute = route.config({
+  static: true,
+  deferred: 500,
+  preloadMode: 'hover',
+});
+
+// pages/products/[id]/route.ts — rendered on first visit,
+// re-rendered when older than maxAge
+export const productRoute = parentRoute.route('/:id', {
+  static: { maxAge: 3600 },
+});
+```
+:::

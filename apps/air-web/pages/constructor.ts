@@ -1,6 +1,7 @@
 import { anchor, mutable, safeRun } from '@airlib/react/core';
 import { stream } from '@irpclib/irpc';
 import { irpc } from '@/src/api.ts';
+import '../components/features/constructor.ts';
 import { type Visitor, visitor } from './function.ts';
 
 const VISITOR_MAP = safeRun(() => mutable({} as Record<string, Visitor>));

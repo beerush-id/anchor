@@ -1,0 +1,46 @@
+:::code-group
+```ts [Route File]
+// products/[id]/route.ts
+import parentRoute from '../route.js';
+
+/** AirLib managed */
+const route = parentRoute.route('/:id');
+/** AirLib managed */
+
+export const productRoute = route
+  .guard(async () => await isAuthenticated())
+  .provide('product', async ({ params }) => {
+    try {
+      return await getProduct(params.id);
+    } catch {
+      throw new NotFoundError("Product doesn't exist");
+    }
+  });
+```
+
+```tsx [Page File]
+// products/[id]/page.tsx
+import { page, Show } from '@airlib/react';
+import { productRoute } from './route.js';
+
+export const ProductPage = page(productRoute).render(({ state }) => (
+  <Show when={() => state.data.product}>
+    {({ name, description }) => (
+      <article>
+        <h1>{name}</h1>
+        <p>{description}</p>
+      </article>
+    )}
+  </Show>
+));
+```
+
+```txt [Folder Structure]
+pages/
+└─ products/
+   ├─ route.ts
+   └─ [id]/
+      ├─ page.tsx
+      └─ route.ts
+```
+:::

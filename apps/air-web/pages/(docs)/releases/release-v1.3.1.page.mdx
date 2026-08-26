@@ -1,0 +1,230 @@
+---
+nav: 'AirLib v1.3.1'
+version: '1.3.1'
+title: 'AirLib v1.3.1 — Component Slots, Extended Markdown, & Project Generator'
+description: 'Named component slots, a rebuilt MDX compiler with code groups and live playgrounds, the create-airlib CLI, zero-JS static pages, and the @airlib rebrand.'
+date: '2026-08-26'
+category: 'Release'
+keywords:
+  - AirLib v1.3.1
+  - component slots
+  - MDX pipeline
+  - create-airlib
+---
+
+# AirLib v1.3.1 :badge[v1.3.1]{variant="tip"} :badge[Increments]{variant="info"}
+
+[← Back](./)
+
+## Highlights
+
+### Component Slots
+
+Components built with `setup()` now support **named slots** — declare them as a second generic parameter, and consumers inject content via `<Component.Snippet>`:
+
+```tsx
+import { setup, Slot } from '@airlib/react';
+
+type MyLayoutSlots = { header?: () => ReactNode; footer?: () => ReactNode };
+
+const MyLayout = setup<SomeProps, MyLayoutSlots>((props, snippets) => (
+  <div>
+    <Slot for={() => snippets.header?.()}><Header /></Slot>
+    {props.children}
+    <Slot for={() => snippets.footer?.()}><Footer /></Slot>
+  </div>
+));
+
+// Consumer — override a slot (omit to keep default)
+<MyLayout>
+  <MyLayout.Snippet for="header">
+    {() => <h1>Custom Header</h1>}
+  </MyLayout.Snippet>
+  <p>Content</p>
+</MyLayout>
+```
+
+The MDX **`Layout`** component uses this internally: it now accepts optional **`sidebar`**, **`toc`** and **`pagination`** slot props so you can replace any section without subclassing the layout. This is available in both React and Solid (`packages/react` and `packages/solid`).
+
+### Assisted File Routing
+
+The generated `route.ts` files are now maintained with much more respect for your code:
+
+- Your **hand-written export names are adopted** — the plugin parses `route.ts` and reuses the names you chose instead of overwriting them.
+- **Missing route exports are appended** dynamically without touching existing code.
+- `page.tsx` / `layout.tsx` files are **rewired to the correct route exports** automatically when folders move or rename.
+- Generated metadata `index.ts` files are now **scoped per folder** — each manifest index only lists the MDX files in its own directory instead of aggregating all descendants, so subpath imports like `@airstack/manifest/docs` return just that folder's routes.
+
+### Extended Markdown
+
+The MDX handling inside `airPages()` has been rebuilt on a unified `MdxModule` compiler — cold build times dropped from **18s to 8s** on a 160-page heavy-MDX site. With `extended: true` (the default) you get, out of the box:
+
+- **GitHub Flavored Markdown** (tables, strikethrough, task lists)
+- **Container directives** for admonitions (`:::note`, `:::warning`, …)
+- **Heading slugs + autolinks** for anchor navigation
+- **Syntax highlighting powered by Shiki + `@shikijs/transformers`** — code blocks support notation-based *diffs*, *highlight*, *word-highlight*, *focus* and *error-level* marks via code meta.
+- **YAML frontmatter parsing** into route metadata
+- **Heading extraction** — compiled modules export their headings (configurable via `headingDepth`) so you can build tables of contents without re-parsing
+
+New directives: **`:::code-group`** for tabbed code groups, **`:::badge[variant]{text=…}`** for inline badges, **`:::details`** for collapsible blocks, and **`:::interactive`** for live playgrounds. Code block meta strings are preserved as `data-title` attributes, and regular `[markdown](links)` are compiled to the router's `AirLink` component for client-side navigation.
+
+## Breaking & Notable Changes
+
+### create-airlib — Interactive Project Scaffolding CLI
+
+A new **`create-airlib`** CLI provides an interactive scaffolding wizard: choose between React, SolidJS, backend API, or SSR starter templates and have your project set up with the correct dependencies, build scripts, and starter pages in seconds.
+
+All starter templates (including a new **IRPC standalone starter**) ship with WebSocket support out of the box across Bun, Deno, Node, and Cloudflare Workers server adapters.
+
+### Rebranding
+
+All package identifiers and repository metadata were updated from `@anchorlib` to `@airlib` to align with the AirLib branding.
+
+### MDX Components Moved to react/mdx
+
+The docs UI components shipped with `@airlib/react` (`CodeBlock`, `CodeGroup`, `Layout`, `Pagination`, `Sidebar`, `TableOfContent`, …) moved from the `./docs` export to **`./mdx`**:
+
+```diff
+-import { CodeGroup } from '@airlib/react/docs';
++import { CodeGroup } from '@airlib/react/mdx';
+```
+
+Along with the move:
+
+- New standalone **`<CodeCopy>`** component — copy-to-clipboard button with icon feedback; `CodeBlock` and `CodeGroup` now include it automatically.
+- CSS class names and variables were renamed from `air-docs-*` to **`air-mdx-*`** — update custom theme overrides.
+
+## Router & SSR
+
+### Zero-JS Static Pages
+
+New options control how much JavaScript ships to the client and when it runs:
+
+- **`noscript`** (`boolean`) — enable true static SSR by shipping zero JavaScript to the client: the SSR renderer strips all scripts from the response. Can be set globally via `airPages()` or per-route via `route.config()`.
+- **`deferred`** (`boolean | number`) — move `<script>` and module-preload links out of the critical path: they're relocated to the end of `<body>` and only executed after the window `load` event (optionally plus a custom millisecond delay) to improve First Contentful Paint.
+
+```ts
+// vite.config.ts — disable all JS for the entire site
+plugins: [airPages({ noscript: true })]
+
+// pages/about/route.ts — per-route options
+export const aboutRoute = route.config({ noscript: true, deferred: 500 });
+```
+
+The SSR hydration payload also changed shape: instead of assigning a global on `window`, the router snapshot is now emitted as an inline **`<script type="application/json">`** tag that the client parses on boot. Malformed payloads are captured and reported instead of crashing initialization.
+
+### Redirect Accepts URL Strings
+
+`Redirect` now accepts a plain URL string in addition to a route target — you can `throw new Redirect('/other-page')` without needing a route reference.
+
+### RouterContext Exposes the Full URL
+
+`RouterContext` now parses the current URL internally and exposes reactive getters: **`hash`**, **`origin`**, **`search`**, **`pathname`**, and **`fullPath`** (pathname + search), in addition to the existing `url` (full href).
+
+### Route Rewriting
+
+A new **`.rewrite()`** method on `Route` lets you redirect an entire route branch to a different route — useful for aliasing old URL structures:
+```typescript
+parentRoute.route('/news').rewrite(releasesRoute);
+```
+
+## Reactivity Core
+
+### Named State Memoization
+
+Both `mutable` and `immutable` gain a **`.for()`** factory that memoizes a state by name, scoped to the current browser URL. Calling `.for()` again with the same name and URL returns the exact same state instead of creating a new one — ideal for module-level shared state that must survive re-imports or HMR:
+
+```typescript
+import { mutable } from '@airlib/core';
+
+// Same instance on every call within this page
+const cart = mutable.for('cart', { items: [] });
+```
+
+On the server (SSR) memoization is disabled — each call simply creates a fresh state, so there is no cross-request leakage.
+
+## React
+
+### Inline Reactive Boundaries: Snippet
+
+Rendering a small reactive fragment inside a mostly-static page no longer re-renders the whole component. The new **`<Snippet>`** component isolates re-renders to the smallest possible boundary — its children is a render function, and only its own text/DOM nodes update when reactive data changes:
+
+```tsx
+import { Snippet } from '@airlib/react';
+
+function Profile({ user }) {
+  return (
+    <div>
+      <h1>Static header — never re-renders</h1>
+      <Snippet>{() => <b>{user.name}</b>}</Snippet>
+    </div>
+  );
+}
+```
+
+### UIRouter Is Headless by Default
+
+The `headless` prop of `<UIRouter>` now defaults to `true`, so the router renders your route tree without injecting its own wrapper markup unless you opt out.
+
+### Interactive Component
+
+A new MDX **`<Interactive>`** component presents a live demo panel with a **source/preview toggle** — great for showing runnable examples alongside their code. It integrates with the code-block and MDX context system automatically.
+
+## SolidJS
+
+### Router Overhaul
+
+The Solid router modules were significantly refactored:
+- `<Link>` now resolves URLs reactively, supports `resetScroll` and `keepVisible` props, and handles cross-origin links properly.
+- `<Head>` was rewritten internally (all previous exports are still available).
+- `UIRouter` now handles PopState events for hash navigation and improved scroll restoration.
+- `createRouter()` now wraps router creation and handles redirects via programmatic `navigate()`.
+- The `Slot` component and slotted component support are now available for Solid, matching the React API.
+
+## Images
+
+### Image Optimization On in Dev by Default
+
+The `airImage()` plugin now **encodes and resizes images during development by default** (`devEnabled` default changed from `false` to `true`), so what you see locally matches production output. Set `devEnabled: false` if you prefer serving raw file paths for faster HMR.
+
+## HTTP & Server
+
+### IRPC Heartbeat
+
+IRPC streams now support an optional **`heartbeat`** interval — the server enqueues periodic no-op frames to keep long-lived connections alive through proxies and load balancers. Configure it per-request or as a global default.
+
+### AbortSignal Support
+
+Both the IRPC HTTP `resolve()` method and the SSR worker `fetch()` now accept and honour an `AbortSignal`, enabling cancellable requests from the client side — useful for navigation-triggered aborts and cleanup of stale server-side work.
+
+### WebSocket Close/Error Handling
+
+All server templates (Bun, Deno, Node, Cloudflare Workers) now properly listen for WebSocket `close` and `error` events, calling `resolver.close()` to prevent resource leaks.
+
+### Cloudflare Workers Durable Objects
+
+The WebSocket upgrade flow on Cloudflare Workers is now routed through Durable Objects for persistent state, and the wrangler config was updated from TOML to JSON (`wrangler.json`).
+
+## Router & Navigation
+
+### Cross-Origin Link Handling
+
+The React `<Link>` component now correctly handles cross-origin URLs — links pointing to a different origin are rendered as plain `<a>` tags with a full `href` and optional `target`, bypassing the router's client-side navigation entirely. The router's default scroll behavior is now configurable via `DEFAULT_ROUTER_CONFIGS.scrollBehavior`.
+
+## Utilities
+
+- **`sleep(ms, signal?)`** — now exported from the Solid and Svelte packages (was already available in React).
+- **`uuid()` scoped index** — the `uIndex()` utility now accepts a `scoped` option to create **context-scoped unique indices**, useful for generating stable keys within a specific component tree or effect scope.
+- **`createContext()` argument order** — now tolerates both `createContext(key, fallback)` and `createContext(fallback, key)` (reversed), for convenience.
+
+## Fixes & Improvements
+
+- **SSG**: static page generation now runs **concurrently with a per-page timeout**, with progress logging — large sites pre-render significantly faster.
+- **Images**: cached generated images are now keyed by a **content hash** in addition to the file path, so editing an image correctly invalidates its cached variants instead of serving stale encodes.
+- **MDX**: custom components used inside MDX pages now resolve reliably — member expressions referencing the internal `_components` map are unwrapped during compilation.
+- **React `Link`**: refined `keepVisible` semantics for active links — `keepVisible={true}` focuses the link element, while a string value (`'smooth'`, `'instant'`, …) scrolls it into view using that behavior.
+- **Router**: `fullPath` construction now correctly includes the hash fragment alongside the path and search.
+- **Search**: URL path processing now applies canonical path normalization and removes stray parentheses from indexed results.
+- **Props**: non-existing props are now stored in a shadow object, preventing silent drops when a component accesses a prop that isn't in its type definition.
+- **React**: the `Interactive` component now works in standalone mode (outside of the full MDX layout).
+- **Router**: scroll reset now executes **after** route activation instead of before, fixing visual flicker on navigation.

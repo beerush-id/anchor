@@ -1,0 +1,76 @@
+:::interactive[Fine-grained reactivity live demo]
+```tsx
+import { effect, mutable, setup, Snippet } from '@airlib/react';
+
+const Metrics = setup(() => {
+  const metrics = mutable({ cpu: 42, mem: 71, enabled: true });
+
+  effect.client(() => {
+    if (!metrics.enabled) return;
+    return watchMetrics(metrics);
+  });
+
+  return (
+    <div className="flex flex-col items-center gap-4">
+      <div className="flex items-center justify-center gap-4">
+        <div className={classes.card}>
+          <span className={classes.label}>CPU</span>
+          <Snippet data={() => metrics.cpu}>
+            {(cpu) => <span className={classes.value}>{cpu}%</span>}
+          </Snippet>
+        </div>
+        <div className={classes.card}>
+          <span className={classes.label}>MEM</span>
+          <Snippet data={() => metrics.mem}>
+            {(mem) => <span className={classes.value}>{mem}%</span>}
+          </Snippet>
+        </div>
+      </div>
+
+      <Snippet data={() => metrics.enabled}>
+        {(enabled) => (
+          <button type="button" className="air-mdx-btn" onClick={() => (metrics.enabled = !enabled)}>
+            {enabled ? 'Pause' : 'Watch'}
+          </button>
+        )}
+      </Snippet>
+    </div>
+  );
+});
+
+/**
+ * Simulates periodic system metrics updates and pauses after 50 ticks.
+ *
+ * @param metrics - Reactive metrics state object to mutate.
+ * @returns Teardown function to clear active timers.
+ */
+function watchMetrics(metrics: { cpu: number; mem: number; enabled: boolean }) {
+  let count = 0;
+  const cpu = setInterval(() => {
+    if (++count >= 50) {
+      metrics.enabled = false;
+    }
+    metrics.cpu = Math.floor(Math.random() * 100);
+  }, 200);
+
+  const mem = setInterval(() => {
+    metrics.mem = Math.floor(Math.random() * 100);
+  }, 240);
+
+  return () => {
+    clearInterval(cpu);
+    clearInterval(mem);
+  };
+}
+
+const classes = {
+  card: 'w-28 rounded-xl border border-border bg-surface-variant px-4 py-3 text-center',
+  label: 'block text-xs font-semibold uppercase tracking-wider text-on-surface-variant',
+  value: 'font-mono text-2xl font-bold text-on-surface',
+};
+```
+
+<div className="air-demos flex items-center justify-center p-4">
+  <Metrics />
+</div>
+:::

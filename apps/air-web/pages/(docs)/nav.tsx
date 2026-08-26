@@ -10,7 +10,8 @@ import componentsMeta from '@airlib-cache/metadata/(docs)/utilities/material-css
 import extensionsMeta from '@airlib-cache/metadata/(docs)/utilities/material-css/extensions/index.js';
 import materialMeta from '@airlib-cache/metadata/(docs)/utilities/material-css/index.js';
 import layoutMeta from '@airlib-cache/metadata/(docs)/utilities/material-css/layout/index.js';
-import utilitiesMeta from '@airlib-cache/metadata/(docs)/utilities/material-css/utilities/index.js';
+import materialUtilitiesMeta from '@airlib-cache/metadata/(docs)/utilities/material-css/utilities/index.js';
+import utilitiesMeta from '@airlib-cache/metadata/(docs)/utilities/index.js';
 import workflowMeta from '@airlib-cache/metadata/(docs)/workflow/index.js';
 import type { ComponentType } from 'react';
 import {
@@ -176,7 +177,7 @@ export const navs: NavItem[] = [
       {
         text: 'Utilities',
         icon: () => <BuildIcon />,
-        items: toNavItems(utilitiesMeta),
+        items: toNavItems(materialUtilitiesMeta),
       },
     ],
   },
@@ -197,5 +198,11 @@ export const navs: NavItem[] = [
     icon: () => <StorageIcon />,
     collapsed: true,
     items: toNavItems(storageMeta),
+  },
+  {
+    text: 'Utilities',
+    icon: () => <BuildIcon />,
+    collapsed: true,
+    items: toNavItems(utilitiesMeta),
   },
 ];

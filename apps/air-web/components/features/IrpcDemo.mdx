@@ -1,0 +1,77 @@
+:::interactive[Batched IRPC calls live demo]
+```tsx
+import { classx, mutable, setup, Snippet } from '@airlib/react';
+import { getAlerts, getMetrics, getTransactions, getUptime } from './function.ts';
+
+const Dashboard = setup(() => {
+  const state = mutable({ version: 0 });
+
+  // Lazy & batched — dispatched only on version change, combined into a single request
+  const metrics = getMetrics.when(() => [state.version]);
+  const transactions = getTransactions.when(() => [state.version]);
+  const alerts = getAlerts.when(() => [state.version]);
+  const uptime = getUptime.when(() => [state.version]);
+
+  return (
+    <div className="flex w-full max-w-105 flex-col gap-4">
+      <div className="grid grid-cols-2 gap-3">
+        <Snippet data={() => [metrics.status, metrics.data]}>
+          {([status, { cpu }]) => (
+            <div className={classx(card, { 'animate-pulse': status === 'pending' })}>
+              <span className={label}>CPU</span>
+              <span className={value}>{status === 'pending' ? '...' : `${cpu}%`}</span>
+            </div>
+          )}
+        </Snippet>
+
+        <Snippet data={() => [transactions.status, transactions.data]}>
+          {([status, { count }]) => (
+            <div className={classx(card, { 'animate-pulse': status === 'pending' })}>
+              <span className={label}>Transactions</span>
+              <span className={value}>
+                {status === 'pending' ? '...' : count.toLocaleString()}
+              </span>
+            </div>
+          )}
+        </Snippet>
+
+        <Snippet data={() => [alerts.status, alerts.data]}>
+          {([status, { count }]) => (
+            <div className={classx(card, { 'animate-pulse': status === 'pending' })}>
+              <span className={label}>Alerts</span>
+              <span className={value}>{status === 'pending' ? '...' : count}</span>
+            </div>
+          )}
+        </Snippet>
+
+        <Snippet data={() => [uptime.status, uptime.data]}>
+          {([status, { percent }]) => (
+            <div className={classx(card, { 'animate-pulse': status === 'pending' })}>
+              <span className={label}>Uptime</span>
+              <span className={value}>{status === 'pending' ? '...' : `${percent}%`}</span>
+            </div>
+          )}
+        </Snippet>
+      </div>
+
+      <Snippet data={() => state.version}>
+        {(version) => (
+          <button type="button" className="air-mdx-btn" onClick={() => state.version++}>
+            {version ? 'Refresh' : 'Load dashboard'}
+          </button>
+        )}
+      </Snippet>
+    </div>
+  );
+});
+
+const card = 'rounded-xl border border-border bg-surface-variant px-4 py-3 text-center';
+const label = 'block text-xs font-semibold uppercase tracking-wider text-on-surface-variant';
+const value = 'font-mono text-2xl font-bold text-on-surface';
+```
+
+<div className="air-demos flex items-center justify-center p-4">
+  <Dashboard />
+</div>
+<p className="text-center text-xs text-on-surface-variant">Check your network tab to see a single request carrying all four.</p>
+:::

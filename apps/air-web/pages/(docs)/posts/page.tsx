@@ -66,12 +66,9 @@ export default page(postsIndexRoute).render(() => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
                 <For each={() => items}>
                   {({ path, meta }) => (
-                    <Link
-                      href={path}
-                      className="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 hover:border-blue-500 transition-all no-underline"
-                    >
-                      <article className="flex flex-col gap-4 h-full">
-                        <div className="flex items-center justify-between mb-2">
+                    <Link href={path} className="air-card no-underline">
+                      <article className="air-card-content h-full">
+                        <div className="flex items-center justify-between">
                           <Badge>{meta.category || section.category}</Badge>
                           {meta.date ? (
                             <Badge variant={'tip'}>
@@ -79,16 +76,9 @@ export default page(postsIndexRoute).render(() => {
                             </Badge>
                           ) : null}
                         </div>
-                        <h3 className="text-xl font-semibold mt-0! mb-2 text-slate-900 dark:text-slate-100">
-                          {meta.title}
-                        </h3>
-                        {meta.description ? (
-                          <p className="text-sm text-slate-600 dark:text-slate-400">{meta.description}</p>
-                        ) : null}
-                        <span className="flex-1" />
-                        <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 inline-block mt-4">
-                          {section.readMoreLabel}
-                        </span>
+                        <h3 className="air-card-title mt-2! mb-2">{meta.title}</h3>
+                        {meta.description ? <p className="air-card-body">{meta.description}</p> : null}
+                        <span className="air-card-more">{section.readMoreLabel}</span>
                       </article>
                     </Link>
                   )}

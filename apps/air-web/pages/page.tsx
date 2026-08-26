@@ -1,33 +1,24 @@
-import {
-  $bind,
-  debouncer,
-  derived,
-  effect,
-  For,
-  Head,
-  Image,
-  mutable,
-  onCleanup,
-  page,
-  Show,
-  Snippet,
-} from '@airlib/react';
+import { debouncer, derived, effect, For, Head, mutable, onCleanup, page, Show, uIndex } from '@airlib/react';
 import { LIVE_CURSOR, LIVE_KEYBOARD } from '@airlib/react/browser';
 import { $do } from '@airlib/react/core';
+import { CODE_GROUP_INDEX } from '@airlib/react/mdx';
 import { uuid } from '@airlib/react/utils';
-import airLogo from '@/assets/airlib.svg';
 import mouse from '@/assets/cursor.svg';
 import mouseDown from '@/assets/cursor-down.svg';
-import heroImg from '@/assets/hero.png?asset' with { sizes: '170' };
-import reactLogo from '@/assets/react.svg';
-import viteLogo from '@/assets/vite.svg';
-import { TextInput } from '@/components/TextInput.tsx';
+import { Features } from '../components/Features.js';
+import { Advanced } from '../components/features/Advanced.js';
+import { FineGrained } from '../components/features/FineGrained.js';
+import { Irpc } from '../components/features/Irpc.js';
+import { Router } from '../components/features/Router.js';
+import { Runtime } from '../components/features/Runtime.js';
+import { UniversalSsr } from '../components/features/UniversalSsr.js';
+import { Workflow } from '../components/features/Workflow.js';
+import { Hero } from '../components/Hero.js';
 import { type Visitor, visitor } from './function.ts';
 import { rootIndexRoute } from './route.ts';
 
 export default page(rootIndexRoute).render(() => {
   const user = mutable({ id: uuid(), cursor: { x: 0, y: 0 }, message: '' });
-  const count = mutable.for('counter', 0);
 
   const visitors = visitor.join.once(user);
   const users = derived(() => Object.values(visitors.data));
@@ -82,6 +73,8 @@ export default page(rootIndexRoute).render(() => {
     });
   }
 
+  void uIndex(CODE_GROUP_INDEX, true);
+
   return (
     <>
       <Head meta={{ title: 'AirLib', description: 'AirLib starter template.' }} />
@@ -92,10 +85,14 @@ export default page(rootIndexRoute).render(() => {
               emit(id, cursor);
               return (
                 <div
-                  className="user-cursor"
+                  className="fixed z-9999 transition-transform duration-100 drop-shadow-[0_0_5px_rgb(0_0_0/0.25)]"
                   style={{ transform: `translate3d(${cursor.x}px, ${cursor.y}px, 0)`, left: '-12px', top: '-12px' }}
                 >
-                  {message && <div className="chat-bubble">{message}</div>}
+                  {message && (
+                    <div className="pointer-events-none absolute bottom-full left-full ml-2 mb-2 rounded-[12px_12px_12px_0] bg-on-surface px-3 py-1.5 text-[13px] font-medium whitespace-nowrap text-surface shadow-pop origin-bottom-left animate-pop-in">
+                      {message}
+                    </div>
+                  )}
                   <img src={cursor.down ? mouseDown : mouse} alt="cursor" width="24" height="24" />
                 </div>
               );
@@ -103,93 +100,15 @@ export default page(rootIndexRoute).render(() => {
           </Show>
         )}
       </For>
-      <section id="center" className="air-center">
-        <div className="hero-list">
-          <img src={airLogo} className="airlib" width="179" height="179" alt="AirLib logo" />
-          <div className="hero">
-            <Image from={heroImg} size={170} className="base" />
-            <img src={reactLogo} className="framework" alt="React logo" />
-            <img src={viteLogo} className="vite" alt="Vite logo" />
-          </div>
-        </div>
-        <div>
-          <h1 className="air-display">Get started</h1>
-          <p>
-            Edit <code className="air-code">src/pages/page.tsx</code> and save to test{' '}
-            <code className="air-code">HMR</code>
-          </p>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Snippet>
-            {() => (
-              <button type="button" className="counter" onClick={() => count.value++}>
-                Count is {count.value}
-              </button>
-            )}
-          </Snippet>
-          <TextInput value={$bind(user, 'message')} className="message-input" placeholder="Type message..." />
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2 className="air-title">Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://airlib.dev/" target="_blank">
-                <img className="logo" src={airLogo} alt="AirLib Logo" />
-                Explore AirLib
-              </a>
-            </li>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} height={18} alt="Vite Logo" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="React Logo" />
-                Learn React
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2 className="air-title">Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/beerush-id/airlib" target="_blank">
-                <svg className="button-icon" role="presentation" aria-hidden="true">
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://discord.gg/GJSXpKjxFR" target="_blank">
-                <svg className="button-icon" role="presentation" aria-hidden="true">
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
+      <Hero />
+      <Features />
+      <FineGrained />
+      <Irpc />
+      <Router />
+      <UniversalSsr />
+      <Workflow />
+      <Runtime />
+      <Advanced />
     </>
   );
 });

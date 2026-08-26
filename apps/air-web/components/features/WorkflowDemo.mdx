@@ -1,0 +1,92 @@
+:::interactive[Reactive workflow live demo]
+```tsx
+import { classx, For, plan, render, setup, Show, sleep, Snippet } from '@airlib/react';
+
+// The pipeline: three sequential steps, each named so the UI can show which one is running
+const checkoutFlow = plan<{ cartId: string }>()
+  .then(
+    async (input) => {
+      await sleep(700);
+      return { ...input, items: 3 };
+    },
+    { name: 'Validating cart' }
+  )
+  .then(
+    async (input) => {
+      await sleep(1100);
+      return { ...input, payment: 'paid' };
+    },
+    { name: 'Processing payment' }
+  )
+  .then(
+    async (input) => {
+      await sleep(600);
+      return { ...input, receipt: `R-${input.cartId}` };
+    },
+    { name: 'Finalizing order' }
+  );
+
+// The view: reads the stepper's reactive state — status, current step, and output
+const STEPS = ['Validating cart', 'Processing payment', 'Finalizing order'];
+
+const Checkout = setup(() => {
+  const checkout = checkoutFlow.later();
+
+  return render(() => (
+    <div className="flex w-full max-w-90 flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <For each={() => STEPS}>
+          {(name, index) => {
+            const step = checkout.get(`${index + 1}`);
+            const done = step?.status === 'success' || checkout.status === 'success';
+            const running = step?.status === 'pending';
+
+            return (
+              <div className={classx(item, { 'animate-pulse text-on-surface': running, 'text-accent': done })}>
+                {done ? '✓' : '•'} {name}
+              </div>
+            );
+          }}
+        </For>
+      </div>
+
+      <Show when={() => checkout.status === 'pending' && checkout.current}>
+        {(current) => <span className={statusLine}>{current.name}…</span>}
+      </Show>
+
+      <Show when={() => checkout.status === 'success' && checkout.data}>
+        {(data) => (
+          <span className={statusLine}>
+            Order complete — receipt <span className="font-mono">{data.receipt}</span>
+          </span>
+        )}
+      </Show>
+
+      <Show when={() => checkout.status === 'idle'}>
+        {() => <span className={statusLine}>Run the checkout pipeline</span>}
+      </Show>
+
+      <Snippet data={() => checkout.status}>
+        {(status) => (
+          <button
+            type="button"
+            className="air-mdx-btn self-start"
+            disabled={status === 'pending'}
+            onClick={() => checkout.dispatch({ cartId: '1042' })}
+          >
+            Run checkout
+          </button>
+        )}
+      </Snippet>
+    </div>
+  ));
+});
+
+const item = '-ml-[2ch] font-mono text-sm text-on-surface-variant';
+const statusLine = 'text-sm text-on-surface-variant';
+```
+
+<div className="air-demos flex items-center justify-center p-4">
+  <Checkout />
+</div>
+:::
