@@ -1,0 +1,180 @@
+---
+nav: 'Reactive Cookies'
+nav-priority: 84
+title: 'Reactive Cookies'
+description: 'Isomorphic reactive state backed by cookies — automatic browser synchronization, SSR request isolation, and seamless JSON serialization.'
+keywords:
+  - cookies
+  - reactive cookies
+  - state management
+  - isomorphic state
+  - SSR
+---
+
+# Reactive Cookies
+
+Anchor provides an isomorphic, reactive state container backed by HTTP and browser cookies. Instead of manually parsing `Cookie` headers, tracking changes during render, or stringifying JSON payloads into `document.cookie`, `cookies()` wraps your data in a transparent reactive proxy that syncs automatically across both client and server.
+
+## Defining Cookie State
+
+You define a reactive cookie store with a unique name and initial default values. If a cookie with that name already exists in the browser or incoming SSR request, its stored JSON payload is automatically parsed and merged over your initial state.
+
+Because `cookies()` accesses the active request scope on the server, instantiate your cookie stores inside `setup()`, route guards, data loaders, or reusable hooks.
+
+:::code-group{group="framework"}
+
+```tsx [React] name="react"
+import { cookies, render, setup } from '@airlib/react';
+
+type UserPreferences = {
+  theme: 'light' | 'dark' | 'system';
+  fontSize: number;
+};
+
+export const ThemeToggle = setup(() => {
+  // Instantiated within component setup to bind to the active request scope
+  const preferences = cookies<UserPreferences>('user-pref', {
+    theme: 'system',
+    fontSize: 16,
+  });
+
+  const toggleTheme = () => {
+    // Direct mutation triggers both UI re-render and cookie persistence
+    preferences.theme = preferences.theme === 'dark' ? 'light' : 'dark';
+  };
+
+  return render(() => (
+    <button type="button" onClick={toggleTheme}>
+      Current theme: {preferences.theme}
+    </button>
+  ));
+});
+```
+
+```tsx [SolidJS] name="solid"
+import { cookies, setup } from '@airlib/solid';
+
+type UserPreferences = {
+  theme: 'light' | 'dark' | 'system';
+  fontSize: number;
+};
+
+export const ThemeToggle = setup(() => {
+  // Instantiated within component setup to bind to the active request scope
+  const preferences = cookies<UserPreferences>('user-pref', {
+    theme: 'system',
+    fontSize: 16,
+  });
+
+  const toggleTheme = () => {
+    // Direct mutation triggers both UI update and cookie persistence
+    preferences.theme = preferences.theme === 'dark' ? 'light' : 'dark';
+  };
+
+  return (
+    <button type="button" onClick={toggleTheme}>
+      Current theme: {preferences.theme}
+    </button>
+  );
+});
+```
+
+:::
+
+## Cookie Options
+
+You can specify standard cookie transport attributes such as expiration, path, and security flags via the optional third argument:
+
+:::code-group{group="framework"}
+
+```typescript [React] name="react"
+import { cookies, render, setup } from '@airlib/react';
+
+export const UserProfile = setup(() => {
+  const session = cookies(
+    'session-data',
+    { userId: '', token: '' },
+    {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      sameSite: 'Lax',
+      secure: true,
+    }
+  );
+
+  return render(() => <div>Logged in as: {session.userId}</div>);
+});
+```
+
+```typescript [SolidJS] name="solid"
+import { cookies, setup } from '@airlib/solid';
+
+export const UserProfile = setup(() => {
+  const session = cookies(
+    'session-data',
+    { userId: '', token: '' },
+    {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      sameSite: 'Lax',
+      secure: true,
+    }
+  );
+
+  return <div>Logged in as: {session.userId}</div>;
+});
+```
+
+:::
+
+### Available Options
+
+| Option | Type | Description |
+| :--- | :--- | :--- |
+| `path` | `string` | URL path scope for the cookie (defaults to `/`). |
+| `maxAge` | `number` | Time-to-live in seconds before the cookie expires. |
+| `secure` | `boolean` | Restricts cookie transmission to HTTPS connections. |
+| `sameSite` | `'Strict' \| 'Lax' \| 'None'` | Controls cross-site request cookie inclusion. |
+| `httpOnly` | `boolean` | Server-only flag for `Set-Cookie` generation. |
+
+## Isomorphic SSR and Hydration
+
+`cookies()` unifies cookie management across server and browser environments:
+
+- **Server Rendering (SSR)**: Reads incoming request cookies to render authenticated UI, automatically emitting `Set-Cookie` response headers for any mutations made during the request.
+- **Client Hydration**: Initializes with the server-rendered cookie state, ensuring hydration with zero markup mismatch.
+- **Client-Side Reactivity**: Directly updating state properties re-renders dependent components and persists changes to browser cookies across subsequent navigations.
+
+## Server Sync
+
+When server-side actions or Remote Functions (IRPC) modify cookies, you can synchronize the active client-side cookie stores without reloading the page:
+
+:::code-group{group="framework"}
+
+```typescript [React] name="react"
+import { syncCookies } from '@airlib/react';
+
+// Re-reads document.cookie and updates reactive stores
+syncCookies();
+```
+
+```typescript [SolidJS] name="solid"
+import { syncCookies } from '@airlib/solid';
+
+// Re-reads document.cookie and updates reactive stores
+syncCookies();
+```
+
+:::
+
+You can also trigger a sync from any script or third-party library via the native DOM event:
+
+```typescript
+window.dispatchEvent(new Event('anchor:cookie-sync'));
+```
+
+## Next Steps
+
+- **Remote Functions**: Learn how to read and mutate cookies inside server RPC endpoints in the [Handlers](/docs/remote-function/handler#cookies-in-handlers) guide.
+- **Side Effects**: Manage cleanup and reactions to state changes with [Side Effects](/docs/state-management/side-effect).
+- **Async Handling**: Handle asynchronous data fetching alongside reactive state with [Async Handling](/docs/state-management/async-handling).

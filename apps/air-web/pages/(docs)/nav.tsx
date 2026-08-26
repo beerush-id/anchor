@@ -1,17 +1,16 @@
 import type { NavItem } from '@airlib/react/mdx';
+import formMeta from '@airlib-cache/metadata/(docs)/form/index.js';
 import docsMeta from '@airlib-cache/metadata/(docs)/index.js';
+import componentsMeta from '@airlib-cache/metadata/(docs)/material-css/components/index.js';
+import extensionsMeta from '@airlib-cache/metadata/(docs)/material-css/extensions/index.js';
+import materialMeta from '@airlib-cache/metadata/(docs)/material-css/index.js';
+import layoutMeta from '@airlib-cache/metadata/(docs)/material-css/layout/index.js';
+import materialUtilitiesMeta from '@airlib-cache/metadata/(docs)/material-css/utilities/index.js';
 import remoteFunctionMeta from '@airlib-cache/metadata/(docs)/remote-function/index.js';
 import routingMeta from '@airlib-cache/metadata/(docs)/routing/index.js';
 import stateMeta from '@airlib-cache/metadata/(docs)/state-management/index.js';
 import storageMeta from '@airlib-cache/metadata/(docs)/storage/index.js';
 import uiMeta from '@airlib-cache/metadata/(docs)/user-interface/index.js';
-import formMeta from '@airlib-cache/metadata/(docs)/utilities/form/index.js';
-import componentsMeta from '@airlib-cache/metadata/(docs)/utilities/material-css/components/index.js';
-import extensionsMeta from '@airlib-cache/metadata/(docs)/utilities/material-css/extensions/index.js';
-import materialMeta from '@airlib-cache/metadata/(docs)/utilities/material-css/index.js';
-import layoutMeta from '@airlib-cache/metadata/(docs)/utilities/material-css/layout/index.js';
-import materialUtilitiesMeta from '@airlib-cache/metadata/(docs)/utilities/material-css/utilities/index.js';
-import utilitiesMeta from '@airlib-cache/metadata/(docs)/utilities/index.js';
 import workflowMeta from '@airlib-cache/metadata/(docs)/workflow/index.js';
 import type { ComponentType } from 'react';
 import {
@@ -37,6 +36,7 @@ import {
 } from './icons.js';
 import postsRoute from './posts/route.js';
 import releasesRoute from './releases/route.js';
+import utilitiesRoute from './utilities/route.js';
 
 const ICONS: Record<string, ComponentType> = {
   home: OverviewIcon,
@@ -201,8 +201,7 @@ export const navs: NavItem[] = [
   },
   {
     text: 'Utilities',
+    route: utilitiesRoute,
     icon: () => <BuildIcon />,
-    collapsed: true,
-    items: toNavItems(utilitiesMeta),
   },
 ];

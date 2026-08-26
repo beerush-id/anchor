@@ -1,6 +1,20 @@
-import { classx, derived, For, Link, mutable, navigate, query, render, setup, Show, Snippet } from '@airlib/react';
+import {
+  classx,
+  derived,
+  effect,
+  For,
+  Link,
+  mutable,
+  navigate,
+  query,
+  render,
+  Show,
+  Snippet,
+  setup,
+} from '@airlib/react';
+import { LIVE_KEYBOARD } from '@airlib/react/browser';
 import MiniSearch, { type SearchResult } from 'minisearch';
-import type { KeyboardEventHandler } from 'react';
+import type { KeyboardEventHandler, ReactNode } from 'react';
 
 interface SearchDocument {
   id: string;
@@ -14,22 +28,25 @@ export interface SearchProps {
 }
 
 /**
- * Client-side search over the `index.json` emitted by the `airSearch` plugin.
- * The index auto-loads via `query` at mount; dropdown visibility is pure CSS
- * (`:focus-within`); results are derived reactively from the query.
+ * Client-side documentation search component with keyboard navigation and instant indexing.
  */
 export const Search = setup<SearchProps>((props) => {
-  // All primitives — no deep observation needed. `open` exists only to keep
-  // `aria-expanded` honest; it's read solely inside the input's `<Snippet>`,
-  // so focus changes re-render just the input, never the results list.
   const state = mutable({
     query: '',
     active: -1,
     open: false,
   });
+  let inputRef: HTMLInputElement | null = null;
 
-  // Auto-starts on the client (no-op during SSR); `data` flips from undefined
-  // to the search facade once the index is fetched and the engine is built.
+  effect.client(() => {
+    if (LIVE_KEYBOARD.is('ctrl', 'k') || LIVE_KEYBOARD.is('meta', 'k')) {
+      if (inputRef && document.activeElement !== inputRef) {
+        inputRef.focus();
+        inputRef.select();
+      }
+    }
+  });
+
   const indexes = query(async () => {
     const res = await fetch('/index.json');
     const docs = (res.ok ? await res.json() : []) as SearchDocument[];
@@ -41,7 +58,6 @@ export const Search = setup<SearchProps>((props) => {
     });
     engine.addAll(docs);
 
-    // Facade keeps the engine a private closure — never proxied as reactive state.
     return { search: (query: string) => engine.search(query) };
   });
 
@@ -70,10 +86,14 @@ export const Search = setup<SearchProps>((props) => {
       state.active = -1;
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      state.active = items.length ? (state.active + 1) % items.length : -1;
+      const next = items.length ? (state.active + 1) % items.length : -1;
+      state.active = next;
+      document.getElementById(`air-search-item-${next}`)?.scrollIntoView({ block: 'nearest' });
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      state.active = items.length ? (state.active - 1 + items.length) % items.length : -1;
+      const next = items.length ? (state.active - 1 + items.length) % items.length : -1;
+      state.active = next;
+      document.getElementById(`air-search-item-${next}`)?.scrollIntoView({ block: 'nearest' });
     } else if (e.key === 'Enter' && state.active >= 0 && items[state.active]) {
       e.preventDefault();
       go(items[state.active].url);
@@ -87,10 +107,12 @@ export const Search = setup<SearchProps>((props) => {
         <path d="M378-329q-108.16 0-183.08-75Q120-479 120-585t75-181q75-75 181.5-75t181 75Q632-691 632-584.85 632-542 618-502q-14 40-42 75l242 240q9 8.56 9 21.78T818-143q-9 9-22.22 9-13.22 0-21.78-9L533-384q-30 26-69.96 40.5Q423.08-329 378-329Zm-1-60q81.25 0 138.13-57.5Q572-504 572-585t-56.87-138.5Q458.25-781 377-781q-82.08 0-139.54 57.5Q180-666 180-585t57.46 138.5Q294.92-389 377-389Z" />
       </svg>
 
-      {/* Isolated boundary: typing only re-renders the input, not the dropdown. */}
       <Snippet>
         {() => (
           <input
+            ref={(el) => {
+              inputRef = el;
+            }}
             type="search"
             value={state.query}
             onInput={handleInput}
@@ -106,6 +128,8 @@ export const Search = setup<SearchProps>((props) => {
         )}
       </Snippet>
 
+      <kbd className="air-search-kbd">⌘K</kbd>
+
       <Show when={() => (results.value.length && results.value) as SearchResult[]}>
         {(items) => (
           <div id="air-search-results" className="air-search-results" role="listbox">
@@ -117,7 +141,10 @@ export const Search = setup<SearchProps>((props) => {
                   role="option"
                   aria-selected={state.active === index}
                   className={classx('air-search-item', { active: state.active === index })}
-                  onClick={() => (state.active = -1)}
+                  onClick={(e) => {
+                    state.active = -1;
+                    e.currentTarget.blur();
+                  }}
                 >
                   <strong className="air-search-item-title">{hit.title || hit.url}</strong>
                   <Excerpt content={hit.content} terms={hit.terms} />
@@ -138,36 +165,103 @@ interface ExcerptProps {
 }
 
 /**
- * Windows the content around the first matched term and highlights the
- * matches. Keeps the result compact — ~40 chars of lead-in, ~90 after.
+ * Extracts and highlights the complete sentence matching the search terms.
  */
 const Excerpt = ({ content, terms }: ExcerptProps) => {
-  const text = (content ?? '').replace(/\s+/g, ' ').trim();
-  if (!text) return null;
+  const clean = stripMarkdown(content ?? '');
+  if (!clean) return null;
 
   const patterns = terms.filter(Boolean).map((term) => escapeRegExp(term));
   if (!patterns.length) {
-    return <span className="air-search-item-excerpt">{truncate(text, 120)}</span>;
+    return <span className="air-search-item-excerpt">{truncate(clean, 130)}</span>;
   }
 
-  const re = new RegExp(patterns.join('|'), 'gi');
-  const match = text.match(re);
+  const re = new RegExp(patterns.join('|'), 'i');
+  const match = clean.match(re);
   if (!match || typeof match.index !== 'number') {
-    return <span className="air-search-item-excerpt">{truncate(text, 120)}</span>;
+    return <span className="air-search-item-excerpt">{truncate(clean, 130)}</span>;
   }
 
-  const start = Math.max(0, match.index - 40);
-  const end = Math.min(text.length, match.index + match[0].length + 90);
-  const lead = start > 0 ? '…' : '';
-  const trail = end < text.length ? '…' : '';
-  const window = `${lead}${text.slice(start, end)}${trail}`;
-
-  return <span className="air-search-item-excerpt">{highlight(window, re)}</span>;
+  const sentence = extractSentence(clean, match.index, match[0].length);
+  return <span className="air-search-item-excerpt">{highlight(sentence, patterns)}</span>;
 };
 
-function highlight(text: string, re: RegExp) {
-  const parts = text.split(re);
-  return parts.map((part, index) => (index === parts.length - 1 ? part : <mark key={index}>{part}</mark>));
+/**
+ * Strips raw markdown syntax, headings, and code fences.
+ */
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/:::[^\n]*\n?/g, ' ')
+    .replace(/:::/g, ' ')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/[*_]{1,3}([^*_]+)[*_]{1,3}/g, '$1')
+    .replace(/^[\s>*-+]+/gm, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Extracts the natural sentence containing the matched term.
+ */
+function extractSentence(text: string, matchIndex: number, matchLength: number): string {
+  const prevBoundary = Math.max(
+    text.lastIndexOf('. ', matchIndex),
+    text.lastIndexOf('? ', matchIndex),
+    text.lastIndexOf('! ', matchIndex),
+    text.lastIndexOf('\n', matchIndex)
+  );
+  const start = prevBoundary === -1 ? 0 : prevBoundary + 2;
+
+  const afterMatch = matchIndex + matchLength;
+  const nextCandidates = [
+    text.indexOf('. ', afterMatch),
+    text.indexOf('? ', afterMatch),
+    text.indexOf('! ', afterMatch),
+    text.indexOf('\n', afterMatch),
+  ].filter((idx) => idx !== -1);
+
+  const nextBoundary = nextCandidates.length ? Math.min(...nextCandidates) : -1;
+  const end = nextBoundary === -1 ? Math.min(text.length, start + 180) : nextBoundary + 1;
+
+  let sentence = text.slice(start, end).trim();
+
+  if (sentence.length > 200) {
+    const relMatch = matchIndex - start;
+    const sStart = Math.max(0, relMatch - 30);
+    const sEnd = Math.min(sentence.length, relMatch + matchLength + 80);
+    const lead = sStart > 0 ? '…' : '';
+    const trail = sEnd < sentence.length ? '…' : '';
+    sentence = `${lead}${sentence.slice(sStart, sEnd)}${trail}`;
+  }
+
+  return sentence;
+}
+
+/**
+ * Wraps matched term occurrences with `<mark>` tags.
+ */
+function highlight(text: string, patterns: string[]) {
+  const re = new RegExp(`(${patterns.join('|')})`, 'gi');
+  const parts: ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = re.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    parts.push(<mark key={match.index}>{match[0]}</mark>);
+    lastIndex = match.index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts.length ? parts : text;
 }
 
 function truncate(text: string, max: number) {

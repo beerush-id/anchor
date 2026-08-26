@@ -10,6 +10,7 @@ const formHandlingRoute = route.route('/form-handling');
 const immutableRoute = route.route('/immutable');
 const mutableRoute = route.route('/mutable');
 const sideEffectRoute = route.route('/side-effect');
+const cookieRoute = route.route('/cookie');
 /** AirLib managed */
 
 export const stateManagementRoute = route;
@@ -21,5 +22,6 @@ export const stateManagementFormHandlingRoute = formHandlingRoute;
 export const stateManagementImmutableRoute = immutableRoute;
 export const stateManagementMutableRoute = mutableRoute;
 export const stateManagementSideEffectRoute = sideEffectRoute;
+export const stateManagementCookieRoute = cookieRoute;
 
 export default stateManagementRoute;

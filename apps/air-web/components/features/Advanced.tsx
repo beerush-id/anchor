@@ -1,6 +1,6 @@
 import { type AnyRoute, classx, For, Link, mutable, setup, Show, Snippet } from '@airlib/react';
 import { BuildIcon, DataObjectIcon, StorageIcon, UserInterfaceIcon } from '@/pages/(docs)/icons.js';
-import { stateManagementImmutableRoute } from '@/pages/(docs)/state-management/route.js';
+import { stateManagementCookieRoute, stateManagementImmutableRoute } from '@/pages/(docs)/state-management/route.js';
 import { storageGettingStartedRoute } from '@/pages/(docs)/storage/route.js';
 import { userInterfaceBrowserRoute } from '@/pages/(docs)/user-interface/route.js';
 import { utilitiesIndexRoute } from '@/pages/(docs)/utilities/route.js';
@@ -17,7 +17,7 @@ const TABS = [
     title: 'Reactive Cookie',
     blurb: 'Reactive cookies auto-synced to the browser — always up to date end-to-end.',
     icon: StorageIcon,
-    route: storageGettingStartedRoute,
+    route: stateManagementCookieRoute,
   },
   {
     id: 'live' as TabId,

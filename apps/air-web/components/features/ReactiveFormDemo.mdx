@@ -1,0 +1,57 @@
+:::interactive[Schema-driven reactive form live demo]
+```tsx
+import { mutable, render, setup } from '@airlib/react';
+import { createForm, EmailInput, FormSubmit, TextInput } from '@airlib/react-form';
+import { z } from 'zod';
+
+const schema = z.object({
+  name: z.string().min(3, 'Name must be at least 3 characters'),
+  email: z.string().email('Invalid email address'),
+});
+
+const UserForm = createForm(schema);
+
+const ProfileForm = setup(() => {
+  const profile = mutable({ name: '', email: '' });
+  const status = mutable({ submitted: false, payload: '' });
+
+  return render(() => (
+    <div className="flex w-full max-w-sm flex-col gap-3">
+      <UserForm
+        value={profile}
+        onSubmit={(data) => {
+          status.submitted = true;
+          status.payload = JSON.stringify(data, null, 2);
+        }}
+      >
+        <UserForm.Field name="name" label="Name" className="flex flex-col gap-1">
+          <TextInput
+            placeholder="Enter name"
+            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-on-surface outline-none focus:border-primary"
+          />
+        </UserForm.Field>
+
+        <UserForm.Field name="email" label="Email" className="flex flex-col gap-1">
+          <EmailInput
+            placeholder="name@company.com"
+            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-on-surface outline-none focus:border-primary"
+          />
+        </UserForm.Field>
+
+        <FormSubmit className="air-mdx-btn mt-2">Submit</FormSubmit>
+      </UserForm>
+
+      {status.submitted && (
+        <pre className="rounded-lg border border-border bg-surface p-3 font-mono text-xs text-on-surface-variant">
+          {status.payload}
+        </pre>
+      )}
+    </div>
+  ));
+});
+```
+
+<div className="air-demos flex items-center justify-center p-4">
+  <ProfileForm />
+</div>
+:::

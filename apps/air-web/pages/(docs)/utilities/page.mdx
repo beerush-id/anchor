@@ -32,9 +32,9 @@ Anchor ships a collection of everyday helpers and primitives built directly into
 - **Rollback on failure**: Calling `undo()` rolls back the exact mutated state to its pre-transaction values.
 - **Commit on success**: Calling `commit()` seals the change and discards the undo snapshot.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { mutable, setup, undoable } from '@airlib/react';
 
 const LikeButton = setup(() => {
@@ -64,24 +64,32 @@ const LikeButton = setup(() => {
 });
 ```
 
-```tsx [SolidJS]
-import { mutable, undoable } from '@airlib/solid';
+```tsx [SolidJS] name="solid"
+import { mutable, setup, undoable } from '@airlib/solid';
 
-const post = mutable({ id: '101', liked: false, likes: 42 });
+const LikeButton = setup(() => {
+  const post = mutable({ id: '101', liked: false, likes: 42 });
 
-const handleLike = async () => {
-  const [undo, commit] = undoable(() => {
-    post.liked = !post.liked;
-    post.likes += post.liked ? 1 : -1;
-  });
+  const handleLike = async () => {
+    const [undo, commit] = undoable(() => {
+      post.liked = !post.liked;
+      post.likes += post.liked ? 1 : -1;
+    });
 
-  try {
-    await api.likePost(post.id);
-    commit();
-  } catch (err) {
-    undo();
-  }
-};
+    try {
+      await api.likePost(post.id);
+      commit();
+    } catch (err) {
+      undo();
+    }
+  };
+
+  return (
+    <button type="button" onClick={handleLike}>
+      {post.liked ? '♥' : '♡'} {post.likes}
+    </button>
+  );
+});
 ```
 
 :::
@@ -94,7 +102,9 @@ Anchor includes zero-dependency class name and style object merging utilities th
 
 Combines class strings conditionally with support for strings, booleans, objects, and nested arrays:
 
-```typescript
+:::code-group{group="framework"}
+
+```typescript [React] name="react"
 import { classx } from '@airlib/react/utils';
 
 // Basic conditionals and object maps
@@ -106,11 +116,27 @@ const className = classx(
 );
 ```
 
+```typescript [SolidJS] name="solid"
+import { classx } from '@airlib/solid/utils';
+
+// Basic conditionals and object maps
+const className = classx(
+  'btn font-medium',
+  { 'btn-active bg-primary': isActive },
+  isDisabled && 'opacity-50 cursor-not-allowed',
+  ['custom-class', dynamicVariants]
+);
+```
+
+:::
+
 ### Style Objects
 
 Merges inline style objects, filtering out undefined or null values:
 
-```typescript
+:::code-group{group="framework"}
+
+```typescript [React] name="react"
 import { stylex } from '@airlib/react/utils';
 
 const styles = stylex(
@@ -120,13 +146,27 @@ const styles = stylex(
 );
 ```
 
+```typescript [SolidJS] name="solid"
+import { stylex } from '@airlib/solid/utils';
+
+const styles = stylex(
+  { display: 'flex', gap: '1rem' },
+  isExpanded && { height: 'auto', opacity: 1 },
+  customStyle
+);
+```
+
+:::
+
 ## Async and Timing
 
 ### Delay
 
 Promise-based delay helper to pause execution in async functions, workflows, or test pipelines:
 
-```typescript
+:::code-group{group="framework"}
+
+```typescript [React] name="react"
 import { sleep } from '@airlib/react/utils';
 
 const delayOperation = async () => {
@@ -136,11 +176,25 @@ const delayOperation = async () => {
 };
 ```
 
+```typescript [SolidJS] name="solid"
+import { sleep } from '@airlib/solid/utils';
+
+const delayOperation = async () => {
+  console.log('Starting...');
+  await sleep(1000); // Pause for 1 second
+  console.log('Resumed!');
+};
+```
+
+:::
+
 ### Debouncer
 
 Creates a `[schedule, cancel]` tuple to delay execution until a quiet period has elapsed:
 
-```typescript
+:::code-group{group="framework"}
+
+```typescript [React] name="react"
 import { debouncer } from '@airlib/react/utils';
 
 const [debounceSearch, cancelSearch] = debouncer(300);
@@ -152,26 +206,57 @@ const onInput = (e: React.ChangeEvent<HTMLInputElement>) => {
 };
 ```
 
+```typescript [SolidJS] name="solid"
+import { debouncer } from '@airlib/solid/utils';
+
+const [debounceSearch, cancelSearch] = debouncer(300);
+
+const onInput = (e: InputEvent & { currentTarget: HTMLInputElement }) => {
+  debounceSearch(() => {
+    fetchResults(e.currentTarget.value);
+  });
+};
+```
+
+:::
+
 ### Microtask
 
 Batches multiple invocations within a window, executing only the final callback with initial and latest context:
 
-```typescript
+:::code-group{group="framework"}
+
+```typescript [React] name="react"
 import { microtask } from '@airlib/react/utils';
 
 const [scheduleTask, cancelTask] = microtask<number>(50);
 
-// Schedules with context; executes once after timeout with (firstContext, lastContext)
+// Executes once after timeout with (firstContext, lastContext)
 scheduleTask((init, current) => {
   console.log(`Updated from ${init} to ${current}`);
 }, count);
 ```
 
+```typescript [SolidJS] name="solid"
+import { microtask } from '@airlib/solid/utils';
+
+const [scheduleTask, cancelTask] = microtask<number>(50);
+
+// Executes once after timeout with (firstContext, lastContext)
+scheduleTask((init, current) => {
+  console.log(`Updated from ${init} to ${current}`);
+}, count);
+```
+
+:::
+
 ### Microbatch
 
 Schedules multiple distinct functions within a timeframe into a unified batch:
 
-```typescript
+:::code-group{group="framework"}
+
+```typescript [React] name="react"
 import { microbatch } from '@airlib/react/utils';
 
 const [scheduleBatch, clearBatch] = microbatch(20);
@@ -180,35 +265,70 @@ scheduleBatch(() => syncUserMetrics());
 scheduleBatch(() => syncActivityLog());
 ```
 
+```typescript [SolidJS] name="solid"
+import { microbatch } from '@airlib/solid/utils';
+
+const [scheduleBatch, clearBatch] = microbatch(20);
+
+scheduleBatch(() => syncUserMetrics());
+scheduleBatch(() => syncActivityLog());
+```
+
+:::
+
 ## Unique Identifiers
 
 ### Standard UUID
 
 Generates a random UUID v4 string with native `crypto.randomUUID()` fallback support:
 
-```typescript
+:::code-group{group="framework"}
+
+```typescript [React] name="react"
 import { uuid } from '@airlib/react/utils';
 
 const id = uuid();
 // e.g. "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
 ```
 
+```typescript [SolidJS] name="solid"
+import { uuid } from '@airlib/solid/utils';
+
+const id = uuid();
+// e.g. "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d"
+```
+
+:::
+
 ### Compact Short ID
 
 Generates a URL-friendly, compact identifier combining timestamps and random entropy:
 
-```typescript
+:::code-group{group="framework"}
+
+```typescript [React] name="react"
 import { shortId } from '@airlib/react/utils';
 
 const id = shortId();
 // e.g. "m1k8s000a1b2"
 ```
 
+```typescript [SolidJS] name="solid"
+import { shortId } from '@airlib/solid/utils';
+
+const id = shortId();
+// e.g. "m1k8s000a1b2"
+```
+
+:::
+
 ### Scoped Unique Index
 
 Generates auto-incrementing integers keyed by a `symbol`. By default, `uIndex` increments within the current active context (such as the current component closure when called inside `setup()`):
 
-```typescript
+:::code-group{group="framework"}
+
+```tsx [React] name="react"
 import { setup } from '@airlib/react';
 import { uIndex } from '@airlib/react/utils';
 
@@ -219,15 +339,47 @@ export const ItemList = setup(() => {
   const firstId = uIndex(ITEM_INDEX); // 1
   const secondId = uIndex(ITEM_INDEX); // 2
 
-  return (...);
+  return <div id={`item-${firstId}`} />;
 });
 ```
 
+```tsx [SolidJS] name="solid"
+import { setup } from '@airlib/solid';
+import { uIndex } from '@airlib/solid/utils';
+
+const ITEM_INDEX = Symbol('item-index');
+
+export const ItemList = setup(() => {
+  // Scoped to this component instance
+  const firstId = uIndex(ITEM_INDEX); // 1
+  const secondId = uIndex(ITEM_INDEX); // 2
+
+  return <div id={`item-${firstId}`} />;
+});
+```
+
+:::
+
 Passing `scoped: true` creates or reads a shared counter container across child scopes (useful for compound components like tabs or code groups):
 
-```typescript
+:::code-group{group="framework"}
+
+```typescript [React] name="react"
+import { uIndex } from '@airlib/react/utils';
+
 const GROUP_INDEX = Symbol('group-index');
 
 // Shares an index sequence with nested child scopes
 const groupId = uIndex(GROUP_INDEX, true);
 ```
+
+```typescript [SolidJS] name="solid"
+import { uIndex } from '@airlib/solid/utils';
+
+const GROUP_INDEX = Symbol('group-index');
+
+// Shares an index sequence with nested child scopes
+const groupId = uIndex(GROUP_INDEX, true);
+```
+
+:::

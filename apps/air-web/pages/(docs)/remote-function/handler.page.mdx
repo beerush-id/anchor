@@ -339,6 +339,39 @@ irpc.construct(getProfile, async () => {
 
 Context is scoped to the individual request. On server runtimes, `AsyncLocalStorage` ensures concurrent requests from different users never share context.
 
+### Cookies in Handlers
+
+Handlers can directly read and mutate isomorphic [Reactive Cookies](/docs/state-management/cookie) without manual header parsing or response header wiring:
+
+```typescript
+import { cookies } from '@airlib/core';
+
+type UserSession = {
+  token: string;
+  userId: string;
+};
+
+irpc.construct(login, async (credentials) => {
+  const user = await auth.verify(credentials);
+  const session = cookies<UserSession>('session', { token: '', userId: '' }, {
+    path: '/',
+    secure: true,
+    sameSite: 'Lax',
+    maxAge: 60 * 60 * 24 * 7,
+  });
+
+  // Mutating the cookie inside a handler automatically sets Set-Cookie headers on the response
+  session.token = user.token;
+  session.userId = user.id;
+
+  return { success: true };
+});
+```
+
+:::info[Reactive Cookies]
+Learn more about options, client-side reactivity, and hydration in the [Reactive Cookies](/docs/state-management/cookie) documentation.
+:::
+
 ## Interceptors
 
 To intercept requests before they reach the handler (for authentication, validation, or logging), IRPC provides a robust system of Router Hooks, Guards, and Spec Hooks. 
