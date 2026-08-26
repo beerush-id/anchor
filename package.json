@@ -64,10 +64,6 @@
     "irpclib/*",
     "demos/*"
   ],
-  "overrides": {
-    "@airlib/core": "workspace:*",
-    "@airlib/react": "workspace:*"
-  },
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/airstack",
   "license": "MIT",
