@@ -1,25 +1,15 @@
 import { type AnyRoute, classx, For, Link, setup, Slot } from '@airlib/react';
 import type { ComponentProps, ReactNode } from 'react';
-import airLogo from '../assets/airlib.svg';
-import postsRoute from '../pages/(docs)/posts/route.js';
-import releasesRoute from '../pages/(docs)/releases/route.js';
 import docsRoute from '../pages/(docs)/route.js';
 import rootRoute from '../pages/route.js';
 import { DiscordIcon, GitHubIcon } from './icons.js';
+import { LogoText } from './LogoText.js';
 import { Search } from './Search.js';
 
 const navs = [
   {
     text: 'Docs',
     route: docsRoute,
-  },
-  {
-    text: 'Posts',
-    route: postsRoute,
-  },
-  {
-    text: 'Releases',
-    route: releasesRoute,
   },
 ];
 
@@ -33,9 +23,8 @@ const Header = setup<HeaderProps, HeaderSlots>((props, snippets) => {
   return (
     <header className={classx('air-header', props.className)}>
       <div className="air-header-inner">
-        <Link to={rootRoute} className="air-header-logo">
-          <img src={airLogo} width="36" alt="AirLib Logo" />
-          <span className={'text-2xl font-normal tracking-wide'}>AirLib</span>
+        <Link to={rootRoute} className="air-header-logo" aria-label="AirLib Logo">
+          <LogoText className="logo-text-image" />
         </Link>
         <Slot for={() => snippets.nav?.()}>
           <nav className="air-header-nav mx-10">

@@ -1,0 +1,118 @@
+:::interactive[Real-Time Edge Stream Live Demo]
+```tsx
+import { classx, mutable, setup, Show, Snippet } from '@airlib/react';
+import { demoRpc, httpTransport, wsTransport } from '../../pages/(docs)/api.ts';
+import { StockTable } from '../StockTable.js';
+import { getStocks } from './function.ts';
+
+const LiveMarketStream = setup(() => {
+  const stocks = getStocks.later();
+  const transport = mutable({ mode: 'http' as 'http' | 'ws' });
+
+  const setTransport = (mode: 'http' | 'ws') => {
+    if (transport.mode === mode) return;
+
+    transport.mode = mode;
+    demoRpc.use(mode === 'http' ? httpTransport : wsTransport);
+
+    if (stocks.status === 'pending') {
+      stocks.close();
+      stocks.dispatch();
+    }
+  };
+
+  return (
+    <div className={classes.root}>
+      {/* Main Stock Table */}
+      <Snippet data={() => stocks.data}>
+        {(items) => <StockTable items={items} />}
+      </Snippet>
+
+      {/* Stream Controls & Transport Switcher */}
+      <div className={classes.toolbar}>
+        <div className={classes.status}>
+          <span className={classes.indicator}>
+            <Show
+              when={() => stocks.status === 'pending'}
+              fallback={() => <span className={classes.dotIdle} />}
+            >
+              <span className={classes.dotPing} />
+              <span className={classes.dotActive} />
+            </Show>
+          </span>
+
+          <span className={classes.statusText}>
+            <Show when={() => stocks.status === 'pending'} fallback={() => 'Stream Inactive'}>
+              Live Edge Feed
+            </Show>
+          </span>
+        </div>
+
+        <div className={classes.actions}>
+          {/* Transport Selector */}
+          <div className={classes.segmented}>
+            <Snippet data={() => transport.mode}>
+              {(mode) => (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setTransport('http')}
+                    className={classx(classes.segmentBtn, mode === 'http' && classes.segmentActive)}
+                  >
+                    HTTP
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTransport('ws')}
+                    className={classx(classes.segmentBtn, mode === 'ws' && classes.segmentActive)}
+                  >
+                    WebSocket
+                  </button>
+                </>
+              )}
+            </Snippet>
+          </div>
+
+          <button
+            type="button"
+            className={classx('air-mdx-btn text-xs', {
+              'border-rose-500/50 text-rose-600 dark:text-rose-400': stocks.status === 'pending',
+            })}
+            onClick={() => {
+              if (stocks.status === 'pending') {
+                stocks.close();
+              } else {
+                stocks.dispatch();
+              }
+            }}
+          >
+            <Show when={() => stocks.status === 'pending'} fallback={() => 'Watch Stock'}>
+              Stop Watching
+            </Show>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+const classes = {
+  root: 'flex flex-col-reverse gap-4 w-full',
+  toolbar: 'flex flex-wrap items-center justify-between gap-3 px-1',
+  status: 'flex items-center gap-2',
+  indicator: 'relative flex size-2.5',
+  dotIdle: 'relative inline-flex size-2.5 rounded-full bg-on-surface-variant/40',
+  dotPing: 'absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75',
+  dotActive: 'relative inline-flex size-2.5 rounded-full bg-emerald-500',
+  statusText: 'text-xs font-medium text-on-surface-variant',
+  actions: 'flex items-center gap-3',
+  segmented: 'flex rounded-lg border border-border bg-surface-variant p-0.5',
+  segmentBtn: 'rounded-md px-2.5 py-1 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all',
+  segmentActive: 'bg-surface text-primary shadow-xs',
+};
+```
+
+<div className="air-demos w-full p-2 lg:p-4">
+  <LiveMarketStream />
+</div>
+:::

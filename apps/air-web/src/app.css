@@ -217,11 +217,10 @@
 }
 
 @utility air-card-more {
-  @apply mt-auto inline-flex items-center gap-1 pt-3 text-sm font-medium text-primary;
-  transition: color 0.2s ease-in-out;
+  @apply mt-auto inline-flex items-center gap-1.5 pt-3 text-sm font-semibold text-primary transition-all duration-200;
 
   &:hover {
-    @apply underline;
+    @apply gap-2 underline;
   }
 }
 
@@ -235,6 +234,15 @@
 
 @utility air-header-logo {
   @apply flex items-center text-sm font-semibold text-on-surface no-underline;
+
+  .logo-text-image {
+    height: 36px;
+    color: var(--color-on-surface);
+  }
+
+  .text-alt {
+    fill: var(--color-on-surface-variant);
+  }
 }
 
 @utility air-header-link {

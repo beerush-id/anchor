@@ -41,5 +41,5 @@ const classes = {
   title: 'text-2xl font-bold text-on-surface lg:text-3xl',
   body: 'max-w-130 text-base leading-relaxed text-on-surface-variant lg:text-lg',
   code: 'rounded bg-surface-variant px-1.5 py-0.5 font-mono text-[0.9em] text-on-surface',
-  more: 'mt-1 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline',
+  more: 'mt-2 inline-flex items-center gap-1.5 rounded-lg border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-sm font-semibold text-primary transition-all hover:border-primary/50 hover:bg-primary/20 hover:gap-2 active:scale-98',
 };
