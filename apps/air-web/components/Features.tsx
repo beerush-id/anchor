@@ -15,8 +15,16 @@ import { workflowIndexRoute } from '../pages/(docs)/workflow/route.js';
 
 export const Features = setup(() => {
   return (
-    <section className={classes.root}>
+    <section className={classes.root} aria-labelledby="features-heading">
       <div className={`air-section-inner ${classes.inner}`}>
+        <div className="sr-only">
+          <h2 id="features-heading">Core Features & Architecture</h2>
+          <p>
+            Explore AirLib core architectural pillars: fine-grained reactive state, isomorphic RPC APIs, assisted
+            routing, universal SSR, promise-like workflows, and multi-runtime deployment.
+          </p>
+        </div>
+
         <div className={classes.grid}>
           {FEATURES.map((feature) => (
             <div key={feature.title} className="air-card flex gap-5">
