@@ -49,6 +49,7 @@
   },
   "dependencies": {
     "@airlib/core": "workspace:*",
+    "@airlib/router": "workspace:*",
     "@beerush/logger": "catalog:lib",
     "@irpclib/http": "workspace:*",
     "@irpclib/irpc": "workspace:*",

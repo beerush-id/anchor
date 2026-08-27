@@ -1,6 +1,7 @@
 import { existsSync, unlinkSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
+import type { RouteEntry } from '@airlib/router';
 import type { LogLevel } from '@beerush/logger';
 import type { HtmlTagDescriptor, IndexHtmlTransformContext, Plugin, ResolvedConfig } from 'vite';
 import { color, setLogLevel, taggedLogger } from './logger.js';
@@ -322,12 +323,14 @@ async function runSsrWorkerSsg(config: ResolvedConfig): Promise<void> {
     let finishedPages = 0;
 
     const promises = [];
-    const routes = worker.router.entries();
+    const routes = worker.router.entries() as RouteEntry[];
 
     for (const [path, info] of routes) {
-      if (info.route?.options?.static) {
+      if (info.route.index) continue;
+
+      if (info.route.options.static) {
         const controller = new AbortController();
-        const request = new Request(`http://localhost${path}`, { signal: controller.signal });
+        const request = new Request(`http://localhost${path.replace(/\/$/, '')}`, { signal: controller.signal });
 
         const promise = new Promise((resolve, reject) => {
           const start = performance.now();
