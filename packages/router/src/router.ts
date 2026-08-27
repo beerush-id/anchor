@@ -122,9 +122,11 @@ export class Router<Output = any> {
    */
   constructor(options?: RouterOptions) {
     this.options = inherit(DEFAULT_CONFIG, options);
-    this.rootRoute = new Route<'/', None, None>(this, '/', this.options, undefined, '/');
-    this.rootRegistry = new RouteRegistry(this.rootRoute);
-    this.routes.add(this.rootRegistry);
+    const { route, registry } = this.createRoot();
+
+    this.rootRoute = route;
+    this.rootRegistry = registry;
+    this.routes.add(registry);
 
     if (typeof document !== 'undefined' && document.querySelector) {
       const hydration = document.querySelector(`#${HYDRATION_KEY}`);
@@ -266,12 +268,13 @@ export class Router<Output = any> {
   ): Path extends '/'
     ? IndexRoute<Path, Params, QueryParams, Data, never, Output>
     : Route<Path, Params, QueryParams, Data, never, Output> {
-    if (!path || path === ('/' as never))
+    if (!path || path === ('/' as never)) {
       throw new RouteError(ERROR_TYPE.ROUTER, 'Invalid path: Path must be string' + ' "/{path}".');
+    }
 
-    const route = new Route(this, path, options);
-    const routeMap = new RouteRegistry(route as never as UnknownRoute, true);
-    this.routes.add(routeMap);
+    const { route: root, registry } = this.createRoot(true);
+    const route = root.route(path, options);
+    this.routes.add(registry);
 
     return route as never;
   }
@@ -478,7 +481,7 @@ export class Router<Output = any> {
     for (const segment of toActivate) {
       const { route } = segment;
 
-      const blocker = await route.authenticate(storage.context as RouterContext<None, None, TRec>);
+      const blocker = await route.authenticate(storage.context as RouterContext<None, None, TRec>, url);
       if (aborted()) return snapshots;
 
       if (blocker instanceof Redirect) {
@@ -619,7 +622,7 @@ export class Router<Output = any> {
 
     // Authenticate before resolving providers.
     const auths = await Promise.all(
-      segments.map(({ route }) => route.authenticate(storage.context as RouterContext<None, None, TRec>))
+      segments.map(({ route }) => route.authenticate(storage.context as RouterContext<None, None, TRec>), url)
     );
     if (auths.some((r) => r instanceof Error || r instanceof Redirect)) return;
 
@@ -661,6 +664,17 @@ export class Router<Output = any> {
       .replace(/\u2029/g, '\\u2029');
 
     return `<script id="${HYDRATION_KEY}" type="application/json">${jsonString}</script>`;
+  }
+
+  /**
+   * Creates a root route and registry.
+   * @param slave - Optional flag to create a slave root.
+   * @returns The root route and registry
+   */
+  private createRoot(slave?: boolean) {
+    const route = new Route<'/', None, None>(this, '/', undefined, undefined, '/');
+    const registry = new RouteRegistry(route as never as UnknownRoute, slave);
+    return { route, registry };
   }
 }
 

@@ -675,6 +675,10 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
     it('uses the string resetScroll value as the hash scroll behavior', async () => {
       const router = createRouter<ReactNode>();
       const rootUi = page(router.rootRoute);
+
+      // Coverage for slave route rendering.
+      void router.add('/foo');
+
       const activateSpy = vi.spyOn(router, 'activate').mockImplementation((async () => {}) as never);
       const { target, scrollSpy } = mountHashTarget('setup');
 

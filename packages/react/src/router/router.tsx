@@ -213,8 +213,13 @@ export function UIRouter(props: UIRouterProps) {
     };
   });
 
-  const routes = Array.from(router.routes).map((registry) => (
-    <RouteRendererComponent key={registry.route.path} route={registry.route} registry={registry} stacks={stacks} />
+  const routes = Array.from(router.routes).map((registry, i) => (
+    <RouteRendererComponent
+      key={`[${registry.route.path}](${registry.slave ? `slave:${i}` : 'root'})`}
+      route={registry.route}
+      registry={registry}
+      stacks={stacks}
+    />
   ));
 
   return (
@@ -298,7 +303,7 @@ const createRenderer = <TPath, TParams, TQueryParams, TData, PParams, PQuery, PD
   return setup((props) => {
     setContext(ROUTE_CTX, route.state);
     return renderer(props as never) as never;
-  }, route.path) as RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>;
+  }, route.path) as unknown as RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>;
 };
 
 /**
@@ -312,7 +317,7 @@ const createExceptionRenderer = <TParams, TQueryParams, TData, PParams, PQuery, 
   route: UnknownRoute,
   renderer: RouteExceptionRenderer<TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>
 ): RouteExceptionRenderer<TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput> => {
-  return setup(renderer as never, route.path) as RouteExceptionRenderer<
+  return setup(renderer as never, route.path) as unknown as RouteExceptionRenderer<
     TParams,
     TQueryParams,
     TData,
@@ -339,7 +344,7 @@ if (isBrowser()) {
       params: redirect.params,
       redirect: location.href,
       replace: true,
-    } as never);
+    } as AnyType);
   });
 }
 

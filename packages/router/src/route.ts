@@ -610,10 +610,15 @@ export class Route<
    * reactive state they depend on changes.
    *
    * @param context - The guard context
+   * @param url - The URL to guard
    * @param force - Whether to force re-running the guards
    * @returns true if all guards pass, otherwise a GuardBlocker
    */
-  public async authenticate(context: GuardContext<Params, QueryParams>, force = false): Promise<true | GuardBlocker> {
+  public async authenticate(
+    context: GuardContext<Params, QueryParams>,
+    url?: URL,
+    force = false
+  ): Promise<true | GuardBlocker> {
     const { state, guardObservers } = this.storage;
 
     if (state.authenticated && !force) return Promise.resolve(true);
@@ -635,7 +640,7 @@ export class Route<
             return observer.runAsync(async () => {
               try {
                 this.router.progress(0.5);
-                return await guard(context);
+                return await guard(context, url);
               } finally {
                 this.router.progress(0.5);
               }

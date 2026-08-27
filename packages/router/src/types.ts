@@ -102,11 +102,12 @@ export type GuardContext<TParams, TQueryParams> = {
 
 /** A guard function that can block navigation */
 export type GuardHandler<TParams, TQueryParams> = (
-  context: GuardContext<TParams, TQueryParams>
+  context: GuardContext<TParams, TQueryParams>,
+  url?: URL
 ) => Promise<void> | void;
 
 /** An untyped guard function */
-export type UnknownGuard = (context: GuardContext<TRec, TRec>) => Promise<void> | void;
+export type UnknownGuard = (context: GuardContext<TRec, TRec>, url?: URL) => Promise<void> | void;
 
 /** Possible error types for routes */
 export type RouteErrorType = (typeof ERROR_TYPE)[keyof typeof ERROR_TYPE];
