@@ -1,7 +1,7 @@
-import parentRoute from '../route.js';
+import rootRoute from '../route.js';
 
 /** AirLib managed */
-const route = parentRoute.route('/posts');
+const route = rootRoute.route('/posts');
 const indexRoute = route.route('/');
 const airstackVsNextjsRoute = route.route('/airstack-vs-nextjs');
 const airstackVsRemixRoute = route.route('/airstack-vs-remix');
@@ -19,7 +19,7 @@ const buildingFormsWithAirFormRoute = route.route('/building-forms-with-air-form
 const buildingSmartFormComponentsRoute = route.route('/building-smart-form-components');
 /** AirLib managed */
 
-export const postsRoute = route;
+export const postsRoute = route.config({ static: true, deferred: 500 });
 export const postsIndexRoute = indexRoute;
 export const postsAirstackVsNextjsRoute = airstackVsNextjsRoute;
 export const postsAirstackVsRemixRoute = airstackVsRemixRoute;

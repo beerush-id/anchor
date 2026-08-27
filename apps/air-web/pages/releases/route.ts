@@ -1,7 +1,7 @@
-import parentRoute from '../route.js';
+import rootRoute from '../route.js';
 
 /** AirLib managed */
-const route = parentRoute.route('/releases');
+const route = rootRoute.route('/releases');
 const indexRoute = route.route('/');
 const releaseV1Route = route.route('/release-v1');
 const releaseV11Route = route.route('/release-v1.1');
@@ -13,7 +13,7 @@ const releaseV130Route = route.route('/release-v1.3.0');
 const releaseV131Route = route.route('/release-v1.3.1');
 /** AirLib managed */
 
-export const releasesRoute = route;
+export const releasesRoute = route.config({ static: true, deferred: 500 });
 export const releasesIndexRoute = indexRoute;
 
 export const releasesReleaseV11Route = releaseV11Route;
@@ -26,5 +26,3 @@ export const releasesReleaseV1Route = releaseV1Route;
 export const releasesReleaseV131Route = releaseV131Route;
 
 export default releasesRoute;
-
-parentRoute.route('/news').rewrite(releasesRoute);

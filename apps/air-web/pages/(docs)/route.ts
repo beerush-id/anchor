@@ -1,3 +1,4 @@
+import { redirect } from '@airlib/react';
 import router from '@/src/router.js';
 
 /** AirLib managed */
@@ -19,3 +20,15 @@ export const docsUniversalSsrRoute = universalSsrRoute;
 export default docsRoute;
 
 docsRoute.route('/ssr').rewrite(docsUniversalSsrRoute);
+
+docsRoute.route('/posts').guard((_ctx, url) => {
+  if (url?.pathname.includes('/posts')) {
+    throw redirect(url.href.replace('/docs/', '/'));
+  }
+});
+
+docsRoute.route('/news').guard((_ctx, url) => {
+  if (url?.pathname.includes('/news')) {
+    throw redirect(url.href.replace('/docs/news', '/releases'));
+  }
+});

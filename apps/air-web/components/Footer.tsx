@@ -1,17 +1,18 @@
 import { classx, Link } from '@airlib/react';
 import type { ComponentProps } from 'react';
-import airLogo from '../assets/airlib.svg';
-import { postsRoute } from '../pages/(docs)/posts/route.js';
-import { releasesRoute } from '../pages/(docs)/releases/route.js';
+import airLogo from '@/assets/airlib.svg';
 import {
   docsExtendedMarkdownRoute,
   docsGettingStartedRoute,
   docsIndexRoute,
   docsInstallationRoute,
   docsUniversalSsrRoute,
-} from '../pages/(docs)/route.js';
-import rootRoute from '../pages/route.js';
+} from '@/pages/(docs)/route.js';
+import { postsRoute } from '@/pages/posts/route.js';
+import { releasesRoute } from '@/pages/releases/route.js';
+import rootRoute from '@/pages/route.js';
 import { DiscordIcon, GitHubIcon } from './icons.js';
+import { LogoText } from './LogoText.js';
 
 const stack = [
   { label: 'Anchor', description: 'Reactive State Engine', href: '/docs/state-management' },
@@ -25,9 +26,8 @@ export default function Footer({ className }: ComponentProps<'footer'>) {
     <footer className={classx('air-footer', className)}>
       <div className="air-section-inner air-footer-inner">
         <div className="air-footer-brand">
-          <Link to={rootRoute} className="air-footer-logo">
-            <img src={airLogo} width="28" alt="AirLib Logo" />
-            <span>AirLib</span>
+          <Link to={rootRoute} className="air-footer-logo" aria-label="AirLib Logo">
+            <LogoText className="air-footer-logo" />
           </Link>
           <p className="air-footer-tagline">
             Zero-Boilerplate, AI-Native full-stack TypeScript framework. Reactive state, isomorphic remote functions,

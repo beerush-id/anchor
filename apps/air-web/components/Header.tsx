@@ -1,6 +1,8 @@
-import { type AnyRoute, classx, For, Link, setup, Slot } from '@airlib/react';
+import { type AnyRoute, classx, For, Link, Slot, setup } from '@airlib/react';
 import type { ComponentProps, ReactNode } from 'react';
 import docsRoute from '../pages/(docs)/route.js';
+import postsRoute from '../pages/posts/route.js';
+import releasesRoute from '../pages/releases/route.js';
 import rootRoute from '../pages/route.js';
 import { DiscordIcon, GitHubIcon } from './icons.js';
 import { LogoText } from './LogoText.js';
@@ -10,6 +12,14 @@ const navs = [
   {
     text: 'Docs',
     route: docsRoute,
+  },
+  {
+    text: 'Posts',
+    route: postsRoute,
+  },
+  {
+    text: 'Releases',
+    route: releasesRoute,
   },
 ];
 

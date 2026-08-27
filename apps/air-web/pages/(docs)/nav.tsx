@@ -34,8 +34,6 @@ import {
   WidgetsIcon,
   WorkflowIcon,
 } from './icons.js';
-import postsRoute from './posts/route.js';
-import releasesRoute from './releases/route.js';
 import utilitiesRoute from './utilities/route.js';
 
 const ICONS: Record<string, ComponentType> = {
@@ -180,17 +178,6 @@ export const navs: NavItem[] = [
         items: toNavItems(materialUtilitiesMeta),
       },
     ],
-  },
-  { separator: true },
-  {
-    text: 'Posts',
-    route: postsRoute,
-    icon: () => <ArticleIcon />,
-  },
-  {
-    text: 'Releases',
-    route: releasesRoute,
-    icon: () => <NewspaperIcon />,
   },
   { separator: true },
   {
