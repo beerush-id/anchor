@@ -771,7 +771,7 @@ describe('Route class', () => {
       const result = await route.authenticate(context);
 
       expect(result).toBe(true);
-      expect(guard).toHaveBeenCalledWith(context);
+      expect(guard).toHaveBeenCalledWith(context, undefined);
     });
 
     it('should run all guards', async () => {
@@ -783,8 +783,8 @@ describe('Route class', () => {
       const context = { params: {}, query: {} };
       await route.authenticate(context);
 
-      expect(guard1).toHaveBeenCalledWith(context);
-      expect(guard2).toHaveBeenCalledWith(context);
+      expect(guard1).toHaveBeenCalledWith(context, undefined);
+      expect(guard2).toHaveBeenCalledWith(context, undefined);
     });
 
     it('should return Redirect when guard throws Redirect', async () => {
@@ -1522,7 +1522,7 @@ describe('Route class', () => {
     it('should handle path ending with ? when formatting url with query', () => {
       const root = sharedRouter.route();
       const searchRoute = root.route('/search?');
-      expect(searchRoute.url({}, { q: 'anchor' })).toBe('/search?q=anchor');
+      expect(searchRoute.url({}, { q: 'anchor' } as any)).toBe('/search?q=anchor');
     });
 
     it('should reuse existing guard observers on forced re-authentication', async () => {
@@ -1535,7 +1535,7 @@ describe('Route class', () => {
       expect(guard).toHaveBeenCalledTimes(1);
 
       // Force authenticate again to hit existing guardObservers branch
-      await authRoute.authenticate(context, true);
+      await authRoute.authenticate(context, undefined, true);
       expect(guard).toHaveBeenCalledTimes(2);
     });
 

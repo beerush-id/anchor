@@ -1591,7 +1591,7 @@ describe('router.ts', () => {
       api.route('/webhooks').route('/*');
 
       const entries = router.entries();
-      expect(entries).toHaveLength(12);
+      expect(entries).toHaveLength(14);
 
       const paths = entries.map(([path, val]) => (val.isIndex ? `${path} (index)` : path));
       expect(paths).toContain('/');
