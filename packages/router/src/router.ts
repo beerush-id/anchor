@@ -273,6 +273,7 @@ export class Router<Output = any> {
     }
 
     const { route: root, registry } = this.createRoot(true);
+    root.slave = true;
     const route = root.route(path, options);
     this.routes.add(registry);
 
@@ -288,10 +289,13 @@ export class Router<Output = any> {
     const results: RouteEntry[] = [];
 
     const collect = (reg: RouteRegistry) => {
-      results.push(createRouteEntry(reg.route, false));
-      if (reg.route.index) {
-        results.push(createRouteEntry(reg.route.index as never, true));
+      if (!reg.route.slave) {
+        results.push(createRouteEntry(reg.route, false));
+        if (reg.route.index) {
+          results.push(createRouteEntry(reg.route.index as never, true));
+        }
       }
+
       for (const childReg of reg.values()) {
         collect(childReg);
       }

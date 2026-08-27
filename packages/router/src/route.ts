@@ -188,6 +188,8 @@ export class Route<
 
   /** Optional index route for this route */
   public index?: IndexRoute<Path, Params, QueryParams, Data, this, Output>;
+  /** Whether this route is a slave route */
+  public slave?: boolean;
   /** Set of guards for this route */
   public guards = new Set<UnknownGuard>();
   /** Map of data providers for this route */
@@ -376,10 +378,14 @@ export class Route<
     const registry = ROUTE_MAP_LINK.get(this as never as UnknownRoute);
 
     const collect = (reg: RouteRegistry) => {
-      results.push(createRouteEntry(reg.route, false));
-      if (reg.route.index) {
-        results.push(createRouteEntry(reg.route.index as never as UnknownRoute, true));
+      /* istanbul ignore else */
+      if (!reg.route.slave) {
+        results.push(createRouteEntry(reg.route, false));
+        if (reg.route.index) {
+          results.push(createRouteEntry(reg.route.index as never as UnknownRoute, true));
+        }
       }
+
       for (const childReg of reg.values()) {
         collect(childReg);
       }
