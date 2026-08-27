@@ -1203,6 +1203,117 @@ describe('worker static generation (SSG/ISG)', () => {
     expect(await response.text()).toBe('<html>full worker hit</html>');
     expect(renderer).not.toHaveBeenCalled();
   });
+
+  it('generates html and saves to static disk storage on ISG miss in createFullWorker', async () => {
+    const bun = createMockBun();
+    vi.stubGlobal('Bun', bun);
+
+    const router = {
+      find: vi.fn(() => ({ route: { options: { static: true } } })),
+    };
+    const renderer = Object.assign(
+      vi.fn(async () => ({
+        html: '<div>full worker ISG</div>',
+        head: '<title>Full ISG</title>',
+        status: 200,
+        cookies: [],
+      })),
+      { router }
+    ) as unknown as SSRRenderer;
+
+    const httpRouter = {
+      transport: { endpoint: '/irpc' },
+      isolate: vi.fn(async (handler: () => any, _controller?: any, _ctx?: any, preHook?: () => void) => {
+        preHook?.();
+        return handler();
+      }),
+    } as never;
+    const worker = createFullWorker(httpRouter, renderer, {
+      template: '<html><!--ssr-head--><!--ssr-outlet--></html>',
+      cacheDir: '/pages',
+    });
+
+    const response = await worker.fetch(createRequest('http://localhost/full-miss'));
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toBe('<html><title>Full ISG</title><div>full worker ISG</div></html>');
+    expect(renderer).toHaveBeenCalledTimes(1);
+
+    const savedFile = bun.file('/pages/full-miss/index.html');
+    expect(await savedFile.exists()).toBe(true);
+    expect(await savedFile.text()).toBe('<html><title>Full ISG</title><div>full worker ISG</div></html>');
+  });
+
+  it('skips saving static files when static route redirects, fails, or returns non-html content', async () => {
+    const bun = createMockBun();
+    vi.stubGlobal('Bun', bun);
+
+    const router = {
+      find: vi.fn(() => ({ route: { options: { static: true } } })),
+    };
+
+    // 1. Redirect on static route in createWorker
+    const redirectRenderer = Object.assign(
+      vi.fn(async () => ({ html: '', head: '', status: 302, redirect: '/login', cookies: [] })),
+      { router }
+    ) as unknown as SSRRenderer;
+    const worker1 = createWorker(redirectRenderer, { cacheDir: '/pages' });
+    await worker1.fetch(createRequest('http://localhost/redirect-test'));
+    expect(await bun.file('/pages/redirect-test/index.html').exists()).toBe(false);
+
+    // 2. Non-200 status on static route in createWorker
+    const errorRenderer = Object.assign(
+      vi.fn(async () => ({ html: 'Not Found', head: '', status: 404, cookies: [] })),
+      { router }
+    ) as unknown as SSRRenderer;
+    const worker2 = createWorker(errorRenderer, { cacheDir: '/pages' });
+    await worker2.fetch(createRequest('http://localhost/not-found-test'));
+    expect(await bun.file('/pages/not-found-test/index.html').exists()).toBe(false);
+
+    // 3. Non-html contentType on static route in createWorker
+    const jsonRenderer = Object.assign(
+      vi.fn(async () => ({ html: '{"ok":true}', head: '', status: 200, contentType: 'application/json', cookies: [] })),
+      { router }
+    ) as unknown as SSRRenderer;
+    const worker3 = createWorker(jsonRenderer, { cacheDir: '/pages' });
+    await worker3.fetch(createRequest('http://localhost/json-test'));
+    expect(await bun.file('/pages/json-test/index.html').exists()).toBe(false);
+
+    // 4. Explicit 'text/html' contentType on static route in createWorker (covers contentType === 'text/html')
+    const htmlRenderer = Object.assign(
+      vi.fn(async () => ({ html: '<h1>HTML</h1>', head: '', status: 200, contentType: 'text/html', cookies: [] })),
+      { router }
+    ) as unknown as SSRRenderer;
+    const worker4 = createWorker(htmlRenderer, { cacheDir: '/pages' });
+    await worker4.fetch(createRequest('http://localhost/html-test'));
+    expect(await bun.file('/pages/html-test/index.html').exists()).toBe(true);
+
+    // 5. createFullWorker branch permutations
+    const httpRouter = {
+      transport: { endpoint: '/irpc' },
+      isolate: vi.fn(async (handler: () => any, _controller?: any, _ctx?: any, preHook?: () => void) => {
+        preHook?.();
+        return handler();
+      }),
+    } as never;
+
+    const fullWorker1 = createFullWorker(httpRouter, redirectRenderer, { cacheDir: '/pages' });
+    await fullWorker1.fetch(createRequest('http://localhost/full-redirect'));
+    expect(await bun.file('/pages/full-redirect/index.html').exists()).toBe(false);
+
+    const fullWorker2 = createFullWorker(httpRouter, errorRenderer, { cacheDir: '/pages' });
+    await fullWorker2.fetch(createRequest('http://localhost/full-error'));
+    expect(await bun.file('/pages/full-error/index.html').exists()).toBe(false);
+
+    const fullWorker3 = createFullWorker(httpRouter, jsonRenderer, { cacheDir: '/pages' });
+    await fullWorker3.fetch(createRequest('http://localhost/full-json'));
+    expect(await bun.file('/pages/full-json/index.html').exists()).toBe(false);
+
+    const fullWorker4 = createFullWorker(httpRouter, htmlRenderer, { cacheDir: '/pages' });
+    await fullWorker4.fetch(createRequest('http://localhost/full-html'));
+    expect(await bun.file('/pages/full-html/index.html').exists()).toBe(true);
+  });
 });
 
 function createMockBun() {
