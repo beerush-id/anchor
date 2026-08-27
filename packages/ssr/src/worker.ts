@@ -43,13 +43,13 @@ export function createWorker<E = AnyType>(renderer: SSRRenderer, options: AppWor
           if (asset) return asset;
         }
 
-        const cached = !ssg ? await staticRes.get(url, env) : undefined;
+        const match = renderer.router?.find(url, true);
+        const { deferred, noscript, static: isStatic } = match?.route.options ?? {};
+
+        const cached = !ssg && isStatic ? await staticRes.get(url, env, match!.route) : undefined;
         if (cached) {
           return createResponse(new Response(cached.html, { status: 200, headers: cached.headers }));
         }
-
-        const match = renderer.router?.find(url, true);
-        const { deferred, noscript } = match?.route.options ?? {};
 
         const { html, head, status, cookies, redirect, contentType } = await renderer({
           url: url.href,
@@ -83,8 +83,8 @@ export function createWorker<E = AnyType>(renderer: SSRRenderer, options: AppWor
           headers.set('Cache-Control', pageCache);
         }
 
-        if (!redirect && status === 200 && (!contentType || contentType === 'text/html')) {
-          await staticRes.set(url, body, env);
+        if (isStatic && !redirect && status === 200 && (!contentType || contentType === 'text/html')) {
+          await staticRes.set(url, body, env, match!.route);
         }
 
         return createResponse(new Response(redirect ? null : body, { status, headers }));
@@ -153,7 +153,10 @@ export function createFullWorker<E = AnyType>(
           if (asset) return asset;
         }
 
-        const cached = !ssg ? await staticRes.get(url, env) : undefined;
+        const match = renderer.router?.find(url, true);
+        const { deferred, noscript, static: isStatic } = match?.route.options ?? {};
+
+        const cached = !ssg && isStatic ? await staticRes.get(url, env, match!.route) : undefined;
         if (cached) {
           return createResponse(new Response(cached.html, { status: 200, headers: cached.headers }));
         }
@@ -162,9 +165,6 @@ export function createFullWorker<E = AnyType>(
 
         let cookies: string[] = [];
         const cookieJar = decodeCookies(cookie);
-
-        const match = renderer.router?.find(url, true);
-        const { deferred, noscript } = match?.route.options ?? {};
 
         const response = await router.isolate(
           async () => {
@@ -205,8 +205,8 @@ export function createFullWorker<E = AnyType>(
               headers.set('Cache-Control', pageCache);
             }
 
-            if (!redirect && status === 200 && (!contentType || contentType === 'text/html')) {
-              await staticRes.set(url, body, env);
+            if (isStatic && !redirect && status === 200 && (!contentType || contentType === 'text/html')) {
+              await staticRes.set(url, body, env, match!.route);
             }
 
             return new Response(redirect ? null : body, { status, headers });

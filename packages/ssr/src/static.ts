@@ -1,4 +1,4 @@
-import type { Router, StaticOption, StaticOptions } from '@airlib/router';
+import type { AnyRoute, Router, StaticOption, StaticOptions } from '@airlib/router';
 import { resolveCacheControl } from './assets.js';
 import type { CacheControl } from './types.js';
 
@@ -28,15 +28,16 @@ export type StaticResolverOptions<E = unknown> = {
 
 export function createStatic<E = unknown>(router: Router, options?: StaticResolverOptions<E>) {
   return {
-    async get(url: URL, env?: E): Promise<StaticOutput | void> {
+    async get(url: URL, env?: E, route?: AnyRoute): Promise<StaticOutput | void> {
       if (!router || options?.devMode) return;
 
       const cacheDir = options?.cacheDir ?? './dist/client';
-      const match = router.find(url, true);
-      if (!match?.route.options?.static) return;
+
+      if (!route) route = router.find(url, true)?.route;
+      if (!route?.options?.static) return;
 
       const { headers, cacheControl, maxAge, ctx } = resolveStaticMetadata(
-        match.route.options.static,
+        route.options.static,
         url,
         options?.cache?.pages
       );
@@ -66,17 +67,17 @@ export function createStatic<E = unknown>(router: Router, options?: StaticResolv
         return { html: content, headers };
       }
     },
-    async set(url: URL, content: string, env?: E): Promise<void> {
+    async set(url: URL, content: string, env?: E, route?: AnyRoute): Promise<void> {
       if (!router || options?.devMode) return;
 
       const cacheDir = options?.cacheDir ?? './dist/client';
-      const match = router.find(url, true);
-      if (!match?.route.options?.static) return;
+      if (!route) route = router.find(url, true)?.route;
+      if (!route?.options?.static) return;
 
       const adapter = options?.cacheAdapter ?? options?.adapter;
       if (adapter) {
         try {
-          const { ctx } = resolveStaticMetadata(match.route.options.static, url, options?.cache?.pages);
+          const { ctx } = resolveStaticMetadata(route.options.static, url, options?.cache?.pages);
           await adapter.set(url, content, ctx, env);
           return;
         } catch {}
@@ -99,7 +100,10 @@ function resolveStaticMetadata(staticOpt: StaticOption, url: URL, fallbackCache?
 }
 
 function resolveStaticPath(cacheDir: string, pathname: string): string {
-  const cleanPath = pathname === '/' ? '/index' : pathname.replace(/\/$/, '');
+  if (pathname === '/' || pathname === '') {
+    return `${cacheDir}/index.html`;
+  }
+  const cleanPath = pathname.replace(/\/$/, '');
   const ext = cleanPath.endsWith('.html') ? '' : '/index.html';
   return `${cacheDir}${cleanPath}${ext}`;
 }
