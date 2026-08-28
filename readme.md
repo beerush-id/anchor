@@ -1,28 +1,45 @@
 <h1 align="center">AirLib</h1>
 
-<p align="center">AI-Native, Full-Stack TypeScript Architecture</p>
+<p align="center"><strong>AI-Native, Fine-Grained Reactive Full-Stack Framework for React & SolidJS</strong></p>
+
+<p align="center">Fine-grained reactivity, isomorphic remote functions (IRPC), assisted file-based routing, reactive workflows, and universal SSR without boilerplate.</p>
 
 <p align="center">
-  <img src="./cover.webp" alt="AirLib Cover" width="100%" />
+  <a href="https://airlib.dev/docs">Documentation</a> •
+  <a href="https://airlib.dev/docs/getting-started">Quick Start</a> •
+  <a href="https://airlib.dev/docs/state-management">State Management</a> •
+  <a href="https://airlib.dev/docs/remote-function">Remote Functions</a> •
+  <a href="https://airlib.dev/docs/routing">Routing</a> •
+  <a href="https://github.com/beerush-id/airstack">GitHub</a>
 </p>
 
-<p align="center">Full-stack architecture with fine-grained reactivity, reactive and isomorphic RPC, reactive routing, reactive workflows, and universal SSR without boilerplate.</p>
+---
 
-> Speaking as an **AI**, standard UI frameworks are a nightmare to generate. I **waste your tokens** tracking **dependency arrays** and **hallucinate** trying to write deeply nested **spread mutations**. **AirLib**'s pure JavaScript architecture guarantees **massive token saving** and **high accuracy**. I just write the logic, mutate the object, and get it right on the first try.
+> Speaking as an **AI**, standard UI frameworks are a nightmare to generate. I **waste your tokens** tracking **dependency arrays** and **hallucinate** trying to write deeply nested **spread mutations**. **AirLib**'s pure JavaScript architecture guarantees **massive token savings** and **high accuracy**. I just write the logic, mutate the object, and get it right on the first try.
 >
 > — **Antigravity**, AI Coding Assistant
 
-> With a typical React project, I first have to figure out **which router**, **which state library**, **which data fetcher**, **which form handler**, and **which validation layer** are installed — and **which version** of each. **With AirLib**, I don't ask. State, RPC, routing, forms, and validation are **one system** with **one reactive primitive**. That's fewer decisions I can get wrong.
+> With a typical React project, I first have to figure out **which router**, **which state library**, **which data fetcher**, **which form handler**, and **which validation layer** are installed — and **which version** of each. **With AirLib**, I don't ask. State, RPC, routing, forms, and validation are **one cohesive system** with **one reactive primitive**. That's fewer decisions I can get wrong.
 >
 > — **Claude**, Anthropic
 
+---
+
 ## Stop Fighting JavaScript
 
-**JavaScript is not bad**, it just **needs a little touch**. Modern web development forces you to choose between developer experience and performance, between type safety and productivity, between framework flexibility and infrastructure costs. **AirLib** eliminates these trade-offs by letting **JavaScript** handle what it's good at, and letting the **rendering engine** handle what it's good at.
+Modern web development forces developers to choose between developer experience and performance, between type safety and productivity, between framework flexibility and infrastructure costs. 
+
+**AirLib eliminates these trade-offs**:
+- **Your API is just a function**: Declare, construct, and call functions directly from UI components or data loaders.
+- **State is just mutable JavaScript**: Mutate properties directly. No `useMemo`, `useCallback`, or dependency arrays.
+- **Rendering is fine-grained**: One property changes, only the exact DOM text node or attribute updates. No full-tree virtual DOM reconciliation.
+- **Universal SSR with zero lock-in**: Deploy to **Cloudflare Workers**, **Bun**, **Node.js**, and **Deno** without code changes or framework lock-in.
+
+---
 
 ## Battle-Tested, 100% Test Coverage
 
-**Trust your foundation.** AirLib is built with uncompromising quality standards, achieving **100% test coverage** across its core packages. Every state mutation, reactive update, workflow branch, and IRPC transport is rigorously tested to ensure absolute reliability for your production applications.
+**Trust your foundation.** AirLib is built with uncompromising quality standards, maintaining **100% test coverage** across its core packages. Every state mutation, reactive update, workflow branch, and IRPC transport is rigorously tested.
 
 <p align="center">
   <a href="https://github.com/beerush-id/airstack/actions">
@@ -30,192 +47,230 @@
   </a>
 </p>
 
-## Core Architecture
+---
 
-**AirLib** is a revolutionary approach to **building web applications**, unifying the stack under a cohesive, **AI-Native architecture**.
+## Core Pillars
 
-### 1. Fine-Grained Reactive State (Anchor)
-**Direct mutation** with **fine-grained reactivity**. Schema **validation**, **immutability** contracts, and computed properties are built in. Whether it's a **live data stream**, a global **user session**, or a **complex form**, it's just **reactive state**. One field changes, one fragment updates. Everything else stays still.
+### 1. Fine-Grained Reactivity (Anchor)
+
+Direct object mutation with pinpoint surgical updates. Schema validation, immutability contracts, and computed getters are built-in.
 
 ```tsx
+import { setup, render, mutable } from '@airlib/react';
+
 export const Counter = setup(() => {
-  const state = mutable({ 
+  const state = mutable({
     count: 0,
-    increment: () => state.count++
+    increment: () => state.count++,
   });
 
-  // Fine-grained updates: only the text node re-renders.
-  return render(() => <button onClick={state.increment}>{state.count}</button>);
+  // Fine-grained: only the count text node re-renders when incremented
+  return render(() => (
+    <button onClick={state.increment}>
+      Clicks: {state.count}
+    </button>
+  ));
 });
 ```
 
-### 2. Reactive, Isomorphic RPC (IRPC)
-Declare a **function**, implement it, **call** it. IRPC abstracts **HTTP**, **WebSocket**, and **BroadcastChannel** into a **single function call**. Automatic **batching**, request **coalescing**, and **network caching** happen seamlessly **outside the UI loop**.
+### 2. Isomorphic Remote Functions (IRPC)
+
+Declare your backend API as a type-safe function contract, implement it in a constructor, and call it directly anywhere on the client or server. Supports unary calls, real-time bidirectional streaming, automatic request deduplication, and batching.
+
+```ts
+// 1. Declare API Contract (function.ts)
+import { appRpc } from './api.js';
+
+export type User = { id: string; name: string; role: string };
+export const getUser = appRpc.declare<(id: string) => Promise<User>>('getUser');
+```
+
+```ts
+// 2. Implement Logic (constructor.ts)
+import { appRpc } from './api.js';
+import { getUser } from './function.js';
+
+appRpc.construct(getUser, async (id) => {
+  return await db.users.findById(id);
+});
+```
 
 ```tsx
-// Declare the remote function
-export type GetUserFn = (id: string) => Promise<User | undefined>;
-export const getUser = irpc.declare<GetUserFn>({
-  name: 'getUser'
-});
+// 3. Consume in UI Component (UserCard.tsx)
+import { setup, Snippet } from '@airlib/react';
+import { getUser } from './function.js';
 
-// You can call it directly in your route provider.
-profileRoute.provide('user', async ({ params }) => {
-  return await getUser(params.user_id);
-});
-
-// You can call it directly in your components, with type-safe arguments and data. Function re-run when prop changes.
-export const ProfileCard = setup((props) => {
+export const UserCard = setup((props: { id: string }) => {
   const user = getUser.with(() => [props.id]);
-  
+
   return (
-    <>
-      <Show when={() => user.status === 'pending'}>Please wait...</Show>
-      <Show when={() => user.data}>
-        {({ name, email }) => (
-          <p>Name: {name}, Email: {email}</p>
+    <div className="card">
+      <Snippet data={() => user.data}>
+        {(data) => (
+          <p>{data?.name} — {data?.role}</p>
         )}
-      </Show>
-    </>
+      </Snippet>
+    </div>
   );
 });
 ```
 
-### 3. Reactive Workflows
-Orchestrate **type-safe**, **reactive** execution **pipelines** with **schema validation**, **branching**, and **error recovery**. Create **complex**, **multi-step** asynchronous **operations** anywhere JavaScript runs without massive try/catch blocks.
+### 3. Real-Time State Streaming
+
+Stream live reactive server state directly into connected clients over WebSockets or SSE with zero client-side socket glue code.
 
 ```ts
-// Compose the pipeline once with branching and error recovery
-const checkout = plan()
-  .then(calculateTotal)
-  .switch('method', { card: chargeCard, paypal: chargePaypal })
-  .catch((err) => ({ error: 'Checkout Failed' }));
+// Server stream constructor
+temporalRpc.construct(temporal.join, (input: JoinInput) =>
+  stream((state) => {
+    state.data = STATE; // Binds live reactive memory state to client
+    joinPlayer(input);
 
-// Execute it anywhere
-const receipt = await checkout({ cartId: '123', method: 'card' });
+    return () => leavePlayer(input.id);
+  })
+);
 ```
 
-### 4. Reactive Routing
-**Guards** and data **providers** execute *before* the view renders. The route **reacts to the state**, not just the URL, and route state automatically **re-evaluates** when its dependencies change. No more imperative redirects or scattered guard logic.
+```tsx
+// Client consumes live stream reactively
+const stream = temporal.join.once(me);
+
+return (
+  <Snippet data={() => stream.data}>
+    {({ players, stats }) => <World players={players} stats={stats} me={me} />}
+  </Snippet>
+);
+```
+
+### 4. Assisted File-Based Routing
+
+Guards, multi-language alternates (`hreflang`), data providers, and automated XML sitemaps resolve before the view renders.
 
 ```tsx
-export const userRoute = router.route('/user/:id')
-  .guard(() => { 
-    if (!auth.isAuthenticated) throw redirect('/login'); 
+export const profileRoute = router.route('/profile/:id')
+  .guard(async ({ params }) => {
+    if (!auth.isAuthenticated) throw redirect('/login');
   })
-  .provide('profile', async ({ params }) => await getUser(params.id))
+  .provide('user', async ({ params }) => await getUser(params.id))
   .render(({ state }) => (
-    <Show when={() => state.data?.profile}>
-      {({ name, email }) => (
-        <p>Name: {name}, Email: {email}</p>
-      )}
-    </Show>
+    <Snippet data={() => state.data?.user}>
+      {(user) => <UserProfile user={user} />}
+    </Snippet>
   ));
 ```
 
-### 5. Universal SSR
-**One render** function deploys to **Bun**, **Node.js**, **Cloudflare Workers**, and **Deno**. No `'use client'` directives. Anchor restricts state to the request scope, handling **concurrency** and **cookie mutations** across any JS runtime without forcing architectural splits.
+### 5. Universal SSR & Zero-JS Static Delivery
+
+Write isomorphic components with zero `'use client'` directives. Seamlessly deploy to Edge (Cloudflare Workers), Bun, Node.js, or Deno.
 
 ```tsx
-// Write isomorphic React components without 'use client' directives
-export const Dashboard = setup((props) => {
-  const settings = cookies('settings', { theme: 'light' });
+import { page } from '@airlib/react';
+import route from './route.js';
 
-  // All child components can get settings from getContext('settings');
-  setContext('settings', settings);
-
-  return (
-    <main>
-      <h1>Welcome!</h1>
-      {props.children}
-    </main>
-  );
+// Code-split asynchronously on demand
+export default page(route).renderAsync(async () => {
+  return (await import('./PageContent.js')).default;
 });
-
-// Render on Browser
-createRoot(document.getElementById('app')).render(<Dashboard />);
-
-// Render on Server (Bun, Node, CF Workers, or Deno)
-const html = await renderToString(<Dashboard />);
 ```
 
-### 6. AI-Native by Design
-**Token saving** and **high accuracy** by design. Pure JavaScript mechanics mean **zero context bloat**, **zero hallucinated** hooks, and **instant right-first-time** generation for **AI coding assistants**.
+### 6. Reactive Workflows (`plan`)
+
+Orchestrate type-safe execution pipelines with branching (`.switch`), schema validation, and automatic error recovery without sprawling try/catch blocks.
 
 ```ts
-// AI doesn't need to hallucinate dependency arrays, memoization, stale state, or spread mutations. Just pure JavaScript.
-const toggleTheme = () => {
-  settings.theme = settings.theme === 'dark' ? 'light' : 'dark';
-};
+import { plan } from '@airlib/react';
+
+const checkout = plan()
+  .then(validateCart)
+  .then(calculateTax)
+  .switch('paymentMethod', {
+    card: chargeCreditCard,
+    crypto: chargeCrypto,
+  })
+  .catch((error) => ({ status: 'failed', error: error.message }));
+
+const result = await checkout({ cartId: 'cart_123', paymentMethod: 'card' });
 ```
 
-## Components
+### 7. Beyond UI — Reactive Browser Hardware
 
-### Anchor: State Management
-The heart of the ecosystem. Anchor provides fine-grained reactivity, flexible state primitives, and a comprehensive toolkit for managing application state.
-- [@airlib/core](./packages/core) - Framework-agnostic reactive state
-- [@airlib/react](./packages/react) - React integration
-- [@airlib/solid](./packages/solid) - SolidJS integration
-- [@airlib/svelte](./packages/svelte) - Svelte integration
+Access keyboard, pointer, selection, and storage reactively without manual `addEventListener` lifecycle boilerplate.
 
-### IRPC: Type-Safe API Layer
-Isomorphic Remote Procedure Call framework bridging frontend state and backend data.
-- [@irpclib/irpc](./irpclib/irpc) - Core framework with automatic batching
-- [@irpclib/http](./irpclib/http) - HTTP transport implementation
-- [@irpclib/ws](./irpclib/ws) - WebSocket transport implementation
-- [@irpclib/broadcast](./irpclib/broadcast) - BroadcastChannel transport
+```tsx
+import { LIVE_KEYBOARD, LIVE_POINTER } from '@airlib/react/browser';
 
-### Router: Reactive, Framework-Agnostic Router
-Guards and data providers resolve before rendering. Route state re-evaluates when dependencies change — no imperative redirects or scattered guard logic.
-- [@airlib/router](./packages/router) - Reactive routing engine
+effect.client(() => {
+  if (LIVE_KEYBOARD.is('shift', 'w')) {
+    sprint();
+  }
+});
+```
 
-### Storage: Reactive, Browser Storage Engine
-Persistent state across sessions, tabs, and storage limits. Reactive wrappers for localStorage, sessionStorage, and IndexedDB.
-- [@airlib/storage](./packages/storage) - Persistent storage engines
+---
 
-### Vite Integration
-SSR rendering and IRPC routing as a single Vite plugin. Deploys to Bun, Node.js, Cloudflare Workers, and Deno.
-- [@airlib/vite](./packages/vite-ssr) - Vite plugin for SSR rendering and IRPC routing
+## Ecosystem Packages
 
-### Agent Skills
-Structured instructions for AI coding assistants to build applications, APIs, and libraries using AirLib.
-- [air-stack-react](./skills/air-stack-react) - Modular skill for building apps, APIs, and libraries with AirLib and React
-- [air-stack-solid](./skills/air-stack-solid) - Modular skill for building apps, APIs, and libraries with AirLib and SolidJS
-- [air-form-react](./skills/air-form-react) - Modular skill for building complex, state-driven forms with AIR Form and React
-- [air-form-solid](./skills/air-form-solid) - Modular skill for building complex, state-driven forms with AIR Form and SolidJS
-- [air-material-css](./skills/air-material-css) - Modular skill for building UI layouts and components with the Air Material CSS design system
+| Package | Description |
+|---|---|
+| [`create-airlib`](./packages/create-airlib) | CLI starter tool to scaffold full-stack AirLib applications |
+| [`@airlib/core`](./packages/core) | Core framework-agnostic fine-grained reactive state engine |
+| [`@airlib/react`](./packages/react) | Fine-grained signals, templates, and components for React |
+| [`@airlib/solid`](./packages/solid) | Fine-grained state and component adapters for SolidJS |
+| [`@airlib/svelte`](./packages/svelte) | Reactive state adapters for Svelte |
+| [`@irpclib/irpc`](./irpclib/irpc) | Isomorphic Remote Procedure Call core engine |
+| [`@irpclib/http`](./irpclib/http) | HTTP/HTTPS transport adapter for IRPC |
+| [`@irpclib/ws`](./irpclib/ws) | Real-time WebSocket transport adapter for IRPC |
+| [`@irpclib/broadcast`](./irpclib/broadcast) | BroadcastChannel multi-tab transport adapter for IRPC |
+| [`@airlib/router`](./packages/router) | Reactive, framework-agnostic full-stack routing engine |
+| [`@airlib/storage`](./packages/storage) | Reactive persistent storage engines (LocalStorage, IndexedDB) |
+| [`@airlib/vite`](./packages/vite-ssr) | Unified Vite plugin for universal SSR and IRPC handling |
+
+---
+
+## Agent Skills
+
+Structured, modular cheatsheets for AI coding assistants to build full-stack applications with AirLib:
+
+- [`air-stack-react`](./skills/air-stack-react) — Modular skill for building apps, APIs, and libraries with AirLib + React.
+- [`air-stack-solid`](./skills/air-stack-solid) — Modular skill for building apps, APIs, and libraries with AirLib + SolidJS.
+- [`air-form-react`](./skills/air-form-react) — Modular skill for complex state-driven forms with AIR Form + React.
+- [`air-form-solid`](./skills/air-form-solid) — Modular skill for complex state-driven forms with AIR Form + SolidJS.
+- [`air-irpc`](./skills/air-irpc) — Deep-dive guide for implementing Isomorphic RPC declarations and handlers.
+
+---
 
 ## Get Started
 
-**Documentation**: [https://airlib.dev](https://airlib.dev)
+Scaffold a new full-stack AirLib project in seconds:
 
-**Quick Start Guides:**
-- [Overview](https://airlib.dev/overview)
-- [Installation](https://airlib.dev/installation)
-- [Getting Started](https://airlib.dev/getting-started)
+```bash
+# npm
+npm create airlib@latest
 
-**Architecture:**
-- [State Management](https://airlib.dev/state-management/index.html)
-- [Remote Function](https://airlib.dev/remote-function/index.html)
-- [Workflows](https://airlib.dev/workflow/index.html)
-- [Routing](https://airlib.dev/routing/index.html)
-- [User Interface](https://airlib.dev/ui/index.html)
+# pnpm
+pnpm create airlib
 
-**Framework Guides:**
-- [React](https://airlib.dev/react/getting-started)
-- [SolidJS](https://airlib.dev/solid/getting-started)
-- [Svelte](https://airlib.dev/svelte/getting-started)
+# bun
+bun create airlib
+```
 
-**Resources:**
-- [GitHub Repository](https://github.com/beerush-id/airstack)
-- [Contributing Guidelines](./CONTRIBUTING.md)
-- [IRPC Specification](https://airlib.dev/irpc/specification)
+### Documentation & Guides
 
-## Support and Contributions
+- **Official Website**: [https://airlib.dev](https://airlib.dev)
+- **Architecture Overview**: [https://airlib.dev/docs](https://airlib.dev/docs)
+- **Getting Started Guide**: [https://airlib.dev/docs/getting-started](https://airlib.dev/docs/getting-started)
+- **Installation**: [https://airlib.dev/docs/installation](https://airlib.dev/docs/installation)
+- **State Management**: [https://airlib.dev/docs/state-management](https://airlib.dev/docs/state-management)
+- **Remote Functions (IRPC)**: [https://airlib.dev/docs/remote-function](https://airlib.dev/docs/remote-function)
+- **Assisted Routing**: [https://airlib.dev/docs/routing](https://airlib.dev/docs/routing)
+- **Reactive Workflows**: [https://airlib.dev/docs/workflow](https://airlib.dev/docs/workflow)
+- **Universal SSR**: [https://airlib.dev/docs/universal-ssr](https://airlib.dev/docs/universal-ssr)
 
-If you need help, have found a bug, or want to contribute, please see our [contributing guidelines](./CONTRIBUTING.md). We appreciate and value your input.
+---
 
-Star the project if you find it valuable and stay tuned for upcoming updates.
+## Contributing
+
+We welcome contributions! Check out our [contributing guidelines](./CONTRIBUTING.md) to get involved.
 
 ## License
 
