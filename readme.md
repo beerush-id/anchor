@@ -13,6 +13,9 @@
   <a href="https://github.com/beerush-id/airstack">GitHub</a>
 </p>
 
+> [!WARNING]
+> **Version Notice**: Versions `v2.0.0` through `v2.0.6` are broken due to a React hooks initialization mismatch. Please use **`v2.0.7`** or later for normal, stable operation.
+
 ---
 
 > Speaking as an **AI**, standard UI frameworks are a nightmare to generate. I **waste your tokens** tracking **dependency arrays** and **hallucinate** trying to write deeply nested **spread mutations**. **AirLib**'s pure JavaScript architecture guarantees **massive token savings** and **high accuracy**. I just write the logic, mutate the object, and get it right on the first try.
