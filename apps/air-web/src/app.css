@@ -24,6 +24,7 @@
   --spacing-container-lg: 1440px;
 
   --color-surface: light-dark(#ffffff, #161618);
+  --color-surface-lower: light-dark(#f6f6f69d, #161618);
   --color-surface-variant: light-dark(rgb(235 235 236 / 0.54), #1b1b1f);
   --color-on-surface: light-dark(#08060d, #f4f4f5);
   --color-on-surface-variant: light-dark(#6b6375, #a1a1aa);
@@ -77,7 +78,7 @@
 
 @layer base {
   body {
-    @apply bg-surface text-on-surface antialiased;
+    @apply bg-surface-lower text-on-surface antialiased;
 
     font: 16px / 145% var(--font-sans);
     font-synthesis: none;
@@ -103,6 +104,15 @@
   .air-mdx-layout {
     @apply air-container;
     min-height: calc(100svh - var(--spacing-header));
+    border-inline: 1px solid var(--air-mdx-border);
+
+    .air-mdx-aside-left {
+      border-inline-end: 1px solid var(--air-mdx-border);
+    }
+  }
+
+  .air-article-container .air-mdx-layout {
+    padding-block-start: 0;
   }
 }
 

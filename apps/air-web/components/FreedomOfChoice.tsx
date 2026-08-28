@@ -1,6 +1,6 @@
 import { Link, setup } from '@airlib/react';
-import { RemoteFunctionIcon, RocketLaunchIcon, SsrIcon } from '@/pages/(docs)/icons.js';
 import docsRoute, { docsGettingStartedRoute } from '@/pages/(docs)/route.js';
+import { RemoteFunctionIcon, RocketLaunchIcon, SsrIcon } from './icons.js';
 
 export const FreedomOfChoice = setup(() => {
   return (
@@ -68,7 +68,7 @@ export const FreedomOfChoice = setup(() => {
 });
 
 const dotGrid =
-  'bg-[radial-gradient(color-mix(in_srgb,var(--color-on-surface)_14%,transparent)_1px,transparent_1px)] bg-size-[22px_22px]';
+  'bg-surface bg-[radial-gradient(color-mix(in_srgb,var(--color-on-surface)_14%,transparent)_1px,transparent_1px)] bg-size-[22px_22px]';
 
 const classes = {
   root: `relative overflow-hidden border-t border-border ${dotGrid}`,

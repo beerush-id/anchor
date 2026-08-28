@@ -23,7 +23,7 @@ export const productRoute = route
 import { page, Show } from '@airlib/react';
 import { productRoute } from './route.js';
 
-export const ProductPage = page(productRoute).render(({ state }) => (
+export default page(productRoute).render(({ state }) => (
   <Show when={() => state.data.product}>
     {({ name, description }) => (
       <article>

@@ -33,7 +33,7 @@ import {
   UserInterfaceIcon,
   WidgetsIcon,
   WorkflowIcon,
-} from './icons.js';
+} from '@/components/icons.js';
 import utilitiesRoute from './utilities/route.js';
 
 const ICONS: Record<string, ComponentType> = {

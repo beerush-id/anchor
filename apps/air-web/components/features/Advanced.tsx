@@ -1,9 +1,8 @@
-import { type AnyRoute, classx, For, Link, mutable, setup, Show, Snippet } from '@airlib/react';
-import { BuildIcon, DataObjectIcon, StorageIcon, UserInterfaceIcon } from '@/pages/(docs)/icons.js';
+import { type AnyRoute, classx, For, Link, mutable, Show, Snippet, setup } from '@airlib/react';
 import { stateManagementCookieRoute, stateManagementImmutableRoute } from '@/pages/(docs)/state-management/route.js';
-import { storageGettingStartedRoute } from '@/pages/(docs)/storage/route.js';
 import { userInterfaceBrowserRoute } from '@/pages/(docs)/user-interface/route.js';
 import { utilitiesIndexRoute } from '@/pages/(docs)/utilities/route.js';
+import { BuildIcon, DataObjectIcon, StorageIcon, UserInterfaceIcon } from '../icons.js';
 import AdvancedCookieDemo from './AdvancedCookieDemo.mdx';
 import AdvancedImmutableDemo from './AdvancedImmutableDemo.mdx';
 import AdvancedLiveDemo from './AdvancedLiveDemo.mdx';

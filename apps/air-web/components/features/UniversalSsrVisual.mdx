@@ -10,19 +10,15 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    airPages({
-      markdown: { extended: true },
-      searchIndex: true,
-    }),
+    airPages(),
   ],
 });
 ```
 
-```ts [Static & ISG]
+```ts [SSG & ISG]
 // pages/(docs)/route.ts — pre-rendered at build time
 export const docsRoute = route.config({
   static: true,
-  deferred: 500,
   preloadMode: 'hover',
 });
 

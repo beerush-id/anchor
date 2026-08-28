@@ -1,17 +1,10 @@
 import { type AnyRoute, Link, setup } from '@airlib/react';
-import {
-  DnsIcon,
-  RemoteFunctionIcon,
-  RouteIcon,
-  SsrIcon,
-  StateManagementIcon,
-  WorkflowIcon,
-} from '../pages/(docs)/icons.js';
-import { remoteFunctionIndexRoute } from '../pages/(docs)/remote-function/route.js';
-import { docsUniversalSsrRoute } from '../pages/(docs)/route.js';
-import { routingIndexRoute } from '../pages/(docs)/routing/route.js';
-import { stateManagementIndexRoute } from '../pages/(docs)/state-management/route.js';
-import { workflowIndexRoute } from '../pages/(docs)/workflow/route.js';
+import { remoteFunctionIndexRoute } from '@/pages/(docs)/remote-function/route.js';
+import { docsUniversalSsrRoute } from '@/pages/(docs)/route.js';
+import { routingIndexRoute } from '@/pages/(docs)/routing/route.js';
+import { stateManagementIndexRoute } from '@/pages/(docs)/state-management/route.js';
+import { workflowIndexRoute } from '@/pages/(docs)/workflow/route.js';
+import { DnsIcon, RemoteFunctionIcon, RouteIcon, SsrIcon, StateManagementIcon, WorkflowIcon } from './icons.js';
 
 export const Features = setup(() => {
   return (

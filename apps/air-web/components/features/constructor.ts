@@ -57,7 +57,7 @@ demoRpc.construct(getStocks, () => {
 
       stock.history.push(newPrice);
       if (stock.history.length > 18) stock.history.shift();
-    }, 500);
+    }, 250);
 
     const autoClose = setTimeout(() => {
       clearInterval(timer);

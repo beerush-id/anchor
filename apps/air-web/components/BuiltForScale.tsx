@@ -28,7 +28,7 @@ export const BuiltForScale = setup(() => {
 });
 
 const dotGrid =
-  'bg-[radial-gradient(color-mix(in_srgb,var(--color-on-surface)_14%,transparent)_1px,transparent_1px)] bg-size-[22px_22px]';
+  'bg-surface bg-[radial-gradient(color-mix(in_srgb,var(--color-on-surface)_14%,transparent)_1px,transparent_1px)] bg-size-[22px_22px]';
 
 const classes = {
   root: `relative overflow-hidden border-t border-border ${dotGrid}`,

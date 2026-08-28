@@ -54,7 +54,7 @@ const UserCard = setup(() => {
       </div>
 
       <Show when={() => demo.result}>
-        {(result) => <Badge variant={result === 'settled' ? 'tip' : 'destructive'}>{result}</Badge>}
+        {(result) => <Badge variant={result === 'settled' ? 'tip' : 'destructive'}>{result.toUpperCase()}</Badge>}
       </Show>
 
       <p className={classes.hint}>Optimistic updates apply instantly — if the request fails, undoable cleanly rolls them back.</p>
