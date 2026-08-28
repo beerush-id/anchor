@@ -54,13 +54,13 @@
 
   --z-base: 0;
   --z-content: 1;
-  --z-layout: 9;
-  --z-dropdown: 10;
-  --z-tooltip: 11;
-  --z-modal: 12;
-  --z-notification: 13;
-  --z-popover: 14;
-  --z-toast: 15;
+  --z-layout: 50;
+  --z-dropdown: 60;
+  --z-tooltip: 70;
+  --z-modal: 80;
+  --z-notification: 90;
+  --z-popover: 95;
+  --z-toast: 100;
 }
 
 :root {
@@ -78,8 +78,11 @@
 }
 
 @layer base {
+  html,
   body {
     @apply bg-surface-lower text-on-surface antialiased;
+    overflow-x: clip;
+    min-height: 100%;
 
     font: 16px / 145% var(--font-sans);
     font-synthesis: none;
@@ -106,6 +109,10 @@
     @apply air-container;
     border-inline: 1px solid var(--air-mdx-border);
     padding-block-start: 0;
+
+    @media (max-width: 768px) {
+      border-inline: none;
+    }
 
     .air-mdx-aside-left {
       border-inline-end: 1px solid var(--air-mdx-border);
@@ -142,7 +149,7 @@
 }
 
 @utility air-section-inner {
-  @apply air-container border-x border-border px-6 lg:px-(--spacing-section);
+  @apply air-container px-6 md:border-x md:border-border lg:px-(--spacing-section);
 }
 
 @utility air-article-layout {
@@ -271,7 +278,7 @@
 }
 
 @utility air-header-inner {
-  @apply air-container flex h-(--spacing-header) items-center gap-6 border-x border-border px-6;
+  @apply air-container flex h-(--spacing-header) items-center gap-6 px-6 md:border-x md:border-border;
 }
 
 .air-header-logo,
@@ -437,7 +444,7 @@
 }
 
 @utility air-footer-bottom-inner {
-  @apply flex flex-col items-center justify-between gap-2 py-4 text-xs text-on-surface-variant sm:flex-row;
+  @apply flex flex-col items-center justify-between gap-2 py-4 text-center text-xs text-on-surface-variant sm:flex-row sm:text-left;
 
   a {
     @apply font-medium text-on-surface no-underline;
@@ -501,6 +508,15 @@
     @apply flex;
   }
 
+  .air-header-mobile-panel & {
+    display: flex;
+    width: 100%;
+
+    &:focus-within {
+      width: 100%;
+    }
+  }
+
   &:focus-within {
     @apply border-primary;
     width: min(440px, 36vw);
@@ -541,6 +557,12 @@
   padding: 0.35rem;
   background-color: var(--color-surface);
   @apply shadow-pop;
+
+  .air-header-mobile-panel & {
+    inset-inline: 0;
+    width: 100%;
+    max-width: 100%;
+  }
 }
 
 @utility air-search-item {

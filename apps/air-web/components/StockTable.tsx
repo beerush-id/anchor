@@ -34,12 +34,12 @@ export const StockTable = setup<StockTableProps>((props) => {
   });
 
   return render(() => (
-    <div className={classx('flex flex-col gap-6 lg:flex-row lg:items-stretch', props.className)}>
+    <div className={classx('flex flex-col gap-3.5 lg:flex-row lg:items-stretch', props.className)}>
       {/* Left: Market Overview List */}
-      <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-surface">
-        <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
-          <div className="text-sm font-semibold text-on-surface">Market Overview</div>
-          <span className="text-xs text-on-surface-variant/70 italic">Simulated Demo Data</span>
+      <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-border bg-surface">
+        <div className="flex items-center justify-between border-b border-border px-3.5 py-2.5 sm:px-4 sm:py-3">
+          <div className="text-xs font-semibold uppercase tracking-wider text-on-surface">Market Overview</div>
+          <span className="text-[11px] text-on-surface-variant/70 italic">Simulated Demo</span>
         </div>
 
         <div className="divide-y divide-border/60 overflow-y-auto">
@@ -53,7 +53,7 @@ export const StockTable = setup<StockTableProps>((props) => {
                   type="button"
                   onClick={() => (state.selectedSymbol = item.symbol)}
                   className={classx(
-                    'flex w-full items-center justify-between gap-3 px-5 py-3.5 text-left transition-colors',
+                    'flex w-full items-center justify-between gap-3 px-3.5 py-2.5 sm:px-4 sm:py-3 text-left transition-colors cursor-pointer',
                     active.value ? 'bg-surface-variant' : 'hover:bg-surface-variant/50'
                   )}
                 >
@@ -111,7 +111,7 @@ export const StockTable = setup<StockTableProps>((props) => {
       </div>
 
       {/* Right: Delegated Stock Chart */}
-      <div className="flex flex-1 flex-col justify-between overflow-hidden rounded-2xl border border-border bg-surface">
+      <div className="flex flex-1 flex-col justify-between overflow-hidden rounded-xl border border-border bg-surface">
         <Show when={() => selected.value}>{(item) => <StockChart item={item} />}</Show>
       </div>
     </div>

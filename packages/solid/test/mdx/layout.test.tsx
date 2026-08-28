@@ -163,4 +163,72 @@ describe('Documentation Page Layout Scaffolding', () => {
       expect(container.querySelector('.air-mdx-main-inner')).not.toBeNull();
     });
   });
+
+  describe('Mobile Navigation Drawer & Interactivity', () => {
+    it('toggles sidebar and toc drawers and closes via backdrop or link clicks', () => {
+      mdxCtx.set({
+        headings: [{ id: 'intro', text: 'Intro', depth: 2 }],
+      } as any);
+
+      const { container } = render(() => (
+        <Layout nav={sampleNav}>
+          <div>Content</div>
+          <Layout.Snippet for={'toc'}>{() => <a href="#heading">Heading</a>}</Layout.Snippet>
+        </Layout>
+      ));
+
+      const menuBtn = container.querySelector('button[aria-label="Toggle navigation menu"]');
+      const tocBtn = container.querySelector('button[aria-label="Toggle table of contents"]');
+      expect(menuBtn).not.toBeNull();
+      expect(tocBtn).not.toBeNull();
+
+      // Open sidebar drawer and click backdrop to close
+      fireEvent.click(menuBtn!);
+      let backdrop = container.querySelector('.air-mdx-backdrop');
+      expect(backdrop).not.toBeNull();
+      expect(backdrop?.getAttribute('data-drawer')).toBe('sidebar');
+
+      fireEvent.click(backdrop!);
+      expect(container.querySelector('.air-mdx-backdrop')).toBeNull();
+
+      // Toggle sidebar drawer on and off via menu button
+      fireEvent.click(menuBtn!);
+      expect(container.querySelector('.air-mdx-backdrop')).not.toBeNull();
+      fireEvent.click(menuBtn!);
+      expect(container.querySelector('.air-mdx-backdrop')).toBeNull();
+
+      // Open TOC drawer and toggle off
+      fireEvent.click(tocBtn!);
+      backdrop = container.querySelector('.air-mdx-backdrop');
+      expect(backdrop).not.toBeNull();
+      expect(backdrop?.getAttribute('data-drawer')).toBe('toc');
+
+      fireEvent.click(tocBtn!);
+      expect(container.querySelector('.air-mdx-backdrop')).toBeNull();
+
+      // Non-link click on aside-left does not close drawer
+      const asideLeft = container.querySelector('aside[aria-label="Documentation navigation"]');
+      fireEvent.click(menuBtn!);
+      fireEvent.click(asideLeft!);
+      expect(container.querySelector('.air-mdx-backdrop')).not.toBeNull();
+
+      // Clicking link inside aside-left closes drawer
+      const navLink = container.querySelector('aside[aria-label="Documentation navigation"] a');
+      expect(navLink).not.toBeNull();
+      fireEvent.click(navLink!);
+      expect(container.querySelector('.air-mdx-backdrop')).toBeNull();
+
+      // Non-link click on aside-right does not close drawer
+      const asideRight = container.querySelector('aside[aria-label="Table of contents"]');
+      fireEvent.click(tocBtn!);
+      fireEvent.click(asideRight!);
+      expect(container.querySelector('.air-mdx-backdrop')).not.toBeNull();
+
+      // Clicking link inside aside-right closes drawer
+      const tocLink = container.querySelector('aside[aria-label="Table of contents"] a');
+      expect(tocLink).not.toBeNull();
+      fireEvent.click(tocLink!);
+      expect(container.querySelector('.air-mdx-backdrop')).toBeNull();
+    });
+  });
 });

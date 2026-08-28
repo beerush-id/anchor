@@ -141,9 +141,12 @@ export const Search = setup<SearchProps>((props) => {
                   role="option"
                   aria-selected={state.active === index}
                   className={classx('air-search-item', { active: state.active === index })}
-                  onClick={(e) => {
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                  }}
+                  onClick={() => {
                     state.active = -1;
-                    e.currentTarget.blur();
+                    state.query = '';
                   }}
                 >
                   <strong className="air-search-item-title">{hit.title || hit.url}</strong>

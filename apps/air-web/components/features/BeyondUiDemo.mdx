@@ -97,22 +97,22 @@ const LiveMarketStream = setup(() => {
 });
 
 const classes = {
-  root: 'flex flex-col-reverse gap-4 w-full',
-  toolbar: 'flex flex-wrap items-center justify-between gap-3 px-1',
+  root: 'flex flex-col-reverse gap-4 w-full pt-1.5 sm:pt-3',
+  toolbar: 'flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 px-0.5',
   status: 'flex items-center gap-2',
   indicator: 'relative flex size-2 items-center justify-center',
   dotIdle: 'size-2 rounded-full bg-on-surface-variant/40',
   dotPing: 'absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75',
   dotActive: 'relative inline-flex size-2 rounded-full bg-emerald-500',
   statusText: 'text-xs font-medium text-on-surface-variant',
-  actions: 'flex items-center gap-3',
+  actions: 'flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto',
   segmented: 'flex rounded-lg border border-border bg-surface-variant p-0.5',
   segmentBtn: 'rounded-md px-2.5 py-1 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all',
   segmentActive: 'bg-surface text-primary shadow-xs',
 };
 ```
 
-<div className="air-demos w-full p-2 lg:p-4">
+<div className="air-demos w-full">
   <LiveMarketStream />
 </div>
 :::

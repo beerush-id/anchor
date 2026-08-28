@@ -20,24 +20,24 @@ export const StockChart = setup<StockChartProps>((props) => {
     const item = props.item;
 
     return (
-      <div className={classx('flex h-full flex-col justify-between gap-5 p-5 lg:p-6', props.className)}>
+      <div className={classx('flex h-full flex-col justify-between gap-3.5 p-3.5 sm:p-5 lg:p-6', props.className)}>
         {/* Header & Intervals */}
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-mono text-2xl font-bold text-on-surface">{item.symbol}</span>
-              <span className="rounded-md border border-border bg-surface-variant px-2 py-0.5 text-xs text-on-surface-variant">
+              <span className="font-mono text-xl sm:text-2xl font-bold text-on-surface">{item.symbol}</span>
+              <span className="rounded-md border border-border bg-surface-variant px-1.5 py-0.5 text-[11px] text-on-surface-variant">
                 {item.name}
               </span>
             </div>
 
-            <div className="mt-1 flex items-baseline gap-2.5">
+            <div className="mt-0.5 flex items-baseline gap-2">
               <Snippet data={() => ({ price: item.price, hovered: state.hoveredIndex })}>
                 {({ price, hovered }) => {
                   const display = hovered >= 0 && item.history[hovered] !== undefined ? item.history[hovered] : price;
 
                   return (
-                    <span className="font-mono text-3xl font-extrabold text-on-surface">${formatNumber(display)}</span>
+                    <span className="font-mono text-2xl sm:text-3xl font-extrabold text-on-surface">${formatNumber(display)}</span>
                   );
                 }}
               </Snippet>
@@ -46,7 +46,7 @@ export const StockChart = setup<StockChartProps>((props) => {
                 {({ change, pct }) => (
                   <span
                     className={classx(
-                      'font-mono text-sm font-semibold',
+                      'font-mono text-xs sm:text-sm font-semibold',
                       change >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                     )}
                   >
@@ -57,14 +57,14 @@ export const StockChart = setup<StockChartProps>((props) => {
             </div>
           </div>
 
-          <div className="flex rounded-lg border border-border bg-surface-variant p-1">
+          <div className="flex rounded-lg border border-border bg-surface-variant p-0.5 sm:p-1">
             {(['1D', '1W', '1M', '1Y', 'ALL'] as TimeInterval[]).map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => (state.interval = tab)}
                 className={classx(
-                  'rounded-md px-2.5 py-1 text-xs font-semibold transition-all',
+                  'rounded-md px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs font-semibold transition-all cursor-pointer',
                   state.interval === tab
                     ? 'bg-surface text-primary shadow-xs'
                     : 'text-on-surface-variant hover:text-on-surface'
@@ -77,7 +77,7 @@ export const StockChart = setup<StockChartProps>((props) => {
         </div>
 
         {/* SVG Area Chart */}
-        <div className="relative my-auto flex h-52 w-full items-center justify-center">
+        <div className="relative my-auto flex h-36 sm:h-44 lg:h-48 w-full items-center justify-center">
           <Snippet data={() => ({ history: item.history, isPos: item.change >= 0, hovered: state.hoveredIndex })}>
             {({ history, isPos, hovered }) => (
               <StockAreaChart
@@ -91,9 +91,9 @@ export const StockChart = setup<StockChartProps>((props) => {
         </div>
 
         {/* Statistics Grid */}
-        <div className="grid grid-cols-2 gap-3 border-t border-border pt-4 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 border-t border-border pt-3 sm:grid-cols-4 sm:pt-4">
           <div>
-            <span className="block text-[11px] font-medium uppercase tracking-wider text-on-surface-variant">
+            <span className="block text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-on-surface-variant">
               24h High
             </span>
             <Snippet data={() => item.high24h}>
@@ -101,7 +101,7 @@ export const StockChart = setup<StockChartProps>((props) => {
             </Snippet>
           </div>
           <div>
-            <span className="block text-[11px] font-medium uppercase tracking-wider text-on-surface-variant">
+            <span className="block text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-on-surface-variant">
               24h Low
             </span>
             <Snippet data={() => item.low24h}>
@@ -109,13 +109,13 @@ export const StockChart = setup<StockChartProps>((props) => {
             </Snippet>
           </div>
           <div>
-            <span className="block text-[11px] font-medium uppercase tracking-wider text-on-surface-variant">
+            <span className="block text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-on-surface-variant">
               24h Volume
             </span>
             <span className="font-mono text-xs font-semibold text-on-surface">{item.volume}</span>
           </div>
           <div>
-            <span className="block text-[11px] font-medium uppercase tracking-wider text-on-surface-variant">
+            <span className="block text-[10px] sm:text-[11px] font-medium uppercase tracking-wider text-on-surface-variant">
               Market Cap
             </span>
             <span className="font-mono text-xs font-semibold text-on-surface">{item.marketCap}</span>

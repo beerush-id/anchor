@@ -8,7 +8,7 @@ export const Hero = setup(() => {
         <div className={classes.content}>
           <p className={classes.badge}>
             <span aria-hidden="true" className={classes.badgeDot} />
-            One Stack &middot; Framework Agnostic &middot; Deploy Anywhere
+            One Stack &middot; Deploy Anywhere
           </p>
 
           <h1 className="air-display leading-[1.15]">

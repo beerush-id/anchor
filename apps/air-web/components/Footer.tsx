@@ -113,11 +113,11 @@ export default function Footer({ className }: ComponentProps<'footer'>) {
         <div className="air-section-inner air-footer-bottom-inner">
           <span>
             © {new Date().getFullYear()} AirLib · Made with love by{' '}
-            <a href="https://mahdaen.name" target="_blank" rel="noreferrer">
+            <a href="https://mahdaen.name" target="_blank" rel="noreferrer" className="whitespace-nowrap">
               Nanang Mahdaen El Agung
             </a>
           </span>
-          <span>One Stack &middot; Framework Agnostic &middot; Deploy Anywhere</span>
+          <span>One Stack &middot; Deploy Anywhere</span>
         </div>
       </div>
     </footer>
