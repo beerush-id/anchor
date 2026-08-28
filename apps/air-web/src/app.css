@@ -64,10 +64,12 @@
 :root {
   color-scheme: light dark;
 
+  &[data-theme='dark'],
   &:has([data-theme='dark']) {
     color-scheme: only dark;
   }
 
+  &[data-theme='light'],
   &:has([data-theme='light']) {
     color-scheme: only light;
   }

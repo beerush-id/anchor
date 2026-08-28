@@ -1,15 +1,17 @@
 import { Head, page, uIndex } from '@airlib/react';
 import { CODE_GROUP_INDEX } from '@airlib/react/mdx';
-import { Features } from '../components/Features.js';
-import { Advanced } from '../components/features/Advanced.js';
-import { BeyondUi } from '../components/features/BeyondUi.js';
-import { FineGrained } from '../components/features/FineGrained.js';
-import { Irpc } from '../components/features/Irpc.js';
-import { Router } from '../components/features/Router.js';
-import { Runtime } from '../components/features/Runtime.js';
-import { UniversalSsr } from '../components/features/UniversalSsr.js';
-import { Workflow } from '../components/features/Workflow.js';
-import { Hero } from '../components/Hero.js';
+import { BuiltForScale } from '@/components/BuiltForScale.js';
+import { Features } from '@/components/Features.js';
+import { Advanced } from '@/components/features/Advanced.js';
+import { BeyondUi } from '@/components/features/BeyondUi.js';
+import { FineGrained } from '@/components/features/FineGrained.js';
+import { Irpc } from '@/components/features/Irpc.js';
+import { Router } from '@/components/features/Router.js';
+import { Runtime } from '@/components/features/Runtime.js';
+import { UniversalSsr } from '@/components/features/UniversalSsr.js';
+import { Workflow } from '@/components/features/Workflow.js';
+import { FreedomOfChoice } from '@/components/FreedomOfChoice.js';
+import { Hero } from '@/components/Hero.js';
 import { rootIndexRoute } from './route.ts';
 
 export default page(rootIndexRoute).render(() => {
@@ -52,11 +54,13 @@ export default page(rootIndexRoute).render(() => {
       <FineGrained />
       <Irpc />
       <BeyondUi />
+      <BuiltForScale />
       <Router />
       <UniversalSsr />
       <Workflow />
       <Runtime />
       <Advanced />
+      <FreedomOfChoice />
     </>
   );
 });

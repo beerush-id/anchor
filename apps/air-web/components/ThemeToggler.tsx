@@ -1,9 +1,15 @@
-import { classx, cookies, render, setup } from '@airlib/react';
+import { classx, cookiePair, effect, render, setup, uiRouterCtx } from '@airlib/react';
 
 type ThemeMode = 'system' | 'light' | 'dark';
 
 export const ThemeToggler = setup(() => {
-  const theme = cookies('app-theme', { mode: 'system' as ThemeMode });
+  const ctx = uiRouterCtx.get();
+  const isStatic = ctx?.router.activeRoute?.isStatic;
+  const [theme, stored] = cookiePair('app-theme', { mode: 'system' as ThemeMode }, { deferred: isStatic });
+
+  effect.client(() => {
+    document.documentElement.dataset.theme = stored.mode;
+  });
 
   return render(() => (
     <div className={classes.pill} data-theme={theme.mode}>

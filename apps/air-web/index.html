@@ -6,6 +6,15 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="stylesheet" href="/src/app.css">
     <!--ssr-head-->
+    <script>
+      const match = document.cookie.match(/app-theme=([^;]+)/);
+      if (match) {
+        try {
+          const mode = JSON.parse(decodeURIComponent(match[1])).mode;
+          if (mode && mode !== 'system') document.documentElement.dataset.theme = mode;
+        } catch {}
+      }
+    </script>
   </head>
   <body>
     <div id="root" style="display: contents;"><!--ssr-outlet--></div>

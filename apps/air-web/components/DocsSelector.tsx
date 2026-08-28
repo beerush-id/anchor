@@ -1,4 +1,4 @@
-import { classx, For, mutable, render, setup, Show } from '@airlib/react';
+import { classx, For, mutable, render, Show, setup } from '@airlib/react';
 import { mdxCtx } from '@airlib/react/mdx';
 import type { FocusEvent, KeyboardEvent } from 'react';
 

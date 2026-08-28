@@ -33,10 +33,6 @@ Three pieces, three commands:
 
 `airPages()` wires up everything — file routing, MDX, the worker, image optimization, the route manifest — with defaults that work for most apps. Every piece can be configured or turned off.
 
-:::warning[SolidJS Support]
-MDX pages are currently only supported when using React. The integration with SolidJS is temporarily unavailable due to differences in how JSX is compiled to native DOM instructions. Support for SolidJS MDX pages will be restored in an upcoming patch.
-:::
-
 ### Image Defaults
 
 Every `?asset` import generates WebP variants at `[128, 256, 512, 1024]` by default. When your images need different sizes or format, set the defaults once — every import follows:

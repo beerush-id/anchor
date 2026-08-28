@@ -159,8 +159,6 @@ const settings = mutable({ notifications: true });
 
 // Autonomous component with two-way binding support
 const Toggle = setup<{ label: string; value?: Bindable<boolean> }>((props) => {
-  console.log('Toggle component rendered');
-
   const toggle = () => {
     props.value = !props.value;
   };

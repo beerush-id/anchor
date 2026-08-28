@@ -1,7 +1,7 @@
-import type { EventHandler, ChangeEvent, FocusEvent, ReactNode, FormEvent } from 'react';
-import { setup, render, mutable, effect, createContext, form, snapshot, derived, type Bindable } from '@airlib/react';
-import { z, type ZodType } from 'zod';
 import type { ExceptionMap } from '@airlib/react';
+import { type Bindable, createContext, derived, effect, form, mutable, render, setup, snapshot } from '@airlib/react';
+import type { FocusEvent, FocusEventHandler, FormEvent, InputEventHandler, ReactNode } from 'react';
+import { z, type ZodType } from 'zod';
 
 export type FormContext = {
   state: Record<string, any>;
@@ -15,7 +15,7 @@ export const fieldContext = createContext<{ name: string }>();
 export const InputField = setup<{
   type?: string;
   value?: Bindable<string>;
-  onInput?: EventHandler<ChangeEvent<HTMLInputElement>>;
+  onInput?: InputEventHandler<HTMLInputElement>;
 }>((props) => {
   const formState = formContext.get();
   const field = fieldContext.get();
@@ -23,7 +23,7 @@ export const InputField = setup<{
 
   const output = derived(() => (withForm ? formState.state[field.name] : props.value));
 
-  const handleInput = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleInput: InputEventHandler<HTMLInputElement> = (e) => {
     const val = e.currentTarget.value;
 
     if (withForm) {
@@ -48,8 +48,8 @@ export const InputField = setup<{
 export const NumberInput = setup<{
   value?: Bindable<number>;
   min?: number;
-  onInput?: EventHandler<ChangeEvent<HTMLInputElement>>;
-  onBlur?: EventHandler<FocusEvent<HTMLInputElement>>;
+  onInput?: InputEventHandler<HTMLInputElement>;
+  onBlur?: FocusEventHandler<HTMLInputElement>;
 }>((props) => {
   const formState = formContext.get();
   const field = fieldContext.get();
@@ -63,7 +63,7 @@ export const NumberInput = setup<{
     raw.value = String(output.value ?? '');
   });
 
-  const handleInput = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleInput: InputEventHandler<HTMLInputElement> = (e) => {
     raw.locked = true;
 
     try {
@@ -196,7 +196,7 @@ export const Profile = setup(() => {
       </div>
 
       <UserForm
-        onSubmit={async (data, e) => {
+        onSubmit={async (data) => {
           await createProfile(data);
         }}
       >

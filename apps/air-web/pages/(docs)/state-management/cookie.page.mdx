@@ -173,6 +173,120 @@ You can also trigger a sync from any script or third-party library via the nativ
 window.dispatchEvent(new Event('anchor:cookie-sync'));
 ```
 
+## Deferred Cookie Pairs (Static SSG Hydration)
+
+When components render on pre-generated static pages (`static: true` SSG) or cached CDN pages, the initial HTML is generated at build time using default initial values. If a component eagerly binds cookie values during initial hydration, differing browser cookies could cause hydration mismatches.
+
+`cookiePair()` solves this by splitting the cookie interface into a render-safe state proxy and the underlying persistent store:
+
+:::code-group{group="framework"}
+
+```tsx [React] name="react"
+import { classx, cookiePair, effect, render, setup, uiRouterCtx } from '@airlib/react';
+
+type ThemeMode = 'system' | 'light' | 'dark';
+
+export const ThemeToggler = setup(() => {
+  const ctx = uiRouterCtx.get();
+  const isStatic = ctx?.router.activeRoute?.isStatic;
+
+  // Renders initial 'system' on SSR and during hydration, then syncs stored value on mount
+  const [theme, stored] = cookiePair(
+    'app-theme',
+    { mode: 'system' as ThemeMode },
+    { deferred: isStatic }
+  );
+
+  effect.client(() => {
+    document.documentElement.dataset.theme = stored.mode;
+  });
+
+  return render(() => (
+    <div className="theme-pill" data-theme={theme.mode}>
+      <button
+        type="button"
+        className={classx({ active: theme.mode === 'system' })}
+        onClick={() => (theme.mode = 'system')}
+      >
+        System
+      </button>
+      <button
+        type="button"
+        className={classx({ active: theme.mode === 'light' })}
+        onClick={() => (theme.mode = 'light')}
+      >
+        Light
+      </button>
+      <button
+        type="button"
+        className={classx({ active: theme.mode === 'dark' })}
+        onClick={() => (theme.mode = 'dark')}
+      >
+        Dark
+      </button>
+    </div>
+  ));
+});
+```
+
+```tsx [SolidJS] name="solid"
+import { classx, cookiePair, effect, setup, uiRouterCtx } from '@airlib/solid';
+
+type ThemeMode = 'system' | 'light' | 'dark';
+
+export const ThemeToggler = setup(() => {
+  const ctx = uiRouterCtx.get();
+  const isStatic = ctx?.router.activeRoute?.isStatic;
+
+  // Renders initial 'system' on SSR and during hydration, then syncs stored value on mount
+  const [theme, stored] = cookiePair(
+    'app-theme',
+    { mode: 'system' as ThemeMode },
+    { deferred: isStatic }
+  );
+
+  effect.client(() => {
+    document.documentElement.dataset.theme = stored.mode;
+  });
+
+  return (
+    <div class="theme-pill" data-theme={theme.mode}>
+      <button
+        type="button"
+        class={classx({ active: theme.mode === 'system' })}
+        onClick={() => (theme.mode = 'system')}
+      >
+        System
+      </button>
+      <button
+        type="button"
+        class={classx({ active: theme.mode === 'light' })}
+        onClick={() => (theme.mode = 'light')}
+      >
+        Light
+      </button>
+      <button
+        type="button"
+        class={classx({ active: theme.mode === 'dark' })}
+        onClick={() => (theme.mode = 'dark')}
+      >
+        Dark
+      </button>
+    </div>
+  );
+});
+```
+
+:::
+
+### How `cookiePair` Works
+
+`cookiePair(name, init, options)` returns a tuple of `[paired, stored]`:
+
+1. **`paired` (First element)**: A reactive proxy that reads from an in-memory state initialized with `init`. When `deferred: true` is passed, subscriptions to the real cookie store are deferred until `onMount()`. The server render and initial hydration both execute with identical initial values, eliminating hydration mismatches on static pages.
+2. **`stored` (Second element)**: The direct reactive cookie store. Use `stored` inside client-only effects (`effect.client()`) or event handlers to inspect real persisted cookies immediately.
+3. **Bi-directional Writes**: Mutating properties on either `paired` or `stored` automatically persists the value to `document.cookie` and updates both proxies reactively.
+
 ## Next Steps
 
 - **Remote Functions**: Learn how to read and mutate cookies inside server RPC endpoints in the [Handlers](/docs/remote-function/handler#cookies-in-handlers) guide.

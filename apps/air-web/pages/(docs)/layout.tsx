@@ -1,14 +1,13 @@
 import { Link, NotFoundError, page } from '@airlib/react';
 import { Layout, Sidebar } from '@airlib/react/mdx';
 import { DocsSelector } from '@/components/DocsSelector.js';
+import Footer from '@/components/Footer.js';
 import Header from '@/components/Header.js';
 import { RouterProgress } from '@/components/RouterProgress.js';
 import { navs } from './nav.js';
 import docsRoute from './route.js';
 
 import './docs.css';
-import Footer from '../../components/Footer.js';
-import { ThemeToggler } from '../../components/ThemeToggler.js';
 
 const frameworkOptions = [
   { value: 'react', label: 'React' },
@@ -57,6 +56,5 @@ export default page(docsRoute).render(({ children }) => (
       {children}
     </Layout>
     <Footer />
-    <ThemeToggler />
   </>
 ));

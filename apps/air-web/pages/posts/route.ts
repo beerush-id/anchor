@@ -19,7 +19,7 @@ const buildingFormsWithAirFormRoute = route.route('/building-forms-with-air-form
 const buildingSmartFormComponentsRoute = route.route('/building-smart-form-components');
 /** AirLib managed */
 
-export const postsRoute = route.config({ static: true, deferred: 500 });
+export const postsRoute = route.config({ preloadMode: 'hover' });
 export const postsIndexRoute = indexRoute;
 export const postsAirstackVsNextjsRoute = airstackVsNextjsRoute;
 export const postsAirstackVsRemixRoute = airstackVsRemixRoute;

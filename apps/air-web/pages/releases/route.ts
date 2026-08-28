@@ -13,7 +13,7 @@ const releaseV130Route = route.route('/release-v1.3.0');
 const releaseV131Route = route.route('/release-v1.3.1');
 /** AirLib managed */
 
-export const releasesRoute = route.config({ static: true, deferred: 500 });
+export const releasesRoute = route.config({ preloadMode: 'hover' });
 export const releasesIndexRoute = indexRoute;
 
 export const releasesReleaseV11Route = releaseV11Route;

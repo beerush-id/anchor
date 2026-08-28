@@ -6,6 +6,6 @@ const indexRoute = route.route('/');
 /** AirLib managed */
 
 export const rootRoute = route;
-export const rootIndexRoute = indexRoute;
+export const rootIndexRoute = indexRoute.config({ static: false });
 
 export default rootRoute;
