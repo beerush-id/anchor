@@ -121,9 +121,7 @@ describe('Anchor React - Head APIs', () => {
       expect(document.head.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe(
         'https://airlib.dev'
       );
-      expect(document.head.querySelector('meta[property="og:site_name"]')?.getAttribute('content')).toBe(
-        'AirLib Docs'
-      );
+      expect(document.head.querySelector('meta[property="og:site_name"]')?.getAttribute('content')).toBe('AirLib Docs');
       expect(document.head.querySelector('meta[name="twitter:card"]')?.getAttribute('content')).toBe(
         'summary_large_image'
       );
@@ -311,6 +309,100 @@ describe('Anchor React - Head APIs', () => {
 
         ssr.destroy();
       });
+    });
+
+    it('applies Head.config prefix, suffix, and inherited default metadata', async () => {
+      Head.config({
+        prefix: 'AirLib Docs | ',
+        suffix: ' - Framework',
+        defaults: {
+          author: 'Beerush',
+          themeColor: '#fe7824',
+          og: { siteName: 'AirLib' },
+        },
+      });
+
+      const TestHead = template(() => (
+        <Head
+          meta={{
+            title: 'Getting Started',
+            description: 'Introduction guide',
+          }}
+        />
+      ));
+
+      const { unmount } = render(<TestHead />);
+
+      expect(document.title).toBe('AirLib Docs | Getting Started - Framework');
+      expect(document.head.querySelector('meta[name="description"]')?.getAttribute('content')).toBe(
+        'Introduction guide'
+      );
+      expect(document.head.querySelector('meta[name="author"]')?.getAttribute('content')).toBe('Beerush');
+      expect(document.head.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe('#fe7824');
+      expect(document.head.querySelector('meta[property="og:title"]')?.getAttribute('content')).toBe(
+        'AirLib Docs | Getting Started - Framework'
+      );
+      expect(document.head.querySelector('meta[property="og:site_name"]')?.getAttribute('content')).toBe('AirLib');
+
+      unmount();
+
+      Head.config({ prefix: '', suffix: '', defaults: {} });
+    });
+
+    it('supports configuring Head with a factory function invoked dynamically', async () => {
+      let count = 0;
+      Head.config(() => {
+        count++;
+        return {
+          suffix: ` (${count})`,
+        };
+      });
+
+      const PageOne = template(() => <Head meta={{ title: 'Page 1' }} />);
+      const PageTwo = template(() => <Head meta={{ title: 'Page 2' }} />);
+
+      const res1 = render(<PageOne />);
+      expect(document.title).toBe('Page 1 (1)');
+      res1.unmount();
+
+      const res2 = render(<PageTwo />);
+      expect(document.title).toBe('Page 2 (2)');
+      res2.unmount();
+
+      Head.config({ prefix: '', suffix: '', defaults: {} });
+    });
+
+    it('treats empty meta object as not provided and returns null', async () => {
+      let factoryCalls = 0;
+      Head.config(() => {
+        factoryCalls++;
+        return { suffix: ' — Test' };
+      });
+
+      const EmptyHead = template(() => <Head meta={{}} />);
+      const { container, unmount } = render(<EmptyHead />);
+
+      expect(container.innerHTML).toBe('');
+      expect(factoryCalls).toBe(0);
+
+      unmount();
+
+      Head.config({ prefix: '', suffix: '', defaults: {} });
+    });
+
+    it('renders children when no meta prop is provided', async () => {
+      const ChildrenOnlyHead = template(() => (
+        <Head>
+          <HeadLink rel="canonical" href="https://example.com/canonical" />
+        </Head>
+      ));
+
+      const { unmount } = render(<ChildrenOnlyHead />);
+      expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
+        'https://example.com/canonical'
+      );
+
+      unmount();
     });
   });
 });

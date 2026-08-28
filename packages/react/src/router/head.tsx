@@ -1,4 +1,4 @@
-import { $symbol, getScope, isBrowser, onCleanup, setScope } from '@airlib/core';
+import { $symbol, getScope, inherit, isBrowser, onCleanup, setScope } from '@airlib/core';
 import type { FC, HTMLAttributes, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -57,6 +57,18 @@ export interface SEOMeta {
 }
 
 /**
+ * Global configuration options for the Document Head component.
+ */
+export interface HeadConfig {
+  /** Text to prepend before the title (e.g. 'AirLib Docs | '). */
+  prefix?: string;
+  /** Text to append after the title (e.g. ' | AirLib'). */
+  suffix?: string;
+  /** Default headings and SEO metadata to merge with. */
+  defaults?: SEOMeta;
+}
+
+/**
  * Properties for the document Head component.
  */
 export interface HeadProps {
@@ -67,17 +79,45 @@ export interface HeadProps {
 }
 
 /**
+ * Factory function for configuring the Document Head component dynamically.
+ *
+ * @returns Updated configuration options.
+ */
+export type HeadConfigFactory = () => HeadConfig;
+
+/**
+ * A comprehensive Document Head component type supporting global configuration.
+ */
+export interface HeadComponent extends FC<HeadProps> {
+  /**
+   * Configures global default metadata, title prefixes, and suffixes.
+   *
+   * @param options Configuration options or a factory function returning configuration.
+   * @returns The Head component for chaining.
+   */
+  config(options: HeadConfig | HeadConfigFactory): HeadComponent;
+}
+
+let activeConfig: HeadConfig | HeadConfigFactory = {};
+
+/**
  * A comprehensive Document Head component optimized for SEO and social unfurling.
  * Automates rendering of title, meta description, Open Graph, X (Twitter) cards,
  * alternates, canonical links, and structured JSON-LD data payloads.
  */
-export const Head: FC<HeadProps> = ({ meta, children }) => {
-  if (!meta && !children) return null;
+export const Head: HeadComponent = ((props: HeadProps) => {
+  const { meta: inputMeta, children } = props;
+  const hasMeta = Boolean(inputMeta && Object.keys(inputMeta).length);
 
+  if (!hasMeta && !children) return null;
+
+  const config = typeof activeConfig === 'function' ? activeConfig() : activeConfig;
+  const meta = inherit<SEOMeta>(config.defaults, inputMeta);
   const keywordsStr = Array.isArray(meta?.keywords) ? meta.keywords.join(', ') : meta?.keywords;
+  const title = meta?.title ? [config.prefix, meta.title, config.suffix].filter(Boolean).join('') : undefined;
 
   // Derive fallbacks for Open Graph
-  const ogTitle = meta?.og?.title ?? meta?.title;
+  const ogTitle = meta?.og?.title ?? title;
   const ogDesc = meta?.og?.description ?? meta?.description;
   const ogUrl = meta?.og?.url ?? meta?.canonical;
 
@@ -89,7 +129,7 @@ export const Head: FC<HeadProps> = ({ meta, children }) => {
 
   return (
     <>
-      {meta?.title && <Title>{meta.title}</Title>}
+      {title && <Title>{title}</Title>}
       {meta?.description && <Meta name="description" content={meta.description} />}
       {keywordsStr && <Meta name="keywords" content={keywordsStr} />}
       {meta?.author && <Meta name="author" content={meta.author} />}
@@ -133,6 +173,15 @@ export const Head: FC<HeadProps> = ({ meta, children }) => {
       {children}
     </>
   );
+}) as HeadComponent;
+
+Head.config = (config: HeadConfig | HeadConfigFactory) => {
+  if (typeof config === 'function') {
+    activeConfig = config;
+  } else {
+    activeConfig = Object.assign(typeof activeConfig === 'object' ? activeConfig : {}, config);
+  }
+  return Head;
 };
 
 /**
