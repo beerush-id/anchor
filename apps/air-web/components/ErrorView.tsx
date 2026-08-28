@@ -1,41 +1,74 @@
-import { Link, NotFoundError, type RouteError } from '@airlib/react';
-import airLogo from '../assets/airlib.svg';
-import heroImg from '../assets/hero.png?asset' with { sizes: '170' };
-import reactLogo from '../assets/react.svg';
-import viteLogo from '../assets/vite.svg';
+import { Head, Link, NotFoundError, type RouteError, Slot, setup } from '@airlib/react';
+import type { ReactNode } from 'react';
+import docsRoute from '../pages/(docs)/route.js';
 import rootRoute from '../pages/route.js';
 
-export function ErrorView({ error }: { error?: RouteError }) {
-  return (
-    <section className={classes.center}>
-      <div className={classes.logos}>
-        <img src={airLogo} className="airlib" width="179" height="179" alt="AirLib logo" />
-        <div className={classes.hero}>
-          <img src={heroImg.src} className={classes.base} width="170" height="179" alt="Hero" />
-          <img src={reactLogo} className={classes.framework} alt="React logo" />
-          <img src={viteLogo} className={classes.vite} alt="Vite logo" />
-        </div>
-      </div>
+export type ErrorViewProps = {
+  error?: RouteError;
+  title?: string;
+  description?: string;
+  className?: string;
+  children?: ReactNode;
+};
 
-      <h1 className="air-display">{error instanceof NotFoundError ? '404' : '500'}</h1>
-      <p>{error?.message}</p>
-      <div className={classes.divider}>
-        <Link to={rootRoute} className="mt-6">
-          Back to Home
-        </Link>
+export type ErrorViewSlots = {
+  actions?: () => ReactNode;
+};
+
+export const ErrorView = setup<ErrorViewProps, ErrorViewSlots>((props, slots) => {
+  const is404 = props.error instanceof NotFoundError;
+  const statusCode = is404 ? '404' : '500';
+  const defaultTitle = is404 ? 'Page Not Found' : 'Something Went Wrong';
+  const defaultDesc = is404
+    ? "The page you are looking for doesn't exist or has been moved."
+    : props.error?.message || 'An unexpected error occurred while processing your request.';
+
+  const title = props.title ?? defaultTitle;
+  const description = props.description ?? defaultDesc;
+
+  return (
+    <section className={`air-error-view ${classes.root} ${props.className ?? ''}`}>
+      <Head meta={{ title: `${statusCode} — ${title}` }} />
+      <div className={`air-container ${classes.inner}`}>
+        <p className={classes.badge}>
+          <span aria-hidden="true" className={classes.badgeDot} />
+          {statusCode} Error
+        </p>
+
+        <h1 className="air-display">{title}</h1>
+
+        <p className={classes.description}>{description}</p>
+
+        <div className={classes.actions}>
+          <Slot for={slots.actions}>
+            {() => (
+              <>
+                <Link to={rootRoute} className={classes.cta}>
+                  Back to Home
+                </Link>
+                <Link to={docsRoute} className={classes.link}>
+                  Documentation
+                </Link>
+              </>
+            )}
+          </Slot>
+        </div>
       </div>
     </section>
   );
-}
+});
+
+const dotGrid =
+  'bg-[radial-gradient(color-mix(in_srgb,var(--color-on-surface)_14%,transparent)_1px,transparent_1px)] bg-size-[22px_22px]';
 
 const classes = {
-  center: 'flex grow flex-col place-content-center place-items-center gap-4.5 px-5 pt-8 pb-6 lg:gap-6.25 lg:p-0',
-  logos: 'flex gap-6',
-  hero: 'relative',
-  base: 'relative z-0 w-42.5 [inset-inline:0] mx-auto',
-  framework:
-    'absolute z-1 top-8.5 h-7 [inset-inline:0] mx-auto [transform:perspective(2000px)_rotateZ(300deg)_rotateX(44deg)_rotateY(39deg)_scale(1.4)]',
-  vite: 'absolute z-0 top-26.75 h-6.5 w-auto [inset-inline:0] mx-auto [transform:perspective(2000px)_rotateZ(300deg)_rotateX(40deg)_rotateY(39deg)_scale(0.8)]',
-  divider:
-    "relative flex w-full flex-col border-t border-border before:absolute before:top-[-4.5px] before:left-0 before:border-[5px] before:border-transparent before:border-l-border before:content-[''] after:absolute after:top-[-4.5px] after:right-0 after:border-[5px] after:border-transparent after:border-r-border after:content-['']",
+  root: `relative flex w-full min-h-[min(44rem,calc(100svh_-_var(--spacing-header)))] grow flex-col items-center justify-center overflow-hidden ${dotGrid} px-5 py-16`,
+  inner: 'relative z-(--z-content) flex max-w-160 flex-col items-center text-center',
+  badge:
+    'inline-flex items-center gap-2 rounded-full border border-border bg-surface-variant px-3 py-1 text-xs font-semibold text-on-surface-variant',
+  badgeDot: 'size-1.5 rounded-full bg-brand',
+  description: 'mt-4 max-w-120 text-base text-on-surface-variant lg:text-lg',
+  actions: 'mt-8 flex flex-wrap items-center justify-center gap-4',
+  cta: 'air-cta',
+  link: 'air-cta-dark',
 };

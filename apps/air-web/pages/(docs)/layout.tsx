@@ -1,11 +1,12 @@
 import { Link, NotFoundError, page } from '@airlib/react';
 import { Layout, Sidebar } from '@airlib/react/mdx';
 import { DocsSelector } from '@/components/DocsSelector.js';
+import { ErrorView } from '@/components/ErrorView.js';
 import Footer from '@/components/Footer.js';
 import Header from '@/components/Header.js';
 import { RouterProgress } from '@/components/RouterProgress.js';
 import { navs } from './nav.js';
-import docsRoute from './route.js';
+import docsRoute, { docsGettingStartedRoute } from './route.js';
 
 const frameworkOptions = [
   { value: 'react', label: 'React' },
@@ -19,21 +20,25 @@ const pmOptions = [
   { value: 'yarn', label: 'Yarn' },
 ];
 
-docsRoute.catch(({ error }) => {
-  const status = error instanceof NotFoundError ? 404 : 500;
-  const label = status === 404 ? 'Page Not Found' : 'Something Went Wrong';
-
-  return (
-    <div className="air-mdx-error">
-      <span className="air-mdx-error-status">{status}</span>
-      <h1 className="air-mdx-error-title">{label}</h1>
-      <p className="air-mdx-error-message">{error.message}</p>
-      <div className="air-mdx-error-actions">
-        <Link href="../">Back to Docs</Link>
-      </div>
-    </div>
-  );
-});
+docsRoute.catch(({ error }) => (
+  <ErrorView
+    error={error}
+    title={error instanceof NotFoundError ? 'Documentation Not Found' : undefined}
+    description={
+      error instanceof NotFoundError
+        ? "The documentation page you are looking for doesn't exist or may have been reorganized."
+        : undefined
+    }
+  >
+    <ErrorView.Snippet for="actions">
+      {() => (
+        <Link to={docsGettingStartedRoute} className="air-cta">
+          Getting Started
+        </Link>
+      )}
+    </ErrorView.Snippet>
+  </ErrorView>
+));
 
 export default page(docsRoute).render(({ children }) => (
   <>
