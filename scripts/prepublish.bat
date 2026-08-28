@@ -40,6 +40,7 @@ bpkg info set dependencies.@airlib/router="%VERSION%" -f ^
   packages/react ^
   packages/solid ^
   packages/ssr
+  packages/vite-ssr
 
 bpkg info set dependencies.@airlib/storage="%VERSION%" -f ^
   packages/react ^
