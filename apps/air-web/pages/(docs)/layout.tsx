@@ -7,8 +7,6 @@ import { RouterProgress } from '@/components/RouterProgress.js';
 import { navs } from './nav.js';
 import docsRoute from './route.js';
 
-import './docs.css';
-
 const frameworkOptions = [
   { value: 'react', label: 'React' },
   { value: 'solid', label: 'SolidJS' },
@@ -41,7 +39,7 @@ export default page(docsRoute).render(({ children }) => (
   <>
     <RouterProgress />
     <Header />
-    <Layout nav={navs}>
+    <Layout nav={navs} className="bg-surface">
       <Layout.Snippet for={'sidebar'}>
         {() => (
           <>

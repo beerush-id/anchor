@@ -11,7 +11,7 @@ export default page(rootRoute).render(({ children }) => (
   <>
     <RouterProgress />
     <Header />
-    <main className="air-main">{children}</main>
+    <main className="air-main bg-surface">{children}</main>
     <Footer />
   </>
 ));
