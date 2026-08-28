@@ -83,6 +83,12 @@ describe('Route class', () => {
       const route = new Route(sharedRouter, '/test');
       // Options are merged with DEFAULT_CONFIG, so they're never undefined
       expect(route.options).toBeDefined();
+      expect(route.isStatic).toBe(false);
+    });
+
+    it('should return true for isStatic when static option is enabled', () => {
+      const staticRoute = new Route(sharedRouter, '/static-page', { static: true });
+      expect(staticRoute.isStatic).toBe(true);
     });
 
     it('should store parent when provided', () => {
