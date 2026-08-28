@@ -7,8 +7,17 @@ export default page(releasesIndexRoute).render(() => (
   <article className="air-mdx-outlet mx-auto max-w-4xl">
     <Head
       meta={{
-        title: 'Releases & Announcements — AirLib',
-        description: 'Release notes, changelogs, and announcements for the AirLib ecosystem.',
+        title: 'Releases, Changelogs, & Ecosystem Updates',
+        description:
+          'Track the evolution of AirLib: release notes, changelogs, breaking change guides, and performance updates across React, Solid, and server adapters.',
+        keywords: [
+          'AirLib Releases',
+          'Full-Stack Framework Changelog',
+          'React Signals Releases',
+          'SolidJS Full-Stack Updates',
+          'IRPC Release Notes',
+          'AirLib v2.0.0',
+        ],
       }}
     />
     <h1>Releases</h1>

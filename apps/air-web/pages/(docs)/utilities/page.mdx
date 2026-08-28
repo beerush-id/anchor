@@ -18,6 +18,7 @@ keywords:
   - uuid
   - shortId
   - uIndex
+  - inherit
 ---
 
 # Utilities
@@ -383,3 +384,69 @@ const groupId = uIndex(GROUP_INDEX, true);
 ```
 
 :::
+
+## Hierarchical Inheritance
+
+`inherit` creates a deeply inherited proxy that layers multiple configuration sources from left to right. When accessing properties, it resolves from the rightmost defined override down to the leftmost default, recursively cascading through nested objects without cloning or mutating the original targets:
+
+:::code-group{group="framework"}
+
+```typescript [React] name="react"
+import { inherit } from '@airlib/react';
+
+interface AppConfig {
+  theme: { mode: string; color: string };
+  api: { timeout: number; retries: number };
+}
+
+const defaults: AppConfig = {
+  theme: { mode: 'system', color: '#fe7824' },
+  api: { timeout: 5000, retries: 3 },
+};
+
+const userOverrides = {
+  theme: { mode: 'dark' },
+};
+
+// Deeply merges overrides over defaults without mutation
+const config = inherit<AppConfig>(defaults, userOverrides);
+
+console.log(config.theme.mode);  // 'dark' (from userOverrides)
+console.log(config.theme.color); // '#fe7824' (inherited from defaults)
+console.log(config.api.timeout); // 5000 (inherited from defaults)
+```
+
+```typescript [SolidJS] name="solid"
+import { inherit } from '@airlib/solid';
+
+interface AppConfig {
+  theme: { mode: string; color: string };
+  api: { timeout: number; retries: number };
+}
+
+const defaults: AppConfig = {
+  theme: { mode: 'system', color: '#fe7824' },
+  api: { timeout: 5000, retries: 3 },
+};
+
+const userOverrides = {
+  theme: { mode: 'dark' },
+};
+
+// Deeply merges overrides over defaults without mutation
+const config = inherit<AppConfig>(defaults, userOverrides);
+
+console.log(config.theme.mode);  // 'dark' (from userOverrides)
+console.log(config.theme.color); // '#fe7824' (inherited from defaults)
+console.log(config.api.timeout); // 5000 (inherited from defaults)
+```
+
+:::
+
+### Key Features of Inherit
+
+- **Non-destructive & Lazy**: Does not clone or merge upfront; properties are evaluated dynamically via proxy traps.
+- **Deep Recursive Cascade**: Nested objects (like `config.theme` and `config.api`) are automatically wrapped in nested `inherit` proxies on access.
+- **Full Object Parity**: Supports `in` operators (`'mode' in config.theme`), `Object.keys(config)`, and native reflection.
+- **Null-Safe**: Gracefully ignores `null`, `undefined`, and empty object layers.
+

@@ -74,6 +74,7 @@ export {
   history,
   ImmutableRef,
   immutable,
+  inherit,
   isBrowser,
   isImmutableRef,
   isMutableRef,

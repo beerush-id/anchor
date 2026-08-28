@@ -145,40 +145,40 @@ export const navs: NavItem[] = [
     items: toNavItems(uiMeta),
   },
   { separator: true },
-  {
-    text: 'AirLib Form',
-    icon: () => <ChecklistIcon />,
-    collapsed: true,
-    items: toNavItems(formMeta),
-  },
-  {
-    text: 'AirLib Material 3 CSS',
-    icon: () => <StyleIcon />,
-    collapsed: true,
-    items: [
-      ...toNavItems(materialMeta),
-      {
-        text: 'Components',
-        icon: () => <WidgetsIcon />,
-        items: toNavItems(componentsMeta),
-      },
-      {
-        text: 'Layout',
-        icon: () => <GridViewIcon />,
-        items: toNavItems(layoutMeta),
-      },
-      {
-        text: 'Extensions',
-        icon: () => <ExtensionIcon />,
-        items: toNavItems(extensionsMeta),
-      },
-      {
-        text: 'Utilities',
-        icon: () => <BuildIcon />,
-        items: toNavItems(materialUtilitiesMeta),
-      },
-    ],
-  },
+  // {
+  //   text: 'AirLib Form',
+  //   icon: () => <ChecklistIcon />,
+  //   collapsed: true,
+  //   items: toNavItems(formMeta),
+  // },
+  // {
+  //   text: 'AirLib Material 3 CSS',
+  //   icon: () => <StyleIcon />,
+  //   collapsed: true,
+  //   items: [
+  //     ...toNavItems(materialMeta),
+  //     {
+  //       text: 'Components',
+  //       icon: () => <WidgetsIcon />,
+  //       items: toNavItems(componentsMeta),
+  //     },
+  //     {
+  //       text: 'Layout',
+  //       icon: () => <GridViewIcon />,
+  //       items: toNavItems(layoutMeta),
+  //     },
+  //     {
+  //       text: 'Extensions',
+  //       icon: () => <ExtensionIcon />,
+  //       items: toNavItems(extensionsMeta),
+  //     },
+  //     {
+  //       text: 'Utilities',
+  //       icon: () => <BuildIcon />,
+  //       items: toNavItems(materialUtilitiesMeta),
+  //     },
+  //   ],
+  // },
   {
     text: 'Storage',
     icon: () => <StorageIcon />,

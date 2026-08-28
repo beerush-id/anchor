@@ -7,8 +7,18 @@ export default page(postsIndexRoute).render(() => (
   <article className="air-mdx-outlet mx-auto max-w-4xl">
     <Head
       meta={{
-        title: 'Posts & Comparisons — AirLib',
-        description: 'Articles, comparisons, and deep dives into AirLib.',
+        title: 'Articles, Benchmarks, & Architecture Comparisons',
+        description:
+          'In-depth articles, architectural comparisons, and benchmarks comparing AirLib with Next.js, SolidStart, tRPC, and traditional state management across React and SolidJS.',
+        keywords: [
+          'React Framework Comparison',
+          'Next.js Alternative',
+          'SolidStart Alternative',
+          'React Signals Benchmark',
+          'Isomorphic RPC Guide',
+          'Full-Stack TypeScript',
+          'AirLib Articles',
+        ],
       }}
     />
     <h1>Posts</h1>

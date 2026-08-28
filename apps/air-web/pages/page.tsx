@@ -21,32 +21,23 @@ export default page(rootIndexRoute).render(() => {
     <>
       <Head
         meta={{
-          title: 'Fine-Grained Reactivity & Isomorphic RPC',
+          title: 'Fine-Grained Reactivity & Isomorphic Full-Stack Framework for React & SolidJS',
           description:
-            'A modern, fine-grained reactive web framework with isomorphic RPC, instant edge streaming, and unified state management across React, Solid, Svelte, and Vue.',
+            'Bring true fine-grained reactivity and isomorphic RPC to React and SolidJS. Eliminate memoization hell, skip API boilerplate, and ship ultra-fast universal SSR with zero lock-in.',
           keywords: [
+            'React Signals',
+            'SolidJS Full Stack',
+            'Fine-Grained Reactivity',
+            'Isomorphic RPC',
+            'React Full-Stack Framework',
+            'SolidJS Framework',
+            'End-to-End Type Safety',
+            'Universal SSR',
+            'Zero-JS Static Delivery',
+            'Next.js Alternative',
+            'SolidStart Alternative',
             'AirLib',
-            'reactive framework',
-            'fine-grained reactivity',
-            'isomorphic RPC',
-            'IRPC',
-            'edge streaming',
-            'state management',
-            'reactive stores',
           ],
-          og: {
-            title: 'Fine-Grained Reactivity & Isomorphic RPC',
-            description:
-              'A modern, fine-grained reactive web framework with isomorphic RPC, instant edge streaming, and unified state management.',
-            type: 'website',
-            siteName: 'AirLib',
-          },
-          twitter: {
-            card: 'summary_large_image',
-            title: 'Fine-Grained Reactivity & Isomorphic RPC',
-            description:
-              'A modern, fine-grained reactive web framework with isomorphic RPC, instant edge streaming, and unified state management.',
-          },
         }}
       />
       <Hero />
