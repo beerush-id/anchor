@@ -137,6 +137,7 @@ export {
 
 export * from './binding.js';
 export * from './context.js';
+export * from './cookie.js';
 export * from './dynamic.js';
 export * from './hoc.js';
 export {

@@ -141,5 +141,6 @@ export * from './image.js';
 export { omitProps, pickProps, proxyProps } from './props.js';
 export * from './router/index.js';
 export * from './solid.js';
+export * from './solid.js';
 export * from './switch.js';
 export * from './types.js';

@@ -1,6 +1,7 @@
 import type { PreloadMode } from '@airlib/router';
+import { cookiePair } from '../cookie.js';
 import { setup } from '../hoc.js';
-import { classx, cookies } from '../index.js';
+import { classx } from '../index.js';
 import type { JSX } from '../solid.js';
 import { Slot } from '../switch.js';
 import type { SlottedComponent } from '../types.js';
@@ -28,7 +29,7 @@ export type LayoutSlots = {
  */
 export const Layout: SlottedComponent<LayoutProps, LayoutSlots> = setup<LayoutProps, LayoutSlots>((props, snippets) => {
   const $restProps = props.$omit(['nav', 'children', 'class', 'preload']);
-  const store = cookies('mdx-store', { pm: 'bun', framework: 'solid', runtime: 'bun' });
+  const [store] = cookiePair('mdx-store', { pm: 'bun', framework: 'solid', runtime: 'bun' }, { deferred: true });
   const ctx = mdxCtx.set({ store });
 
   return (
