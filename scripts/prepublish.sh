@@ -27,6 +27,8 @@ bpkg info set dependencies.@airlib/core="$VERSION" -f \
   packages/vue \
   irpclib/irpc \
   irpclib/http \
+  irpclib/ws \
+  irpclib/broadcast \
   packages/ssr \
   packages/vite-ssr
 
