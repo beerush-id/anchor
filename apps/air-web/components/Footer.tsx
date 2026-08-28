@@ -35,7 +35,7 @@ export default function Footer({ className }: ComponentProps<'footer'>) {
           </p>
           <ul className="air-footer-socials">
             <li>
-              <a href="https://github.com/beerush-id/airlib" target="_blank" aria-label="AirLib on GitHub">
+              <a href="https://github.com/beerush-id/airstack" target="_blank" aria-label="AirLib on GitHub">
                 <GitHubIcon />
                 <span>GitHub</span>
               </a>
@@ -95,7 +95,7 @@ export default function Footer({ className }: ComponentProps<'footer'>) {
                 <Link to={postsRoute}>Posts</Link>
               </li>
               <li>
-                <a href="https://github.com/beerush-id/airlib" target="_blank" rel="noreferrer">
+                <a href="https://github.com/beerush-id/airstack" target="_blank" rel="noreferrer">
                   GitHub
                 </a>
               </li>

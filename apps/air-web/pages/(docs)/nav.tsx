@@ -138,13 +138,13 @@ export const navs: NavItem[] = [
     collapsed: true,
     items: toNavItems(workflowMeta),
   },
-  { separator: true },
   {
     text: 'User Interface',
     icon: () => <UserInterfaceIcon />,
     collapsed: true,
     items: toNavItems(uiMeta),
   },
+  { separator: true },
   {
     text: 'AirLib Form',
     icon: () => <ChecklistIcon />,
@@ -179,7 +179,6 @@ export const navs: NavItem[] = [
       },
     ],
   },
-  { separator: true },
   {
     text: 'Storage',
     icon: () => <StorageIcon />,

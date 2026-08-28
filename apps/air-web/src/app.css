@@ -254,6 +254,10 @@
   @apply inline-flex items-center rounded-md bg-brand px-5 py-2.5 text-base font-semibold text-white no-underline transition-colors duration-300 hover:bg-[color-mix(in_oklab,var(--color-brand)_80%,black)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand;
 }
 
+@utility air-cta-dark {
+  @apply inline-flex items-center rounded-md bg-on-surface px-5 py-2.5 text-base font-semibold text-surface no-underline transition-colors duration-300 hover:bg-[color-mix(in_oklab,var(--color-on-surface)_85%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-surface;
+}
+
 @utility air-header-inner {
   @apply air-container flex h-(--spacing-header) items-center gap-6 border-x border-border px-6;
 }

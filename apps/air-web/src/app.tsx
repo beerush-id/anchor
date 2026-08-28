@@ -1,7 +1,34 @@
-import { type AppEntry, UIRouter } from '@airlib/react';
+import { type AppEntry, Head, type HeadConfig, UIRouter } from '@airlib/react';
+import ogImage from '@/assets/og_image.png?asset' with { sizes: '1200' };
 import { ThemeToggler } from '@/components/ThemeToggler.tsx';
 import RootLayout from '@/pages/layout.tsx';
 import router from './router.ts';
+
+Head.config(() => {
+  const { pathname } = router.context;
+
+  const origin = 'https://airlib.dev';
+  const suffix = pathname.startsWith('/docs') ? ' — AirLib Documentation' : ' — AirLib';
+  const imageUrl = ogImage.src.startsWith('/@fs') ? ogImage.src : new URL(ogImage.src, origin).href;
+
+  return {
+    suffix,
+    defaults: {
+      author: 'Nanang Mahdaen El Agung',
+      robots: 'index, follow',
+      og: {
+        siteName: 'AirLib',
+        type: 'website',
+        image: imageUrl,
+      },
+      twitter: {
+        card: 'summary_large_image',
+        creator: '@mahdaen',
+        image: imageUrl,
+      },
+    },
+  } as HeadConfig;
+});
 
 export default (({ url }) => (
   <UIRouter router={router} root={RootLayout} url={url}>

@@ -16,27 +16,31 @@ keywords:
 
 <a href="https://nextjs.org/" target="_blank" rel="noreferrer">Next.js</a> is the dominant React framework, bringing React Server Components (RSC), Server Actions, and file-system routing to the mainstream. It dictates a strict architecture where the server drives the initial UI and client-side boundaries (`"use client"`) must be explicitly declared.
 
-**AirLib** (Anchor, IRPC, Reactive) takes a completely different path. It embraces Isomorphic pure functions, explicit programmatic routing, and a decoupled reactive state graph. It treats the UI as an independent reactive layer where state and data seamlessly connect to backend logic without fighting server/client boundaries.
+**AirLib** (Anchor, IRPC, Reactive) takes a different approach. It pairs **assisted file-based routing** with isomorphic remote functions and a decoupled reactive state graph. It treats the UI as an independent reactive layer where components render identically across server and client without fighting split `"use client"` / `"use server"` boundaries.
 
 ## Framework comparison
 
-While both aim to deliver a seamless full-stack developer experience, their approaches to the client-server boundary are fundamentally opposed.
+While both aim to deliver a seamless full-stack developer experience, their paradigm and developer workflows differ fundamentally.
 
 | Aspect | Next.js App Router | AirLib |
 |---|---|---|
-| **Paradigm** | Server-Driven UI (RSC) | Separation of Concern (UI & Logic separate) |
-| **Routing** | File-system based (directories as routes) | Programmatic (`createRouter()`) |
-| **Data Fetching** | Server Components (`async` components) | Isomorphic Function call (IRPC) |
-| **Mutations** | Server Actions (`"use server"`) | Isomorphic Function call (IRPC) |
-| **State** | React Context + `useState` | Anchor State (`mutable()`) |
+| **Paradigm** | Server-Driven UI (Component-level server/client split) | Unified Reactive Model (Decoupled UI & logic) |
+| **Routing** | Compiler-driven file-system routing | Assisted file-based routing (Explicit route graph) |
+| **Data Fetching** | Server Components & React Suspense | Route Loaders & Isomorphic Remote Functions |
+| **Mutations** | Server Actions & Cache Invalidation | Isomorphic Remote Functions & Reactive State |
+| **State** | Immutable Component State | Fine-grained Reactive State |
+| **Static Generation** | Build export & platform-tied ISR | Route-level SSG & On-Demand Pre-rendering (ISG) |
+| **Content & Markdown** | Addon `@next/mdx` with plugin configuration | Built-in Extended MDX (`.page.mdx`) |
+| **Static Delivery** | Always ships client React runtime | Pure Zero-JavaScript static HTML option |
+| **Deployment** | Platform-specific runtime adapters | Zero-adapter Universal SSR Worker |
 
 ## Application Setup
 
-Both frameworks require initializing an entry point, but they structure the relationship between the client and server very differently.
+Both frameworks offer file-based routing workflows, but they handle transparency and route control differently.
 
 ### Next.js Setup
 
-In Next.js App Router, the file system dictates the application structure. You do not write a router instantiation, and you do not write a client entry point (`main.tsx`). The framework abstracts both the client hydration and the server execution behind its CLI.
+In Next.js App Router, the file system dictates the application structure. You drop files into `app/` and the framework abstracts both client hydration and server execution behind its CLI and compiler virtual modules.
 
 ```tsx
 // app/layout.tsx
@@ -60,59 +64,69 @@ export default function HomePage() {
 }
 ```
 
-Next.js implicitly handles the React root hydration (`createRoot`), the client-side router configuration, and the server request handler. Because the framework owns the entry points (via `next dev`), it appears to have less boilerplate, but you completely surrender control of the application lifecycle to Next.js internals.
+Next.js implicitly handles React root hydration (`createRoot`), router configuration, and request handling. While dropping files is effortless, routing internals and tree mutations remain locked inside opaque framework compiler abstractions.
 
 ### AirLib Setup
 
-AirLib separates the backend server execution from the frontend application graph. You explicitly define your route tree programmatically and bind it to the DOM.
+AirLib bridges file-system simplicity with explicit, typed route orchestration through **assisted file-based routing**:
+
+- **Drop-and-Go Pages** — Dropping a `page.tsx` or `layout.tsx` into `pages/` automatically establishes the route definition with typed exports and starter boilerplate.
+- **Zero Black Boxes** — Routes are not opaque virtual modules hidden inside the compiler. The route definition lives directly in your project as plain TypeScript.
+- **Full Programmatic Power** — Having an explicit route definition alongside your component gives you full control to attach access guards (`.guard()`), asynchronous data loaders (`.provide()`), and route metadata with full IDE autocomplete.
 
 ```tsx
-// routes/route.ts
-import { createRouter } from '@airlib/react';
-
-export const router = createRouter();
-export const rootRoute = router.route();
-```
-
-```tsx
-// routes/layout.tsx
+// pages/layout.tsx
 import { page } from '@airlib/react';
 import { rootRoute } from './route.js';
 
-export const RootLayout = page(rootRoute).render(({ children }) => (
-  <main>
-    <h1>Welcome to AirLib</h1>
+export default page(rootRoute).render(({ children }) => (
+  <div className="app">
+    <header>My App</header>
     {children}
-  </main>
+  </div>
 ));
 ```
 
 ```tsx
-import '@airlib/react/client';
-import { UIRouter } from '@airlib/react';
-import { hydrateRoot } from 'react-dom/client';
-import { router } from './routes/route.js';
-import { RootLayout } from './routes/layout.js';
+// pages/page.tsx
+import { page } from '@airlib/react';
+import { rootIndexRoute } from './route.js';
 
-router.activate(window.location.href).then(() => {
-  hydrateRoot(
-    document.getElementById('root')!,
-    <UIRouter router={router} root={RootLayout} headless={true} resetScroll />
-  );
-});
+export default page(rootIndexRoute).render(() => (
+  <main>
+    <h1>Welcome to AirLib</h1>
+  </main>
+));
 ```
 
-By manually orchestrating the router, AirLib provides explicit control over the navigation graph, allowing you to compose routes freely without being constrained by the physical file system layout.
+The accompanying `route.ts` maintains the typed route graph:
+
+```typescript
+// pages/route.ts
+import router from '@/src/router.js';
+
+/** AirLib managed */
+const route = router.route();
+const indexRoute = route.route('/');
+/** AirLib managed */
+
+export const rootRoute = route;
+export const rootIndexRoute = indexRoute;
+
+export default rootRoute;
+```
+
+You get the convenience of file-system routing without sacrificing explicit typed control over route lifecycles and middleware.
 
 ## Rendering Paradigms
 
 Modern applications require different rendering strategies depending on the data. Both frameworks support Server-Side Rendering (SSR), Client-Side Rendering (CSR), and Hybrid approaches, but they use completely different mechanisms to achieve them.
 
 ### Pure Server-Side Rendering (SSR)
-To fetch data on the server and render static HTML without client-side JavaScript overhead, Next.js uses Server Components, while AirLib blocks the router during navigation.
+To fetch data on the server and render static HTML without client-side JavaScript fetching overhead, Next.js uses Server Components, while AirLib uses route-level providers.
 
 #### Next.js Server Components
-Next.js achieves this naturally via Server Components. The server halts, waits for the database, and sends the finished HTML.
+Next.js achieves this via Server Components. The server halts, waits for the database, and sends the finished HTML.
 
 ```tsx
 // app/users/page.tsx
@@ -126,35 +140,37 @@ export default async function UsersPage() {
 }
 ```
 
-This tightly couples the backend request to the component lifecycle.
+This tightly couples the backend query directly into the component definition, preventing the component from functioning as a standalone client UI element.
 
 #### AirLib Providers
-AirLib achieves this by blocking the router during navigation. If a provider returns a Promise, the router waits for it to resolve before rendering the page.
+AirLib separates data resolution from view rendering. Attaching `.provide()` to the route resolves data during navigation before the page component renders.
 
 ```typescript
-// routes/users/route.ts
-export const usersRoute = rootRoute
-  .route('/users')
-  .provide('users', () => getUsers()); 
+// pages/users/route.ts
+export const usersRoute = route.provide('users', () => getUsers());
 ```
 
 ```tsx
-// routes/users/page.tsx
-import { page } from '@airlib/react';
+// pages/users/page.tsx
+import { For, page } from '@airlib/react';
 import { usersRoute } from './route.js';
 
-export const UsersPage = page(usersRoute).render(({ state }) => (
-  <ul>{state.data.users.map((u) => <li key={u.id}>{u.name}</li>)}</ul>
+export default page(usersRoute).render(({ state }) => (
+  <ul>
+    <For each={() => state.data.users}>
+      {({ name }) => <li>{name}</li>}
+    </For>
+  </ul>
 ));
 ```
 
-This moves the fetch to the router, keeping the component as a pure view layer.
+The component stays pure and synchronous, receiving strongly typed data directly from `state.data`.
 
 ### Pure Client-Side Rendering (CSR)
-To fetch data entirely from the browser after the initial shell loads, Next.js requires explicit client boundaries, while AirLib just calls functions in components.
+To fetch data in the browser after the initial shell loads, Next.js requires explicit client boundaries, while AirLib calls isomorphic remote functions directly inside components.
 
 #### Next.js Client Components
-In Next.js, you must explicitly opt out of the server by creating a `"use client"` boundary and relying on standard React hooks.
+In Next.js, you must explicitly opt out of Server Components with `"use client"` and manage lifecycle hooks manually.
 
 ```tsx
 // app/users/page.tsx
@@ -173,37 +189,44 @@ export default function UsersPage() {
 }
 ```
 
-The component must manually manage its own lifecycle, loading states, and network requests.
+The component manually coordinates effects, unmounting state, and network race conditions.
 
 #### AirLib Component
-In AirLib, you do not need `useEffect` or third-party fetching libraries. Every IRPC stub comes with sub-stub for UI bindings like `.once()` to track the loading state.
+In AirLib, no `"use client"` directive or `useEffect` boilerplate is needed. IRPC stubs provide reactive execution helpers like `.once()` directly:
 
 ```tsx
-// routes/users/page.tsx
-import { setup, render } from '@airlib/react';
+// pages/users/page.tsx
+import { For, Show, setup } from '@airlib/react';
 import { getUsers } from './function.js';
 
-export const UsersPage = setup(() => {
+export default setup(() => {
   const users = getUsers.once();
 
-  return render(() => {
-    if (users.status === 'pending') return <div>Loading...</div>;
-    return <ul>{users.data.map((u) => <li key={u.id}>{u.name}</li>)}</ul>;
-  });
+  return (
+    <Show when={() => users.data} fallback={() => <div>Loading...</div>}>
+      {(data) => (
+        <ul>
+          <For each={() => data}>
+            {({ name }) => <li>{name}</li>}
+          </For>
+        </ul>
+      )}
+    </Show>
+  );
 });
 ```
 
-The reactive reader returned by `.once()` manages the loading state and safely unwraps the data, completely eliminating the need for manual `useEffect` or local state.
+The reactive reader returned by `.once()` tracks loading state and unwraps data automatically.
 
 ### Hybrid Rendering
-To optimize perceived performance, applications often combine SSR for the static layout with CSR for heavy, slow data. Next.js relies on server-side HTTP streaming, while AirLib uses the same CSR pattern.
+To optimize perceived performance, applications often combine SSR for the static layout with CSR for heavy, slow data. Next.js relies on server-side HTTP streaming, while AirLib uses non-blocking reactive component calls.
 
 #### Next.js Streaming & Suspense
-Next.js achieves this by streaming HTML. The server sends the layout immediately and leaves a placeholder (`<Suspense>`) for the slow component, streaming the chunk later.
+Next.js streams HTML by sending layout chunks immediately while holding `<Suspense>` boundaries open until server promises resolve:
 
 ```tsx
 // app/dashboard/layout.tsx
-export default function DashboardLayout({ children }) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div>
       <header>Static Header</header>
@@ -243,55 +266,44 @@ export default function DashboardPage() {
 }
 ```
 
-Next.js relies heavily on server infrastructure and React's streaming capabilities to solve the Hybrid problem.
-
-#### AirLib Component
-AirLib doesn't have special treatment to handle this because page is just a component, and they render anywhere (browser or server). We just need to move the data load to the component itself, so the router doesn't block navigation.
-
-```typescript
-// routes/dashboard/route.ts
-export const dashboardRoute = rootRoute.route('/dashboard');
-```
+#### AirLib Non-Blocking Fetching
+In AirLib, pages and components are universal and render seamlessly on both server and browser. Moving data calls into component `.once()` invocations renders the shell instantly while data loads asynchronously.
 
 ```tsx
-// routes/dashboard/page.tsx
-import { page, render } from '@airlib/react';
+// pages/dashboard/page.tsx
+import { Show, page } from '@airlib/react';
 import { dashboardRoute } from './route.js';
 import { getSalesData, getAnalyticsData } from './function.js';
 
-export const DashboardPage = page(dashboardRoute).render(() => {
+export default page(dashboardRoute).render(() => {
   const sales = getSalesData.once();
   const analytics = getAnalyticsData.once();
 
-  return render(() => (
+  return (
     <div className="grid">
-      {sales.status === 'pending' ? (
-        <div className="skeleton">Loading sales...</div>
-      ) : (
-        <div>{sales.data.total}</div>
-      )}
+      <Show when={() => sales.data} fallback={() => <div className="skeleton">Loading sales...</div>}>
+        {(data) => <div>{data.total}</div>}
+      </Show>
 
-      {analytics.status === 'pending' ? (
-        <div className="skeleton">Loading analytics...</div>
-      ) : (
-        <div>{analytics.data.visitors}</div>
-      )}
+      <Show when={() => analytics.data} fallback={() => <div className="skeleton">Loading analytics...</div>}>
+        {(data) => <div>{data.visitors}</div>}
+      </Show>
     </div>
-  ));
+  );
 });
 ```
 
-:::tip[Bonus]
-Since IRPC batches multiple calls on the same tick, **sales** and **analytics** are dispatched in single HTTP Request. Each call streamed and resolve individually as they arrive, neither blocks the other, just pure data streaming.
+:::tip[Automatic Request Batching]
+When multiple IRPC procedures execute on the same tick (like `sales` and `analytics`), IRPC automatically batches them into a single transport request, streaming individual responses back as they resolve.
 :::
 
 ## Mutations and Forms
 
-Sending data back to the server is traditionally done via API routes. Next.js introduced Server Actions to bridge this gap, while AirLib uses pure IRPC stubs.
+Sending data back to the server is traditionally done via API routes. Next.js introduced Server Actions to bridge this gap, while AirLib uses isomorphic remote functions and reactive bindings.
 
 ### Next.js Server Actions
 
-Server Actions allow you to define asynchronous functions on the server and call them directly from client components or form actions. To show a pending state (like disabling a submit button), you must use the `useFormStatus` hook, which *must* be rendered inside a separate child component.
+Server Actions allow you to define asynchronous server functions called from client components or form actions. Managing submission state requires `useFormStatus` inside a dedicated child component, and the server cache must be manually invalidated with `revalidatePath`.
 
 ```tsx
 // app/actions.ts
@@ -304,7 +316,7 @@ export async function createUser(formData: FormData) {
   const name = formData.get('name') as string;
   await db.users.create({ name });
   
-  // Tell Next.js to re-render pages displaying users
+  // Explicitly invalidate server cache
   revalidatePath('/users');
 }
 ```
@@ -317,7 +329,6 @@ import { useFormStatus } from 'react-dom';
 import { createUser } from '../../actions';
 
 function SubmitButton() {
-  // Must be in a child component of the <form> to read context
   const { pending } = useFormStatus();
   return <button type="submit" disabled={pending}>Create User</button>;
 }
@@ -332,43 +343,47 @@ export default function NewUserForm() {
 }
 ```
 
-Next.js handles the API generation behind the scenes. Because the server holds the state (the HTML cache), you must manually tell the server which paths need to be rebuilt and re-fetched via `revalidatePath` after a mutation.
-
 ### AirLib IRPC Call
 
-AirLib mutations are just standard IRPC function calls. They are invoked directly as async functions inside the client component graph.
+AirLib mutations are standard TypeScript functions called through IRPC stubs. Component forms bind directly to mutable state and track asynchronous dispatch lifecycles with `.later()`:
 
 ```tsx
-// client/pages/new-user.tsx
-import { setup, render, mutable, $bind } from '@airlib/react';
+// pages/users/new/page.tsx
+import { setup, render, mutable } from '@airlib/react';
 import { createUser } from './function.js';
 
-export const NewUserForm = setup((props) => {
+export default setup(() => {
+  const form = mutable({ name: '' });
   const newUser = createUser.later();
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    newUser.dispatch(props.name);
+    await newUser.dispatch(form.name);
   };
 
   return render(() => (
     <form onSubmit={submit}>
-      <Input name="name" value={$bind(props, 'name')} required />
+      <input 
+        name="name" 
+        value={form.name} 
+        onInput={(e) => (form.name = e.currentTarget.value)} 
+        required 
+      />
       <button type="submit" disabled={newUser.status === 'pending'}>Create User</button>
     </form>
   ));
 });
 ```
 
-Because `createUser` is just an IRPC stub, you can use the same reactive binding to the UI. There is no "mutation" and "fetch" concept, there is only "function call".
+Because state mutations are fine-grained and reactive, changes update the UI immediately without requiring cache invalidation tags or `revalidatePath` calls.
 
 ## Client State Management
 
-When your app needs complex client-side state (like a multi-step form or a dark mode toggle), the frameworks handle reactivity differently.
+When your app needs interactive local state, the two frameworks use different reactivity primitives.
 
 ### Next.js Client State
 
-In Next.js, because components default to server-rendered, any interactive state requires you to explicitly opt into the client environment and use standard React hooks.
+In Next.js, interactive state requires adding `"use client"` and using standard React hooks and immutable update patterns:
 
 ```tsx
 // app/components/counter.tsx
@@ -389,10 +404,10 @@ export function Counter() {
 
 ### AirLib State
 
-In AirLib, there is no difference between state for server and client, it just a state, declared exactly the same way.
+In AirLib, state is universal and fine-grained reactive. There are no `"use client"` directives or artificial boundary rules:
 
 ```tsx
-// client/components/counter.tsx
+// components/counter.tsx
 import { setup, render, mutable } from '@airlib/react';
 
 export const Counter = setup(() => {
@@ -408,25 +423,24 @@ export const Counter = setup(() => {
 
 ## Optimistic UI
 
-Immediate feedback is critical for modern web apps. Both frameworks provide primitives to instantly update the UI before the server responds.
+Both frameworks provide primitives to instantly update the UI before the server responds.
 
-### Next.js useOptimistic
+### Next.js Optimistic UI
 
-Next.js provides the `useOptimistic` hook. You pass it the true server state, and a reducer to calculate the temporary optimistic state. To trigger it properly, you must wrap the mutation in a React Transition.
+Next.js provides `useOptimistic`, requiring a base server state, a reducer, and a React Transition wrapper:
 
 ```tsx
 'use client'
 import { useOptimistic, startTransition } from 'react';
 import { likePost } from './actions';
 
-export function LikeButton({ post }) {
+export function LikeButton({ post }: { post: { id: string; liked: boolean } }) {
   const [optimisticLike, addOptimisticLike] = useOptimistic(
     post.liked,
-    (state, newLike) => newLike
+    (state, newLike: boolean) => newLike
   );
 
   const toggleLike = () => {
-    // Must be wrapped in a transition to work properly
     startTransition(async () => {
       addOptimisticLike(!post.liked);
       await likePost(post.id);
@@ -441,15 +455,16 @@ export function LikeButton({ post }) {
 }
 ```
 
-### AirLib undoable
+### AirLib Reversible Mutations
 
-AirLib provides the `undoable()` primitive. You apply the mutation instantly to your actual reactive state, and it provides an `undo` function to rollback automatically if the network request fails.
+AirLib provides the `undoable()` primitive. You apply the mutation directly to your reactive state, and `undoable` automatically records and reverts the exact mutation if the remote promise rejects:
 
 ```tsx
+// components/like-button.tsx
 import { setup, render, undoable } from '@airlib/react';
 import { likePost } from './function.js';
 
-export const LikeButton = setup<{ post: any }>((props) => {
+export const LikeButton = setup<{ post: { id: string; liked: boolean } }>((props) => {
   const toggleLike = async () => {
     const [undo, settled] = undoable(() => {
       props.post.liked = !props.post.liked;
@@ -466,22 +481,149 @@ export const LikeButton = setup<{ post: any }>((props) => {
 });
 ```
 
-Because AirLib state is mutable, you don't need reducers or parallel "optimistic" variables. You literally change the data, and `undoable` reverses the exact mutation if things go wrong.
+## Static Generation: SSG & On-Demand ISG
+
+Pre-rendering pages ahead of time reduces database load and delivers instant responses from edge CDNs or disk storage.
+
+### Next.js SSG & ISR
+
+In Next.js, static routes are configured via `generateStaticParams()` and runtime revalidation flags (`revalidate = 3600`). Revalidation (ISR) is tightly coupled to Node.js server processes or Vercel's proprietary edge cache infrastructure.
+
+```tsx
+// app/blog/[slug]/page.tsx
+export async function generateStaticParams() {
+  const posts = await db.posts.findMany();
+  return posts.map((p) => ({ slug: p.slug }));
+}
+
+export const revalidate = 3600; // Revalidate every hour
+```
+
+### AirLib SSG & On-Demand Pre-Rendering (ISG)
+
+AirLib allows you to mark individual routes or entire route branches as `static` directly in their route definition:
+
+```typescript
+// pages/docs/route.ts (Build-time SSG)
+export const docsRoute = route.config({ static: true });
+```
+
+During build, `airPages()` runs the worker against static routes and emits plain HTML into `dist/client/`. 
+
+For dynamic paths (like `/blog/:slug`), AirLib provides **On-Demand Pre-Rendering (ISG)**:
+
+```typescript
+// pages/blog/route.ts (On-Demand ISG)
+export const blogSlugRoute = slugRoute.config({ static: { maxAge: 3600 } });
+```
+
+On the first request to a new slug, the worker renders the page once and saves the static HTML to disk (or a custom `cacheAdapter` such as Cloudflare KV or Redis). Every subsequent request serves the static file instantly. When `maxAge` expires, the next request transparently refreshes the cached HTML in the background.
+
+## Zero-JavaScript Delivery (Astro-like)
+
+Content-centric websites (documentation, blogs, marketing pages) rarely need full client-side framework hydration on every page.
+
+### Next.js JS Footprint
+
+Next.js always ships the React runtime, framework scheduler, client router, and component hydration bundles to the browser (typically 80KB–100KB+ minimum baseline JavaScript), even for completely static content. There is no official configuration to strip client JavaScript while preserving full SSR components.
+
+### AirLib Zero-JavaScript Delivery
+
+AirLib supports true zero-JavaScript delivery both **per-route** and **project-wide**:
+
+#### Per-Route Zero-JavaScript
+You can strip client JavaScript on specific content routes (e.g., landing, blog, or documentation pages) while keeping other application routes fully hydrated:
+
+```typescript
+// pages/about/route.ts
+export const aboutRoute = route.config({ noscript: true });
+```
+
+#### Project-Wide Zero-JavaScript
+For entirely static sites or documentation portals, enable `noscript` globally in your Vite configuration:
+
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite';
+import { airPages } from '@airlib/vite';
+
+export default defineConfig({
+  plugins: [
+    airPages({
+      noscript: true, // Ships pure static HTML/CSS with 0KB client JavaScript site-wide
+    }),
+  ],
+});
+```
+
+When rendered, static pages are emitted as dehydrated HTML files with `<script>` tags completely stripped. Like Astro, your pages achieve instant First Contentful Paint (FCP), zero hydration lag, and 100/100 Lighthouse performance, while retaining full authoring in React/Solid JSX or MDX.
+
+## Extended Markdown & Content Authoring
+
+Documentation and content-driven sites require rich formatting like admonitions, tabbed code snippets, and embedded live components.
+
+### Next.js MDX Workflow
+
+In Next.js, adding MDX requires configuring `@next/mdx`, adjusting `next.config.js`, managing compiler loaders, and manually installing remark/rehype plugins for callouts and code blocks.
+
+### AirLib Extended MDX
+
+AirLib includes built-in, zero-config Extended Markdown (`.page.mdx`). You simply create `.page.mdx` files inside `pages/`:
+
+- **Frontmatter as Route Metadata** — YAML frontmatter automatically integrates with the route tree, navigation sidebar, and document `<Head>`.
+- **Built-in Admonitions** — Native support for `:::note`, `:::tip`, `:::warning`, `:::danger`, and `:::details`.
+- **Tabbed Code Groups** — Native `:::code-group` blocks for multi-language and multi-package manager examples.
+- **Embedded JSX** — Embed live, interactive React or SolidJS components directly inside markdown without boilerplate wrapper files.
+
+## Performance & Reactivity Footprint
+
+### Deferred Hydration & Instant FCP
+
+In Next.js, client-side hydration scripts execute immediately when JavaScript chunks load, competing with the browser's main-thread rendering and layout passes.
+
+In AirLib, **SSR always delivers 100% complete, fully styled HTML**. Because the user already sees the full visual state, AirLib **defers client hydration by default** (customizable per-route via `deferred`). This gives the browser time to paint the page instantly without main-thread jank, delivering instant First Contentful Paint (FCP) and near-zero Total Blocking Time (TBT) even on complex interactive pages.
+
+| Performance Vector | Next.js App Router | AirLib |
+|---|---|---|
+| **First Contentful Paint (FCP)** | Hydration scripts compete with initial render | Instant FCP (Complete SSR HTML + deferred hydration) |
+| **Hydration Strategy** | Immediate synchronous client hydration | Non-blocking deferred hydration (configurable via `deferred`) |
+| **Reactivity Model** | Virtual DOM reconciliation on component re-render | Fine-grained proxy mutations updating only touched DOM nodes |
+| **Data Fetching Overhead** | Individual `fetch()` calls or manual parallel Promise arrays | Automatic tick-based IRPC request batching & streaming |
+| **Static Bundle Size** | ~80KB+ React runtime minimum on static pages | 0KB JavaScript static delivery option (`noscript`) |
+| **Server Cold Starts** | Heavy Node.js runtime initialization | Lightweight universal worker runnable across Bun, Node, Deno, & Edge |
+
+## Multi-Runtime Deployment
+
+Next.js is tightly coupled to Node.js / Vercel Edge runtimes with proprietary adapter layers.
+
+AirLib builds a single **Universal SSR Worker** (`createApp`) that deploys identically across all major JavaScript runtimes with zero adapter overhead:
+
+- **Bun** — `Bun.serve({ fetch: worker.fetch, websocket: worker.websocket })`
+- **Node.js** — Native Hono/Node adapter
+- **Deno** — `Deno.serve((req) => worker.fetch(req))`
+- **Cloudflare Workers** — `export default { fetch: (req, env) => worker.fetch(req, env) }`
 
 ## Architectural Summary
 
 | Dimension | Next.js App Router | AirLib |
-|-----------|--------------------|-----------|
-| **Reactivity** | Top-down VDOM re-renders | :badge[Fine-grained Proxies]{variant="tip"} |
-| **RPC & Data Fetching** | Server Actions / `fetch()` cache | :badge[Isomorphic RPC & Streams]{variant="tip"} |
-| **Form Handling** | `useFormStatus` / `useActionState` | :badge[AirLib Form (Schema-first)]{variant="tip"} |
-| **State Mutation** | `useOptimistic` + Transitions | :badge[Native mutable + `undoable()`]{variant="tip"} |
-| **SSR Engine** | Node/Edge Runtime bundles | :badge[Universal SSR Worker]{variant="tip"} |
+|---|---|---|
+| **Routing** | Compiler-driven file-system routing | Assisted file-based routing |
+| **State & Reactivity** | Immutable VDOM re-renders & React Transitions | Fine-grained reactive state |
+| **Remote Functions** | Server Actions & Cache Invalidation | Isomorphic remote functions & streams |
+| **Component Model** | Split Client and Server Boundaries | Universal components |
+| **Form Handling** | Action state & separate status consumers | Direct reactive form state |
+| **State Mutation** | Optimistic reducers & transitions | Direct reversible state mutations |
+| **Hydration & FCP** | Immediate hydration competing with paint | Instant FCP & deferred hydration |
+| **Static Generation** | Build export & platform-tied ISR | Granular SSG & on-demand ISG |
+| **Markdown / Content** | Separate `@next/mdx` & plugin configs | Built-in Extended MDX (`.page.mdx`) |
+| **Static JS Footprint** | Ships full React runtime | Zero-JavaScript static delivery option |
+| **SSR Engine** | Platform runtime adapters | Zero-adapter universal SSR worker |
 
 ## Final thoughts
 
-Next.js and AirLib solve the same problems using completely different paradigms.
+Next.js and AirLib take fundamentally different approaches to full-stack application development:
 
-**Choose Next.js if:** You want an opinionated framework built heavily around Server Components. You prefer file-system routing and are comfortable managing the explicit boundary between the server and the client.
+**Choose Next.js if:** You prefer an opinionated ecosystem built heavily around React Server Components, server-driven component boundaries, and Vercel infrastructure conventions.
 
-**Choose AirLib if:** You prefer programmatic control over your application architecture. If you want a unified isomorphic environment where UI and backend logic are connected by a fine-grained reactive graph rather than explicit file boundaries, AirLib provides a cleaner, more predictable developer experience.
+**Choose AirLib if:** You want the productivity of file-based routing combined with explicit typed route control, universal components without `"use client"` splits, fine-grained reactive state, zero-JS static publishing, built-in MDX authoring, and native zero-adapter deployment across Bun, Node.js, Deno, and Cloudflare.
+

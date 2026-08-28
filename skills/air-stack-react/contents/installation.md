@@ -25,7 +25,7 @@ Combines both the frontend UI (SSR and Client Hydration) and the execution logic
 
 **Template**
 ```bash
-bunx degit beerush-id/airlib/templates/air-react my-air-app
+bunx degit beerush-id/airstack/templates/air-react my-air-app
 cd my-air-app
 bun install
 bun run dev
@@ -69,7 +69,7 @@ A strict SSR React application. Used when your UI requires server-side rendering
 
 **Template**
 ```bash
-bunx degit beerush-id/airlib/templates/react-ssr my-ssr-app
+bunx degit beerush-id/airstack/templates/react-ssr my-ssr-app
 cd my-ssr-app
 bun install
 bun run dev
@@ -145,7 +145,7 @@ A dedicated service providing universal IRPC endpoints for external clients to c
 
 **Template**
 ```bash
-bunx degit beerush-id/airlib/templates/irpc-bun-starter my-api
+bunx degit beerush-id/airstack/templates/irpc-bun-starter my-api
 cd my-api
 bun install
 bun run dev

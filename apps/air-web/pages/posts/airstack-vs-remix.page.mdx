@@ -1,7 +1,7 @@
 ---
 nav: 'AirLib vs. Remix'
 title: 'AirLib vs. Remix'
-description: "Comparing mutation strategies and nested routing. Discover how AirLib's isomorphic functions contrast with Remix's web standard actions and loaders."
+description: "Comparing mutation strategies, routing, and reactivity. Discover how AirLib's isomorphic functions and fine-grained reactive graph contrast with Remix's HTTP form actions and loaders."
 date: '2026-06-12'
 category: 'AirLib Posts'
 keywords:
@@ -12,43 +12,41 @@ keywords:
 
 # AirLib vs. Remix
 
-:badge[Comparison]{variant="info"} :badge[Remix]{variant="neutral"} :badge[AirLib]{variant="neutral"}
+:badge[Comparison]{variant="info"} :badge[Remix]{variant="neutral"} :badge[React Router]{variant="neutral"} :badge[AirLib]{variant="neutral"}
 
-<a href="https://remix.run/" target="_blank" rel="noreferrer">Remix</a> (now unified with React Router) focuses heavily on Web Standards. It leverages HTTP caching, standard HTML `<form>` submissions, and nested routing to deliver a resilient user experience that works even before JavaScript loads.
+<a href="https://remix.run/" target="_blank" rel="noreferrer">Remix</a> (now unified with React Router) focuses heavily on Web Standards. It leverages HTTP caching, standard HTML `<form>` submissions, and nested routing to deliver a resilient user experience rooted in HTTP semantics.
 
-**AirLib** (Anchor, IRPC, Reactive) takes a completely different path. While it also embraces full-stack React, it relies on Isomorphic pure functions, programmatic routing, and a decoupled reactive state graph rather than HTTP semantics. It treats the UI as an independent reactive layer where state and data seamlessly connect to backend logic via function calls instead of network boundaries.
+**AirLib** (Anchor, IRPC, Reactive) takes a different approach. It pairs **assisted file-based routing** with isomorphic remote functions and a decoupled reactive state graph. It treats the UI as an independent reactive layer where components connect to backend logic through typed function calls and fine-grained subscriptions rather than manual HTTP request boundaries.
 
 ## Framework comparison
 
-Both frameworks aim to achieve the same outcome: building seamless, data-driven full-stack applications. However, their core philosophies on how the client and server communicate are fundamentally opposed.
+While both aim to deliver seamless full-stack React applications, their core paradigms and developer workflows differ fundamentally.
 
-| Aspect | Remix | AirLib |
+| Aspect | Remix (React Router) | AirLib |
 |---|---|---|
-| **Paradigm** | Web Standards & HTTP semantics | Pure Functions & Reactive Graph |
-| **Routing** | File-system nested routing | Programmatic (`createRouter()`) |
-| **Data Fetching** | `loader` functions + `useLoaderData` | Isomorphic Function call (IRPC) |
-| **Mutations** | `action` functions + `<Form>` | Isomorphic Function call (IRPC) |
-| **State** | Derived from URL and network state | Anchor State (`mutable()`) |
+| **Paradigm** | Web Standards & HTTP Request Boundaries | Unified Reactive Model (Decoupled UI & logic) |
+| **Routing** | Compiler-driven file-system routing | Assisted file-based routing (Explicit route graph) |
+| **Data Fetching** | Route Loaders & HTTP serialization | Route Loaders & Isomorphic Remote Functions |
+| **Mutations** | Form Actions & FormData serialization | Isomorphic Remote Functions & Reactive State |
+| **State** | URL search params & React Context | Fine-grained Reactive State |
+| **Static Generation** | Build export & HTTP CDN caching | Granular SSG & On-Demand ISG |
+| **Content & Markdown** | Custom plugins & route wrappers | Built-in Extended MDX (`.page.mdx`) |
+| **Static Delivery** | Always ships client React runtime | Pure Zero-JavaScript static HTML option |
+| **Deployment** | Platform-specific server adapters | Zero-adapter Universal SSR Worker |
 
 ## Application Setup
 
-Both frameworks require an entry point to define the application shell, but they manage the integration of routing and rendering differently.
+Both frameworks offer file-based routing workflows, but they manage transparency and route orchestration differently.
 
 ### Remix Setup
 
-In Remix, the file system dictates the application structure, and a root layout defines the HTML shell. Remix abstracts the entry points, relying on special components to inject styles, metadata, and scripts.
+In Remix, the file system dictates the application structure. A root layout defines the HTML shell, and nested routes render into an `<Outlet />`.
 
 ```tsx
 // app/root.tsx
-import {
-  Links,
-  Meta,
-  Outlet,
-  Scripts,
-  ScrollRestoration,
-} from "@remix-run/react";
+import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "@remix-run/react";
 
-export default function App() {
+export default function Root() {
   return (
     <html lang="en">
       <head>
@@ -56,8 +54,10 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <h1>Welcome to Remix</h1>
-        <Outlet />
+        <div className="app">
+          <header>My App</header>
+          <Outlet />
+        </div>
         <ScrollRestoration />
         <Scripts />
       </body>
@@ -66,60 +66,77 @@ export default function App() {
 }
 ```
 
-Because the framework owns the build process and server entry, you rely on Remix's conventions to stitch the client and server together.
+```tsx
+// app/routes/_index.tsx
+export default function HomePage() {
+  return (
+    <main>
+      <h1>Welcome to Remix</h1>
+    </main>
+  );
+}
+```
 
 ### AirLib Setup
 
-AirLib separates the backend server execution from the frontend application graph. You explicitly define your route tree programmatically and bind it to the DOM.
+AirLib bridges file-system simplicity with explicit, typed route orchestration through **assisted file-based routing**:
+
+- **Drop-and-Go Pages** — Dropping a `page.tsx` or `layout.tsx` into `pages/` automatically establishes the route definition with typed exports and starter boilerplate.
+- **Zero Black Boxes** — Routes are not opaque virtual modules hidden inside the compiler. The route definition lives directly in your project as plain TypeScript.
+- **Full Programmatic Power** — Having an explicit route definition alongside your component gives you full control to attach access guards (`.guard()`), asynchronous data loaders (`.provide()`), and route metadata with full IDE autocomplete.
 
 ```tsx
-// routes/route.ts
-import { createRouter } from '@airlib/react';
-
-export const router = createRouter();
-export const rootRoute = router.route();
-```
-
-```tsx
-// routes/layout.tsx
+// pages/layout.tsx
 import { page } from '@airlib/react';
 import { rootRoute } from './route.js';
 
-export const RootLayout = page(rootRoute).render(({ children }) => (
-  <main>
-    <h1>Welcome to AirLib</h1>
+export default page(rootRoute).render(({ children }) => (
+  <div className="app">
+    <header>My App</header>
     {children}
-  </main>
+  </div>
 ));
 ```
 
 ```tsx
-// client.tsx
-import '@airlib/react/client';
-import { UIRouter } from '@airlib/react';
-import { hydrateRoot } from 'react-dom/client';
-import { router } from './routes/route.js';
-import { RootLayout } from './routes/layout.js';
+// pages/page.tsx
+import { page } from '@airlib/react';
+import { rootIndexRoute } from './route.js';
 
-router.activate(window.location.href).then(() => {
-  hydrateRoot(
-    document.getElementById('root')!,
-    <UIRouter router={router} root={RootLayout} headless={true} resetScroll />
-  );
-});
+export default page(rootIndexRoute).render(() => (
+  <main>
+    <h1>Welcome to AirLib</h1>
+  </main>
+));
 ```
 
-By manually orchestrating the router, AirLib provides explicit control over the navigation graph, allowing you to compose routes freely without being constrained by the physical file system layout.
+The accompanying `route.ts` maintains the typed route graph:
+
+```typescript
+// pages/route.ts
+import router from '@/src/router.js';
+
+/** AirLib managed */
+const route = router.route();
+const indexRoute = route.route('/');
+/** AirLib managed */
+
+export const rootRoute = route;
+export const rootIndexRoute = indexRoute;
+
+export default rootRoute;
+```
 
 ## Rendering Paradigms
 
-Modern applications require different rendering strategies depending on the data. Both frameworks support Server-Side Rendering (SSR), Client-Side Rendering (CSR), and Hybrid approaches, but they use fundamentally different mechanisms.
+Modern applications require different rendering strategies depending on the data. Both frameworks support Server-Side Rendering (SSR), Client-Side Rendering (CSR), and Hybrid approaches.
 
 ### Pure Server-Side Rendering (SSR)
-To fetch data on the server and render HTML before sending it to the client, Remix uses loaders, while AirLib blocks the router during navigation.
+
+To fetch data on the server and render HTML before sending it to the client, Remix uses HTTP loaders, while AirLib uses route data providers.
 
 #### Remix Loaders
-Remix ties data fetching directly to the route via network endpoints. The `loader` runs exclusively on the server, and the data is serialized over the network and consumed by the component using the `useLoaderData` hook.
+Remix ties data fetching directly to the route via network endpoints. The `loader` runs exclusively on the server, and the data is serialized over the network and consumed via `useLoaderData`:
 
 ```tsx
 // app/routes/users.tsx
@@ -129,12 +146,10 @@ import { db } from "../db.server";
 
 export async function loader() {
   const users = await db.users.findMany();
-  // Must explicitly serialize and return an HTTP response
   return json({ users });
 }
 
 export default function UsersPage() {
-  // Reads the parsed JSON from the network
   const { users } = useLoaderData<typeof loader>();
   
   return (
@@ -147,39 +162,38 @@ export default function UsersPage() {
 }
 ```
 
-This enforces a strict boundary. The `loader` is the API endpoint, and the component is the consumer. You must manually serialize your data (e.g., Dates become strings) because the data traverses a network boundary.
+The `loader` is an HTTP endpoint, requiring all returned data to be JSON-serializable across the wire.
 
 #### AirLib Providers
-AirLib achieves this by blocking the router during navigation. If a provider returns a Promise, the router waits for it to resolve before rendering the page.
+AirLib separates data resolution from view rendering. Attaching `.provide()` to the route resolves data during navigation before the page component renders:
 
 ```typescript
-// routes/users/route.ts
-export const usersRoute = rootRoute
-  .route('/users')
-  .provide('users', () => getUsers()); 
+// pages/users/route.ts
+export const usersRoute = route.provide('users', () => getUsers());
 ```
 
 ```tsx
-// routes/users/page.tsx
-import { page } from '@airlib/react';
+// pages/users/page.tsx
+import { For, page } from '@airlib/react';
 import { usersRoute } from './route.js';
 
-export const UsersPage = page(usersRoute).render(({ state }) => (
+export default page(usersRoute).render(({ state }) => (
   <ul>
-    {state.data.users.map((u) => (
-      <li key={u.id}>{u.name}</li>
-    ))}
+    <For each={() => state.data.users}>
+      {({ name }) => <li>{name}</li>}
+    </For>
   </ul>
 ));
 ```
 
-This moves the fetch to the router, keeping the component as a pure view layer.
+The loader logic attaches directly to the route node, keeping the view component a pure, declarative UI layer.
 
 ### Pure Client-Side Rendering (CSR)
-Sometimes you need to fetch data entirely from the browser after the initial shell loads. Remix relies on `clientLoader`, while AirLib just calls functions in components.
 
-#### Remix `clientLoader`
-In Remix (v2+), you can export a `clientLoader` to fetch data explicitly on the client. It replaces the server `loader` during client-side navigation.
+When data should be fetched from the browser after initial load, Remix uses `clientLoader`, while AirLib calls isomorphic functions directly within components.
+
+#### Remix Client Loaders
+In Remix, `clientLoader` fetches data in the browser during client navigation:
 
 ```tsx
 // app/routes/users.tsx
@@ -189,7 +203,6 @@ export async function clientLoader() {
   const res = await fetch('/api/users');
   return res.json();
 }
-// Tell Remix to render a fallback while loading
 clientLoader.hydrate = true;
 
 export function HydrateFallback() {
@@ -198,37 +211,49 @@ export function HydrateFallback() {
 
 export default function UsersPage() {
   const users = useLoaderData<typeof clientLoader>();
-  return <ul>{users.map((u) => <li key={u.id}>{u.name}</li>)}</ul>;
+  return (
+    <ul>
+      {users.map((u) => (
+        <li key={u.id}>{u.name}</li>
+      ))}
+    </ul>
+  );
 }
 ```
 
-The framework orchestrates the client fetch, but you still adhere to the route-level boundary and serialization rules.
-
 #### AirLib Component
-In AirLib, you do not need special route exports. Every IRPC stub comes with sub-stubs for UI bindings like `.once()` to track the loading state directly in the component.
+In AirLib, no special route-level client exports are needed. IRPC stubs provide reactive helpers like `.once()` directly inside components:
 
 ```tsx
-// routes/users/page.tsx
-import { setup, render } from '@airlib/react';
+// pages/users/page.tsx
+import { For, Show, setup } from '@airlib/react';
 import { getUsers } from './function.js';
 
-export const UsersPage = setup(() => {
+export default setup(() => {
   const users = getUsers.once();
 
-  return render(() => {
-    if (users.status === 'pending') return <div>Loading...</div>;
-    return <ul>{users.data.map((u) => <li key={u.id}>{u.name}</li>)}</ul>;
-  });
+  return (
+    <Show when={() => users.data} fallback={() => <div>Loading...</div>}>
+      {(data) => (
+        <ul>
+          <For each={() => data}>
+            {({ name }) => <li>{name}</li>}
+          </For>
+        </ul>
+      )}
+    </Show>
+  );
 });
 ```
 
-The reactive reader manages the loading state and safely unwraps the data without needing route-level fallbacks.
+The reactive reader returned by `.once()` automatically tracks loading state and unwraps resolved data without route fallback wrappers.
 
 ### Hybrid Rendering
-To optimize perceived performance, applications often combine SSR for the static layout with CSR for heavy, slow data. Remix relies on server-side HTTP streaming, while AirLib uses the same CSR pattern.
 
-#### Remix `defer` & Suspense
-Remix achieves this by streaming HTML. You return a `defer()` response from your loader, and the server leaves a `<Suspense>` placeholder for the slow data.
+To optimize perceived performance, applications often combine SSR for the static layout with CSR for slower data streams.
+
+#### Remix Defer & Suspense
+Remix streams HTML by returning a `defer()` response from the loader and wrapping delayed promises in `<Suspense>` and `<Await>`:
 
 ```tsx
 // app/routes/dashboard.tsx
@@ -238,24 +263,17 @@ import { Suspense } from "react";
 import { db } from "../db.server";
 
 export async function loader() {
-  const slowSales = db.sales.getSlowData(); // Promise, not awaited
-  const slowAnalytics = db.analytics.getSlowData(); // Promise, not awaited
-  const fastLayout = await db.layout.getFastData(); // Awaited
-
   return defer({
-    layout: fastLayout,
-    sales: slowSales,
-    analytics: slowAnalytics,
+    sales: db.sales.getSlowData(),
+    analytics: db.analytics.getSlowData(),
   });
 }
 
 export default function DashboardPage() {
-  const { layout, sales, analytics } = useLoaderData<typeof loader>();
+  const { sales, analytics } = useLoaderData<typeof loader>();
 
   return (
     <div className="grid">
-      <header>{layout.title}</header>
-      
       <Suspense fallback={<div className="skeleton">Loading sales...</div>}>
         <Await resolve={sales}>
           {(resolvedSales) => <div>{resolvedSales.total}</div>}
@@ -272,57 +290,44 @@ export default function DashboardPage() {
 }
 ```
 
-Remix leverages React's `<Suspense>` and HTTP chunked transfer encoding to solve the Hybrid problem.
-
-#### AirLib Component
-AirLib doesn't have special treatment to handle this because page is just a component, and they render anywhere (browser or server). We just need to move the data load to the component itself, so the router doesn't block navigation.
-
-```typescript
-// routes/dashboard/route.ts
-export const dashboardRoute = rootRoute.route('/dashboard');
-```
+#### AirLib Non-Blocking Fetching
+In AirLib, pages and components are universal and render seamlessly on both server and browser. Moving data calls into component `.once()` invocations renders the shell instantly while data loads asynchronously.
 
 ```tsx
-// routes/dashboard/page.tsx
-import { page, render } from '@airlib/react';
+// pages/dashboard/page.tsx
+import { Show, page } from '@airlib/react';
 import { dashboardRoute } from './route.js';
 import { getSalesData, getAnalyticsData } from './function.js';
 
-export const DashboardPage = page(dashboardRoute).render(() => {
+export default page(dashboardRoute).render(() => {
   const sales = getSalesData.once();
   const analytics = getAnalyticsData.once();
 
-  return render(() => (
+  return (
     <div className="grid">
-      <header>Dashboard</header>
-      
-      {sales.status === 'pending' ? (
-        <div className="skeleton">Loading sales...</div>
-      ) : (
-        <div>{sales.data.total}</div>
-      )}
+      <Show when={() => sales.data} fallback={() => <div className="skeleton">Loading sales...</div>}>
+        {(data) => <div>{data.total}</div>}
+      </Show>
 
-      {analytics.status === 'pending' ? (
-        <div className="skeleton">Loading analytics...</div>
-      ) : (
-        <div>{analytics.data.visitors}</div>
-      )}
+      <Show when={() => analytics.data} fallback={() => <div className="skeleton">Loading analytics...</div>}>
+        {(data) => <div>{data.visitors}</div>}
+      </Show>
     </div>
-  ));
+  );
 });
 ```
 
-:::tip[Bonus]
-Since IRPC batches multiple calls on the same tick, **sales** and **analytics** are dispatched in single HTTP Request. Each call streamed and resolve individually as they arrive, neither blocks the other, just pure data streaming.
+:::tip[Automatic Request Batching]
+When multiple IRPC calls occur in the same execution tick, AirLib automatically batches them into a single streaming request. Each call streams and resolves independently without blocking other endpoints.
 :::
 
 ## Mutations and Forms
 
-When sending data back to the server, Remix relies on HTML form submissions (progressive enhancement), while AirLib relies on direct function calls.
+When mutating data on the server, Remix relies on HTML `<form>` submissions with `FormData`, while AirLib uses direct isomorphic function calls with reactive form state.
 
-### Remix Actions and Forms
+### Remix Form Actions
 
-Remix handles mutations using the standard HTML `<form>` element paired with an `action` function on the server. If JavaScript is disabled, the form submits normally via a browser POST request.
+Remix handles mutations using the standard HTML `<form>` element paired with an `action` function on the server:
 
 ```tsx
 // app/routes/users.new.tsx
@@ -353,28 +358,34 @@ export default function NewUser() {
 }
 ```
 
-This embraces web fundamentals, but it means you are strictly working with `FormData`. Complex data structures must be serialized into stringified form fields or hidden inputs.
+While embracing progressive enhancement, mutations are constrained to `FormData` serialization. Nested objects, numbers, and arrays require custom parsing or hidden field serialization.
 
-### AirLib IRPC Call
+### AirLib IRPC Form Call
 
-In AirLib, calling an IRPC function is no different than calling a local async function. You don't need `<Form method="post">` or `FormData` parsing; you just pass your rich JavaScript objects directly to the backend function.
+In AirLib, calling an isomorphic remote function passes native typed JavaScript objects directly to the backend function:
 
 ```tsx
-// client/pages/new-user.tsx
-import { setup, render, $bind } from '@airlib/react';
+// pages/users/new/page.tsx
+import { setup, render, mutable } from '@airlib/react';
 import { createUser } from './function.js';
 
-export const NewUserForm = setup((props) => {
+export default setup(() => {
+  const form = mutable({ name: '' });
   const newUser = createUser.later();
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await newUser.dispatch(props.name);
+    await newUser.dispatch(form.name);
   };
 
   return render(() => (
     <form onSubmit={submit}>
-      <Input name="name" value={$bind(props, 'name')} required />
+      <input 
+        name="name" 
+        value={form.name} 
+        onInput={(e) => (form.name = e.currentTarget.value)} 
+        required 
+      />
       <button type="submit" disabled={newUser.status === 'pending'}>
         {newUser.status === 'pending' ? 'Saving...' : 'Create User'}
       </button>
@@ -383,15 +394,13 @@ export const NewUserForm = setup((props) => {
 });
 ```
 
-Because `createUser` is an IRPC stub, you get end-to-end type safety automatically. `newUser.dispatch` takes exactly the arguments the backend function expects, completely eliminating the need for `FormData` parsing or validation boilerplate on the server.
+Because `createUser` is an isomorphic RPC stub, arguments maintain full end-to-end type safety without manual `FormData` unpacking.
 
 ## Client State Management
 
-When managing complex client-side interactions outside of basic URL routing (like multi-step forms, dark mode toggles, or drag-and-drop state), Remix and AirLib handle reactivity differently.
+### Remix Client State
 
-### Remix State
-
-In Remix, the philosophy is to keep as much state as possible in the URL or derive it from the network. For truly local interactive state, you still rely on standard React hooks.
+Remix encourages storing state in the URL search parameters or deriving it from the network. For local component state, standard React hooks are used:
 
 ```tsx
 // app/components/counter.tsx
@@ -406,16 +415,16 @@ export function Counter() {
     </button>
   );
 }
-``` 
+```
 
-If state needs to be shared across routes, Remix developers often reach for URL Search Parameters, Context, or third-party state libraries (Zustand, Redux).
+Sharing state across routes requires lifting state, URL Search Params, or external state management libraries.
 
-### AirLib State
+### AirLib Reactive State
 
-In AirLib, Anchor provides a built-in decoupled reactive state graph. There is no difference between global state, local state, or server state—it is just reactive data.
+AirLib provides a built-in decoupled reactive state graph. Modifying reactive state triggers granular DOM updates without top-down component tree re-renders:
 
 ```tsx
-// client/components/counter.tsx
+// components/counter.tsx
 import { setup, render, mutable } from '@airlib/react';
 
 export const Counter = setup(() => {
@@ -429,25 +438,19 @@ export const Counter = setup(() => {
 });
 ```
 
-Because `mutable` state is just a reactive proxy, you can mutate it directly. There is no difference between local vs global state, where is it declared is the scope of the state.
-
 ## Optimistic UI
 
-Immediate feedback is critical for modern web apps. Both frameworks provide primitives to instantly update the UI before the server responds, but their implementations reflect their underlying architectures.
+### Remix Optimistic UI
 
-### Remix `useFetcher`
-
-Remix relies on the `useFetcher` or `useNavigation` hooks to calculate optimistic state based on pending network requests. 
+Remix derives optimistic state by inspecting the pending `FormData` on `useFetcher`:
 
 ```tsx
 // app/routes/posts.$id.tsx
 import { useFetcher } from "@remix-run/react";
-import { action } from "./actions"; // The server action
 
-export function LikeButton({ post }) {
+export function LikeButton({ post }: { post: { id: string; liked: boolean } }) {
   const fetcher = useFetcher();
   
-  // Optimistically calculate if it is liked based on the pending formData
   const isLiking = fetcher.formData?.get("intent") === "like";
   const optimisticLiked = isLiking ? true : post.liked;
 
@@ -462,25 +465,21 @@ export function LikeButton({ post }) {
 }
 ```
 
-You have to manually derive the optimistic state from the inflight `FormData` and merge it with the real data. 
+### AirLib Reversible Mutations
 
-### AirLib `undoable`
-
-AirLib provides the `undoable()` primitive. You apply the change instantly to your actual reactive state, and it automatically rolls back if the network request fails.
+AirLib provides the `undoable()` primitive. You apply the mutation directly to your reactive state, and `undoable` automatically records and reverts the exact mutation if the remote promise rejects:
 
 ```tsx
-// client/components/like-button.tsx
+// components/like-button.tsx
 import { setup, render, undoable } from '@airlib/react';
 import { likePost } from './function.js';
 
-export const LikeButton = setup<{ post: any }>((props) => {
+export const LikeButton = setup<{ post: { id: string; liked: boolean } }>((props) => {
   const toggleLike = async () => {
     const [undo, settled] = undoable(() => {
-      // Mutate the actual state optimistically
       props.post.liked = !props.post.liked;
     });
 
-    // Fire the network request, undo if it fails
     await likePost(props.post.id).then(settled, undo);
   };
 
@@ -492,22 +491,134 @@ export const LikeButton = setup<{ post: any }>((props) => {
 });
 ```
 
-Because AirLib state is mutable, you don't need to derive temporary state from `FormData`. You literally change the data, and `undoable` reverses the exact change if the server rejects it.
+## Static Generation: SSG & On-Demand ISG
+
+### Remix Static Workflow
+
+Remix is primarily designed around dynamic server request execution and HTTP CDN caching (via `Cache-Control` headers). It lacks native granular on-demand static generation within the framework layer.
+
+### AirLib SSG & On-Demand Pre-Rendering (ISG)
+
+AirLib allows you to mark individual routes or entire route branches as `static` directly in their route definition:
+
+```typescript
+// pages/docs/route.ts (Build-time SSG)
+export const docsRoute = route.config({ static: true });
+```
+
+During build, `airPages()` runs the worker against static routes and emits plain HTML into `dist/client/`. 
+
+For dynamic paths (like `/blog/:slug`), AirLib provides **On-Demand Pre-Rendering (ISG)**:
+
+```typescript
+// pages/blog/route.ts (On-Demand ISG)
+export const blogSlugRoute = slugRoute.config({ static: { maxAge: 3600 } });
+```
+
+On the first request to a new slug, the worker renders the page once and saves the static HTML to disk (or a custom `cacheAdapter` such as Cloudflare KV or Redis). Every subsequent request serves the static file instantly. When `maxAge` expires, the next request transparently refreshes the cached HTML in the background.
+
+## Zero-JavaScript Delivery (Astro-like)
+
+Content-centric websites (documentation, blogs, marketing pages) rarely need full client-side framework hydration on every page.
+
+### Remix JS Footprint
+
+Remix requires client hydration scripts (`<Scripts />`) to enable client-side navigation and form enhancements, shipping the React runtime on all pages.
+
+### AirLib Zero-JavaScript Delivery
+
+AirLib supports true zero-JavaScript delivery both **per-route** and **project-wide**:
+
+#### Per-Route Zero-JavaScript
+You can strip client JavaScript on specific content routes (e.g., landing, blog, or documentation pages) while keeping other application routes fully hydrated:
+
+```typescript
+// pages/about/route.ts
+export const aboutRoute = route.config({ noscript: true });
+```
+
+#### Project-Wide Zero-JavaScript
+For entirely static sites or documentation portals, enable `noscript` globally in your Vite configuration:
+
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite';
+import { airPages } from '@airlib/vite';
+
+export default defineConfig({
+  plugins: [
+    airPages({
+      noscript: true, // Ships pure static HTML/CSS with 0KB client JavaScript site-wide
+    }),
+  ],
+});
+```
+
+When rendered, static pages are emitted as dehydrated HTML files with `<script>` tags completely stripped, achieving instant First Contentful Paint (FCP) and 100/100 Lighthouse performance.
+
+## Extended Markdown & Content Authoring
+
+### Remix MDX Workflow
+
+In Remix, MDX requires configuring custom Vite rollup plugins or external MDX compilation pipelines with manual remark/rehype plugins.
+
+### AirLib Extended MDX
+
+AirLib includes built-in, zero-config Extended Markdown (`.page.mdx`). You simply create `.page.mdx` files inside `pages/`:
+
+- **Frontmatter as Route Metadata** — YAML frontmatter automatically integrates with the route tree, navigation sidebar, and document `<Head>`.
+- **Built-in Admonitions** — Native support for `:::note`, `:::tip`, `:::warning`, `:::danger`, and `:::details`.
+- **Tabbed Code Groups** — Native `:::code-group` blocks for multi-language and multi-package manager examples.
+- **Embedded JSX** — Embed live, interactive React or SolidJS components directly inside markdown without boilerplate wrapper files.
+
+## Performance & Reactivity Footprint
+
+### Deferred Hydration & Instant FCP
+
+In traditional frameworks, client-side hydration scripts execute immediately when JavaScript chunks load, competing with the browser's main-thread rendering and layout passes.
+
+In AirLib, **SSR always delivers 100% complete, fully styled HTML**. Because the user already sees the full visual state, AirLib **defers client hydration by default** (customizable per-route via `deferred`). This gives the browser time to paint the page instantly without main-thread jank, delivering instant First Contentful Paint (FCP) and near-zero Total Blocking Time (TBT).
+
+| Performance Vector | Remix (React Router) | AirLib |
+|---|---|---|
+| **First Contentful Paint (FCP)** | Hydration scripts compete with initial render | Instant FCP (Complete SSR HTML + deferred hydration) |
+| **Hydration Strategy** | Immediate synchronous client hydration | Non-blocking deferred hydration (configurable via `deferred`) |
+| **Reactivity Model** | Virtual DOM reconciliation on component re-render | Fine-grained proxy mutations updating only touched DOM nodes |
+| **Data Fetching Overhead** | Independent HTTP requests per loader | Automatic tick-based IRPC request batching & streaming |
+| **Static Bundle Size** | Full React runtime on all routes | 0KB JavaScript static delivery option (`noscript`) |
+| **Server Cold Starts** | Adapter initialization per platform | Lightweight universal worker runnable across Bun, Node, Deno, & Edge |
+
+## Multi-Runtime Deployment
+
+Remix uses separate server adapters (`@remix-run/node`, `@remix-run/cloudflare`, `@remix-run/express`) to deploy across targets.
+
+AirLib builds a single **Universal SSR Worker** (`createApp`) that deploys identically across all major JavaScript runtimes with zero adapter overhead:
+
+- **Bun** — `Bun.serve({ fetch: worker.fetch, websocket: worker.websocket })`
+- **Node.js** — Native Hono/Node adapter
+- **Deno** — `Deno.serve((req) => worker.fetch(req))`
+- **Cloudflare Workers** — `export default { fetch: (req, env) => worker.fetch(req, env) }`
 
 ## Architectural Summary
 
 | Dimension | Remix (React Router) | AirLib |
-|-----------|----------------------|-----------|
-| **Data Fetching** | Route Loaders & `useLoaderData` | :badge[Isomorphic RPC Stubs]{variant="tip"} |
-| **Mutations** | HTML Form Actions & `useFetcher` | :badge[Direct RPC Calls & Form Engine]{variant="tip"} |
-| **Optimistic UI** | `fetcher.formData` inspection | :badge[Native mutable + `undoable()`]{variant="tip"} |
-| **Data Synchronization** | Full-page / Route revalidation | :badge[Fine-Grained Reactive Proxies]{variant="tip"} |
-| **RPC Batching** | Manual HTTP bundling | :badge[Automatic Tick Batching]{variant="tip"} |
+|---|---|---|
+| **Routing** | Compiler-driven file-system routing | Assisted file-based routing |
+| **State & Reactivity** | Immutable VDOM re-renders & React Context | Fine-grained reactive state |
+| **Remote Functions** | HTTP Loaders & Form Actions (FormData) | Isomorphic remote functions & streams |
+| **Component Model** | Route module boundaries | Universal components |
+| **Form Handling** | FormData serialization & useNavigation | Direct reactive form state |
+| **State Mutation** | Optimistic reducers & fetcher state | Direct reversible state mutations |
+| **Hydration & FCP** | Immediate hydration competing with paint | Instant FCP & deferred hydration |
+| **Static Generation** | HTTP CDN caching & export | Granular SSG & on-demand ISG |
+| **Markdown / Content** | Custom Vite/MDX plugins | Built-in Extended MDX (`.page.mdx`) |
+| **Static JS Footprint** | Ships full React runtime | Zero-JavaScript static delivery option |
+| **SSR Engine** | Platform runtime adapters | Zero-adapter universal SSR worker |
 
 ## Final thoughts
 
-Remix and AirLib solve the same problems using completely different paradigms.
+Remix and AirLib solve full-stack web development through distinct engineering principles:
 
-**Choose Remix if:** You want a framework built heavily around web standards, HTTP caching, and progressive enhancement. You prefer file-system routing and want an application that is resilient even on slow networks or without JavaScript.
+**Choose Remix if:** You prefer an architecture grounded in web standards, standard HTML `<form>` submissions, HTTP caching conventions, and React Router conventions.
 
-**Choose AirLib if:** You prefer programmatic control over your application architecture. If you want a unified isomorphic environment where UI and backend logic are connected by a fine-grained reactive graph and pure function calls—bypassing the need to manually manage network boundaries—AirLib provides a cleaner, more predictable developer experience.
+**Choose AirLib if:** You want the productivity of assisted file-based routing combined with explicit typed route control, universal components, fine-grained reactive state, zero-JS static publishing, built-in MDX authoring, and native zero-adapter deployment across Bun, Node.js, Deno, and Cloudflare.

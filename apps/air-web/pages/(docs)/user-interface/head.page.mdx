@@ -1,0 +1,283 @@
+---
+title: 'Document Head & SEO'
+description: 'Manage document title, meta tags, Open Graph, Twitter cards, and global SEO configuration with Head and Head.config.'
+nav: 'Document Head & SEO'
+nav-priority: 109
+---
+
+# Document Head & SEO
+
+The **`<Head>`** component provides a declarative, reactive API for managing document `<head>` elements—including titles, descriptions, Open Graph preview cards, Twitter/X cards, canonical URLs, and structured JSON-LD data. It coordinates updates during both **Server-Side Rendering (SSR)** and **Client-Side Navigation**.
+
+## Page Metadata
+
+Render `<Head>` inside any page or component to specify document metadata:
+
+:::code-group
+
+```tsx [React]
+import { Head, page } from '@airlib/react';
+import { rootIndexRoute } from './route.js';
+
+export default page(rootIndexRoute).render(() => (
+  <>
+    <Head
+      meta={{
+        title: 'Fine-Grained Reactivity & Isomorphic RPC',
+        description: 'A modern, fine-grained reactive full-stack web framework.',
+        keywords: ['reactive', 'irpc', 'fullstack'],
+        canonical: 'https://airlib.dev',
+      }}
+    />
+    <main>
+      <h1>Welcome to AirLib</h1>
+    </main>
+  </>
+));
+```
+
+```tsx [SolidJS]
+import { Head, page } from '@airlib/solid';
+import { rootIndexRoute } from './route.js';
+
+export default page(rootIndexRoute).render(() => (
+  <>
+    <Head
+      meta={{
+        title: 'Fine-Grained Reactivity & Isomorphic RPC',
+        description: 'A modern, fine-grained reactive full-stack web framework.',
+        keywords: ['reactive', 'irpc', 'fullstack'],
+        canonical: 'https://airlib.dev',
+      }}
+    />
+    <main>
+      <h1>Welcome to AirLib</h1>
+    </main>
+  </>
+));
+```
+
+:::
+
+### Automatic Fallbacks
+
+When you provide basic metadata, `<Head>` automatically derives appropriate fallbacks for social platforms:
+
+- **`og:title` & `twitter:title`** — Fall back to the computed document `title` (including any configured `prefix` or `suffix`).
+- **`og:description` & `twitter:description`** — Fall back to `meta.description`.
+- **`og:url`** — Falls back to `meta.canonical`.
+- **`twitter:image`** — Falls back to `meta.og.image`.
+- **`twitter:card`** — Defaults to `'summary_large_image'` when an image is present, or `'summary'` otherwise.
+
+## Structured Data (JSON-LD)
+
+To provide search engines with rich snippets, pass JSON-LD objects directly via `jsonLd`:
+
+:::code-group
+
+```tsx [React]
+import { Head } from '@airlib/react';
+
+export function DocumentationHead() {
+  return (
+    <Head
+      meta={{
+        title: 'Getting Started',
+        jsonLd: {
+          '@context': 'https://schema.org',
+          '@type': 'TechArticle',
+          headline: 'Getting Started with AirLib',
+          author: {
+            '@type': 'Organization',
+            name: 'Beerush',
+          },
+        },
+      }}
+    />
+  );
+}
+```
+
+```tsx [SolidJS]
+import { Head } from '@airlib/solid';
+
+export function DocumentationHead() {
+  return (
+    <Head
+      meta={{
+        title: 'Getting Started',
+        jsonLd: {
+          '@context': 'https://schema.org',
+          '@type': 'TechArticle',
+          headline: 'Getting Started with AirLib',
+          author: {
+            '@type': 'Organization',
+            name: 'Beerush',
+          },
+        },
+      }}
+    />
+  );
+}
+```
+
+:::
+
+## Custom Child Tags
+
+For custom scripts, font preloads, or arbitrary tags, place child elements directly inside `<Head>`:
+
+:::code-group
+
+```tsx [React]
+import { Head, HeadLink } from '@airlib/react';
+
+export function CustomHead() {
+  return (
+    <Head>
+      <HeadLink rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" />
+      <script defer src="https://analytics.example.com/script.js" />
+    </Head>
+  );
+}
+```
+
+```tsx [SolidJS]
+import { Head, HeadLink } from '@airlib/solid';
+
+export function CustomHead() {
+  return (
+    <Head>
+      <HeadLink rel="preload" href="/fonts/inter.woff2" as="font" type="font/woff2" />
+      <script defer src="https://analytics.example.com/script.js" />
+    </Head>
+  );
+}
+```
+
+:::
+
+## Integration with Extended Markdown
+
+When using **Extended Markdown** (`.page.mdx`), frontmatter properties are automatically mapped to document metadata:
+
+```yaml
+---
+title: 'Getting Started'
+description: 'Install and create your first AirLib full-stack application.'
+---
+```
+
+Vite SSR compiles this frontmatter into route metadata and automatically coordinates `<Head>` during SSR and client navigation. Empty frontmatter on embedded markdown demo widgets is ignored, preventing embedded snippets from overriding the host page's metadata.
+
+## Global Configuration
+
+You can configure global metadata defaults, title prefixes, and title suffixes across your application using **`Head.config()`**.
+
+### Static Configuration
+
+Pass a configuration object during app initialization (e.g. in `src/app.tsx`):
+
+:::code-group
+
+```tsx [React]
+import { Head } from '@airlib/react';
+
+Head.config({
+  suffix: ' — AirLib',
+  defaults: {
+    author: 'Beerush',
+    themeColor: '#fe7824',
+    og: {
+      siteName: 'AirLib',
+      type: 'website',
+    },
+  },
+});
+```
+
+```tsx [SolidJS]
+import { Head } from '@airlib/solid';
+
+Head.config({
+  suffix: ' — AirLib',
+  defaults: {
+    author: 'Beerush',
+    themeColor: '#fe7824',
+    og: {
+      siteName: 'AirLib',
+      type: 'website',
+    },
+  },
+});
+```
+
+:::
+
+### Dynamic Factory Configuration
+
+When metadata values depend on runtime router context (such as the current pathname), pass a **factory function** to `Head.config()`. The factory evaluates dynamically on each page render:
+
+:::code-group
+
+```tsx [React]
+import { Head, type HeadConfig } from '@airlib/react';
+import ogImage from '@/assets/og_image.png?asset' with { sizes: '1200' };
+import router from './router.js';
+
+Head.config(() => {
+  const { pathname } = router.context;
+
+  const origin = 'https://example.com';
+  const suffix = pathname.startsWith('/docs') ? ' — AirLib Documentation' : ' — AirLib';
+  const imageUrl = ogImage.src.startsWith('/@fs') ? ogImage.src : new URL(ogImage.src, origin).href;
+
+  return {
+    suffix,
+    defaults: {
+      og: {
+        image: imageUrl,
+        siteName: 'AirLib',
+      },
+    },
+  } as HeadConfig;
+});
+```
+
+```tsx [SolidJS]
+import { Head, type HeadConfig } from '@airlib/solid';
+import ogImage from '@/assets/og_image.png?asset' with { sizes: '1200' };
+import router from './router.js';
+
+Head.config(() => {
+  const { pathname } = router.context;
+
+  const origin = 'https://example.com';
+  const suffix = pathname.startsWith('/docs') ? ' — AirLib Documentation' : ' — AirLib';
+  const imageUrl = ogImage.src.startsWith('/@fs') ? ogImage.src : new URL(ogImage.src, origin).href;
+
+  return {
+    suffix,
+    defaults: {
+      og: {
+        image: imageUrl,
+        siteName: 'AirLib',
+      },
+    },
+  } as HeadConfig;
+});
+```
+
+:::
+
+:::tip[Production Origins & SSG]
+Specify your production domain origin (e.g. `const origin = 'https://example.com'`) when resolving social image URLs. This ensures static pre-rendering (SSG) embeds valid absolute URLs in your production HTML instead of build-time `localhost`.
+:::
+
+### Configuration Options
+
+| Option | Type | Description |
+|---|---|---|
+| `prefix` | `string` | Text prepended before the document title. |
+| `suffix` | `string` | Text appended after the document title (e.g. `' — AirLib'`). |
+| `defaults` | `SEOMeta` | Baseline metadata object inherited by every `<Head>` instance. |

@@ -1,7 +1,7 @@
 ---
 nav: 'AirLib vs. SolidStart'
 title: 'AirLib vs. SolidStart'
-description: "A comparison of fine-grained reactive frameworks. See how AirLib's isomorphic functions differ from SolidStart's server actions and resources."
+description: "A comparison of fine-grained reactive frameworks. See how AirLib's isomorphic functions and decoupled reactive graph contrast with SolidStart's server actions and resources."
 date: '2026-06-16'
 category: 'AirLib Posts'
 keywords:
@@ -12,46 +12,51 @@ keywords:
 
 # AirLib vs. SolidStart
 
-:badge[Comparison]{variant="info"} :badge[SolidStart]{variant="neutral"} :badge[AirLib]{variant="neutral"}
+:badge[Comparison]{variant="info"} :badge[SolidStart]{variant="neutral"} :badge[SolidJS]{variant="neutral"} :badge[AirLib]{variant="neutral"}
 
 <a href="https://start.solidjs.com/" target="_blank" rel="noreferrer">SolidStart</a> is the official meta-framework for SolidJS. It leverages Solid's incredibly fast, fine-grained reactivity (Signals) and extends it to the server using Server Functions (`"use server"`), `createResource`, and file-system routing.
 
-**AirLib** (Anchor, IRPC, Reactive) shares a nearly identical philosophy when it comes to performance: both bypass traditional Virtual DOM diffing in favor of direct, fine-grained DOM updates. However, while SolidStart's reactivity and routing are strictly bound to SolidJS, AirLib's reactive graph (Anchor) and Isomorphic RPC are entirely framework-agnostic. AirLib brings Solid-like performance to any framework (including React).
+**AirLib** (Anchor, IRPC, Reactive) shares a nearly identical philosophy regarding performance: both bypass traditional Virtual DOM diffing in favor of direct, fine-grained DOM updates. However, while SolidStart's reactivity and routing are strictly bound to SolidJS, AirLib's reactive graph (Anchor) and Isomorphic RPC are framework-agnostic, powering both React and Solid with universal components and assisted file-based routing.
 
 ## Framework comparison
 
-Both frameworks are designed to eliminate unnecessary re-renders using reactive primitives, but they structure their full-stack communication differently.
+Both frameworks eliminate unnecessary re-renders using fine-grained reactivity, but they structure full-stack architecture, route definitions, and data lifecycles differently.
 
 | Aspect | SolidStart | AirLib |
 |---|---|---|
-| **Paradigm** | Framework-bound Signals | Framework-agnostic Reactive Graph |
-| **Routing** | File-based (Solid Router) | Programmatic (`createRouter()`) |
-| **Data Fetching** | `createResource` + Server Functions | Isomorphic Function call (IRPC) |
-| **Mutations** | Server Actions (`"use server"`) | Isomorphic Function call (IRPC) |
-| **State** | Signals (`createSignal`) | Anchor State (`mutable()`) |
+| **Paradigm** | Framework-Bound Signals & Server Functions | Unified Reactive Model (Decoupled UI & logic) |
+| **Routing** | Compiler-driven file-system routing | Assisted file-based routing (Explicit route graph) |
+| **Data Fetching** | createResource & Server Functions | Route Loaders & Isomorphic Remote Functions |
+| **Mutations** | Server Actions & FormData serialization | Isomorphic Remote Functions & Reactive State |
+| **State** | Framework-specific Signals (`createSignal`) | Fine-grained Reactive State (mutable proxies) |
+| **Static Generation** | Nitro build presets & static export | Granular SSG & On-Demand ISG |
+| **Content & Markdown** | Custom Vite/MDX plugins | Built-in Extended MDX (`.page.mdx`) |
+| **Static Delivery** | Always ships client Solid runtime | Pure Zero-JavaScript static HTML option |
+| **Deployment** | Nitro platform presets | Zero-adapter Universal SSR Worker |
 
 ## Application Setup
 
-Both frameworks use a root entry point to configure routing and hydration.
+Both frameworks offer file-based routing workflows, but they handle transparency and route control differently.
 
 ### SolidStart Setup
 
-SolidStart relies on file-system routing and the `<FileRoutes>` component to automatically map your file structure to the browser.
+SolidStart relies on file-system routing and the `<FileRoutes>` component to map files into the browser router:
 
 ```tsx
-import { Suspense } from 'solid-js';
+// src/app.tsx
 import { Router } from '@solidjs/router';
 import { FileRoutes } from '@solidjs/start/router';
+import { Suspense } from 'solid-js';
 
 export default function App() {
   return (
     <Router root={(props) => (
-      <main>
-        <h1>Welcome to SolidStart</h1>
+      <div className="app">
+        <header>My App</header>
         <Suspense fallback={<div>Loading...</div>}>
           {props.children}
         </Suspense>
-      </main>
+      </div>
     )}>
       <FileRoutes />
     </Router>
@@ -59,59 +64,82 @@ export default function App() {
 }
 ```
 
-The routing is coupled directly to the file system and relies heavily on `<Suspense>` to handle asynchronous boundaries.
+```tsx
+// src/routes/index.tsx
+export default function HomePage() {
+  return (
+    <main>
+      <h1>Welcome to SolidStart</h1>
+    </main>
+  );
+}
+```
+
+Routing internals and virtual route trees remain coupled to compiler file-system conventions.
 
 ### AirLib Setup
 
-AirLib uses explicit, programmatic routing. You define your route graph and pass it to the UI Router. Because AirLib is framework-agnostic, the exact same router code works across React, Solid, and Vue.
+AirLib bridges file-system simplicity with explicit, typed route orchestration through **assisted file-based routing**:
+
+- **Drop-and-Go Pages** — Dropping a `page.tsx` or `layout.tsx` into `pages/` automatically establishes the route definition with typed exports and starter boilerplate.
+- **Zero Black Boxes** — Routes are not opaque virtual modules hidden inside the compiler. The route definition lives directly in your project as plain TypeScript.
+- **Full Programmatic Power** — Having an explicit route definition alongside your component gives you full control to attach access guards (`.guard()`), asynchronous data loaders (`.provide()`), and route metadata with full IDE autocomplete.
 
 ```tsx
-import { createRouter } from '@airlib/solid';
-
-export const router = createRouter();
-export const rootRoute = router.route();
-```
-
-```tsx
-import { page } from '@airlib/solid';
+// pages/layout.tsx
+import { page } from '@airlib/react';
 import { rootRoute } from './route.js';
 
-export const RootLayout = page(rootRoute).render(({ children }) => (
-  <main>
-    <h1>Welcome to AirLib</h1>
+export default page(rootRoute).render(({ children }) => (
+  <div className="app">
+    <header>My App</header>
     {children}
-  </main>
+  </div>
 ));
 ```
 
 ```tsx
-import { UIRouter } from '@airlib/solid';
-import { render } from 'solid-js/web';
-import { router } from './routes/route.js';
-import { RootLayout } from './routes/layout.js';
+// pages/page.tsx
+import { page } from '@airlib/react';
+import { rootIndexRoute } from './route.js';
 
-router.activate(window.location.href).then(() => {
-  const root = document.getElementById('root')!;
-  root.innerHTML = '';
-  render(() => <UIRouter router={router} root={RootLayout} headless={true} resetScroll />, root);
-});
+export default page(rootIndexRoute).render(() => (
+  <main>
+    <h1>Welcome to AirLib</h1>
+  </main>
+));
 ```
 
-Because routing and reactivity are decoupled from the UI framework, you define the architecture purely in TypeScript, and the UI layer simply consumes it.
+The accompanying `route.ts` maintains the typed route graph:
+
+```typescript
+// pages/route.ts
+import router from '@/src/router.js';
+
+/** AirLib managed */
+const route = router.route();
+const indexRoute = route.route('/');
+/** AirLib managed */
+
+export const rootRoute = route;
+export const rootIndexRoute = indexRoute;
+
+export default rootRoute;
+```
 
 ## Rendering Paradigms
 
-Both SolidStart and AirLib handle Server-Side Rendering (SSR) and Client-Side Rendering (CSR), but they fetch data differently.
+Both SolidStart and AirLib handle Server-Side Rendering (SSR) and Client-Side Rendering (CSR), but they fetch data and hydrate components differently.
 
-### Server-Side Rendering (SSR)
+### Pure Server-Side Rendering (SSR)
 
-When rendering on the server, you need to block the initial HTML response until the data is ready.
+To fetch data on the server and render HTML before sending it to the client, SolidStart uses `cache` and resources, while AirLib uses route data providers.
 
-#### SolidStart `createResource`
-
-In SolidStart, you fetch data using `cache` and `createResource`. The router automatically waits for resources to resolve before streaming the HTML.
+#### SolidStart SSR
+In SolidStart, you fetch data using `cache` and `createResource`, wrapping components in `<Suspense>`:
 
 ```tsx
+// src/routes/users.tsx
 import { cache, createResource, Suspense } from "@solidjs/router";
 import { For } from "solid-js";
 
@@ -126,48 +154,48 @@ export default function UsersPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <ul>
-        <For each={users()}>{(u) => <li>{u.name}</li>}</For>
+        <For each={users()}>
+          {({ name }) => <li>{name}</li>}
+        </For>
       </ul>
     </Suspense>
   );
 }
 ```
 
-This ensures the data is dehydrated and sent to the client without a double fetch.
-
 #### AirLib Providers
-
-AirLib blocks the router during navigation if a provider returns a Promise. The router waits for it to resolve before rendering the page.
+AirLib separates data resolution from view rendering. Attaching `.provide()` to the route resolves data during navigation before the page component renders:
 
 ```typescript
-export const usersRoute = rootRoute
-  .route('/users')
-  .provide('users', () => getUsers()); 
+// pages/users/route.ts
+export const usersRoute = route.provide('users', () => getUsers());
 ```
 
 ```tsx
-import { page } from '@airlib/solid';
-import { For } from 'solid-js';
+// pages/users/page.tsx
+import { For, page } from '@airlib/react';
 import { usersRoute } from './route.js';
 
-export const UsersPage = page(usersRoute).render(({ state }) => (
+export default page(usersRoute).render(({ state }) => (
   <ul>
-    <For each={state.data.users}>{(u) => <li>{u.name}</li>}</For>
+    <For each={() => state.data.users}>
+      {({ name }) => <li>{name}</li>}
+    </For>
   </ul>
 ));
 ```
 
-This moves the fetch to the router, keeping the component as a pure view layer.
+The loader logic attaches directly to the route node, keeping the view component a pure, declarative UI layer without `<Suspense>` boilerplate.
 
 ### Pure Client-Side Rendering (CSR)
 
-Sometimes you need to fetch data entirely from the browser after the initial shell loads.
+When data should be fetched from the browser after initial load, SolidStart uses `createResource`, while AirLib calls isomorphic functions directly within components.
 
-#### SolidStart `createResource`
-
-In SolidStart, `createResource` is still used, but the request happens in the browser.
+#### SolidStart Client Resources
+In SolidStart, `createResource` runs in the browser when not wrapped in server cache boundaries:
 
 ```tsx
+// src/routes/users.tsx
 import { createResource, Suspense, For } from "solid-js";
 
 async function fetchUsers() {
@@ -181,7 +209,9 @@ export default function UsersPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <ul>
-        <For each={users()}>{(u) => <li>{u.name}</li>}</For>
+        <For each={users()}>
+          {({ name }) => <li>{name}</li>}
+        </For>
       </ul>
     </Suspense>
   );
@@ -189,38 +219,103 @@ export default function UsersPage() {
 ```
 
 #### AirLib Component
-
-In AirLib, you just call the function directly in the component.
+In AirLib, IRPC stubs provide reactive helpers like `.once()` directly inside components:
 
 ```tsx
-import { setup } from '@airlib/solid';
-import { For, Show } from 'solid-js';
+// pages/users/page.tsx
+import { For, Show, setup } from '@airlib/react';
 import { getUsers } from './function.js';
 
-export const UsersPage = setup(() => {
+export default setup(() => {
   const users = getUsers.once();
 
-  return () => (
-    <Show when={users.status !== 'pending'} fallback={<div>Loading...</div>}>
-      <ul>
-        <For each={users.data}>{(u) => <li>{u.name}</li>}</For>
-      </ul>
+  return (
+    <Show when={() => users.data} fallback={() => <div>Loading...</div>}>
+      {(data) => (
+        <ul>
+          <For each={() => data}>
+            {({ name }) => <li>{name}</li>}
+          </For>
+        </ul>
+      )}
     </Show>
   );
 });
 ```
 
-IRPC handles the serialization, and the component simply reads the resolved state.
+The reactive reader returned by `.once()` automatically tracks loading state and unwraps resolved data without router-level fallbacks.
+
+### Hybrid Rendering
+
+To optimize perceived performance, applications combine SSR for static shells with CSR for slower data streams.
+
+#### SolidStart Streaming
+SolidStart streams HTML out-of-order using `<Suspense>` placeholders that resolve as server promises complete:
+
+```tsx
+// src/routes/dashboard.tsx
+import { createResource, Suspense } from 'solid-js';
+import { db } from '../db';
+
+export default function DashboardPage() {
+  const [sales] = createResource(() => db.sales.getSlowData());
+  const [analytics] = createResource(() => db.analytics.getSlowData());
+
+  return (
+    <div className="grid">
+      <Suspense fallback={<div className="skeleton">Loading sales...</div>}>
+        <div>{sales()?.total}</div>
+      </Suspense>
+
+      <Suspense fallback={<div className="skeleton">Loading analytics...</div>}>
+        <div>{analytics()?.visitors}</div>
+      </Suspense>
+    </div>
+  );
+}
+```
+
+#### AirLib Non-Blocking Fetching
+In AirLib, pages and components are universal and render seamlessly on both server and browser. Moving data calls into component `.once()` invocations renders the shell instantly while data loads asynchronously.
+
+```tsx
+// pages/dashboard/page.tsx
+import { Show, page } from '@airlib/react';
+import { dashboardRoute } from './route.js';
+import { getSalesData, getAnalyticsData } from './function.js';
+
+export default page(dashboardRoute).render(() => {
+  const sales = getSalesData.once();
+  const analytics = getAnalyticsData.once();
+
+  return (
+    <div className="grid">
+      <Show when={() => sales.data} fallback={() => <div className="skeleton">Loading sales...</div>}>
+        {(data) => <div>{data.total}</div>}
+      </Show>
+
+      <Show when={() => analytics.data} fallback={() => <div className="skeleton">Loading analytics...</div>}>
+        {(data) => <div>{data.visitors}</div>}
+      </Show>
+    </div>
+  );
+});
+```
+
+:::tip[Automatic Request Batching]
+When multiple IRPC calls occur in the same execution tick, AirLib automatically batches them into a single streaming request. Each call streams and resolves independently without blocking other endpoints.
+:::
 
 ## Mutations and Forms
 
-When sending data to the server, SolidStart relies on Server Actions, while AirLib relies on direct IRPC calls.
+When mutating data on the server, SolidStart relies on Server Actions (`"use server"`), while AirLib uses direct isomorphic function calls with reactive form state.
 
-### SolidStart Actions
+### SolidStart Server Actions
 
-SolidStart uses the `"use server"` pragma to turn a function into a network endpoint. You can dispatch it using an HTML `<form>` or via the `action` primitive.
+SolidStart uses `"use server"` pragmas to turn functions into RPC endpoints dispatched via standard HTML `<form>` or the `action` primitive:
 
 ```tsx
+// src/routes/users.new.tsx
 import { action, useSubmission } from "@solidjs/router";
 
 const createUser = action(async (formData: FormData) => {
@@ -242,46 +337,52 @@ export default function NewUserForm() {
 }
 ```
 
-This explicitly ties the mutation to the router's lifecycle and standard HTTP form semantics.
+### AirLib IRPC Form Call
 
-### AirLib IRPC Call
-
-In AirLib, calling an IRPC function is no different than calling a local async function. You just pass your rich JavaScript objects directly to the backend function.
+In AirLib, calling an isomorphic remote function passes native typed JavaScript objects directly to the backend function:
 
 ```tsx
-import { setup, $bind } from '@airlib/solid';
+// pages/users/new/page.tsx
+import { setup, render, mutable } from '@airlib/react';
 import { createUser } from './function.js';
 
-export const NewUserForm = setup((props) => {
+export default setup(() => {
+  const form = mutable({ name: '' });
   const newUser = createUser.later();
 
-  const submit = async (e: Event) => {
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await newUser.dispatch(props.name);
+    await newUser.dispatch(form.name);
   };
 
-  return () => (
+  return render(() => (
     <form onSubmit={submit}>
-      <Input name="name" value={$bind(props, 'name')} required />
+      <input 
+        name="name" 
+        value={form.name} 
+        onInput={(e) => (form.name = e.currentTarget.value)} 
+        required 
+      />
       <button type="submit" disabled={newUser.status === 'pending'}>
         {newUser.status === 'pending' ? 'Saving...' : 'Create User'}
       </button>
     </form>
-  );
+  ));
 });
 ```
 
-Because `createUser` is an IRPC stub, you get end-to-end type safety automatically.
+Because `createUser` is an isomorphic RPC stub, arguments maintain full end-to-end type safety without manual `FormData` unpacking.
 
 ## Client State Management
 
-Both frameworks excel at fine-grained reactivity.
+Both frameworks excel at fine-grained reactivity without virtual DOM diffing.
 
 ### SolidJS Signals
 
-Solid uses `createSignal`. It creates a getter and a setter. When the setter is called, Solid surgically updates the DOM nodes bound to the getter.
+Solid uses `createSignal`, producing getter and setter tuples:
 
 ```tsx
+// src/components/counter.tsx
 import { createSignal } from 'solid-js';
 
 export function Counter() {
@@ -295,42 +396,40 @@ export function Counter() {
 }
 ```
 
-### AirLib State
+### AirLib Reactive Proxies
 
-In AirLib, Anchor provides a decoupled reactive proxy graph (`mutable`). You don't need a getter or setter function; you mutate the object directly.
+In AirLib, Anchor provides a decoupled reactive state graph (`mutable`). You mutate properties directly without getter/setter wrapper calls:
 
 ```tsx
-import { setup, mutable } from '@airlib/solid';
+// components/counter.tsx
+import { setup, render, mutable } from '@airlib/react';
 
 export const Counter = setup(() => {
   const state = mutable({ count: 0 });
   
-  return () => (
+  return render(() => (
     <button onClick={() => state.count++}>
       Clicked {state.count} times
     </button>
-  );
+  ));
 });
 ```
 
-Because `mutable` state is just a reactive proxy, you can mutate it directly. There is no difference between local vs global state, where it is declared is the scope of the state.
-
 ## Optimistic UI
 
-Immediate feedback is critical. Both frameworks allow you to optimistically update the UI before the network responds.
+### SolidStart Optimistic Actions
 
-### SolidStart Actions
-
-In SolidStart, you typically read from the `submission` state inside the component to overlay optimistic values while the action is inflight.
+In SolidStart, you inspect the pending `submission` object to derive temporary UI state:
 
 ```tsx
+// src/routes/posts/[id].tsx
 import { action, useSubmission } from "@solidjs/router";
 
 const likePost = action(async (formData: FormData) => {
   "use server";
 });
 
-export default function LikeButton(props: { post: any }) {
+export default function LikeButton(props: { post: { id: string; liked: boolean } }) {
   const submission = useSubmission(likePost);
   
   const isOptimisticallyLiked = () => {
@@ -349,15 +448,16 @@ export default function LikeButton(props: { post: any }) {
 }
 ```
 
-### AirLib `undoable`
+### AirLib Reversible Mutations
 
-AirLib provides the `undoable()` primitive. You apply the change instantly to your actual reactive state, and it automatically rolls back if the network request fails.
+AirLib provides the `undoable()` primitive. You apply the mutation directly to your reactive state, and `undoable` automatically records and reverts the exact mutation if the remote promise rejects:
 
 ```tsx
-import { setup, undoable } from '@airlib/solid';
+// components/like-button.tsx
+import { setup, render, undoable } from '@airlib/react';
 import { likePost } from './function.js';
 
-export const LikeButton = setup<{ post: any }>((props) => {
+export const LikeButton = setup<{ post: { id: string; liked: boolean } }>((props) => {
   const toggleLike = async () => {
     const [undo, settled] = undoable(() => {
       props.post.liked = !props.post.liked;
@@ -366,20 +466,142 @@ export const LikeButton = setup<{ post: any }>((props) => {
     await likePost(props.post.id).then(settled, undo);
   };
 
-  return () => (
+  return render(() => (
     <button onClick={toggleLike}>
       {props.post.liked ? 'Unlike' : 'Like'}
     </button>
-  );
+  ));
 });
 ```
 
-Because AirLib state is mutable, you literally change the data in place, and `undoable` reverses the exact change if the server rejects it. No snapshots or parallel state required.
+## Static Generation: SSG & On-Demand ISG
+
+### SolidStart Static Workflow
+
+SolidStart supports static pre-rendering via Nitro server presets (`preset: 'static'`), but dynamic routes require server execution or edge CDN caching.
+
+### AirLib SSG & On-Demand Pre-Rendering (ISG)
+
+AirLib allows you to mark individual routes or entire route branches as `static` directly in their route definition:
+
+```typescript
+// pages/docs/route.ts (Build-time SSG)
+export const docsRoute = route.config({ static: true });
+```
+
+During build, `airPages()` runs the worker against static routes and emits plain HTML into `dist/client/`. 
+
+For dynamic paths (like `/blog/:slug`), AirLib provides **On-Demand Pre-Rendering (ISG)**:
+
+```typescript
+// pages/blog/route.ts (On-Demand ISG)
+export const blogSlugRoute = slugRoute.config({ static: { maxAge: 3600 } });
+```
+
+On the first request to a new slug, the worker renders the page once and saves the static HTML to disk (or a custom `cacheAdapter` such as Cloudflare KV or Redis). Every subsequent request serves the static file instantly. When `maxAge` expires, the next request transparently refreshes the cached HTML in the background.
+
+## Zero-JavaScript Delivery (Astro-like)
+
+Content-centric websites (documentation, blogs, marketing pages) rarely need full client-side framework hydration on every page.
+
+### SolidStart JS Footprint
+
+SolidStart ships the client runtime and router runtime to enable client navigation and signal hydration on all pages.
+
+### AirLib Zero-JavaScript Delivery
+
+AirLib supports true zero-JavaScript delivery both **per-route** and **project-wide**:
+
+#### Per-Route Zero-JavaScript
+You can strip client JavaScript on specific content routes (e.g., landing, blog, or documentation pages) while keeping other application routes fully hydrated:
+
+```typescript
+// pages/about/route.ts
+export const aboutRoute = route.config({ noscript: true });
+```
+
+#### Project-Wide Zero-JavaScript
+For entirely static sites or documentation portals, enable `noscript` globally in your Vite configuration:
+
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite';
+import { airPages } from '@airlib/vite';
+
+export default defineConfig({
+  plugins: [
+    airPages({
+      noscript: true, // Ships pure static HTML/CSS with 0KB client JavaScript site-wide
+    }),
+  ],
+});
+```
+
+When rendered, static pages are emitted as dehydrated HTML files with `<script>` tags completely stripped, achieving instant First Contentful Paint (FCP) and 100/100 Lighthouse performance.
+
+## Extended Markdown & Content Authoring
+
+### SolidStart MDX Workflow
+
+In SolidStart, MDX requires configuring custom Vite rollup plugins with `@mdx-js/rollup` and manual remark/rehype integrations.
+
+### AirLib Extended MDX
+
+AirLib includes built-in, zero-config Extended Markdown (`.page.mdx`). You simply create `.page.mdx` files inside `pages/`:
+
+- **Frontmatter as Route Metadata** — YAML frontmatter automatically integrates with the route tree, navigation sidebar, and document `<Head>`.
+- **Built-in Admonitions** — Native support for `:::note`, `:::tip`, `:::warning`, `:::danger`, and `:::details`.
+- **Tabbed Code Groups** — Native `:::code-group` blocks for multi-language and multi-package manager examples.
+- **Embedded JSX** — Embed live, interactive React or SolidJS components directly inside markdown without boilerplate wrapper files.
+
+## Performance & Reactivity Footprint
+
+### Deferred Hydration & Instant FCP
+
+In traditional frameworks, client-side hydration scripts execute immediately when JavaScript chunks load, competing with the browser's main-thread rendering and layout passes.
+
+In AirLib, **SSR always delivers 100% complete, fully styled HTML**. Because the user already sees the full visual state, AirLib **defers client hydration by default** (customizable per-route via `deferred`). This gives the browser time to paint the page instantly without main-thread jank, delivering instant First Contentful Paint (FCP) and near-zero Total Blocking Time (TBT).
+
+| Performance Vector | SolidStart | AirLib |
+|---|---|---|
+| **First Contentful Paint (FCP)** | Hydration scripts compete with initial render | Instant FCP (Complete SSR HTML + deferred hydration) |
+| **Hydration Strategy** | Immediate synchronous client hydration | Non-blocking deferred hydration (configurable via `deferred`) |
+| **Reactivity Model** | Framework-specific Signals (`createSignal`) | Fine-grained proxy mutations updating only touched DOM nodes |
+| **Data Fetching Overhead** | Individual `fetch()` or Server Function calls | Automatic tick-based IRPC request batching & streaming |
+| **Static Bundle Size** | Solid runtime on all pages | 0KB JavaScript static delivery option (`noscript`) |
+| **Server Cold Starts** | Nitro preset initialization | Lightweight universal worker runnable across Bun, Node, Deno, & Edge |
+
+## Multi-Runtime Deployment
+
+SolidStart uses Nitro presets (`nitro.config.ts`) to produce runtime-specific server bundles.
+
+AirLib builds a single **Universal SSR Worker** (`createApp`) that deploys identically across all major JavaScript runtimes with zero adapter overhead:
+
+- **Bun** — `Bun.serve({ fetch: worker.fetch, websocket: worker.websocket })`
+- **Node.js** — Native Hono/Node adapter
+- **Deno** — `Deno.serve((req) => worker.fetch(req))`
+- **Cloudflare Workers** — `export default { fetch: (req, env) => worker.fetch(req, env) }`
+
+## Architectural Summary
+
+| Dimension | SolidStart | AirLib |
+|---|---|---|
+| **Routing** | Compiler-driven file-system routing | Assisted file-based routing |
+| **State & Reactivity** | Framework-bound Signals (`createSignal`) | Fine-grained reactive state |
+| **Remote Functions** | Server Functions (`"use server"`) & Form Actions | Isomorphic remote functions & streams |
+| **Component Model** | SolidJS exclusive components | Universal components |
+| **Form Handling** | FormData serialization & useSubmission | Direct reactive form state |
+| **State Mutation** | Optimistic derived view state | Direct reversible state mutations |
+| **Hydration & FCP** | Immediate hydration competing with paint | Instant FCP & deferred hydration |
+| **Static Generation** | Nitro static export presets | Granular SSG & on-demand ISG |
+| **Markdown / Content** | Custom Vite/MDX plugins | Built-in Extended MDX (`.page.mdx`) |
+| **Static JS Footprint** | Ships full Solid runtime | Zero-JavaScript static delivery option |
+| **SSR Engine** | Nitro preset wrappers | Zero-adapter universal SSR worker |
 
 ## Final thoughts
 
-SolidStart and AirLib share a deep appreciation for performance and fine-grained reactivity, but they apply it differently across the full stack.
+SolidStart and AirLib share a deep appreciation for performance and fine-grained reactivity, but their scopes and architectures differ:
 
-**Choose SolidStart if:** You are completely bought into the SolidJS ecosystem, you prefer file-system routing, and you want to use web standard semantics (Forms and FormData) coupled with `"use server"` pragmas.
+**Choose SolidStart if:** You are dedicated exclusively to the SolidJS ecosystem, prefer compiler-driven file-system routing, and want web standard `<form>` submissions powered by `"use server"` pragmas.
 
-**Choose AirLib if:** You want the incredible performance of fine-grained reactivity, but you want to use it agnostically across any framework (like React or Vue). If you prefer programmatic routing and pure type-safe function calls over HTTP semantics, AirLib provides a highly decoupled, cohesive architecture.
+**Choose AirLib if:** You want the incredible performance of fine-grained reactivity paired with assisted file-based routing, universal components, zero-JS static publishing, built-in MDX authoring, and native zero-adapter deployment across Bun, Node.js, Deno, and Cloudflare.

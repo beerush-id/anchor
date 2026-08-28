@@ -2,6 +2,7 @@ import { Head, page, uIndex } from '@airlib/react';
 import { CODE_GROUP_INDEX } from '@airlib/react/mdx';
 import { BuiltForScale } from '@/components/BuiltForScale.js';
 import { Features } from '@/components/Features.js';
+import { FreedomOfChoice } from '@/components/FreedomOfChoice.js';
 import { Advanced } from '@/components/features/Advanced.js';
 import { BeyondUi } from '@/components/features/BeyondUi.js';
 import { FineGrained } from '@/components/features/FineGrained.js';
@@ -10,7 +11,6 @@ import { Router } from '@/components/features/Router.js';
 import { Runtime } from '@/components/features/Runtime.js';
 import { UniversalSsr } from '@/components/features/UniversalSsr.js';
 import { Workflow } from '@/components/features/Workflow.js';
-import { FreedomOfChoice } from '@/components/FreedomOfChoice.js';
 import { Hero } from '@/components/Hero.js';
 import { rootIndexRoute } from './route.ts';
 
@@ -21,7 +21,7 @@ export default page(rootIndexRoute).render(() => {
     <>
       <Head
         meta={{
-          title: 'AirLib — Fine-Grained Reactivity & Isomorphic RPC',
+          title: 'Fine-Grained Reactivity & Isomorphic RPC',
           description:
             'A modern, fine-grained reactive web framework with isomorphic RPC, instant edge streaming, and unified state management across React, Solid, Svelte, and Vue.',
           keywords: [
@@ -35,7 +35,7 @@ export default page(rootIndexRoute).render(() => {
             'reactive stores',
           ],
           og: {
-            title: 'AirLib — Fine-Grained Reactivity & Isomorphic RPC',
+            title: 'Fine-Grained Reactivity & Isomorphic RPC',
             description:
               'A modern, fine-grained reactive web framework with isomorphic RPC, instant edge streaming, and unified state management.',
             type: 'website',
@@ -43,7 +43,7 @@ export default page(rootIndexRoute).render(() => {
           },
           twitter: {
             card: 'summary_large_image',
-            title: 'AirLib — Fine-Grained Reactivity & Isomorphic RPC',
+            title: 'Fine-Grained Reactivity & Isomorphic RPC',
             description:
               'A modern, fine-grained reactive web framework with isomorphic RPC, instant edge streaming, and unified state management.',
           },

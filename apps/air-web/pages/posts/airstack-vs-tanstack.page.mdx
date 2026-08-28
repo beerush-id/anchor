@@ -1,7 +1,7 @@
 ---
 nav: 'AirLib vs. TanStack'
 title: 'AirLib vs. TanStack'
-description: "Analyzing client-side routing and state. See how AirLib's unified router and RPC compares against assembling TanStack Router and Query."
+description: "Analyzing routing, state, and mutations. See how AirLib's unified router and isomorphic remote functions compare against assembling TanStack Router and Query."
 date: '2026-06-14'
 category: 'AirLib Posts'
 keywords:
@@ -12,34 +12,67 @@ keywords:
 
 # AirLib vs. TanStack
 
-:badge[Comparison]{variant="info"} :badge[TanStack]{variant="neutral"} :badge[AirLib]{variant="neutral"}
+:badge[Comparison]{variant="info"} :badge[TanStack]{variant="neutral"} :badge[Router]{variant="neutral"} :badge[AirLib]{variant="neutral"}
 
-<a href="https://tanstack.com/" target="_blank" rel="noreferrer">TanStack</a> is a collection of high-quality, headless utilities. To build a full-stack React application, developers typically assemble **TanStack Router** (for type-safe routing) and **TanStack Query** (for data fetching and caching), manually wiring them to a backend API (like tRPC or standard REST).
+<a href="https://tanstack.com/" target="_blank" rel="noreferrer">TanStack</a> is a collection of high-quality, headless utilities. To build a full-stack React application, developers typically assemble **TanStack Router** (for type-safe routing) and **TanStack Query** (for data fetching and caching), manually connecting them to backend APIs (such as tRPC or REST).
 
-**AirLib** (Anchor, IRPC, Reactive) takes a unified approach. Rather than assembling disparate libraries to handle routing, fetching, and state, it provides a cohesive ecosystem. The router and data fetching layer share the same reactive state graph, eliminating the need for complex query caching strategies or explicit network boundaries.
+**AirLib** (Anchor, IRPC, Reactive) takes a unified approach. Rather than assembling disparate libraries to handle routing, fetching, caching, and state, it provides a cohesive ecosystem. The router and data fetching layer share the same reactive state graph, eliminating the need for separate query caches, manual cache invalidation, or network boilerplate.
 
 ## Framework comparison
 
-Both aim to achieve the same outcome: building highly interactive, type-safe Single Page Applications (SPAs). However, their approaches to composition and state are fundamentally different.
+While both aim to deliver highly interactive, type-safe full-stack applications, their approaches to architecture, composition, and state management differ fundamentally.
 
 | Aspect | TanStack (Router + Query) | AirLib |
 |---|---|---|
-| **Paradigm** | Assembled Utilities (Modular libraries) | Unified Ecosystem (Pure Functions & Reactive Graph) |
-| **Routing** | File-based or Code-based (`createRouter`) | Programmatic (`createRouter()`) |
-| **Data Fetching** | `useQuery` + Network Fetcher | Isomorphic Function call (IRPC) |
-| **Mutations** | `useMutation` + Network Fetcher | Isomorphic Function call (IRPC) |
-| **State** | Query Cache + Local State (`useState`) | Anchor State (`mutable()`) |
+| **Paradigm** | Assembled Modular Libraries | Unified Reactive Model (Decoupled UI & logic) |
+| **Routing** | Code/file-based routing with CLI codegen | Assisted file-based routing (Explicit route graph) |
+| **Data Fetching** | Query Client & manual cache invalidation | Route Loaders & Isomorphic Remote Functions |
+| **Mutations** | useMutation & manual cache rollbacks | Isomorphic Remote Functions & Reactive State |
+| **State** | Query Cache & React useState/Context | Fine-grained Reactive State |
+| **Static Generation** | Build export or custom server setups | Granular SSG & On-Demand ISG |
+| **Content & Markdown** | Manual markdown loaders & plugins | Built-in Extended MDX (`.page.mdx`) |
+| **Static Delivery** | Always ships client React runtime | Pure Zero-JavaScript static HTML option |
+| **Deployment** | Client SPA host or custom runtime | Zero-adapter Universal SSR Worker |
 
 ## Application Setup
 
-Both frameworks operate heavily on the client side, requiring explicit configuration for routers and context providers.
+Both frameworks operate across client and server environments, but they manage transparency and route orchestration differently.
 
 ### TanStack Setup
 
-In TanStack, you must configure the router and explicitly wrap your application in multiple providers to enable routing and query caching.
+In TanStack Router, you define a root layout route (`__root.tsx`) and page routes (`index.tsx`), generating a virtual route tree via CLI:
 
 ```tsx
-// router.tsx
+// src/routes/__root.tsx
+import { createRootRoute, Outlet } from '@tanstack/react-router';
+
+export const Route = createRootRoute({
+  component: () => (
+    <div className="app">
+      <header>My App</header>
+      <Outlet />
+    </div>
+  ),
+});
+```
+
+```tsx
+// src/routes/index.tsx
+import { createFileRoute } from '@tanstack/react-router';
+
+export const Route = createFileRoute('/')({
+  component: () => (
+    <main>
+      <h1>Welcome to TanStack</h1>
+    </main>
+  ),
+});
+```
+
+You then assemble the router and wrap the application in multiple context providers:
+
+```tsx
+// src/main.tsx
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { routeTree } from './routeTree.gen';
@@ -56,62 +89,66 @@ export function App() {
 }
 ```
 
-You are responsible for wiring the query client into the router context so data can be fetched during navigation, and you rely on a CLI for type-safe route generation.
-
 ### AirLib Setup
 
-AirLib unifies the router and the reactivity graph. You explicitly define your route tree and bind it to the DOM, with no need for separate query caches or CLI generators.
+AirLib unifies the router and the reactivity graph through **assisted file-based routing**:
+
+- **Drop-and-Go Pages** — Dropping a `page.tsx` or `layout.tsx` into `pages/` automatically establishes the route definition with typed exports and starter boilerplate.
+- **Zero Black Boxes** — Routes are not opaque virtual modules hidden inside the compiler. The route definition lives directly in your project as plain TypeScript.
+- **Full Programmatic Power** — Having an explicit route definition alongside your component gives you full control to attach access guards (`.guard()`), asynchronous data loaders (`.provide()`), and route metadata with full IDE autocomplete.
 
 ```tsx
-// routes/route.ts
-import { createRouter } from '@airlib/react';
-
-export const router = createRouter();
-export const rootRoute = router.route();
-```
-
-```tsx
-// routes/layout.tsx
+// pages/layout.tsx
 import { page } from '@airlib/react';
 import { rootRoute } from './route.js';
 
-export const RootLayout = page(rootRoute).render(({ children }) => (
-  <main>
-    <h1>Welcome to AirLib</h1>
+export default page(rootRoute).render(({ children }) => (
+  <div className="app">
+    <header>My App</header>
     {children}
-  </main>
+  </div>
 ));
 ```
 
 ```tsx
-// client.tsx
-import '@airlib/react/client';
-import { UIRouter } from '@airlib/react';
-import { hydrateRoot } from 'react-dom/client';
-import { router } from './routes/route.js';
-import { RootLayout } from './routes/layout.js';
+// pages/page.tsx
+import { page } from '@airlib/react';
+import { rootIndexRoute } from './route.js';
 
-router.activate(window.location.href).then(() => {
-  hydrateRoot(
-    document.getElementById('root')!,
-    <UIRouter router={router} root={RootLayout} headless={true} resetScroll />
-  );
-});
+export default page(rootIndexRoute).render(() => (
+  <main>
+    <h1>Welcome to AirLib</h1>
+  </main>
+));
 ```
 
-Because routing and reactivity are handled by the same underlying engine, there are no nested providers or external caches to orchestrate.
+The accompanying `route.ts` maintains the typed route graph:
+
+```typescript
+// pages/route.ts
+import router from '@/src/router.js';
+
+/** AirLib managed */
+const route = router.route();
+const indexRoute = route.route('/');
+/** AirLib managed */
+
+export const rootRoute = route;
+export const rootIndexRoute = indexRoute;
+
+export default rootRoute;
+```
 
 ## Rendering Paradigms
 
-Both TanStack and AirLib support full-stack rendering, but they differ in how they hydrate the client and share data.
+Both TanStack and AirLib support full-stack rendering, but they differ in how they hydrate the client, orchestrate loaders, and manage asynchronous data.
 
 ### Server-Side Rendering (SSR)
 
-When rendering on the server, you need to fetch data before sending HTML to the client.
+To fetch data on the server and render HTML before sending it to the client, TanStack coordinates router loaders with the query cache, while AirLib uses route data providers.
 
 #### TanStack SSR
-
-In TanStack Router, you define a `loader` that runs before the route renders. When using SSR with TanStack Query, you typically use `queryClient.ensureQueryData` to fetch the data on the server, then dehydrate the cache to the client.
+In TanStack Router, you define a `loader` that runs before the route renders. When paired with TanStack Query, you use `queryClient.ensureQueryData` to populate the server cache, which is then dehydrated to the client:
 
 ```tsx
 import { createFileRoute } from '@tanstack/react-router';
@@ -132,46 +169,44 @@ function UsersPage() {
 
   return (
     <ul>
-      {data.map((u) => <li key={u.id}>{u.name}</li>)}
+      {data.map((u) => (
+        <li key={u.id}>{u.name}</li>
+      ))}
     </ul>
   );
 }
 ```
 
-This ensures the cache is hydrated on the client, preventing a double fetch.
-
 #### AirLib Providers
-
-AirLib blocks the router during navigation if a provider returns a Promise. The router waits for it to resolve before rendering the page, sending the state to the client seamlessly.
+AirLib separates data resolution from view rendering. Attaching `.provide()` to the route resolves data during navigation before the page component renders:
 
 ```typescript
-export const usersRoute = rootRoute
-  .route('/users')
-  .provide('users', () => getUsers()); 
+// pages/users/route.ts
+export const usersRoute = route.provide('users', () => getUsers());
 ```
 
 ```tsx
-import { page } from '@airlib/react';
+// pages/users/page.tsx
+import { For, page } from '@airlib/react';
 import { usersRoute } from './route.js';
 
-export const UsersPage = page(usersRoute).render(({ state }) => (
+export default page(usersRoute).render(({ state }) => (
   <ul>
-    {state.data.users.map((u) => (
-      <li key={u.id}>{u.name}</li>
-    ))}
+    <For each={() => state.data.users}>
+      {({ name }) => <li>{name}</li>}
+    </For>
   </ul>
 ));
 ```
 
-This moves the fetch to the router, keeping the component as a pure view layer.
+The loader logic attaches directly to the route node, keeping the view component a pure, declarative UI layer without external cache dehydration.
 
 ### Pure Client-Side Rendering (CSR)
 
-Sometimes you need to fetch data entirely from the browser.
+When data should be fetched from the browser after initial load, TanStack uses `useQuery`, while AirLib calls isomorphic functions directly within components.
 
-#### TanStack `useQuery`
-
-In TanStack, you use the standard `useQuery` hook inside the component for client-side fetching.
+#### TanStack Client Query
+In TanStack, you use the `useQuery` hook inside the component for client-side fetching:
 
 ```tsx
 import { useQuery } from '@tanstack/react-query';
@@ -181,62 +216,76 @@ export function UsersPage() {
 
   if (isLoading) return <div>Loading...</div>;
 
-  return <ul>{data.map((u) => <li key={u.id}>{u.name}</li>)}</ul>;
+  return (
+    <ul>
+      {data.map((u) => (
+        <li key={u.id}>{u.name}</li>
+      ))}
+    </ul>
+  );
 }
 ```
 
 #### AirLib Component
-
-In AirLib, you just call the function directly in the component.
+In AirLib, IRPC stubs provide reactive helpers like `.once()` directly inside components:
 
 ```tsx
-import { setup, render } from '@airlib/react';
+// pages/users/page.tsx
+import { For, Show, setup } from '@airlib/react';
 import { getUsers } from './function.js';
 
-export const UsersPage = setup(() => {
+export default setup(() => {
   const users = getUsers.once();
 
-  return render(() => {
-    if (users.status === 'pending') return <div>Loading...</div>;
-    return <ul>{users.data.map((u) => <li key={u.id}>{u.name}</li>)}</ul>;
-  });
+  return (
+    <Show when={() => users.data} fallback={() => <div>Loading...</div>}>
+      {(data) => (
+        <ul>
+          <For each={() => data}>
+            {({ name }) => <li>{name}</li>}
+          </For>
+        </ul>
+      )}
+    </Show>
+  );
 });
 ```
 
-There are no cache keys to manually invalidate or network endpoints to write. IRPC handles the serialization, and the component simply reads the resolved state.
+The reactive reader returned by `.once()` automatically tracks loading state and unwraps resolved data without manual cache key orchestration.
 
 ### Hybrid Rendering
 
-To optimize perceived performance, applications often combine SSR for the static layout with CSR for heavy, slow data. Both frameworks allow you to render the shell immediately and stream data to the client.
+To optimize perceived performance, applications often combine SSR for the static layout with CSR for slower data streams.
 
-#### TanStack `defer` & Suspense
-
-In TanStack Router, you return a deferred promise from your loader, and the server leaves a `<Suspense>` placeholder for the slow data.
+#### TanStack Defer & Suspense
+In TanStack Router, you return a deferred promise from your loader, wrapping delayed promises in `<Suspense>` and `<Await>`:
 
 ```tsx
-import { defer, Await } from '@tanstack/react-router';
+import { defer, Await, createFileRoute } from '@tanstack/react-router';
 import { Suspense } from 'react';
 
 export const Route = createFileRoute('/dashboard')({
-  loader: () => {
-    const slowSales = fetch('/api/sales').then((r) => r.json());
-    return {
-      sales: defer(slowSales),
-    };
-  },
+  loader: () => ({
+    sales: defer(fetch('/api/sales').then((r) => r.json())),
+    analytics: defer(fetch('/api/analytics').then((r) => r.json())),
+  }),
   component: DashboardPage,
 });
 
 function DashboardPage() {
-  const { sales } = Route.useLoaderData();
+  const { sales, analytics } = Route.useLoaderData();
 
   return (
     <div className="grid">
-      <header>Dashboard</header>
-      
       <Suspense fallback={<div className="skeleton">Loading sales...</div>}>
         <Await promise={sales}>
           {(data) => <div>{data.total}</div>}
+        </Await>
+      </Suspense>
+
+      <Suspense fallback={<div className="skeleton">Loading analytics...</div>}>
+        <Await promise={analytics}>
+          {(data) => <div>{data.visitors}</div>}
         </Await>
       </Suspense>
     </div>
@@ -244,45 +293,44 @@ function DashboardPage() {
 }
 ```
 
-TanStack leverages React's `<Suspense>` and streaming SSR to solve the Hybrid problem.
-
-#### AirLib Component
-
-AirLib doesn't have special treatment to handle this because a page is just a component, and it renders anywhere (browser or server). We just need to move the data load to the component itself, so the router doesn't block the navigation.
+#### AirLib Non-Blocking Fetching
+In AirLib, pages and components are universal and render seamlessly on both server and browser. Moving data calls into component `.once()` invocations renders the shell instantly while data loads asynchronously.
 
 ```tsx
-import { page, render } from '@airlib/react';
+// pages/dashboard/page.tsx
+import { Show, page } from '@airlib/react';
 import { dashboardRoute } from './route.js';
-import { getSalesData } from './function.js';
+import { getSalesData, getAnalyticsData } from './function.js';
 
-export const DashboardPage = page(dashboardRoute).render(() => {
+export default page(dashboardRoute).render(() => {
   const sales = getSalesData.once();
+  const analytics = getAnalyticsData.once();
 
-  return render(() => (
+  return (
     <div className="grid">
-      <header>Dashboard</header>
-      
-      {sales.status === 'pending' ? (
-        <div className="skeleton">Loading sales...</div>
-      ) : (
-        <div>{sales.data.total}</div>
-      )}
+      <Show when={() => sales.data} fallback={() => <div className="skeleton">Loading sales...</div>}>
+        {(data) => <div>{data.total}</div>}
+      </Show>
+
+      <Show when={() => analytics.data} fallback={() => <div className="skeleton">Loading analytics...</div>}>
+        {(data) => <div>{data.visitors}</div>}
+      </Show>
     </div>
-  ));
+  );
 });
 ```
 
-:::tip[Bonus]
-Since IRPC batches multiple calls on the same tick, **sales** and **analytics** are dispatched in single HTTP Request. Each call streamed and resolve individually as they arrive, neither blocks the other, just pure data streaming.
+:::tip[Automatic Request Batching]
+When multiple IRPC calls occur in the same execution tick, AirLib automatically batches them into a single streaming request. Each call streams and resolves independently without blocking other endpoints.
 :::
 
 ## Mutations and Forms
 
-When sending data to the server, TanStack Query provides `useMutation`, while AirLib relies on direct IRPC calls.
+When sending data to the server, TanStack Query provides `useMutation` requiring manual cache key invalidation, while AirLib relies on direct isomorphic function calls with reactive form state.
 
-### TanStack `useMutation`
+### TanStack Mutations
 
-TanStack handles mutations via the `useMutation` hook. Because the data is cached by query keys, you must manually invalidate those keys after a successful mutation to ensure the UI stays in sync.
+TanStack handles mutations via the `useMutation` hook. Because data is cached under arbitrary query keys, you must manually invalidate matching queries to keep the UI synchronized:
 
 ```tsx
 // components/new-user.tsx
@@ -316,28 +364,34 @@ export function NewUserForm() {
 }
 ```
 
-The disconnect between the mutation logic and the cached query requires manual orchestration via the `QueryClient`.
+The disconnect between mutation responses and cached query trees requires manual orchestration via the `QueryClient`.
 
-### AirLib IRPC Call
+### AirLib IRPC Form Call
 
-In AirLib, calling an IRPC function is no different than calling a local async function. You just pass your rich JavaScript objects directly to the backend function.
+In AirLib, calling an isomorphic remote function passes native typed JavaScript objects directly to the backend function:
 
 ```tsx
-// client/pages/new-user.tsx
-import { setup, render, $bind } from '@airlib/react';
+// pages/users/new/page.tsx
+import { setup, render, mutable } from '@airlib/react';
 import { createUser } from './function.js';
 
-export const NewUserForm = setup((props) => {
+export default setup(() => {
+  const form = mutable({ name: '' });
   const newUser = createUser.later();
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await newUser.dispatch(props.name);
+    await newUser.dispatch(form.name);
   };
 
   return render(() => (
     <form onSubmit={submit}>
-      <Input name="name" value={$bind(props, 'name')} required />
+      <input 
+        name="name" 
+        value={form.name} 
+        onInput={(e) => (form.name = e.currentTarget.value)} 
+        required 
+      />
       <button type="submit" disabled={newUser.status === 'pending'}>
         {newUser.status === 'pending' ? 'Saving...' : 'Create User'}
       </button>
@@ -346,15 +400,13 @@ export const NewUserForm = setup((props) => {
 });
 ```
 
-Because `createUser` is an IRPC stub, you get end-to-end type safety automatically. There is no external cache to manually invalidate; if the state is reactive, it updates seamlessly.
+Because `createUser` is an isomorphic RPC stub, arguments maintain full end-to-end type safety without manual cache invalidation boilerplate.
 
 ## Client State Management
 
-When managing complex interactive state alongside server data, TanStack and AirLib handle reactivity differently.
-
 ### TanStack State
 
-In TanStack, server state lives in the Query Cache, while local UI state is managed via React hooks (`useState`, `useReducer`) or external libraries (Zustand, Redux). 
+In TanStack, server state lives in the Query Cache, while local UI state is managed via React hooks (`useState`, `useReducer`) or external libraries (Zustand, Redux):
 
 ```tsx
 // components/counter.tsx
@@ -371,14 +423,14 @@ export function Counter() {
 }
 ```
 
-This creates a duality where developers must actively decide if a piece of state belongs in the server cache or the local client store.
+This creates a duality where developers must decide whether state belongs in the server cache or local client stores.
 
-### AirLib State
+### AirLib Reactive State
 
-In AirLib, Anchor provides a built-in decoupled reactive state graph. There is no difference between global state, local state, or server state—it is just reactive data.
+AirLib provides a built-in decoupled reactive state graph. Modifying reactive state triggers granular DOM updates without top-down component tree re-renders:
 
 ```tsx
-// client/components/counter.tsx
+// components/counter.tsx
 import { setup, render, mutable } from '@airlib/react';
 
 export const Counter = setup(() => {
@@ -392,28 +444,23 @@ export const Counter = setup(() => {
 });
 ```
 
-Because `mutable` state is just a reactive proxy, you can mutate it directly. There is no difference between local vs global state, where it is declared is the scope of the state.
-
 ## Optimistic UI
 
-Immediate feedback is critical. Both frameworks allow you to optimistically update the UI before the network responds.
+### TanStack Optimistic Cache
 
-### TanStack `onMutate`
-
-In TanStack Query, you achieve optimistic UI by hooking into the `onMutate` callback. You must manually cancel inflight queries, snapshot the previous state, update the cache synchronously, and provide an `onError` handler to roll it back.
+In TanStack Query, you achieve optimistic UI by hooking into the `onMutate` callback. You must manually cancel inflight queries, snapshot previous cache state, mutate the cache synchronously, and handle error rollbacks:
 
 ```tsx
 // components/like-button.tsx
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-export function LikeButton({ post }) {
+export function LikeButton({ post }: { post: { id: string; liked: boolean } }) {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: (id: string) => fetch(`/api/posts/${id}/like`, { method: 'POST' }),
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['posts', id] });
-      
       const previousPost = queryClient.getQueryData(['posts', id]);
       
       queryClient.setQueryData(['posts', id], (old: any) => ({
@@ -436,18 +483,16 @@ export function LikeButton({ post }) {
 }
 ```
 
-This process is robust but highly verbose, requiring you to manually orchestrate the rollback logic and cache manipulation.
+### AirLib Reversible Mutations
 
-### AirLib `undoable`
-
-AirLib provides the `undoable()` primitive. You apply the change instantly to your actual reactive state, and it automatically rolls back if the network request fails.
+AirLib provides the `undoable()` primitive. You apply the mutation directly to your reactive state, and `undoable` automatically records and reverts the exact mutation if the remote promise rejects:
 
 ```tsx
-// client/components/like-button.tsx
+// components/like-button.tsx
 import { setup, render, undoable } from '@airlib/react';
 import { likePost } from './function.js';
 
-export const LikeButton = setup<{ post: any }>((props) => {
+export const LikeButton = setup<{ post: { id: string; liked: boolean } }>((props) => {
   const toggleLike = async () => {
     const [undo, settled] = undoable(() => {
       props.post.liked = !props.post.liked;
@@ -464,12 +509,134 @@ export const LikeButton = setup<{ post: any }>((props) => {
 });
 ```
 
-Because AirLib state is mutable, you literally change the data in place, and `undoable` reverses the exact change if the server rejects it. No snapshots or manual cache orchestration required.
+## Static Generation: SSG & On-Demand ISG
+
+### TanStack Static Workflow
+
+TanStack Router can be exported statically for SPA hosting or wired into custom SSR server pipelines, but it lacks native route-level incremental static generation (ISG) and cache tiering out of the box.
+
+### AirLib SSG & On-Demand Pre-Rendering (ISG)
+
+AirLib allows you to mark individual routes or entire route branches as `static` directly in their route definition:
+
+```typescript
+// pages/docs/route.ts (Build-time SSG)
+export const docsRoute = route.config({ static: true });
+```
+
+During build, `airPages()` runs the worker against static routes and emits plain HTML into `dist/client/`. 
+
+For dynamic paths (like `/blog/:slug`), AirLib provides **On-Demand Pre-Rendering (ISG)**:
+
+```typescript
+// pages/blog/route.ts (On-Demand ISG)
+export const blogSlugRoute = slugRoute.config({ static: { maxAge: 3600 } });
+```
+
+On the first request to a new slug, the worker renders the page once and saves the static HTML to disk (or a custom `cacheAdapter` such as Cloudflare KV or Redis). Every subsequent request serves the static file instantly. When `maxAge` expires, the next request transparently refreshes the cached HTML in the background.
+
+## Zero-JavaScript Delivery (Astro-like)
+
+Content-centric websites (documentation, blogs, marketing pages) rarely need full client-side framework hydration on every page.
+
+### TanStack JS Footprint
+
+TanStack requires client hydration scripts to initialize Router and Query stores, shipping the full React runtime and state machinery on all pages.
+
+### AirLib Zero-JavaScript Delivery
+
+AirLib supports true zero-JavaScript delivery both **per-route** and **project-wide**:
+
+#### Per-Route Zero-JavaScript
+You can strip client JavaScript on specific content routes (e.g., landing, blog, or documentation pages) while keeping other application routes fully hydrated:
+
+```typescript
+// pages/about/route.ts
+export const aboutRoute = route.config({ noscript: true });
+```
+
+#### Project-Wide Zero-JavaScript
+For entirely static sites or documentation portals, enable `noscript` globally in your Vite configuration:
+
+```typescript
+// vite.config.ts
+import { defineConfig } from 'vite';
+import { airPages } from '@airlib/vite';
+
+export default defineConfig({
+  plugins: [
+    airPages({
+      noscript: true, // Ships pure static HTML/CSS with 0KB client JavaScript site-wide
+    }),
+  ],
+});
+```
+
+When rendered, static pages are emitted as dehydrated HTML files with `<script>` tags completely stripped, achieving instant First Contentful Paint (FCP) and 100/100 Lighthouse performance.
+
+## Extended Markdown & Content Authoring
+
+### TanStack MDX Workflow
+
+In TanStack, Markdown and MDX require configuring external bundler loaders, remark/rehype plugins, and manual component wrapping.
+
+### AirLib Extended MDX
+
+AirLib includes built-in, zero-config Extended Markdown (`.page.mdx`). You simply create `.page.mdx` files inside `pages/`:
+
+- **Frontmatter as Route Metadata** — YAML frontmatter automatically integrates with the route tree, navigation sidebar, and document `<Head>`.
+- **Built-in Admonitions** — Native support for `:::note`, `:::tip`, `:::warning`, `:::danger`, and `:::details`.
+- **Tabbed Code Groups** — Native `:::code-group` blocks for multi-language and multi-package manager examples.
+- **Embedded JSX** — Embed live, interactive React or SolidJS components directly inside markdown without boilerplate wrapper files.
+
+## Performance & Reactivity Footprint
+
+### Deferred Hydration & Instant FCP
+
+In traditional frameworks, client-side hydration scripts execute immediately when JavaScript chunks load, competing with the browser's main-thread rendering and layout passes.
+
+In AirLib, **SSR always delivers 100% complete, fully styled HTML**. Because the user already sees the full visual state, AirLib **defers client hydration by default** (customizable per-route via `deferred`). This gives the browser time to paint the page instantly without main-thread jank, delivering instant First Contentful Paint (FCP) and near-zero Total Blocking Time (TBT).
+
+| Performance Vector | TanStack (Router + Query) | AirLib |
+|---|---|---|
+| **First Contentful Paint (FCP)** | Hydration scripts compete with initial render | Instant FCP (Complete SSR HTML + deferred hydration) |
+| **Hydration Strategy** | Immediate synchronous client hydration | Non-blocking deferred hydration (configurable via `deferred`) |
+| **Reactivity Model** | Virtual DOM reconciliation & query key cache checks | Fine-grained proxy mutations updating only touched DOM nodes |
+| **Data Fetching Overhead** | Independent HTTP requests per query | Automatic tick-based IRPC request batching & streaming |
+| **Static Bundle Size** | Full React runtime + Query engine on all routes | 0KB JavaScript static delivery option (`noscript`) |
+| **Server Cold Starts** | Custom Node.js setup | Lightweight universal worker runnable across Bun, Node, Deno, & Edge |
+
+## Multi-Runtime Deployment
+
+TanStack Router is runtime-agnostic on the client, but SSR requires custom server plumbing for each deployment target.
+
+AirLib builds a single **Universal SSR Worker** (`createApp`) that deploys identically across all major JavaScript runtimes with zero adapter overhead:
+
+- **Bun** — `Bun.serve({ fetch: worker.fetch, websocket: worker.websocket })`
+- **Node.js** — Native Hono/Node adapter
+- **Deno** — `Deno.serve((req) => worker.fetch(req))`
+- **Cloudflare Workers** — `export default { fetch: (req, env) => worker.fetch(req, env) }`
+
+## Architectural Summary
+
+| Dimension | TanStack (Router + Query) | AirLib |
+|---|---|---|
+| **Routing** | Code/file-based routing with CLI codegen | Assisted file-based routing |
+| **State & Reactivity** | Immutable VDOM re-renders & Query Cache | Fine-grained reactive state |
+| **Remote Functions** | Manual fetchers & query key invalidation | Isomorphic remote functions & streams |
+| **Component Model** | Route module boundaries | Universal components |
+| **Form Handling** | useMutation & manual status hooks | Direct reactive form state |
+| **State Mutation** | Manual cache snapshots & rollback handlers | Direct reversible state mutations |
+| **Hydration & FCP** | Immediate hydration competing with paint | Instant FCP & deferred hydration |
+| **Static Generation** | SPA static build or custom SSR | Granular SSG & on-demand ISG |
+| **Markdown / Content** | Manual remark/rehype plugins | Built-in Extended MDX (`.page.mdx`) |
+| **Static JS Footprint** | Ships full React runtime | Zero-JavaScript static delivery option |
+| **SSR Engine** | Custom server integrations | Zero-adapter universal SSR worker |
 
 ## Final thoughts
 
-TanStack and AirLib both provide excellent tools for building SPAs, but they approach the problem from different angles.
+TanStack and AirLib approach full-stack React from different engineering philosophies:
 
-**Choose TanStack if:** You prefer assembling your stack from modular, headless utilities. If you are building around standard REST or GraphQL APIs and need granular control over cache lifetimes and query invalidation, TanStack Query is unmatched.
+**Choose TanStack if:** You prefer assembling your stack from modular, headless utilities. If you are building around existing REST or GraphQL APIs and need granular control over cache lifetimes and query keys, TanStack Query is unmatched.
 
-**Choose AirLib if:** You prefer a unified ecosystem over assembled utilities. If you want a fine-grained reactive graph where routing, data fetching, and local state share the exact same reactive engine and type-safe function calls, AirLib provides a cleaner, more predictable developer experience.
+**Choose AirLib if:** You prefer a unified ecosystem where routing, data fetching, and state management share the exact same reactive engine and type-safe function calls. With assisted file-based routing, zero-JS static publishing, built-in MDX authoring, and native zero-adapter deployment across Bun, Node.js, Deno, and Cloudflare, AirLib delivers a cohesive full-stack developer experience.

@@ -55,7 +55,7 @@ const Header = setup<HeaderProps, HeaderSlots>((props, snippets) => {
         </Slot>
         <ul className="air-header-socials">
           <li>
-            <a href="https://github.com/beerush-id/airlib" target="_blank">
+            <a href="https://github.com/beerush-id/airstack" target="_blank">
               <GitHubIcon />
               <span>GitHub</span>
             </a>

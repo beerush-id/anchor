@@ -1,5 +1,8 @@
+/** @jsxImportSource solid-js */
+
 import { render as renderDom } from '@solidjs/testing-library';
 import { describe, expect, it } from 'vitest';
+import '../src/client/index.js';
 import { cookiePair } from '../src/cookie.js';
 import { setup } from '../src/hoc.js';
 
@@ -13,7 +16,7 @@ describe('Anchor Solid - cookiePair', () => {
       capturedTheme = theme;
       capturedStore = store;
 
-      return () => (
+      return (
         <div data-testid="theme">
           {theme.mode} - {theme.fontSize}
         </div>
@@ -40,7 +43,7 @@ describe('Anchor Solid - cookiePair', () => {
   it('supports non-deferred cookiePair in component lifecycle', async () => {
     const TestComponent = setup(() => {
       const [theme] = cookiePair('session_theme_solid', { mode: 'system' });
-      return () => <div>{theme.mode}</div>;
+      return <div>{theme.mode}</div>;
     });
 
     const { unmount } = renderDom(() => <TestComponent />);
@@ -50,7 +53,7 @@ describe('Anchor Solid - cookiePair', () => {
   it('supports deferred cookiePair in component lifecycle', async () => {
     const TestDeferred = setup(() => {
       const [pref] = cookiePair('pref_cookie_solid', { lang: 'en' }, { deferred: true });
-      return () => <div>{pref.lang}</div>;
+      return <div>{pref.lang}</div>;
     });
 
     const { unmount } = renderDom(() => <TestDeferred />);

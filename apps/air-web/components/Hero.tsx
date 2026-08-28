@@ -57,7 +57,7 @@ const classes = {
   install:
     'mt-5 inline-flex rounded-lg border border-border bg-surface-variant px-4 py-2 font-mono text-sm text-on-surface',
   cta: 'air-cta',
-  link: 'inline-flex items-center gap-2 rounded-md border border-border bg-surface-variant px-5 py-2.5 text-base font-semibold text-on-surface no-underline transition-shadow duration-300 hover:shadow-pop',
+  link: 'air-cta-dark',
 };
 
 type Vec3 = { x: number; y: number; z: number };
