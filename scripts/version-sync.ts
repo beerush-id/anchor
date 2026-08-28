@@ -17,13 +17,14 @@ interface PackageManifest {
 }
 
 /**
- * Replaces `workspace:*` dependencies across monorepo package manifests
- * with the root package version or a specified target version.
+ * Replaces `workspace:*` dependencies and synchronizes package manifest versions
+ * across monorepo packages with the root package version or a specified target version.
  *
- * @param targetVersion - Version string to replace `workspace:*` with, or `undefined` to use root version.
+ * @param targetVersion - Target version string to apply, or `undefined` to use root version.
+ * @param isRevert - Whether this operation is reverting workspace dependencies back to `workspace:*`.
  * @returns Summary of modified package manifest paths.
  */
-export function replaceWorkspaceVersions(targetVersion?: string): string[] {
+export function replaceWorkspaceVersions(targetVersion?: string, isRevert = false): string[] {
   const rootManifestPath = join(ROOT_DIR, 'package.json');
   const rootManifest = readManifest(rootManifestPath);
   const version = targetVersion || rootManifest.version;
@@ -36,7 +37,7 @@ export function replaceWorkspaceVersions(targetVersion?: string): string[] {
   const updatedFiles: string[] = [];
 
   for (const manifestPath of manifestPaths) {
-    const updated = updateManifestDependencies(manifestPath, version);
+    const updated = updateManifest(manifestPath, version, isRevert);
     if (updated) {
       updatedFiles.push(manifestPath);
     }
@@ -53,7 +54,7 @@ export function replaceWorkspaceVersions(targetVersion?: string): string[] {
  */
 export function discoverPackageManifests(rootManifest: PackageManifest): string[] {
   const manifestPaths = new Set<string>();
-  const patterns = rootManifest.workspaces || [];
+  const patterns = Array.from(new Set([...(rootManifest.workspaces || []), 'templates/*']));
 
   manifestPaths.add(join(ROOT_DIR, 'package.json'));
 
@@ -80,16 +81,24 @@ export function discoverPackageManifests(rootManifest: PackageManifest): string[
 }
 
 /**
- * Updates dependency declarations containing `workspace:*` in a single package manifest.
+ * Updates dependency declarations and version field in a single package manifest.
  *
  * @param filePath - Absolute path to the package.json file.
- * @param targetVersion - The version string to replace `workspace:*` with.
+ * @param targetVersion - The version string to apply.
+ * @param isRevert - When true, only resets workspace dependencies to `workspace:*` without altering package version.
  * @returns True if the file content changed and was written, false otherwise.
  */
-export function updateManifestDependencies(filePath: string, targetVersion: string): boolean {
+export function updateManifest(filePath: string, targetVersion: string, isRevert = false): boolean {
   const content = readFileSync(filePath, 'utf8');
   const manifest: PackageManifest = JSON.parse(content);
   let changed = false;
+
+  if (!isRevert && manifest.version && manifest.version !== targetVersion) {
+    manifest.version = targetVersion;
+    changed = true;
+  }
+
+  const dependencyTarget = isRevert ? 'workspace:*' : targetVersion;
 
   for (const field of DEPENDENCY_FIELDS) {
     const deps = manifest[field] as Record<string, string> | undefined;
@@ -98,9 +107,16 @@ export function updateManifestDependencies(filePath: string, targetVersion: stri
     }
 
     for (const [pkgName, specifier] of Object.entries(deps)) {
-      if (specifier === 'workspace:*') {
-        deps[pkgName] = targetVersion;
-        changed = true;
+      if (isRevert) {
+        if (specifier === targetVersion) {
+          deps[pkgName] = dependencyTarget;
+          changed = true;
+        }
+      } else if (specifier === 'workspace:*' || specifier !== dependencyTarget) {
+        if (specifier === 'workspace:*') {
+          deps[pkgName] = dependencyTarget;
+          changed = true;
+        }
       }
     }
   }
@@ -126,12 +142,13 @@ function readManifest(filePath: string): PackageManifest {
 // CLI Execution
 if (process.argv[1] === __filename) {
   const isRevert = process.argv.includes('--revert');
-  const customVersionArg = process.argv.slice(2).find((arg) => !arg.startsWith('--'));
-  const targetVersion = isRevert ? 'workspace:*' : customVersionArg;
+  const customVersion = process.argv.slice(2).find((arg) => !arg.startsWith('--'));
 
   try {
-    const updated = replaceWorkspaceVersions(targetVersion);
-    const label = isRevert ? 'Reverted to workspace:*' : 'Updated workspace:* to version';
+    const updated = replaceWorkspaceVersions(customVersion, isRevert);
+    const label = isRevert
+      ? 'Reverted workspace dependencies to workspace:*'
+      : 'Synchronized package versions and workspace dependencies';
     console.log(`\n✨ Successfully processed package manifests (${label})`);
     console.log(`Modified ${updated.length} file(s):`);
     for (const file of updated) {
