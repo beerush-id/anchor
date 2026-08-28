@@ -19,8 +19,8 @@ export const Runtime = setup(() => {
               handler. Every runtime entry in this codebase imports that same built worker and serves it.
             </p>
             <p className={classes.body}>
-              Bun, Node, Deno, or Cloudflare Workers becomes a deployment choice made after the fact: swap the
-              entry file, keep the build.
+              Bun, Node, Deno, or Cloudflare Workers becomes a deployment choice made after the fact: swap the entry
+              file, keep the build.
             </p>
             <Link to={docsUniversalSsrRoute} className={classes.more}>
               Learn multi-runtime deployment &rarr;

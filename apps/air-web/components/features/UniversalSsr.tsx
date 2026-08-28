@@ -20,9 +20,9 @@ export const UniversalSsr = setup(() => {
               config.
             </p>
             <p className={classes.body}>
-              And it reaches further than rendering: extended Markdown content pages, build-time static generation
-              and on-demand regeneration for dynamic pages, and sitemaps generated straight from your route tree —
-              all out of the box.
+              And it reaches further than rendering: extended Markdown content pages, build-time static generation and
+              on-demand regeneration for dynamic pages, and sitemaps generated straight from your route tree — all out
+              of the box.
             </p>
             <Link to={docsUniversalSsrRoute} className={classes.more}>
               Learn universal SSR &rarr;

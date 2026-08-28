@@ -11,14 +11,13 @@ export const Workflow = setup(() => {
             <span className={classes.eyebrow}>Workflow</span>
             <h2 className={classes.title}>Reactive, Promise-like Pipelines</h2>
             <p className={classes.body}>
-              A workflow turns multi-step async logic into one typed pipeline: sequential steps, branching on your
-              data, and recovery from failure — declared once, and the whole chain is a promise you can await anywhere
+              A workflow turns multi-step async logic into one typed pipeline: sequential steps, branching on your data,
+              and recovery from failure — declared once, and the whole chain is a promise you can await anywhere
               JavaScript runs.
             </p>
             <p className={classes.body}>
-              Because pipelines plug into the reactive engine, they can wait on state before running and report
-              progress step by step — the same workflow that powers a server handler can drive a live progress bar in
-              the UI.
+              Because pipelines plug into the reactive engine, they can wait on state before running and report progress
+              step by step — the same workflow that powers a server handler can drive a live progress bar in the UI.
             </p>
             <Link to={workflowIndexRoute} className={classes.more}>
               Learn workflows &rarr;

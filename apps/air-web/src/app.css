@@ -87,10 +87,6 @@
     font: 16px / 145% var(--font-sans);
     font-synthesis: none;
     text-rendering: optimizeLegibility;
-
-    @media (width >= 64rem) {
-      font-size: 18px;
-    }
   }
 
   .air-main,
