@@ -12,6 +12,7 @@
     "start:node": "NODE_ENV=production node server/node.js",
     "start:deno": "NODE_ENV=production deno run --allow-net --allow-read --allow-env server/deno.js",
     "lint": "oxlint",
+    "test": "vitest --run",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -33,6 +34,7 @@
     "@vitejs/plugin-react": "catalog:",
     "tailwindcss": "catalog:app",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vitest": "catalog:"
   }
 }

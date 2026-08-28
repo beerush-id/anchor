@@ -1302,7 +1302,8 @@ describe('mdx attach & metadata names — edge cases', () => {
     const app = makeApp(dir);
 
     writeFixture(dir, {
-      'pages/parent/child/route.ts': "import parentRoute from '../route.js';\nexport default parentRoute.route('/child');",
+      'pages/parent/child/route.ts':
+        "import parentRoute from '../route.js';\nexport default parentRoute.route('/child');",
     });
 
     const childFolder = app.rootFolder.children.get('parent')!.children.get('child')!;

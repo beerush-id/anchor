@@ -1,4 +1,5 @@
 User-agent: *
+Disallow: /demos/
 Allow: /
 
 Sitemap: https://airlib.dev/sitemap.xml

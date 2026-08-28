@@ -1,8 +1,9 @@
 import { anchor, mutable, safeRun } from '@airlib/react/core';
 import { stream } from '@irpclib/irpc';
 import { irpc } from '@/src/api.js';
-import '../components/features/constructor.js';
 import { type Visitor, visitor } from './function.js';
+
+import.meta.glob('../components/**/constructor.ts', { eager: true });
 
 const VISITOR_MAP = safeRun(() => mutable({} as Record<string, Visitor>));
 const timeouts = new Map<string, ReturnType<typeof setTimeout>>();
