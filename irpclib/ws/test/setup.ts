@@ -1,4 +1,4 @@
-import { anchor } from '@airlib/core';
+import { anchor } from '@irpclib/irpc/core';
 import { beforeEach, vi } from 'vitest';
 
 beforeEach(() => {

@@ -1,4 +1,3 @@
-import { COOKIE_JAR_WRITABLE, decodeCookies, replay, setCookieContext, setScope } from '@airlib/core';
 import {
   createContextStore,
   createCredentials,
@@ -23,6 +22,7 @@ import {
   ResolveError,
   withContext,
 } from '@irpclib/irpc';
+import { COOKIE_JAR_WRITABLE, decodeCookies, replay, setCookieContext, setScope } from '@irpclib/irpc/core';
 import { IRPC_DEFAULT_HEARTBEAT, IRPC_JSON_KEY, IRPC_WEB_PATH } from './enum.js';
 import { COOKIES_SYNC_KEY, type HTTPTransport } from './transport.js';
 

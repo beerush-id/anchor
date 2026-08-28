@@ -1,4 +1,3 @@
-import { COOKIE_JAR_KEY, COOKIE_JAR_WRITABLE, cookies, getScope } from '@airlib/core';
 import {
   createPackage,
   credential,
@@ -8,6 +7,7 @@ import {
   type RemoteState,
   stream,
 } from '@irpclib/irpc';
+import { COOKIE_JAR_KEY, COOKIE_JAR_WRITABLE, cookies, getScope } from '@irpclib/irpc/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { IRPC_WEB_PATH } from '../../src/enum.js';
 import { COOKIES_SYNC_KEY, HTTPTransport, IRPC_JSON_KEY } from '../../src/index.js';

@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@irpclib/broadcast",
-  "version": "2.0.5",
+  "version": "2.0.2",
   "types": "./dist/index.d.ts",
   "module": "./dist/index.js",
   "exports": {
@@ -24,7 +24,6 @@
     "access": "public"
   },
   "dependencies": {
-    "@airlib/core": "workspace:*",
     "@irpclib/irpc": "workspace:*"
   },
   "devDependencies": {
