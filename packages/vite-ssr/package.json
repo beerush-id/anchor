@@ -56,12 +56,17 @@
     "@irpclib/ws": "workspace:*",
     "@mdx-js/mdx": "catalog:lib",
     "@napi-rs/image": "catalog:lib",
+    "@shikijs/rehype": "catalog:lib",
+    "@shikijs/transformers": "catalog:lib",
     "@types/mdast": "catalog:lib",
     "chokidar": "catalog:lib",
     "magic-string": "catalog:lib",
     "oxc-parser": "catalog:lib",
     "rehype-autolink-headings": "catalog:lib",
     "rehype-slug": "catalog:lib",
+    "remark-directive": "catalog:lib",
+    "remark-gfm": "catalog:lib",
+    "shiki": "catalog:lib",
     "unified": "catalog:lib",
     "unist-util-visit": "catalog:lib",
     "ws": "catalog:lib",
@@ -69,13 +74,6 @@
   },
   "peerDependencies": {
     "vite": "catalog:lib"
-  },
-  "optionalDependencies": {
-    "@shikijs/rehype": "catalog:lib",
-    "@shikijs/transformers": "catalog:lib",
-    "remark-directive": "catalog:lib",
-    "remark-gfm": "catalog:lib",
-    "shiki": "catalog:lib"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
