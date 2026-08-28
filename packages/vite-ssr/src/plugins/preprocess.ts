@@ -27,15 +27,12 @@ export function airPreprocess(options: Partial<AirPreprocessOptions> = {}) {
         initEnv(config);
         setLogLevel(options.logLevel);
       },
-      transform(code) {
-        if (AIR_ENV.framework !== 'react') return;
-        if (this.environment?.name !== 'client') return;
-        if (!code.includes('__AIR_REACT_CLIENT_INIT__')) return;
-
-        log.verbose(color.event('Injected client import'));
+      transform(code, id) {
+        if (!id.endsWith(AIR_ENV.files.client)) return;
         const magic = new MagicString(code);
         magic.prepend('import "@airlib/react/client";');
 
+        log.info(color.event('Injected client import'), color.file(id));
         return { code: magic.toString(), map: magic.generateMap({ hires: true }) };
       },
     } as Plugin,

@@ -1,3 +1,5 @@
+import './client/index.js';
+
 export const __AIR_REACT_CLIENT_INIT__ = 'preprocessed';
 
 export type {
@@ -46,7 +48,6 @@ export type {
   UnitProvider,
   Writable,
 } from '@airlib/core';
-
 export {
   $module,
   $symbol,

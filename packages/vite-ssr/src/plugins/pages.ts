@@ -9,7 +9,7 @@ import type { MdxExtendedOptions } from '../modules/markdown.js';
 import { type AirWorkerOptions, airWorker, resolveWorkerEntry } from '../worker.js';
 import { type AirImageOptions, airImage } from './image.js';
 import { type AirMarkdownOptions, airMarkdown } from './markdown.js';
-import { airPreprocess } from './preprocess.js';
+// import { airPreprocess } from './preprocess.js';
 import { airSearch, type MdxSearchOptions } from './search.js';
 
 const log = taggedLogger('air-pages');
@@ -330,7 +330,7 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
     ...(typeof options.markdown === 'object' ? options.markdown : {}),
   } as AirMarkdownOptions;
 
-  plugins.push(...airPreprocess({ ...mdOptions, markdown: options.markdown !== false }));
+  // plugins.push(...airPreprocess({ ...mdOptions, markdown: options.markdown !== false }));
 
   if (options.markdown !== false) {
     plugins.push(...airMarkdown(mdOptions));
