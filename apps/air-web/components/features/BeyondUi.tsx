@@ -23,6 +23,9 @@ export const BeyondUi = setup(() => {
           <p className="mt-8 text-center text-sm font-medium text-on-surface">
             Open your Network tab to inspect streaming Fetch chunks in HTTP mode or live frames in WebSocket mode.
           </p>
+          <p className="mt-1 text-center text-xs text-on-surface-variant/70 italic">
+            * Note: All stock tickers, prices, and charts in this demo are simulated data generated to illustrate real-time streaming deltas.
+          </p>
 
           <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
             <div className="air-card">

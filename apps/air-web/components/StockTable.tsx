@@ -37,8 +37,9 @@ export const StockTable = setup<StockTableProps>((props) => {
     <div className={classx('flex flex-col gap-6 lg:flex-row lg:items-stretch', props.className)}>
       {/* Left: Market Overview List */}
       <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-border bg-surface">
-        <div className="border-b border-border px-5 py-3.5">
+        <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
           <div className="text-sm font-semibold text-on-surface">Market Overview</div>
+          <span className="text-xs text-on-surface-variant/70 italic">Simulated Demo Data</span>
         </div>
 
         <div className="divide-y divide-border/60 overflow-y-auto">
