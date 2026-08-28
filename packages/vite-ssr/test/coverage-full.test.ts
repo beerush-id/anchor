@@ -7,7 +7,7 @@ import { FolderNode } from '../src/modules/folder-node.js';
 import { ManifestNode } from '../src/modules/manifest.js';
 import { mdxEntryWrapper } from '../src/modules/markdown.js';
 import { MarkdownNode } from '../src/modules/markdown-node.js';
-import { RouteNode } from '../src/modules/route-node.js';
+import { hasChildRoute, isRouteFolder, RouteNode } from '../src/modules/route-node.js';
 import type { AnyType } from '../src/types.js';
 import { matchFrontmatter, parseFrontmatterBlock } from '../src/utils/frontmatter.js';
 import { deriveEntryImport, deriveLayoutImport, deriveRootImport, deriveRouterImport } from '../src/utils/mapper.js';
@@ -1226,5 +1226,90 @@ describe('mdx attach & metadata names — edge cases', () => {
     expect(output).toContain("import router from '@/src/router.js';");
     expect(output).toContain('export const rootRoute = route;');
     expect(output).toContain('export const rootIndexRoute = indexRoute;');
+  });
+
+  it('detects route folders with named pages or descendant routes', () => {
+    const root = new FolderNode('/test/pages');
+    const child = new FolderNode('/test/pages/sub', root);
+    root.children.set('sub', child);
+    child.files.add('custom.page.tsx');
+
+    expect(isRouteFolder(child, DEFAULT_FILE_MAP)).toBe(true);
+    expect(hasChildRoute(root, DEFAULT_FILE_MAP)).toBe(true);
+
+    const emptyRoot = new FolderNode('/test/pages');
+    const nonRouteChild = new FolderNode('/test/pages/components', emptyRoot);
+    emptyRoot.children.set('components', nonRouteChild);
+    nonRouteChild.files.add('Button.tsx');
+    expect(isRouteFolder(emptyRoot, DEFAULT_FILE_MAP)).toBe(false);
+
+    const deepRoot = new FolderNode('/test/pages');
+    const midFolder = new FolderNode('/test/pages/nested', deepRoot);
+    const leafFolder = new FolderNode('/test/pages/nested/leaf', midFolder);
+    deepRoot.children.set('nested', midFolder);
+    midFolder.children.set('leaf', leafFolder);
+    leafFolder.files.add('page.tsx');
+    expect(isRouteFolder(deepRoot, DEFAULT_FILE_MAP)).toBe(true);
+  });
+
+  it('scaffolds parent layout when page.tsx is added to a folder that already has child routes', () => {
+    const dir = makeFixture({
+      'router.ts': '',
+      'pages/blogs/[slug]/page.tsx': '',
+    });
+    const app = makeApp(dir);
+
+    writeFixture(dir, {
+      'pages/blogs/page.tsx': '',
+    });
+    const blogsFolder = app.rootFolder.children.get('blogs')!;
+    blogsFolder.handleFileAdded('page.tsx');
+
+    expect(fixtureExists(dir, 'pages/blogs/layout.tsx')).toBe(true);
+    app.destroy();
+    cleanFixture(dir);
+  });
+
+  it('scaffolds parent layout when a child folder with route files is added dynamically', () => {
+    const dir = makeFixture({
+      'router.ts': '',
+      'pages/parent/page.tsx': '',
+    });
+    const app = makeApp(dir);
+
+    const parentFolder = app.rootFolder.children.get('parent')!;
+    writeFixture(dir, {
+      'pages/parent/child/page.tsx': '',
+    });
+
+    const childFolder = new FolderNode(fixturePath(dir, 'pages/parent/child'), parentFolder);
+    childFolder.scan();
+    parentFolder.children.set('child', childFolder);
+
+    parentFolder.emit('childAdded', childFolder);
+
+    expect(fixtureExists(dir, 'pages/parent/layout.tsx')).toBe(true);
+    app.destroy();
+    cleanFixture(dir);
+  });
+
+  it('updates state and notifies parent when route.ts is added dynamically', () => {
+    const dir = makeFixture({
+      'router.ts': '',
+      'pages/parent/page.tsx': '',
+      'pages/parent/child/something.txt': '',
+    });
+    const app = makeApp(dir);
+
+    writeFixture(dir, {
+      'pages/parent/child/route.ts': "import parentRoute from '../route.js';\nexport default parentRoute.route('/child');",
+    });
+
+    const childFolder = app.rootFolder.children.get('parent')!.children.get('child')!;
+    childFolder.handleFileAdded('route.ts');
+
+    expect(fixtureExists(dir, 'pages/parent/layout.tsx')).toBe(true);
+    app.destroy();
+    cleanFixture(dir);
   });
 });

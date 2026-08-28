@@ -87,9 +87,15 @@ export class RouteNode extends EventEmitter {
     folderNode.on('childRemoved', this.handleChildRemoved);
   }
 
-  /** Whether this route has child routes (subfolders or named pages). */
+  /** Whether this route has child routes (subfolders with route files or named pages). */
   public get hasChildren(): boolean {
-    return this.folderNode.children.size > 0 || this.namedPages.size > 0;
+    if (this.namedPages.size > 0) return true;
+    for (const child of this.children.values()) {
+      if (child.route || child.page || child.layout || child.namedPages.size > 0 || child.hasChildren) {
+        return true;
+      }
+    }
+    return hasChildRoute(this.folderNode, this.fileMap);
   }
 
   /**
@@ -313,6 +319,7 @@ export class RouteNode extends EventEmitter {
 
     if (this.parent) {
       this.parent.ensureRouteFile();
+      this.parent.notifyChildRouteAdded();
     }
 
     const isTopLevel = this.routePath.startsWith('(') && this.routePath.endsWith(')');
@@ -417,14 +424,68 @@ export class RouteNode extends EventEmitter {
     this.emit('change', routeFilePath, kind);
   }
 
+  /**
+   * Notifies this route node and its ancestors that a child route was created or activated.
+   * Ensures parent layout files are scaffolded when required by child routes.
+   */
+  public notifyChildRouteAdded(): void {
+    let layoutCreated = false;
+    if (this.page && !this.layout) {
+      layoutCreated = this.ensureLayoutFile();
+    }
+
+    if (layoutCreated) {
+      this.ensureRouteFile();
+      void this.fillMissingExports();
+      this.syncUIFiles();
+      this.emitChange('reload');
+    }
+
+    this.parent?.notifyChildRouteAdded();
+  }
+
+  /**
+   * Creates layout.tsx when the route has children but no layout.
+   */
+  public ensureLayoutFile(): boolean {
+    if (this.layout || this.framework === undefined) return false;
+    const layoutFilePath = path.join(this.folderNode.dir, this.fileMap.layout);
+    if (fs.existsSync(layoutFilePath)) return false;
+
+    const content = scaffoldLayoutTsx({
+      framework: this.framework,
+      rel: this.folderNode.rel,
+      routeExport: this.routeName,
+      files: this.fileMap,
+    });
+
+    try {
+      fs.mkdirSync(path.dirname(layoutFilePath), { recursive: true });
+      fs.writeFileSync(layoutFilePath, content);
+      log.debug(color.event('Generated layout'), color.file(`${this.displayPath}${this.fileMap.layout}`));
+      this.layout = true;
+      this.folderNode.files.add(this.fileMap.layout);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   private handleFileAdded = (name: string) => {
     let changed = false;
 
-    if (name === this.fileMap.page) {
+    if (name === this.fileMap.route) {
+      this.route = true;
+      void this.resolveExportNames();
+      void this.fillMissingExports();
+      this.parent?.notifyChildRouteAdded();
+      changed = true;
+    } else if (name === this.fileMap.page) {
       this.page = 'tsx';
       if (this.hasChildren && !this.layout) {
         this.ensureLayoutFile();
       }
+      this.parent?.notifyChildRouteAdded();
       changed = true;
     } else if (name === this.fileMap.pageMdx) {
       if (!this.page) {
@@ -432,12 +493,14 @@ export class RouteNode extends EventEmitter {
         if (this.hasChildren && !this.layout) {
           this.ensureLayoutFile();
         }
+        this.parent?.notifyChildRouteAdded();
         changed = true;
       }
     } else if (name === this.fileMap.layout || name === this.fileMap.layoutMdx) {
       /* istanbul ignore else */
       if (!this.layout) {
         this.layout = true;
+        this.parent?.notifyChildRouteAdded();
         changed = true;
       }
     } else if (isNamedPage(name, this.fileMap)) {
@@ -447,6 +510,7 @@ export class RouteNode extends EventEmitter {
         if (this.page && !this.layout) {
           this.ensureLayoutFile();
         }
+        this.parent?.notifyChildRouteAdded();
         changed = true;
       }
     }
@@ -507,33 +571,6 @@ export class RouteNode extends EventEmitter {
     }
   };
 
-  /**
-   * Creates layout.tsx when the route has children but no layout.
-   */
-  public ensureLayoutFile(): boolean {
-    if (this.layout || this.framework === undefined) return false;
-    const layoutFilePath = path.join(this.folderNode.dir, this.fileMap.layout);
-    if (fs.existsSync(layoutFilePath)) return false;
-
-    const content = scaffoldLayoutTsx({
-      framework: this.framework,
-      rel: this.folderNode.rel,
-      routeExport: this.routeName,
-      files: this.fileMap,
-    });
-
-    try {
-      fs.mkdirSync(path.dirname(layoutFilePath), { recursive: true });
-      fs.writeFileSync(layoutFilePath, content);
-      log.debug(color.event('Generated layout'), color.file(`${this.displayPath}${this.fileMap.layout}`));
-      this.layout = true;
-      this.folderNode.files.add(this.fileMap.layout);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
   private handleFileChanged = (name: string) => {
     if (name === this.fileMap.route) {
       void this.resolveExportNames();
@@ -545,19 +582,8 @@ export class RouteNode extends EventEmitter {
   };
 
   private handleChildAdded = (childFolder: FolderNode) => {
-    let layoutCreated = false;
-    if (this.page && !this.layout) {
-      layoutCreated = this.ensureLayoutFile();
-    }
     const child = this.addChild(childFolder);
     child.boot();
-
-    if (layoutCreated) {
-      this.ensureRouteFile();
-      void this.fillMissingExports();
-      this.syncUIFiles();
-      this.emitChange('reload');
-    }
   };
 
   private handleChildRemoved = (childFolder: FolderNode) => {
@@ -567,4 +593,53 @@ export class RouteNode extends EventEmitter {
     child.destroy();
     this.emitChange('reload');
   };
+}
+
+/**
+ * Checks whether a folder or any of its descendant folders contains route files.
+ *
+ * @param folder Folder node to evaluate.
+ * @param fileMap File name mapping for route contracts.
+ * @returns `true` if the folder contains a route file or has subfolders with route files.
+ */
+export function isRouteFolder(folder: FolderNode, fileMap: FileMap): boolean {
+  if (
+    folder.files.has(fileMap.route) ||
+    folder.files.has(fileMap.page) ||
+    folder.files.has(fileMap.pageMdx) ||
+    folder.files.has(fileMap.layout) ||
+    folder.files.has(fileMap.layoutMdx)
+  ) {
+    return true;
+  }
+
+  for (const file of folder.files) {
+    if (isNamedPage(file, fileMap)) {
+      return true;
+    }
+  }
+
+  for (const child of folder.children.values()) {
+    if (isRouteFolder(child, fileMap)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Checks whether any immediate child directory of the given folder contains route files.
+ *
+ * @param folder Folder node whose children to evaluate.
+ * @param fileMap File name mapping for route contracts.
+ * @returns `true` if at least one child directory contains route files.
+ */
+export function hasChildRoute(folder: FolderNode, fileMap: FileMap): boolean {
+  for (const child of folder.children.values()) {
+    if (isRouteFolder(child, fileMap)) {
+      return true;
+    }
+  }
+  return false;
 }
