@@ -7,7 +7,7 @@
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
 @theme {
-  --color-brand: #fe7824;
+  --color-brand: #ff6300;
   --color-brand-accent: #ffb347;
   --color-accent: light-dark(#16a34a, #4ade80);
   --color-primary: light-dark(var(--color-brand), var(--color-brand-accent));
@@ -83,6 +83,7 @@
     @apply bg-surface-lower text-on-surface antialiased;
     overflow-x: clip;
     min-height: 100%;
+    border-inline-start: var(--air-mdx-border);
 
     font: 16px / 145% var(--font-sans);
     font-synthesis: none;
@@ -332,6 +333,9 @@
   @apply flex items-center text-sm font-semibold text-on-surface no-underline;
 
   .logo-text-image {
+    height: 100%;
+    width: auto;
+    aspect-ratio: 5527 / 2048;
     color: var(--color-on-surface);
   }
 
