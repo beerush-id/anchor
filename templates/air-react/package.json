@@ -15,10 +15,10 @@
     "lint": "biome check"
   },
   "dependencies": {
-    "@airlib/react": "2.0.2",
-    "@irpclib/http": "2.0.2",
-    "@irpclib/irpc": "2.0.2",
-    "@irpclib/ws": "2.0.2",
+    "@airlib/react": "2.0.3",
+    "@irpclib/http": "2.0.3",
+    "@irpclib/irpc": "2.0.3",
+    "@irpclib/ws": "2.0.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
@@ -27,7 +27,7 @@
     "ws": "^8.21.0"
   },
   "devDependencies": {
-    "@airlib/vite": "2.0.2",
+    "@airlib/vite": "2.0.3",
     "@biomejs/biome": "2.5.6",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.0",
