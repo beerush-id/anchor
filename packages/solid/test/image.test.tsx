@@ -112,9 +112,7 @@ describe('Image Component (Solid)', () => {
   });
 
   it('renders explicit src, width, height, and alt when from is omitted', () => {
-    const { container } = render(() => (
-      <Image src="/plain.png" alt="Plain Alt" width={300} height={200} />
-    ));
+    const { container } = render(() => <Image src="/plain.png" alt="Plain Alt" width={300} height={200} />);
     const img = container.querySelector('img');
 
     expect(img?.getAttribute('src')).toBe('/plain.png');
@@ -157,4 +155,3 @@ describe('Image Component (Solid)', () => {
     expect(img?.getAttribute('src')).toBeNull();
   });
 });
-

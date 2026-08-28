@@ -499,7 +499,7 @@ export function destroyRef(ref: MutableRef<unknown> | ImmutableRef<unknown> | Li
   /* istanbul ignore else */
   if (anchor.has(ref)) {
     anchor.destroy(ref);
-  /* istanbul ignore else */
+    /* istanbul ignore else */
   } else if (isValueRef(ref)) {
     ref.destroy();
   }

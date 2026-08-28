@@ -342,7 +342,9 @@ describe('HTTPTransport XHR Dispatch', () => {
   });
 
   it('should handle response headers without colon separator gracefully', async () => {
-    xhrInstance.getAllResponseHeaders.mockReturnValue('content-type: application/x-ndjson\r\nmalformed-header-without-colon\r\nx-custom: value');
+    xhrInstance.getAllResponseHeaders.mockReturnValue(
+      'content-type: application/x-ndjson\r\nmalformed-header-without-colon\r\nx-custom: value'
+    );
     const transport = new HTTPTransport({ baseURL: 'https://api.example.com' });
 
     xhrInstance.send.mockImplementation(() => {

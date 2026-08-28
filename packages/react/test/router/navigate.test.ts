@@ -51,7 +51,11 @@ describe('Anchor React - Navigate Utility', () => {
   it('should use default options when options parameter is omitted', () => {
     navigate('/home' as never);
 
-    expect(pushSpy).toHaveBeenCalledWith({ href: '/home', query: undefined, params: undefined, redirect: undefined }, '', '/home');
+    expect(pushSpy).toHaveBeenCalledWith(
+      { href: '/home', query: undefined, params: undefined, redirect: undefined },
+      '',
+      '/home'
+    );
     expect(dispatchSpy).toHaveBeenCalled();
   });
 

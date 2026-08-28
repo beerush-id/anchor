@@ -718,7 +718,12 @@ describe('HTTPTransport Fetch Dispatch', () => {
               return Promise.resolve({
                 done: false,
                 value: textEncoder.encode(
-                  JSON.stringify({ id: 'call-1', type: IRPC_PACKET_TYPE.ANSWER, status: IRPC_STATUS.SUCCESS, data: { file: blobPayload } }) + '\n'
+                  JSON.stringify({
+                    id: 'call-1',
+                    type: IRPC_PACKET_TYPE.ANSWER,
+                    status: IRPC_STATUS.SUCCESS,
+                    data: { file: blobPayload },
+                  }) + '\n'
                 ),
               });
             }
@@ -727,7 +732,12 @@ describe('HTTPTransport Fetch Dispatch', () => {
               return Promise.resolve({
                 done: false,
                 value: textEncoder.encode(
-                  JSON.stringify({ id: 'call-2', type: IRPC_PACKET_TYPE.ANSWER, status: IRPC_STATUS.SUCCESS, data: { file: blobPayload } })
+                  JSON.stringify({
+                    id: 'call-2',
+                    type: IRPC_PACKET_TYPE.ANSWER,
+                    status: IRPC_STATUS.SUCCESS,
+                    data: { file: blobPayload },
+                  })
                 ),
               });
             }

@@ -58,7 +58,7 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
         if (isMap(init)) {
           prev[key as never] = init.get(key) as never;
           (target as unknown as Map<unknown, unknown>).delete(key);
-        /* istanbul ignore else */
+          /* istanbul ignore else */
         } else if (isSafeObject(init)) {
           prev[key as keyof T] = init[key as keyof T];
           delete target[key as never];
@@ -77,10 +77,10 @@ export const assign = <T extends Assignable, P extends AssignablePart<T>>(target
       }
 
       (target as unknown as Map<unknown, unknown>).set(key, val);
-    /* istanbul ignore else */
+      /* istanbul ignore else */
     } else if (isSet(init)) {
       (target as unknown as Set<unknown>).add(val);
-    /* istanbul ignore else */
+      /* istanbul ignore else */
     } else if (isSafeObject(init) || isArray(init)) {
       prev[key as keyof T] = init[key as keyof T];
 
@@ -160,10 +160,10 @@ export const remove = <T extends Assignable>(target: T, ...keys: Array<keyof T>)
 
       prev[key as never] = init.get(key) as never;
       (target as unknown as Map<unknown, unknown>).delete(key);
-    /* istanbul ignore else */
+      /* istanbul ignore else */
     } else if (isSet(init)) {
       (target as unknown as Set<unknown>).delete(key);
-    /* istanbul ignore else */
+      /* istanbul ignore else */
     } else if (isSafeObject(init) || isArray(init)) {
       /* istanbul ignore else */
       if (typeof init[key] !== 'undefined') {
@@ -248,14 +248,14 @@ export const clear = <T extends Assignable>(target: T) => {
   if (isMap(init)) {
     changes = [...init.keys()];
     (target as unknown as Map<unknown, unknown>).clear();
-  /* istanbul ignore else */
+    /* istanbul ignore else */
   } else if (isSet(init)) {
     (target as unknown as Set<unknown>).clear();
-  /* istanbul ignore else */
+    /* istanbul ignore else */
   } else if (isArray(init)) {
     changes = Array.from(init.keys());
     (target as unknown as unknown[]).length = 0;
-  /* istanbul ignore else */
+    /* istanbul ignore else */
   } else if (isSafeObject(init)) {
     for (const key of softKeys(init)) {
       changes.push(key);

@@ -439,7 +439,7 @@ export function createKVStore<T extends Storable>(
         if (event.type === IDBStatus.Open) {
           readKv();
           unsubscribe();
-        /* istanbul ignore next */
+          /* istanbul ignore next */
         } else if (event.type === IDBStatus.Closed) {
           anchor.assign(state, { status: 'error', error: store.error });
           unsubscribe();

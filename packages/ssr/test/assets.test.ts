@@ -213,7 +213,10 @@ describe('createAssetResolver', () => {
       expect(response).toBeInstanceOf(Response);
       expect(response?.headers.get('Content-Type')).toBe('application/javascript');
 
-      const notFound = await resolver(new Request('http://localhost/missing.js'), new URL('http://localhost/missing.js'));
+      const notFound = await resolver(
+        new Request('http://localhost/missing.js'),
+        new URL('http://localhost/missing.js')
+      );
       expect(notFound).toBeUndefined();
     } finally {
       await fs.rm('./dist/client', { recursive: true, force: true });

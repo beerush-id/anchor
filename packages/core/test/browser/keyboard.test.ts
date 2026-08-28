@@ -150,7 +150,9 @@ describe('browser/keyboard', () => {
       LIVE_KEYBOARD.key;
       await acceptInteractions(true);
 
-      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', altKey: true, metaKey: true, ctrlKey: true, shiftKey: true }));
+      document.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Enter', altKey: true, metaKey: true, ctrlKey: true, shiftKey: true })
+      );
       expect(LIVE_KEYBOARD.modifiers.has('alt')).toBe(true);
       expect(LIVE_KEYBOARD.modifiers.has('meta')).toBe(true);
       expect(LIVE_KEYBOARD.modifiers.has('ctrl')).toBe(true);
@@ -158,11 +160,15 @@ describe('browser/keyboard', () => {
       expect(LIVE_KEYBOARD.is('alt', 'meta', 'ctrl', 'shift', 'Enter')).toBe(true);
 
       // keyup while modifiers are still true
-      document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', altKey: true, metaKey: true, ctrlKey: true, shiftKey: true }));
+      document.dispatchEvent(
+        new KeyboardEvent('keyup', { key: 'Enter', altKey: true, metaKey: true, ctrlKey: true, shiftKey: true })
+      );
       expect(LIVE_KEYBOARD.modifiers.size).toBe(4);
 
       // keyup when modifiers are released
-      document.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', altKey: false, metaKey: false, ctrlKey: false, shiftKey: false }));
+      document.dispatchEvent(
+        new KeyboardEvent('keyup', { key: 'Enter', altKey: false, metaKey: false, ctrlKey: false, shiftKey: false })
+      );
       expect(LIVE_KEYBOARD.modifiers.size).toBe(0);
     });
 

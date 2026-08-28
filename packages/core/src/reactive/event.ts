@@ -64,7 +64,7 @@ export function replayFn<T>(state: T, event: StateChange) {
       /* istanbul ignore else */
       if (target instanceof Map) {
         (gateway.mutator as MapMutator<unknown, unknown>).delete(key);
-      /* istanbul ignore else */
+        /* istanbul ignore else */
       } else if (target instanceof Set) {
         (gateway.mutator as SetMutator<unknown>).delete(prev);
       }
@@ -78,11 +78,11 @@ export function replayFn<T>(state: T, event: StateChange) {
       /* istanbul ignore else */
       if (target instanceof Map) {
         (gateway.mutator as MapMutator<unknown, unknown>).clear();
-      /* istanbul ignore else */
+        /* istanbul ignore else */
       } else if (target instanceof Set) {
         (gateway.mutator as SetMutator<unknown>).clear();
       }
-    /* istanbul ignore else */
+      /* istanbul ignore else */
     } else if (ARRAY_MUTATIONS.includes(type as ArrayMutations)) {
       ((gateway.mutator as ArrayMutator<unknown>)[type as ArrayMutation] as (...args: unknown[]) => unknown)(
         ...(value as unknown[])
@@ -110,7 +110,7 @@ replayFn.any = <T>(state: T, event: StateChange) => {
       /* istanbul ignore else */
       if (target instanceof Map) {
         (target as Map<unknown, unknown>).delete(key);
-      /* istanbul ignore else */
+        /* istanbul ignore else */
       } else if (target instanceof Set) {
         (target as Set<unknown>).delete(prev);
       }
@@ -122,11 +122,11 @@ replayFn.any = <T>(state: T, event: StateChange) => {
       /* istanbul ignore else */
       if (target instanceof Map) {
         (target as Map<unknown, unknown>).clear();
-      /* istanbul ignore else */
+        /* istanbul ignore else */
       } else if (target instanceof Set) {
         (target as Set<unknown>).clear();
       }
-    /* istanbul ignore else */
+      /* istanbul ignore else */
     } else if (ARRAY_MUTATIONS.includes(type as ArrayMutations)) {
       ((target as unknown as ArrayMutator<unknown>)[type as ArrayMutation] as (...args: unknown[]) => unknown)(
         ...(value as unknown[])
@@ -186,7 +186,7 @@ export function rollback<T>(state: T, event: StateChange) {
       if (target instanceof Map) {
         // target.set(key, prev);
         (gateway.mutator as MapMutator<unknown, unknown>).set(key, prev);
-      /* istanbul ignore else */
+        /* istanbul ignore else */
       } else if (target instanceof Set) {
         // (target[key as never] as Set<unknown>).add(prev);
         (gateway.mutator as SetMutator<unknown>).add(prev);
@@ -204,14 +204,14 @@ export function rollback<T>(state: T, event: StateChange) {
           // target.set(key as never, value);
           (gateway.mutator as MapMutator<unknown, unknown>).set(key, value);
         }
-      /* istanbul ignore else */
+        /* istanbul ignore else */
       } else if (target instanceof Set) {
         for (const value of prev as [unknown]) {
           // target.add(value);
           (gateway.mutator as SetMutator<unknown>).add(value);
         }
       }
-    /* istanbul ignore else */
+      /* istanbul ignore else */
     } else if (ARRAY_MUTATIONS.includes(type as never)) {
       const items = target as unknown[];
 
@@ -234,7 +234,7 @@ export function rollback<T>(state: T, event: StateChange) {
       } else if (type === 'unshift') {
         // items.shift();
         (gateway.mutator as ArrayMutator<unknown>).shift();
-      /* istanbul ignore else */
+        /* istanbul ignore else */
       } else {
         // items.splice(0, items.length, ...(prev as unknown[]));
         (gateway.mutator as ArrayMutator<unknown>).splice(0, items.length, ...(prev as unknown[]));

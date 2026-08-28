@@ -2,7 +2,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AIR_ENV, DEFAULT_FILE_MAP } from '../src/modules/env.js';
-import { MDX_DEFAULT_OPTIONS, airMdxHeadings, airMdxRehype, getLeafNode, loadExtendedPlugins, mdxEntryWrapper, mdxFile, mdxMatcher } from '../src/modules/markdown.js';
+import {
+  MDX_DEFAULT_OPTIONS,
+  airMdxHeadings,
+  airMdxRehype,
+  getLeafNode,
+  loadExtendedPlugins,
+  mdxEntryWrapper,
+  mdxFile,
+  mdxMatcher,
+} from '../src/modules/markdown.js';
 import {
   canonicalPath,
   derivePrefix,
@@ -748,7 +757,10 @@ describe('coverage tests for unreached branches', () => {
       expect(matcher('page.md')).toBe(true);
       expect(matcher('page.tsx')).toBe(false);
 
-      const leaf = getLeafNode({ type: 'root', children: [{ type: 'paragraph', children: [{ type: 'text', value: 'hello' }] }] });
+      const leaf = getLeafNode({
+        type: 'root',
+        children: [{ type: 'paragraph', children: [{ type: 'text', value: 'hello' }] }],
+      });
       expect(leaf).toEqual({ type: 'text', value: 'hello' });
 
       const notFound = getLeafNode({ type: 'root' }, 'missing');
@@ -772,9 +784,11 @@ describe('coverage tests for unreached branches', () => {
 
       const compiledWithPost = await mdxFile(fixturePath(dir, 'test.mdx'), '# Test', {
         cacheDir: '',
-        postProcesses: [async (c) => {
-          c.output += '';
-        }],
+        postProcesses: [
+          async (c) => {
+            c.output += '';
+          },
+        ],
       });
       expect(compiledWithPost.code).toBeDefined();
       cleanFixture(dir);

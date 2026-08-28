@@ -277,7 +277,7 @@ export function cookies<T extends ObjLike>(name: string, init: T, options?: Cook
         schedule(() => writeDocumentCookie(entry));
       });
       onGlobalCleanup(unsubscribe);
-    /* istanbul ignore next */
+      /* istanbul ignore next */
     } else if (jar) {
       const unsubscribe = controller.subscribe((_s, e) => {
         if (e.type === 'init' || syncing) return;

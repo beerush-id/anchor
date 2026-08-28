@@ -93,7 +93,12 @@ describe('replay.any', () => {
 
 describe('replay and rollback on anchor states', () => {
   it('should replay and rollback map mutations', () => {
-    const state = anchor(new Map([['a', 1], ['b', 2]]));
+    const state = anchor(
+      new Map([
+        ['a', 1],
+        ['b', 2],
+      ])
+    );
 
     replay(state, { type: 'map:delete', keys: ['a'], prev: 1 } as StateChange);
     expect(state.has('a')).toBe(false);
@@ -104,7 +109,14 @@ describe('replay and rollback on anchor states', () => {
     replay(state, { type: 'map:clear', keys: [] } as StateChange);
     expect(state.size).toBe(0);
 
-    rollback(state, { type: 'map:clear', keys: [], prev: [['a', 1], ['b', 2]] } as StateChange);
+    rollback(state, {
+      type: 'map:clear',
+      keys: [],
+      prev: [
+        ['a', 1],
+        ['b', 2],
+      ],
+    } as StateChange);
     expect(state.size).toBe(2);
   });
 

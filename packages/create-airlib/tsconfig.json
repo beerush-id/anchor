@@ -6,9 +6,7 @@
     "allowImportingTsExtensions": true,
     "allowJs": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": [
-      "ESNext"
-    ],
+    "lib": ["ESNext"],
     "module": "NodeNext",
     "moduleDetection": "force",
     "moduleResolution": "nodenext",
@@ -22,11 +20,6 @@
     "target": "ESNext",
     "verbatimModuleSyntax": true
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "eslint.config.js",
-    "tsup.config.ts"
-  ]
+  "include": ["src/**/*.ts"],
+  "exclude": ["eslint.config.js", "tsup.config.ts"]
 }

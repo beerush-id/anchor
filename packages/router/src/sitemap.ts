@@ -135,11 +135,11 @@ export async function generateSitemap(
           sitemapEntries.push({ ...attrs, loc });
         }
       }
-    /* istanbul ignore else */
+      /* istanbul ignore else */
     } else if (typeof sitemapOpt === 'object' && sitemapOpt !== null && sitemapOpt.loc) {
       // Explicit location overriding anything else
       sitemapEntries.push(sitemapOpt);
-    /* istanbul ignore else */
+      /* istanbul ignore else */
     } else if (val.type === ROUTE_TYPE.STATIC) {
       // Normal static emission
       const pathStr = val.toString();

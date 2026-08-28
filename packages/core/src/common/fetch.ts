@@ -510,7 +510,7 @@ const toPromise = <T, S extends FetchState<T>>(state: S): Promise<S> => {
           /* istanbul ignore else */
           if (state.status === FetchStatus.Error) {
             reject(state.error);
-          /* istanbul ignore else */
+            /* istanbul ignore else */
           } else if (state.status === FetchStatus.Success) {
             resolve(state);
           }
