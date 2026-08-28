@@ -7,9 +7,9 @@ import {
   createWorker,
   deferScript,
   SSR_ENV_KEY,
-  ssrEnv,
   type SSROutput,
   type SSRRenderer,
+  ssrEnv,
 } from '../src/index.js';
 
 function createMockRenderer(output?: Partial<SSROutput>): SSRRenderer {
