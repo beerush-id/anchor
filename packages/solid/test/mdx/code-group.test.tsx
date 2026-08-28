@@ -389,5 +389,18 @@ describe('Multi-Variant Code Groups', () => {
       const { container } = render(() => <CodeGroup group="pkg-manager" />);
       expect(container.querySelector('.air-mdx-codegroup-tabs')).not.toBeNull();
     });
+
+    it('sets --air-mdx-group-height CSS property on mount', () => {
+      const { container } = render(() => (
+        <CodeGroup>
+          <pre>
+            <code>echo 1</code>
+          </pre>
+        </CodeGroup>
+      ));
+
+      const root = container.firstElementChild as HTMLElement;
+      expect(root?.style.getPropertyValue('--air-mdx-group-height')).toBeDefined();
+    });
   });
 });

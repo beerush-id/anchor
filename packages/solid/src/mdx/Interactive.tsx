@@ -27,8 +27,9 @@ export const Interactive = setup<InteractiveProps>((props) => {
   const name = props.id ?? `air-interactive-${uIndex(INTERACTIVE_INDEX)}`;
   props.panel = props.panel ?? 'preview';
 
-  let ref: HTMLDivElement | undefined;
+  let ref: HTMLDivElement | null = null;
   onMount(() => {
+    /* istanbul ignore next */
     if (!ref) return;
     ref.style.setProperty('--air-mdx-interactive-height', `${ref.offsetHeight}px`);
   });

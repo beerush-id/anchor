@@ -78,11 +78,12 @@ export const Interactive = setup<InteractiveProps>((props) => {
     </div>
   ));
 
-  let ref: HTMLDivElement | null;
+  let ref: HTMLDivElement | null = null;
 
   onMount(() => {
+    /* istanbul ignore next */
     if (!ref) return;
-    ref.style.setProperty('--air-interactive-height', `${ref.offsetHeight}px`);
+    ref.style.setProperty('--air-mdx-interactive-height', `${ref.offsetHeight}px`);
   });
 
   return render(

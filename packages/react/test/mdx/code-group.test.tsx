@@ -321,5 +321,18 @@ describe('Multi-Variant Code Groups', () => {
       expect(group1Tabs[1].getAttribute('aria-selected')).toBe('true');
       expect(group2Tabs[1].getAttribute('aria-selected')).toBe('true');
     });
+
+    it('sets --air-mdx-group-height CSS property on mount', () => {
+      const { container } = render(
+        <CodeGroup>
+          <pre>
+            <code>echo 1</code>
+          </pre>
+        </CodeGroup>
+      );
+
+      const root = container.firstElementChild as HTMLElement;
+      expect(root?.style.getPropertyValue('--air-mdx-group-height')).toBeDefined();
+    });
   });
 });

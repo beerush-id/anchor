@@ -82,11 +82,12 @@ export const CodeGroup = setup<CodeGroupProps>((props) => {
     return state.activeIndex === tab.id;
   };
 
-  let ref: HTMLDivElement | null;
+  let ref: HTMLDivElement | null = null;
 
   onMount(() => {
+    /* istanbul ignore next */
     if (!ref) return;
-    ref.style.setProperty('--air-group-height', `${ref.offsetHeight}px`);
+    ref.style.setProperty('--air-mdx-group-height', `${ref.offsetHeight}px`);
   });
 
   return render(

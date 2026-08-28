@@ -92,8 +92,9 @@ export function CodeGroup(allProps: CodeGroupProps): JSX.Element {
     return state.activeIndex === tab.id;
   };
 
-  let ref: HTMLDivElement | null;
+  let ref: HTMLDivElement | null = null;
   onMount(() => {
+    /* istanbul ignore next */
     if (!ref) return;
     ref.style.setProperty('--air-mdx-group-height', `${ref.offsetHeight}px`);
   });

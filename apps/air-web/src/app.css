@@ -178,7 +178,7 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    min-height: var(--air-interactive-height, 18rem);
+    min-height: var(--air-mdx-interactive-height, 18rem);
   }
 
   .air-interactive-content {
@@ -190,7 +190,7 @@
   }
 
   .air-mdx-codegroup {
-    min-height: var(--air-group-height, auto);
+    min-height: var(--air-mdx-group-height, auto);
   }
 
   .air-interactive-source {

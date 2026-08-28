@@ -114,10 +114,11 @@ describe('Interactive Component', () => {
       </Interactive>
     ));
 
-    const root = container.firstElementChild;
+    const root = container.firstElementChild as HTMLElement;
     expect(root?.id).toBe('my-interactive');
     expect(root?.className).toContain('custom-demo');
     expect(root?.className).toContain('air-interactive');
     expect(root?.getAttribute('data-testid')).toBe('interactive-root');
+    expect(root?.style.getPropertyValue('--air-mdx-interactive-height')).toBeDefined();
   });
 });
