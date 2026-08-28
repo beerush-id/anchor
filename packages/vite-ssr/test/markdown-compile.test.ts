@@ -495,4 +495,100 @@ describe('mdx compilation pipe — import deduplication and structure', () => {
     });
     expect(noCacheResult.code).toBeDefined();
   });
+
+  it('handles executable code blocks with hidden, module, and local scopes', async () => {
+    dir = makeFixture({ 'pages/docs/executable/page.mdx': '' });
+    const id = fixturePath(dir, 'pages/docs/executable/page.mdx');
+
+    const source = [
+      '---',
+      'title: Executable Demo',
+      '---',
+      '',
+      '```tsx executable="hidden"',
+      "import { testHelper } from './helper.js';",
+      'const hiddenLocal = 100;',
+      '```',
+      '',
+      '```tsx executable module',
+      "import { globalHelper } from './global.js';",
+      'const globalConstant = 200;',
+      '```',
+      '',
+      '```tsx executable',
+      'const localVariable = 300;',
+      '```',
+      '',
+      '```tsx executable="hidden"',
+      "import { pureImportOnly } from './pure.js';",
+      '```',
+      '',
+      '# Executable Heading',
+    ].join('\n');
+
+    const res = await mdxFile(id, source, { ...PLAIN_OPTIONS, extended: true });
+    expect(res.code).toContain('testHelper');
+    expect(res.code).toContain('globalHelper');
+    expect(res.code).toContain('globalConstant');
+    expect(res.code).toContain('localVariable');
+  });
+
+  it('transforms standalone interactive directives without source code', async () => {
+    dir = makeFixture({ 'pages/docs/standalone/page.mdx': '' });
+    const id = fixturePath(dir, 'pages/docs/standalone/page.mdx');
+
+    const source = [':::interactive[Standalone Preview]', '<button>Click me</button>', ':::'].join('\n');
+
+    const res = await mdxFile(id, source, { ...PLAIN_OPTIONS, extended: true });
+    expect(res.code).toContain('AirInteractive');
+    expect(res.code).toContain('standalone');
+  });
+
+  it('transforms figure elements and hides executable hidden figures in airMdxRehype', async () => {
+    const { airMdxRehype } = await import('../src/modules/markdown.js');
+    const transform = airMdxRehype();
+    const tree = {
+      type: 'root',
+      children: [
+        {
+          type: 'element',
+          tagName: 'figure',
+          properties: { executable: 'hidden' },
+          children: [{ type: 'text', value: 'hidden' }],
+        },
+        {
+          type: 'element',
+          tagName: 'figure',
+          properties: {},
+          children: [],
+        },
+      ],
+    };
+    transform(tree as never);
+    expect((tree.children[0] as any).tagName).toBe('executable');
+    expect((tree.children[0] as any).value).toBe('');
+    expect((tree.children[0] as any).children).toHaveLength(0);
+    expect((tree.children[1] as any).tagName).toBe('AirCodeBlock');
+  });
+
+  it('reuses in-memory MDX_CACHE when cacheDir is set and hash matches', async () => {
+    dir = makeFixture({ 'pages/docs/cached/page.mdx': '' });
+    AIR_ENV.viteRoot = dir;
+    const id = fixturePath(dir, 'pages/docs/cached/page.mdx');
+    const cacheDir = fixturePath(dir, '.airlib/.mdx-chunks');
+
+    const first = await mdxFile(id, '# Cached Once\n', { ...PLAIN_OPTIONS, cacheDir });
+    const second = await mdxFile(id, '# Cached Once\n', { ...PLAIN_OPTIONS, cacheDir });
+    expect(second.code).toBe(first.code);
+  });
+
+  it('transforms separator directives into air-mdx-separator elements', async () => {
+    dir = makeFixture({ 'pages/docs/separator/page.mdx': '' });
+    const id = fixturePath(dir, 'pages/docs/separator/page.mdx');
+
+    const source = ['# Separator Demo', '', ':::separator', ':::', ''].join('\n');
+
+    const res = await mdxFile(id, source, { ...PLAIN_OPTIONS, extended: true });
+    expect(res.code).toContain('air-mdx-separator');
+  });
 });

@@ -143,4 +143,29 @@ describe('highlight module', () => {
     vi.doUnmock('shiki');
     vi.resetModules();
   });
+
+  it('handles hidden executable code blocks in root transformer', () => {
+    const transformer = airEmulatePrettyCode();
+    const hiddenCodeNode = {
+      children: [
+        {
+          type: 'element',
+          tagName: 'pre',
+          properties: {},
+          children: [{ type: 'element', tagName: 'code', properties: { executable: 'hidden' } }],
+        },
+      ],
+    };
+    (transformer.root as Function)(hiddenCodeNode);
+    expect(hiddenCodeNode.children).toHaveLength(0);
+  });
+
+  it('extracts meta attributes with catch fallback for non-json values', async () => {
+    const { getMetaAttributes } = await import('../src/modules/highlight.js');
+    const attrs = getMetaAttributes('[title.ts] invalid=abc valid=123 bool=true');
+    expect(attrs['data-title']).toBe('title.ts');
+    expect(attrs.invalid).toBe('');
+    expect(attrs.valid).toBe(123);
+    expect(attrs.bool).toBe(true);
+  });
 });
