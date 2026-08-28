@@ -102,7 +102,8 @@ export class Router<Output = any> {
 
   /** The currently active route */
   public get activeRoute() {
-    return this.storage.activeRoute;
+    const route = this.storage.activeRoute;
+    return route?.index ?? route;
   }
 
   /** The active context shared across all routes */

@@ -224,6 +224,10 @@ export class Route<
     return this.closed;
   }
 
+  public get isStatic() {
+    return !!this.options.static;
+  }
+
   public get authenticated() {
     return this.state.authenticated;
   }
