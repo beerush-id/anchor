@@ -25,9 +25,9 @@
     "lint": "biome check"
   },
   "dependencies": {
-    "@irpclib/http": "2.0.4",
-    "@irpclib/irpc": "2.0.4",
-    "@irpclib/ws": "2.0.4"
+    "@irpclib/http": "2.0.5",
+    "@irpclib/irpc": "2.0.5",
+    "@irpclib/ws": "2.0.5"
   },
   "optionalDependencies": {
     "@hono/node-server": "^1.13.8"
