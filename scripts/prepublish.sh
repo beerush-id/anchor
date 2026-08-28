@@ -28,7 +28,7 @@ bpkg info set dependencies.@airlib/core="$VERSION" -f \
   irpclib/irpc \
   irpclib/http \
   packages/ssr \
-  packages/vite
+  packages/vite-ssr
 
 bpkg info set dependencies.@airlib/router="$VERSION" -f \
   packages/react \
@@ -46,16 +46,16 @@ bpkg info set dependencies.@airlib/ssr="$VERSION" -f \
   packages/solid
 
 bpkg info set dependencies.@irpclib/http="$VERSION" -f \
-  packages/vite
+  packages/vite-ssr
 
 bpkg info set dependencies.@irpclib/irpc="$VERSION" -f \
   irpclib/http \
   irpclib/ws \
   irpclib/broadcast \
-  packages/vite
+  packages/vite-ssr
 
 bpkg info set dependencies.@irpclib/ws="$VERSION" -f \
-  packages/vite
+  packages/vite-ssr
 
 bpkg info set optionalDependencies.@irpclib/http="$VERSION" -f \
   packages/ssr
