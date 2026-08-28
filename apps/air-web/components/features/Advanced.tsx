@@ -45,17 +45,18 @@ export const Advanced = setup(() => {
   const selected = mutable<TabId>('cookies');
 
   return (
-    <section className={classes.root}>
-      <div className={`air-section-inner ${classes.inner}`}>
-        <div className={classes.grid}>
-          <div className={classes.copy}>
-            <span className={classes.eyebrow}>Advanced</span>
-            <h2 className={classes.title}>Batteries Included</h2>
-            <p className={classes.body}>
-              Beyond the headline features, the reactive core ships the primitives real apps are built from.
+    <section className="air-feature-section">
+      <div className="air-feature-inner">
+        <div className="air-feature-grid">
+          <div className="air-feature-copy">
+            <span className="air-feature-eyebrow">Advanced</span>
+            <h2 className="air-feature-title">Complete Reactive Tooling</h2>
+            <p className="air-feature-body">
+              Beyond the core primitives, AirLib includes built-in reactive utilities for cookies, WebSocket streaming,
+              immutable state trees, and schema validation.
             </p>
 
-            <div className={classes.tabs}>
+            <div className="mt-2 flex w-full max-w-100 flex-col gap-3">
               <For each={() => TABS}>
                 {(tab) => (
                   <button
@@ -67,10 +68,15 @@ export const Advanced = setup(() => {
                   >
                     <tab.icon className="size-7 shrink-0 text-brand" />
                     <span className="flex flex-col gap-1">
-                      <span className={classx(classes.tabTitle, { 'active text-primary': selected.value === tab.id })}>
+                      <span
+                        className={classx(
+                          'text-sm font-semibold text-on-surface transition-colors duration-200 ease-in-out',
+                          { 'active text-primary': selected.value === tab.id }
+                        )}
+                      >
                         {tab.title}
                       </span>
-                      <span className={classes.tabBlurb}>{tab.blurb}</span>
+                      <span className="text-xs leading-relaxed text-on-surface-variant">{tab.blurb}</span>
                     </span>
                   </button>
                 )}
@@ -99,16 +105,3 @@ export const Advanced = setup(() => {
     </section>
   );
 });
-
-const classes = {
-  root: 'border-t border-border',
-  inner: 'py-12 lg:py-20',
-  grid: 'grid items-center gap-10 lg:grid-cols-2 lg:gap-14',
-  copy: 'flex flex-col items-center gap-4 text-center lg:items-start lg:text-left',
-  eyebrow: 'text-xs font-semibold uppercase tracking-wider text-brand',
-  title: 'text-2xl font-bold text-on-surface lg:text-3xl',
-  body: 'max-w-130 text-base leading-relaxed text-on-surface-variant lg:text-lg',
-  tabs: 'mt-2 flex w-full max-w-100 flex-col gap-3',
-  tabTitle: 'text-sm font-semibold text-on-surface transition-colors duration-200 ease-in-out',
-  tabBlurb: 'text-xs leading-relaxed text-on-surface-variant',
-};

@@ -7,14 +7,14 @@ const ThemeCookie = setup(() => {
   const theme = cookies('app-theme', { mode: 'system' as ThemeMode });
 
   return (
-    <div className="flex w-full flex-col items-center gap-4 text-center">
-      <div className="font-bold text-md">Select Theme</div>
-      <div className="flex gap-2">
+    <div className="theme-selector">
+      <div className="theme-selector-title">Select Theme</div>
+      <div className="theme-selector-options">
         <For each={() => Object.entries(MODES)}>
           {([mode, label]) => (
             <button
               type="button"
-              className={classx(classes.btn, { [classes.activeBtn]: theme.mode === mode })}
+              className={classx('demo-btn', { active: theme.mode === mode })}
               onClick={() => (theme.mode = mode)}
             >
               {label}
@@ -22,7 +22,7 @@ const ThemeCookie = setup(() => {
           )}
         </For>
       </div>
-      <p className={classes.hint}>Pick a mode — the whole app follows, floating toggler included. Reload and it sticks.</p>
+      <p className="demo-hint">Pick a mode — the whole app follows, floating toggler included. Reload and it sticks.</p>
     </div>
   );
 });
@@ -35,12 +35,10 @@ const MODES: { [K in ThemeMode]: string } = {
   dark: 'Dark',
 };
 
-const classes = {
-  btn: 'rounded-md border border-border px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors duration-200 ease-in-out hover:text-on-surface',
-  activeBtn: 'active border-primary text-primary',
-  hint: 'text-xs text-on-surface-variant',
-};
+
 ```
 
-<ThemeCookie />
+<div className="air-demos flex items-center justify-center p-4">
+  <ThemeCookie />
+</div>
 :::

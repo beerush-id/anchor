@@ -177,7 +177,7 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    min-height: 22rem;
+    min-height: var(--air-interactive-height, 18rem);
   }
 
   .air-interactive-content {
@@ -186,6 +186,10 @@
     flex: 1;
     flex-direction: column;
     min-height: 0;
+  }
+
+  .air-mdx-codegroup {
+    min-height: var(--air-group-height, auto);
   }
 
   .air-interactive-source {
@@ -220,6 +224,52 @@
 
 @utility air-header {
   @apply fixed top-0 left-0 z-(--z-layout) w-full border-b border-border bg-surface/80 backdrop-blur-md;
+}
+
+/* --- Features Section ------------------------------------------------------- */
+
+@utility air-feature-section {
+  @apply border-t border-border;
+}
+
+@utility air-feature-inner {
+  @apply air-section-inner py-12 lg:py-20;
+}
+
+@utility air-feature-grid {
+  @apply grid items-center gap-10 lg:grid-cols-2 lg:gap-14;
+
+  .air-feature-copy {
+    order: -1;
+
+    @media (min-width: 640px) {
+      order: unset;
+    }
+  }
+}
+
+@utility air-feature-copy {
+  @apply flex flex-col items-start gap-4 text-left;
+}
+
+@utility air-feature-eyebrow {
+  @apply text-xs font-semibold tracking-wider text-brand uppercase;
+}
+
+@utility air-feature-title {
+  @apply text-2xl font-bold text-on-surface lg:text-3xl;
+}
+
+@utility air-feature-body {
+  @apply max-w-130 text-base leading-relaxed text-on-surface-variant lg:text-lg;
+}
+
+@utility air-feature-more {
+  @apply mt-2 inline-flex items-center gap-1.5 rounded-lg border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-sm font-semibold text-primary transition-all hover:border-primary/50 hover:bg-primary/20 hover:gap-2 active:scale-98;
+}
+
+@utility demo-hint {
+  @apply mx-auto mt-2 max-w-100 text-center text-xs text-on-surface-variant;
 }
 
 /* --- Cards ------------------------------------------------------------------ */

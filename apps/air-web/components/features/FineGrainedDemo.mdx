@@ -11,18 +11,19 @@ const Metrics = setup(() => {
   });
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <div className="flex items-center justify-center gap-4">
-        <div className={classes.card}>
-          <span className={classes.label}>CPU</span>
+    <div className="stats-dashboard">
+      <div className="stats">
+        <div className="stat">
+          <span>CPU</span>
           <Snippet data={() => metrics.cpu}>
-            {(cpu) => <span className={classes.value}>{cpu}%</span>}
+            {(cpu) => <span>{cpu}%</span>}
           </Snippet>
         </div>
-        <div className={classes.card}>
-          <span className={classes.label}>MEM</span>
+
+        <div className="stat">
+          <span>MEM</span>
           <Snippet data={() => metrics.mem}>
-            {(mem) => <span className={classes.value}>{mem}%</span>}
+            {(mem) => <span>{mem}%</span>}
           </Snippet>
         </div>
       </div>
@@ -62,12 +63,6 @@ function watchMetrics(metrics: { cpu: number; mem: number; enabled: boolean }) {
     clearInterval(mem);
   };
 }
-
-const classes = {
-  card: 'w-28 rounded-xl border border-border bg-surface-variant px-4 py-3 text-center',
-  label: 'block text-xs font-semibold uppercase tracking-wider text-on-surface-variant',
-  value: 'font-mono text-2xl font-bold text-on-surface',
-};
 ```
 
 <div className="air-demos flex items-center justify-center p-4">

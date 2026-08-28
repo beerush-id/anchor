@@ -1,6 +1,6 @@
 import { $symbol, classx, uIndex } from '@airlib/core';
 import { setup } from '../hoc.js';
-import type { JSX } from '../solid.js';
+import { type JSX, onMount } from '../solid.js';
 import { Show } from '../switch.js';
 import type { Bindable } from '../types.js';
 
@@ -27,9 +27,18 @@ export const Interactive = setup<InteractiveProps>((props) => {
   const name = props.id ?? `air-interactive-${uIndex(INTERACTIVE_INDEX)}`;
   props.panel = props.panel ?? 'preview';
 
+  let ref: HTMLDivElement | undefined;
+  onMount(() => {
+    if (!ref) return;
+    ref.style.setProperty('--air-mdx-interactive-height', `${ref.offsetHeight}px`);
+  });
+
   return (
     <div
       {...$restProps}
+      ref={(el) => {
+        ref = el;
+      }}
       id={props.id}
       class={classx('air-interactive', props.class, { 'air-interactive-standalone': props.standalone })}
     >

@@ -1,5 +1,5 @@
 import { $symbol, type AnyType, classx, mutable, uIndex } from '@airlib/core';
-import { For, type JSX, splitProps } from '../solid.js';
+import { For, type JSX, onMount, splitProps } from '../solid.js';
 import { Show } from '../switch.js';
 import { mdxCtx } from './context.js';
 
@@ -92,8 +92,20 @@ export function CodeGroup(allProps: CodeGroupProps): JSX.Element {
     return state.activeIndex === tab.id;
   };
 
+  let ref: HTMLDivElement | null;
+  onMount(() => {
+    if (!ref) return;
+    ref.style.setProperty('--air-mdx-group-height', `${ref.offsetHeight}px`);
+  });
+
   return (
-    <div {...restProps} class={classx('air-mdx-codegroup', props.class)}>
+    <div
+      {...restProps}
+      ref={(el) => {
+        ref = el;
+      }}
+      class={classx('air-mdx-codegroup', props.class)}
+    >
       <div class="air-mdx-codegroup-header">
         <div class="air-mdx-codegroup-tabs" role="tablist" aria-label={props.tablistLabel ?? 'Code examples'}>
           <For each={tabs()}>

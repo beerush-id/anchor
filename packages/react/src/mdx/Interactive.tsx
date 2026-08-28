@@ -1,5 +1,5 @@
 import type { HTMLAttributes, ReactNode } from 'react';
-import { type Bindable, classx, render, setup, Show, Snippet, snippet, uIndex } from '../index.js';
+import { type Bindable, classx, onMount, render, Show, Snippet, setup, snippet, uIndex } from '../index.js';
 
 export type InteractivePanel = 'source' | 'preview';
 
@@ -78,10 +78,20 @@ export const Interactive = setup<InteractiveProps>((props) => {
     </div>
   ));
 
+  let ref: HTMLDivElement | null;
+
+  onMount(() => {
+    if (!ref) return;
+    ref.style.setProperty('--air-interactive-height', `${ref.offsetHeight}px`);
+  });
+
   return render(
     () => (
       <div
         {...$restProps}
+        ref={(el) => {
+          ref = el;
+        }}
         id={props.id}
         className={classx('air-interactive', props.className, { 'air-interactive-standalone': props.standalone })}
       >

@@ -5,21 +5,6 @@ import { demoRpc, httpTransport, wsTransport } from '../../pages/(docs)/api.ts';
 import { StockTable } from '../StockTable.js';
 import { getStocks } from './function.ts';
 
-const classes = {
-  root: 'flex flex-col-reverse gap-4 w-full pt-2 sm:pt-3',
-  toolbar: 'flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 px-1',
-  status: 'flex items-center gap-2',
-  indicator: 'relative flex size-2 items-center justify-center',
-  dotIdle: 'size-2 rounded-full bg-on-surface-variant/40',
-  dotPing: 'absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75',
-  dotActive: 'relative inline-flex size-2 rounded-full bg-emerald-500',
-  statusText: 'text-xs font-medium text-on-surface-variant',
-  actions: 'flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto',
-  segmented: 'inline-flex h-8 items-center gap-1 rounded-lg border border-border bg-surface-variant p-1',
-  segmentBtn: 'inline-flex h-full items-center rounded-md px-2 text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer',
-  segmentActive: 'bg-surface font-semibold text-primary shadow-xs',
-};
-
 const LiveMarketStream = setup(() => {
   const stocks = getStocks.later();
   const transport = mutable({ mode: 'http' as 'http' | 'ws' });
@@ -110,6 +95,21 @@ const LiveMarketStream = setup(() => {
     </div>
   );
 });
+
+const classes = {
+  root: 'flex flex-col-reverse gap-4 w-full pt-2 sm:pt-3',
+  toolbar: 'flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 px-1',
+  status: 'flex items-center gap-2',
+  indicator: 'relative flex size-2 items-center justify-center',
+  dotIdle: 'size-2 rounded-full bg-on-surface-variant/40',
+  dotPing: 'absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75',
+  dotActive: 'relative inline-flex size-2 rounded-full bg-emerald-500',
+  statusText: 'text-xs font-medium text-on-surface-variant',
+  actions: 'flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto',
+  segmented: 'inline-flex h-8 items-center gap-1 rounded-lg border border-border bg-surface-variant p-1',
+  segmentBtn: 'inline-flex h-full items-center rounded-md px-2 text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer',
+  segmentActive: 'bg-surface font-semibold text-primary shadow-xs',
+};
 ```
 
 <div className="air-demos w-full">

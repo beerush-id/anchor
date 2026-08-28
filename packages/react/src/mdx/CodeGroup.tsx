@@ -1,5 +1,5 @@
 import type { HTMLAttributes, KeyboardEvent, ReactElement, ReactNode } from 'react';
-import { type AnyType, classx, For, mutable, render, setup, Show, uIndex } from '../index.js';
+import { type AnyType, classx, For, mutable, onMount, render, Show, setup, uIndex } from '../index.js';
 import { mdxCtx } from './context.ts';
 
 /**
@@ -82,9 +82,22 @@ export const CodeGroup = setup<CodeGroupProps>((props) => {
     return state.activeIndex === tab.id;
   };
 
+  let ref: HTMLDivElement | null;
+
+  onMount(() => {
+    if (!ref) return;
+    ref.style.setProperty('--air-group-height', `${ref.offsetHeight}px`);
+  });
+
   return render(
     () => (
-      <div {...$restProps} className={classx('air-mdx-codegroup', props.className)}>
+      <div
+        {...$restProps}
+        ref={(el) => {
+          ref = el;
+        }}
+        className={classx('air-mdx-codegroup', props.className)}
+      >
         <div className="air-mdx-codegroup-header">
           <div className="air-mdx-codegroup-tabs" role="tablist" aria-label={props.tablistLabel ?? 'Code examples'}>
             <For each={() => tabs}>

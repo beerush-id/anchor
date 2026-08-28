@@ -13,42 +13,40 @@ const Dashboard = setup(() => {
   const uptime = getUptime.when(() => [state.version]);
 
   return (
-    <div className="flex w-full max-w-105 flex-col gap-4">
-      <div className="grid grid-cols-2 gap-3">
+    <div className="dashboard">
+      <div className="stats">
         <Snippet data={() => [metrics.status, metrics.data]}>
           {([status, { cpu }]) => (
-            <div className={classx(card, { 'animate-pulse': status === 'pending' })}>
-              <span className={label}>CPU</span>
-              <span className={value}>{status === 'pending' ? '...' : `${cpu}%`}</span>
+            <div className={classx('stat', { 'animate-pulse': status === 'pending' })}>
+              <span>CPU</span>
+              <span>{status === 'pending' ? '...' : `${cpu}%`}</span>
             </div>
           )}
         </Snippet>
 
         <Snippet data={() => [transactions.status, transactions.data]}>
           {([status, { count }]) => (
-            <div className={classx(card, { 'animate-pulse': status === 'pending' })}>
-              <span className={label}>Transactions</span>
-              <span className={value}>
-                {status === 'pending' ? '...' : count.toLocaleString()}
-              </span>
+            <div className={classx('stat', { 'animate-pulse': status === 'pending' })}>
+              <span>Transactions</span>
+              <span>{status === 'pending' ? '...' : count.toLocaleString()}</span>
             </div>
           )}
         </Snippet>
 
         <Snippet data={() => [alerts.status, alerts.data]}>
           {([status, { count }]) => (
-            <div className={classx(card, { 'animate-pulse': status === 'pending' })}>
-              <span className={label}>Alerts</span>
-              <span className={value}>{status === 'pending' ? '...' : count}</span>
+            <div className={classx('stat', { 'animate-pulse': status === 'pending' })}>
+              <span>Alerts</span>
+              <span>{status === 'pending' ? '...' : count}</span>
             </div>
           )}
         </Snippet>
 
         <Snippet data={() => [uptime.status, uptime.data]}>
           {([status, { percent }]) => (
-            <div className={classx(card, { 'animate-pulse': status === 'pending' })}>
-              <span className={label}>Uptime</span>
-              <span className={value}>{status === 'pending' ? '...' : `${percent}%`}</span>
+            <div className={classx('stat', { 'animate-pulse': status === 'pending' })}>
+              <span>Uptime</span>
+              <span>{status === 'pending' ? '...' : `${percent}%`}</span>
             </div>
           )}
         </Snippet>
@@ -64,14 +62,10 @@ const Dashboard = setup(() => {
     </div>
   );
 });
-
-const card = 'rounded-xl border border-border bg-surface-variant px-4 py-3 text-center';
-const label = 'block text-xs font-semibold uppercase tracking-wider text-on-surface-variant';
-const value = 'font-mono text-2xl font-bold text-on-surface';
 ```
 
 <div className="air-demos flex items-center justify-center p-4">
   <Dashboard />
 </div>
-<p className="text-center text-xs text-on-surface-variant">Check your network tab to see a single request carrying all four.</p>
+<p className="demo-hint">Check your network tab to see a single request carrying all four.</p>
 :::

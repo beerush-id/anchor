@@ -18,7 +18,7 @@ export const BeyondUi = setup(() => {
           </Link>
         </div>
 
-        <div className="air-mdx w-full">
+        <div className="air-mdx air-feature-demo w-full">
           <BeyondUiDemo />
           <p className="mt-8 text-center text-sm font-medium text-on-surface">
             Open your Network tab to inspect streaming Fetch chunks in HTTP mode or live frames in WebSocket mode.

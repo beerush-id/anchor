@@ -13,34 +13,32 @@ const LiveDemo = setup(() => {
   });
 
   return (
-    <div className="flex w-full flex-col items-center gap-4 text-center">
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <div className={classes.box}>
+    <div className="live-demo">
+      <div className="live-demo-shortcuts">
+        <div className="demo-box">
           <span>Focus Search</span>
-          <kbd className={classes.kbd}>Ctrl</kbd>
+          <kbd className="demo-kbd">Ctrl</kbd>
           <span>+</span>
-          <kbd className={classes.kbd}>/</kbd>
+          <kbd className="demo-kbd">/</kbd>
         </div>
 
-        <div className={classes.box}>
+        <div className="demo-box">
           <span>Pressed key</span>
           <Snippet>
-            {() => <kbd className={classes.kbd}>{LIVE_KEYBOARD.key || '—'}</kbd>}
+            {() => <kbd className="demo-kbd">{LIVE_KEYBOARD.key || '—'}</kbd>}
           </Snippet>
         </div>
       </div>
 
-      <p className={classes.hint}>Press the shortcut anywhere on the page to focus the search bar.</p>
+      <p className="demo-hint">Press the shortcut anywhere on the page to focus the search bar.</p>
     </div>
   );
 });
 
-const classes = {
-  box: 'inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 font-mono text-sm text-on-surface',
-  kbd: 'rounded border border-border bg-surface-variant px-2 py-0.5 text-xs font-semibold text-on-surface',
-  hint: 'text-xs text-on-surface-variant',
-};
+
 ```
 
-<LiveDemo />
+<div className="air-demos flex items-center justify-center p-4">
+  <LiveDemo />
+</div>
 :::

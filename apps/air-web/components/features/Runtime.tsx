@@ -4,25 +4,25 @@ import RuntimeVisual from './RuntimeVisual.mdx';
 
 export const Runtime = setup(() => {
   return (
-    <section className={classes.root}>
-      <div className={`air-section-inner ${classes.inner}`}>
-        <div className={classes.grid}>
+    <section className="air-feature-section">
+      <div className="air-feature-inner">
+        <div className="air-feature-grid">
           <div className="air-mdx air-feature-demo">
             <RuntimeVisual />
           </div>
 
-          <div className={classes.copy}>
-            <span className={classes.eyebrow}>Runtime</span>
-            <h2 className={classes.title}>One Build, Any Runtime</h2>
-            <p className={classes.body}>
+          <div className="air-feature-copy">
+            <span className="air-feature-eyebrow">Runtime</span>
+            <h2 className="air-feature-title">One Build, Any Runtime</h2>
+            <p className="air-feature-body">
               The whole server — SSR pipeline, IRPC routing, static assets — compiles to a single standard fetch
               handler. Every runtime entry in this codebase imports that same built worker and serves it.
             </p>
-            <p className={classes.body}>
+            <p className="air-feature-body">
               Bun, Node, Deno, or Cloudflare Workers becomes a deployment choice made after the fact: swap the entry
               file, keep the build.
             </p>
-            <Link to={docsUniversalSsrRoute} className={classes.more}>
+            <Link to={docsUniversalSsrRoute} className="air-feature-more">
               Learn multi-runtime deployment &rarr;
             </Link>
           </div>
@@ -31,14 +31,3 @@ export const Runtime = setup(() => {
     </section>
   );
 });
-
-const classes = {
-  root: 'border-t border-border',
-  inner: 'py-12 lg:py-20',
-  grid: 'grid items-center gap-10 lg:grid-cols-2 lg:gap-14',
-  copy: 'flex flex-col items-center gap-4 text-center lg:items-start lg:text-left',
-  eyebrow: 'text-xs font-semibold uppercase tracking-wider text-brand',
-  title: 'text-2xl font-bold text-on-surface lg:text-3xl',
-  body: 'max-w-130 text-base leading-relaxed text-on-surface-variant lg:text-lg',
-  more: 'mt-2 inline-flex items-center gap-1.5 rounded-lg border border-primary/25 bg-primary/10 px-3.5 py-1.5 text-sm font-semibold text-primary transition-all hover:border-primary/50 hover:bg-primary/20 hover:gap-2 active:scale-98',
-};
