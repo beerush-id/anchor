@@ -24,10 +24,8 @@
     "access": "public"
   },
   "dependencies": {
+    "@airlib/core": "workspace:*",
     "@irpclib/irpc": "workspace:*"
-  },
-  "peerDependencies": {
-    "@airlib/core": "workspace:*"
   },
   "devDependencies": {
     "@biomejs/biome": "catalog:",
