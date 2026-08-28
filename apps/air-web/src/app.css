@@ -104,16 +104,16 @@
 
   .air-mdx-layout {
     @apply air-container;
-    min-height: calc(100svh - var(--spacing-header));
     border-inline: 1px solid var(--air-mdx-border);
+    padding-block-start: 0;
 
     .air-mdx-aside-left {
       border-inline-end: 1px solid var(--air-mdx-border);
     }
   }
 
-  .air-article-container .air-mdx-layout {
-    padding-block-start: 0;
+  .air-main .air-mdx-container {
+    min-block-size: initial !important;
   }
 }
 

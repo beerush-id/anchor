@@ -44,20 +44,22 @@ export default page(docsRoute).render(({ children }) => (
   <>
     <RouterProgress />
     <Header />
-    <Layout nav={navs} className="bg-surface">
-      <Layout.Snippet for={'sidebar'}>
-        {() => (
-          <>
-            <div className="docs-selectors">
-              <DocsSelector name="framework" label="Framework" icon="framework" options={frameworkOptions} />
-              <DocsSelector name="pm" label="Package Manager" icon="pm" options={pmOptions} />
-            </div>
-            <Sidebar nav={navs} collapsible />
-          </>
-        )}
-      </Layout.Snippet>
-      {children}
-    </Layout>
+    <main className="air-main">
+      <Layout nav={navs} className="bg-surface">
+        <Layout.Snippet for={'sidebar'}>
+          {() => (
+            <>
+              <div className="docs-selectors">
+                <DocsSelector name="framework" label="Framework" icon="framework" options={frameworkOptions} />
+                <DocsSelector name="pm" label="Package Manager" icon="pm" options={pmOptions} />
+              </div>
+              <Sidebar nav={navs} collapsible />
+            </>
+          )}
+        </Layout.Snippet>
+        {children}
+      </Layout>
+    </main>
     <Footer />
   </>
 ));

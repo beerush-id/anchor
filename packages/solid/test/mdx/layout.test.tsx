@@ -112,7 +112,7 @@ describe('Documentation Page Layout Scaffolding', () => {
         </Layout>
       ));
 
-      const main = container.querySelector('main');
+      const main = container.querySelector('.air-mdx');
       expect(main?.className).toContain('custom-docs-layout');
       expect(main?.className).toContain('air-mdx');
       expect(main?.id).toBe('docs-root');
@@ -147,7 +147,7 @@ describe('Documentation Page Layout Scaffolding', () => {
         </UIRouter>
       ));
 
-      expect(container.querySelector('main')).not.toBeNull();
+      expect(container.querySelector('.air-mdx')).not.toBeNull();
       const sidebarLink = container.querySelector('.air-mdx-sidebar-nav a');
       const paginationLink = container.querySelector('.air-mdx-pagination a');
 

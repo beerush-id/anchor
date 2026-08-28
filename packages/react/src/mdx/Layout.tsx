@@ -1,14 +1,14 @@
 import type { PreloadMode } from '@airlib/router';
 import type { HTMLAttributes, ReactNode } from 'react';
-import { classx, render, setup, Slot, Snippet } from '../index.js';
 import { cookiePair } from '../cookie.js';
+import { classx, render, setup, Slot, Snippet } from '../index.js';
 import type { SlottedComponent } from '../types.js';
 import { type MdxContext, mdxCtx } from './context.js';
 import { Pagination } from './Pagination.js';
 import { type NavItem, Sidebar } from './Sidebar.js';
 import { TableOfContent } from './TableOfContent.js';
 
-export interface LayoutProps extends HTMLAttributes<HTMLElement> {
+export interface LayoutProps extends HTMLAttributes<HTMLDivElement> {
   nav?: NavItem[];
   children?: ReactNode;
   preload?: PreloadMode;
@@ -32,7 +32,7 @@ export const Layout: SlottedComponent<LayoutProps, LayoutSlots> = setup<LayoutPr
 
   return render(
     () => (
-      <main {...$restProps} className={classx('air-mdx air-mdx-container', props.className)}>
+      <div {...$restProps} className={classx('air-mdx air-mdx-container', props.className)}>
         <div className="air-mdx-layout">
           <aside className="air-mdx-aside-left" aria-label="Documentation navigation">
             <Slot for={() => snippets.sidebar?.(ctx)}>
@@ -55,7 +55,7 @@ export const Layout: SlottedComponent<LayoutProps, LayoutSlots> = setup<LayoutPr
             </aside>
           </div>
         </div>
-      </main>
+      </div>
     ),
     'Layout'
   );

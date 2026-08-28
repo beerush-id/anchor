@@ -10,7 +10,7 @@ import { Pagination } from './Pagination.js';
 import { type NavItem, Sidebar } from './Sidebar.js';
 import { TableOfContent } from './TableOfContent.js';
 
-export interface LayoutProps extends JSX.HTMLAttributes<HTMLElement> {
+export interface LayoutProps extends JSX.HTMLAttributes<HTMLDivElement> {
   nav?: NavItem[];
   children?: JSX.Element;
   preload?: PreloadMode;
@@ -33,7 +33,7 @@ export const Layout: SlottedComponent<LayoutProps, LayoutSlots> = setup<LayoutPr
   const ctx = mdxCtx.set({ store });
 
   return (
-    <main {...$restProps} class={classx('air-mdx air-mdx-container', props.class)}>
+    <div {...$restProps} class={classx('air-mdx air-mdx-container', props.class)}>
       <div class="air-mdx-layout">
         <aside class="air-mdx-aside-left" aria-label="Documentation navigation">
           <Slot for={snippets.sidebar?.(ctx)}>
@@ -56,6 +56,6 @@ export const Layout: SlottedComponent<LayoutProps, LayoutSlots> = setup<LayoutPr
           </aside>
         </div>
       </div>
-    </main>
+    </div>
   );
 }, 'Layout');

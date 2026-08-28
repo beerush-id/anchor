@@ -102,7 +102,7 @@ describe('Documentation Page Layout Scaffolding', () => {
         </Layout>
       );
 
-      const main = container.querySelector('main');
+      const main = container.querySelector('.air-mdx');
       expect(main?.className).toContain('custom-docs-layout');
       expect(main?.className).toContain('air-mdx');
       expect(main?.id).toBe('docs-root');
