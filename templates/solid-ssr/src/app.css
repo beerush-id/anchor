@@ -233,26 +233,6 @@ footer {
   }
 }
 
-.message-input {
-  margin-top: 16px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 16px;
-  background-color: var(--bg);
-  color: var(--text-h);
-  width: 280px;
-  max-width: 100%;
-  transition: all 0.3s;
-  font-family: var(--sans);
-}
-
-.message-input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px var(--accent-bg);
-}
-
 main {
   flex-direction: column;
   width: 1126px;

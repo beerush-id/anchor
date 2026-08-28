@@ -1,14 +1,12 @@
-import { $bind, Head, mutable, page } from '@airlib/solid';
+import { Head, mutable, page } from '@airlib/solid';
 import airLogo from '@/assets/airlib.svg';
 import heroImg from '@/assets/hero.png?airimg' with { sizes: '170' };
 import solidLogo from '@/assets/solid.svg';
 import viteLogo from '@/assets/vite.svg';
-import { TextInput } from '@/components/TextInput.tsx';
-import { rootIndexRoute } from './route.ts';
+import { rootIndexRoute } from './route.js';
 
 export default page(rootIndexRoute).render(() => {
   const count = mutable(0);
-  const user = mutable({ message: '' });
 
   return (
     <>
@@ -28,14 +26,10 @@ export default page(rootIndexRoute).render(() => {
             Edit <code>src/pages/page.tsx</code> and save to test <code>HMR</code>
           </p>
         </div>
-        <div style={{ display: 'flex', 'flex-direction': 'column', 'align-items': 'center' }}>
-          <button type="button" class="counter" onClick={() => count.value++}>
-            Count is {count.value}
-          </button>
-          <TextInput class="message-input" placeholder="Type message..." value={$bind(user, 'message')} />
-        </div>
+        <button type="button" class="counter" onClick={() => count.value++}>
+          Count is {count.value}
+        </button>
       </section>
-
     </>
   );
 });

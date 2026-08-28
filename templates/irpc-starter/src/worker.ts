@@ -1,6 +1,6 @@
 import { HTTPRouter } from '@irpclib/http/router';
 import { WebSocketRouter } from '@irpclib/ws/router';
-import { httpTransport, wsTransport } from '@/lib/module.js';
+import { httpTransport, irpc, wsTransport } from '@/lib/module.js';
 import '@/constructor.js';
 
 const httpRouter = new HTTPRouter(httpTransport);
@@ -8,7 +8,8 @@ const wsRouter = new WebSocketRouter(wsTransport);
 
 export default {
   async fetch(req: Request) {
-    if (req.method === 'POST' && req.url.includes(httpTransport.endpoint)) {
+    const url = new URL(req.url);
+    if (req.method === 'POST' && url.pathname.includes(irpc.href)) {
       return httpRouter.resolve(req);
     }
     return new Response('Not Found', { status: 404 });

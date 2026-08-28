@@ -1,14 +1,12 @@
-import { $bind, Head, mutable, page, Snippet } from '@airlib/react';
+import { Head, mutable, page, Snippet } from '@airlib/react';
 import airLogo from '@/assets/airlib.svg';
 import heroImg from '@/assets/hero.png?asset' with { sizes: '170' };
 import reactLogo from '@/assets/react.svg';
 import viteLogo from '@/assets/vite.svg';
-import { TextInput } from '@/components/TextInput.tsx';
-import { rootIndexRoute } from './route.ts';
+import { rootIndexRoute } from './route.js';
 
 export default page(rootIndexRoute).render(() => {
   const count = mutable(0);
-  const message = mutable('');
 
   return (
     <>
@@ -28,18 +26,14 @@ export default page(rootIndexRoute).render(() => {
             Edit <code>src/pages/page.tsx</code> and save to test <code>HMR</code>
           </p>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Snippet>
-            {() => (
-              <button type="button" className="counter" onClick={() => count.value++}>
-                Count is {count.value}
-              </button>
-            )}
-          </Snippet>
-          <TextInput value={$bind(message, 'value')} className="message-input" placeholder="Type message..." />
-        </div>
+        <Snippet>
+          {() => (
+            <button type="button" className="counter" onClick={() => count.value++}>
+              Count is {count.value}
+            </button>
+          )}
+        </Snippet>
       </section>
-
     </>
   );
 });

@@ -3,7 +3,7 @@ import airLogo from '@/assets/airlib.svg';
 import heroImg from '@/assets/hero.png?asset' with { sizes: '170' };
 import reactLogo from '@/assets/react.svg';
 import viteLogo from '@/assets/vite.svg';
-import rootRoute from '@/pages/route.ts';
+import rootRoute from '@/pages/route.js';
 
 export function ErrorView({ error }: { error?: RouteError }) {
   return (

@@ -13,7 +13,6 @@ import {
   Snippet,
 } from '@airlib/react';
 import { LIVE_CURSOR, LIVE_KEYBOARD } from '@airlib/react/browser';
-import { $do } from '@airlib/react/core';
 import { uuid } from '@airlib/react/utils';
 import airLogo from '@/assets/airlib.svg';
 import mouse from '@/assets/cursor.svg';
@@ -21,9 +20,9 @@ import mouseDown from '@/assets/cursor-down.svg';
 import heroImg from '@/assets/hero.png?asset' with { sizes: '170' };
 import reactLogo from '@/assets/react.svg';
 import viteLogo from '@/assets/vite.svg';
-import { TextInput } from '@/components/TextInput.tsx';
-import { type Visitor, visitor } from './function.ts';
-import { rootIndexRoute } from './route.ts';
+import { TextInput } from '@/components/TextInput.js';
+import { visitor } from './function.js';
+import { rootIndexRoute } from './route.js';
 
 export default page(rootIndexRoute).render(() => {
   const user = mutable({ id: uuid(), cursor: { x: 0, y: 0 }, message: '' });
@@ -36,8 +35,7 @@ export default page(rootIndexRoute).render(() => {
   effect.client(() => {
     const { x, y, button } = LIVE_CURSOR;
     schedule(() => {
-      const target = LIVE_CURSOR.target ? getUniqueSelector(LIVE_CURSOR.target) : '';
-      Object.assign(user.cursor, { x, y, down: button === 'left', target });
+      Object.assign(user.cursor, { x, y, down: button === 'left' });
       visitor.move(user);
     });
   });
@@ -52,54 +50,21 @@ export default page(rootIndexRoute).render(() => {
     unschedule();
   });
 
-  const cursors = {} as Record<string, Visitor['cursor']>;
-
-  function emit(id: string, cursor: Visitor['cursor']) {
-    $do(() => {
-      if (!cursors[id]) cursors[id] = { ...cursor };
-      const current = cursors[id];
-
-      if (current.down !== cursor.down) {
-        Object.assign(current, cursor);
-
-        if (current.down && current.target) {
-          const node = document.querySelector(current.target);
-
-          if (node) {
-            node.dispatchEvent(
-              new MouseEvent('click', {
-                button: 0,
-                clientX: current.x,
-                clientY: current.y,
-                bubbles: true,
-                cancelable: true,
-                view: window,
-              })
-            );
-          }
-        }
-      }
-    });
-  }
-
   return (
     <>
       <Head meta={{ title: 'AirLib', description: 'AirLib starter template.' }} />
       <For each={() => users.value}>
         {({ id, cursor, message }) => (
           <Show when={() => id !== user.id}>
-            {() => {
-              emit(id, cursor);
-              return (
-                <div
-                  className="user-cursor"
-                  style={{ transform: `translate3d(${cursor.x}px, ${cursor.y}px, 0)`, left: '-12px', top: '-12px' }}
-                >
-                  {message && <div className="chat-bubble">{message}</div>}
-                  <img src={cursor.down ? mouseDown : mouse} alt="cursor" width="24" height="24" />
-                </div>
-              );
-            }}
+            {() => (
+              <div
+                className="user-cursor"
+                style={{ transform: `translate3d(${cursor.x}px, ${cursor.y}px, 0)`, left: '-12px', top: '-12px' }}
+              >
+                {message && <div className="chat-bubble">{message}</div>}
+                <img src={cursor.down ? mouseDown : mouse} alt="cursor" width="24" height="24" />
+              </div>
+            )}
           </Show>
         )}
       </For>
@@ -132,32 +97,3 @@ export default page(rootIndexRoute).render(() => {
     </>
   );
 });
-
-function getUniqueSelector(element: Element) {
-  if (!(element instanceof Element)) return '';
-
-  const selectors = [];
-  let current = element;
-
-  while (current) {
-    if (current === document.body) {
-      selectors.unshift('body');
-      break;
-    }
-
-    let selector = current.id ? `#${current.id}` : current.tagName.toLowerCase();
-
-    if (!current.id && current.parentElement) {
-      const siblings = Array.from(current.parentElement.children);
-      const index = siblings.indexOf(current);
-      if (index !== 0) {
-        selector += `:nth-child(${index + 1})`;
-      }
-    }
-
-    selectors.unshift(selector);
-    current = current.parentElement;
-  }
-
-  return selectors.join(' > ');
-}

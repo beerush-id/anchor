@@ -1,10 +1,10 @@
 import type { RemoteState } from '@irpclib/irpc';
-import { irpc } from '@/src/api.ts';
+import { irpc } from '@/src/api.js';
 
 export type Visitor = {
   id: string;
   message?: string;
-  cursor: { x: number; y: number; down?: boolean; target?: string };
+  cursor: { x: number; y: number; down?: boolean };
 };
 
 export type Join = (visitor: Visitor) => RemoteState<Record<string, Visitor>>;

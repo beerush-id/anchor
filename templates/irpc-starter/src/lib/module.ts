@@ -1,7 +1,7 @@
-import pkg from '../../package.json' with { type: 'json' };
 import { HTTPTransport } from '@irpclib/http';
 import { createPackage } from '@irpclib/irpc';
 import { WebSocketTransport } from '@irpclib/ws';
+import pkg from '../../package.json' with { type: 'json' };
 
 export const irpc = createPackage({
   name: pkg.name,

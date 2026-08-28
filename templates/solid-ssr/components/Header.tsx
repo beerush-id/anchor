@@ -2,7 +2,7 @@ import routes from '@airlib-cache/manifest';
 import { type AnyRoute, For, Link } from '@airlib/solid';
 import type { JSX } from 'solid-js';
 import airLogo from '@/assets/airlib.svg';
-import { rootRoute } from '@/pages/route.ts';
+import rootRoute from '@/pages/route.js';
 
 const navRoutes = routes.filter((r) => r.path !== '/') as unknown as Array<{
   path: string;
