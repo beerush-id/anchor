@@ -1,8 +1,8 @@
 import { anchor } from '@airlib/react';
 import { stream } from '@irpclib/irpc';
-import { demoRpc } from '../../pages/(docs)/api.ts';
+import { demoRpc } from '../../pages/(docs)/api.js';
 import type { StockItem } from '../StockTable.js';
-import { getAlerts, getMetrics, getStocks, getTransactions, getUptime, INITIAL_STOCKS } from './function.ts';
+import { getAlerts, getMetrics, getStocks, getTransactions, getUptime, INITIAL_STOCKS } from './function.js';
 
 // Each handler resolves after its own random delay, so the widgets fill in at
 // different speeds even though their calls share one batched request.

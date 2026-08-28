@@ -1,5 +1,5 @@
 import type { RemoteState } from '@irpclib/irpc';
-import { demoRpc } from '../../pages/(docs)/api.ts';
+import { demoRpc } from '../../pages/(docs)/api.js';
 import type { StockItem } from '../StockTable.js';
 
 export type Metrics = { cpu: number };

@@ -1,5 +1,5 @@
 import { Show, stylex, template } from '@airlib/react';
-import router from '@/src/router.ts';
+import router from '@/src/router.js';
 
 export const RouterProgress = template(
   () => (

@@ -12,7 +12,7 @@ import { Runtime } from '@/components/features/Runtime.js';
 import { UniversalSsr } from '@/components/features/UniversalSsr.js';
 import { Workflow } from '@/components/features/Workflow.js';
 import { Hero } from '@/components/Hero.js';
-import { rootIndexRoute } from './route.ts';
+import { rootIndexRoute } from './route.js';
 
 export default page(rootIndexRoute).render(() => {
   void uIndex(CODE_GROUP_INDEX, true);

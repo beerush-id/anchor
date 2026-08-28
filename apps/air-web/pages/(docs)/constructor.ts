@@ -1,6 +1,6 @@
 import { stream } from '@irpclib/irpc';
-import { demoRpc } from './api.ts';
-import { getUser, type User, watchPrice } from './function.ts';
+import { demoRpc } from './api.js';
+import { getUser, type User, watchPrice } from './function.js';
 
 const MOCK_USERS: Record<string, User> = {
   '1': {

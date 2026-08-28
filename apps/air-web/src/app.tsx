@@ -1,8 +1,8 @@
 import { type AppEntry, Head, type HeadConfig, UIRouter } from '@airlib/react';
 import ogImage from '@/assets/og_image.png?asset' with { sizes: '1200' };
-import { ThemeToggler } from '@/components/ThemeToggler.tsx';
-import RootLayout from '@/pages/layout.tsx';
-import router from './router.ts';
+import { ThemeToggler } from '@/components/ThemeToggler.js';
+import RootLayout from '@/pages/layout.js';
+import router from './router.js';
 
 Head.config(() => {
   const { pathname } = router.context;

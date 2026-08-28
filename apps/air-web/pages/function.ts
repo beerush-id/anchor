@@ -1,5 +1,5 @@
 import type { RemoteState } from '@irpclib/irpc';
-import { irpc } from '@/src/api.ts';
+import { irpc } from '@/src/api.js';
 
 export type Visitor = {
   id: string;

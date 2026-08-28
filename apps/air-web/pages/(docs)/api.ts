@@ -1,5 +1,5 @@
 import { createPackage } from '@irpclib/irpc';
-import { httpTransport, wsTransport } from '@/src/api.ts';
+import { httpTransport, wsTransport } from '@/src/api.js';
 
 export const demoRpc = createPackage({
   name: 'demo',
