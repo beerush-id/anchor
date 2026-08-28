@@ -1,4 +1,4 @@
-import { $symbol, getScope, isBrowser, onCleanup, setScope } from '@airlib/core';
+import { $symbol, getScope, inherit, isBrowser, onCleanup, setScope } from '@airlib/core';
 import type { Component, JSX } from 'solid-js';
 import { For } from '../solid.js';
 import { Show } from '../switch.js';
@@ -58,6 +58,25 @@ export interface SEOMeta {
 }
 
 /**
+ * Global configuration options for the Document Head component.
+ */
+export interface HeadConfig {
+  /** Text to prepend before the title (e.g. 'AirLib Docs | '). */
+  prefix?: string;
+  /** Text to append after the title (e.g. ' | AirLib'). */
+  suffix?: string;
+  /** Default headings and SEO metadata to merge with. */
+  defaults?: SEOMeta;
+}
+
+/**
+ * Factory function for configuring the Document Head component dynamically.
+ *
+ * @returns Updated configuration options.
+ */
+export type HeadConfigFactory = () => HeadConfig;
+
+/**
  * Properties for the document Head component.
  */
 export interface HeadProps {
@@ -68,6 +87,21 @@ export interface HeadProps {
 }
 
 /**
+ * A comprehensive Document Head component type supporting global configuration.
+ */
+export interface HeadComponent extends Component<HeadProps> {
+  /**
+   * Configures global default metadata, title prefixes, and suffixes.
+   *
+   * @param options Configuration options or a factory function returning configuration.
+   * @returns The Head component for chaining.
+   */
+  config(options: HeadConfig | HeadConfigFactory): HeadComponent;
+}
+
+let activeConfig: HeadConfig | HeadConfigFactory = {};
+
+/**
  * A comprehensive Document Head component optimized for SEO and social unfurling.
  *
  * Automatically coordinates document titles, descriptive meta tags, Open Graph preview cards,
@@ -76,42 +110,50 @@ export interface HeadProps {
  * @param props - Configuration containing SEO parameters and children tag nodes
  * @returns The rendered Head elements
  */
-export function Head(props: HeadProps): JSX.Element {
-  const keywords = () => (Array.isArray(props.meta?.keywords) ? props.meta?.keywords.join(', ') : props.meta?.keywords);
-  const ogTitle = () => props.meta?.og?.title ?? props.meta?.title;
-  const ogDesc = () => props.meta?.og?.description ?? props.meta?.description;
-  const ogUrl = () => props.meta?.og?.url ?? props.meta?.canonical;
+export const Head: HeadComponent = ((props: HeadProps): JSX.Element => {
+  const hasMeta = Boolean(props.meta && Object.keys(props.meta).length);
 
-  const twitterTitle = () => props.meta?.twitter?.title ?? ogTitle();
-  const twitterDesc = () => props.meta?.twitter?.description ?? ogDesc();
-  const twitterImage = () => props.meta?.twitter?.image ?? props.meta?.og?.image;
-  const twitterCard = () => props.meta?.twitter?.card ?? (twitterImage() ? 'summary_large_image' : 'summary');
+  if (!hasMeta && !props.children) return null as unknown as JSX.Element;
+
+  const config = typeof activeConfig === 'function' ? activeConfig() : activeConfig;
+  const meta = inherit<SEOMeta>(config.defaults, props.meta);
+
+  const title = () => (meta?.title ? [config.prefix, meta.title, config.suffix].filter(Boolean).join('') : undefined);
+  const keywords = () => (Array.isArray(meta?.keywords) ? meta.keywords.join(', ') : meta?.keywords);
+  const ogTitle = () => meta?.og?.title ?? title();
+  const ogDesc = () => meta?.og?.description ?? meta?.description;
+  const ogUrl = () => meta?.og?.url ?? meta?.canonical;
+
+  const twitterTitle = () => meta?.twitter?.title ?? ogTitle();
+  const twitterDesc = () => meta?.twitter?.description ?? ogDesc();
+  const twitterImage = () => meta?.twitter?.image ?? meta?.og?.image;
+  const twitterCard = () => meta?.twitter?.card ?? (twitterImage() ? 'summary_large_image' : 'summary');
 
   return (
     <>
-      <Show when={props.meta?.title}>
-        <Title>{props.meta?.title}</Title>
+      <Show when={title()}>
+        <Title>{title()}</Title>
       </Show>
-      <Show when={props.meta?.description}>
-        <Meta name="description" content={props.meta?.description} />
+      <Show when={meta?.description}>
+        <Meta name="description" content={meta.description} />
       </Show>
       <Show when={keywords()}>
         <Meta name="keywords" content={keywords()} />
       </Show>
-      <Show when={props.meta?.author}>
-        <Meta name="author" content={props.meta?.author} />
+      <Show when={meta?.author}>
+        <Meta name="author" content={meta.author} />
       </Show>
-      <Show when={props.meta?.canonical}>
-        <HeadLink rel="canonical" href={props.meta?.canonical} />
+      <Show when={meta?.canonical}>
+        <HeadLink rel="canonical" href={meta.canonical} />
       </Show>
-      <Show when={props.meta?.robots}>
-        <Meta name="robots" content={props.meta?.robots} />
+      <Show when={meta?.robots}>
+        <Meta name="robots" content={meta.robots} />
       </Show>
-      <Show when={props.meta?.themeColor}>
-        <Meta name="theme-color" content={props.meta?.themeColor} />
+      <Show when={meta?.themeColor}>
+        <Meta name="theme-color" content={meta.themeColor} />
       </Show>
-      <Show when={props.meta?.viewport}>
-        <Meta name="viewport" content={props.meta?.viewport} />
+      <Show when={meta?.viewport}>
+        <Meta name="viewport" content={meta.viewport} />
       </Show>
 
       <Show when={ogTitle()}>
@@ -120,61 +162,70 @@ export function Head(props: HeadProps): JSX.Element {
       <Show when={ogDesc()}>
         <Meta property="og:description" content={ogDesc()} />
       </Show>
-      <Show when={props.meta?.og?.type}>
-        <Meta property="og:type" content={props.meta?.og?.type} />
+      <Show when={meta?.og?.type}>
+        <Meta property="og:type" content={meta.og?.type} />
       </Show>
       <Show when={ogUrl()}>
         <Meta property="og:url" content={ogUrl()} />
       </Show>
-      <Show when={props.meta?.og?.image}>
-        <Meta property="og:image" content={props.meta?.og?.image} />
+      <Show when={meta?.og?.image}>
+        <Meta property="og:image" content={meta.og?.image} />
       </Show>
-      <Show when={props.meta?.og?.imageAlt}>
-        <Meta property="og:image:alt" content={props.meta?.og?.imageAlt} />
+      <Show when={meta?.og?.imageAlt}>
+        <Meta property="og:image:alt" content={meta.og?.imageAlt} />
       </Show>
-      <Show when={props.meta?.og?.siteName}>
-        <Meta property="og:site_name" content={props.meta?.og?.siteName} />
+      <Show when={meta?.og?.siteName}>
+        <Meta property="og:site_name" content={meta.og?.siteName} />
       </Show>
-      <Show when={props.meta?.og?.locale}>
-        <Meta property="og:locale" content={props.meta?.og?.locale} />
+      <Show when={meta?.og?.locale}>
+        <Meta property="og:locale" content={meta.og?.locale} />
       </Show>
 
-      <Show when={props.meta?.twitter}>
+      <Show when={meta?.twitter}>
         <Meta name="twitter:card" content={twitterCard()} />
       </Show>
-      <Show when={props.meta?.twitter?.site}>
-        <Meta name="twitter:site" content={props.meta?.twitter?.site} />
+      <Show when={meta?.twitter?.site}>
+        <Meta name="twitter:site" content={meta.twitter?.site} />
       </Show>
-      <Show when={props.meta?.twitter?.creator}>
-        <Meta name="twitter:creator" content={props.meta?.twitter?.creator} />
+      <Show when={meta?.twitter?.creator}>
+        <Meta name="twitter:creator" content={meta.twitter?.creator} />
       </Show>
-      <Show when={twitterTitle() && (props.meta?.twitter || props.meta?.og)}>
+      <Show when={twitterTitle() && (meta?.twitter || meta?.og)}>
         <Meta name="twitter:title" content={twitterTitle()} />
       </Show>
-      <Show when={twitterDesc() && (props.meta?.twitter || props.meta?.og)}>
+      <Show when={twitterDesc() && (meta?.twitter || meta?.og)}>
         <Meta name="twitter:description" content={twitterDesc()} />
       </Show>
       <Show when={twitterImage()}>
         <Meta name="twitter:image" content={twitterImage()} />
       </Show>
-      <Show when={props.meta?.twitter?.imageAlt}>
-        <Meta name="twitter:image:alt" content={props.meta?.twitter?.imageAlt} />
+      <Show when={meta?.twitter?.imageAlt}>
+        <Meta name="twitter:image:alt" content={meta.twitter?.imageAlt} />
       </Show>
 
-      <For each={props.meta?.alternates}>
+      <For each={meta?.alternates}>
         {(alt) => <HeadLink rel={alt.rel ?? 'alternate'} href={alt.href} hreflang={alt.hreflang} type={alt.type} />}
       </For>
 
-      <Show when={props.meta?.jsonLd}>
-        <JsonLd data={props.meta?.jsonLd} />
+      <Show when={meta?.jsonLd}>
+        <JsonLd data={meta.jsonLd} />
       </Show>
 
-      <For each={Object.entries(props.meta?.custom ?? {})}>{([key, value]) => <Meta name={key} content={value} />}</For>
+      <For each={Object.entries(meta?.custom ?? {})}>{([key, value]) => <Meta name={key} content={value} />}</For>
 
       {props.children}
     </>
   );
-}
+}) as HeadComponent;
+
+Head.config = (config: HeadConfig | HeadConfigFactory) => {
+  if (typeof config === 'function') {
+    activeConfig = config;
+  } else {
+    activeConfig = Object.assign(typeof activeConfig === 'object' ? activeConfig : {}, config);
+  }
+  return Head;
+};
 
 /**
  * Sets the document title.
