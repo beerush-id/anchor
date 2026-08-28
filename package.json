@@ -15,7 +15,7 @@
     "build:next": "bpkg run build -f apps/next --sequential",
     "build:react": "bpkg run build -f apps/react --sequential",
     "build": "bpkg run build -f packages/* irpclib/* --sequential",
-    "prepublish": "bpkg run prepublish -f packages/* irpclib/* --sequential && bun run version:sync",
+    "prepublish": "bun run version:sync && bpkg run prepublish -f packages/* irpclib/* --sequential",
     "version:sync": "bun scripts/version-sync.ts",
     "version:revert": "bun scripts/version-sync.ts --revert",
     "format": "bpkg run format -f apps/* packages/* irpclib/* --sequential && git add --renormalize .",
