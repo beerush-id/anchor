@@ -1,6 +1,6 @@
 {
   "name": "@airlib/vue",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "description": "Vue bindings for Anchor reactive state management",
   "keywords": [
     "state",

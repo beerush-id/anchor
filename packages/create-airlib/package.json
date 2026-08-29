@@ -1,6 +1,6 @@
 {
   "name": "create-airlib",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "description": "Scaffolding tool for AirLib",
   "type": "module",
   "keywords": [

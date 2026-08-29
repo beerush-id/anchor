@@ -1,6 +1,6 @@
 {
   "name": "@airlib/svelte",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "description": "Svelte bindings for Anchor reactive state management",
   "keywords": [
     "state",
