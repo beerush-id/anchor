@@ -6,11 +6,12 @@ import { color, setLogLevel, taggedLogger } from '../logger.js';
 import { AppNode } from '../modules/app-node.js';
 import { AIR_ENV, type FileMap, type Framework, initEnv } from '../modules/env.js';
 import type { MdxExtendedOptions } from '../modules/markdown.js';
-import { type AirWorkerOptions, airWorker, resolveWorkerEntry } from '../worker.js';
-import { type AirImageOptions, airImage } from './image.js';
-import { type AirMarkdownOptions, airMarkdown } from './markdown.js';
-// import { airPreprocess } from './preprocess.js';
+import { airWorker, type AirWorkerOptions, resolveWorkerEntry } from '../worker.js';
+import { airImage, type AirImageOptions } from './image.js';
+import { airMarkdown, type AirMarkdownOptions } from './markdown.js';
 import { airSearch, type MdxSearchOptions } from './search.js';
+
+// import { airPreprocess } from './preprocess.js';
 
 const log = taggedLogger('air-pages');
 
@@ -140,6 +141,48 @@ const VIRTUAL_ROUTES = 'virtual:air/routes';
 const RESOLVED_VIRTUAL_ROUTES = '\0air-pages/routes';
 
 /**
+ * First-party entry points served as source in dev instead of prebundled,
+ * keeping one module identity per file across optimizer chunks. Every deep
+ * entry is listed because the optimizer treats each subpath as its own entry.
+ */
+const AIR_SOURCE_DEPS = [
+  '@airlib/core',
+  '@airlib/router',
+  '@airlib/react',
+  '@airlib/react/client',
+  '@airlib/react/browser',
+  '@airlib/react/ssr',
+  '@airlib/react/mdx',
+  '@airlib/solid',
+  '@airlib/solid/browser',
+  '@airlib/solid/ssr',
+  '@airlib/solid/mdx',
+  '@irpclib/irpc',
+  '@irpclib/http',
+  '@irpclib/http/router',
+  '@irpclib/ws',
+  '@irpclib/ws/router',
+];
+
+/**
+ * Packages always resolved to the project's own copy, so copies nested under
+ * other dependencies never fork the runtime — a second solid-js/react/core
+ * instance silently breaks reactivity and side-effect registration.
+ */
+const AIR_DEDUPED = [
+  '@airlib/core',
+  '@airlib/router',
+  '@airlib/react',
+  '@airlib/solid',
+  '@irpclib/irpc',
+  '@irpclib/http',
+  '@irpclib/ws',
+  'react',
+  'react-dom',
+  'solid-js',
+];
+
+/**
  * File-based routing for AirLib applications.
  *
  * Watches the pages directory, generates per-folder `route.ts` files (folders
@@ -176,9 +219,10 @@ export function airPages(options: AirPagesOptions = {}): PluginOption {
           alias: {
             [rootAlias]: userConfig.root || process.cwd(),
           },
+          dedupe: AIR_DEDUPED,
         },
         optimizeDeps: {
-          exclude: [manifestId, metadataId],
+          exclude: [manifestId, metadataId, ...AIR_SOURCE_DEPS],
         },
         ssr: {
           noExternal: [manifestId, metadataId],

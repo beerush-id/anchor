@@ -178,7 +178,7 @@ describe('environment & configuration lifecycle', () => {
       const plugins = Array.isArray(pluginOption) ? pluginOption : [pluginOption];
       const core = plugins.find((p) => p && typeof p === 'object' && 'name' in p && p.name === 'air-pages') as {
         config?: (userConfig: { root?: string }) => {
-          resolve?: { alias?: Record<string, string> };
+          resolve?: { alias?: Record<string, string>; dedupe?: string[] };
           optimizeDeps?: { exclude?: string[] };
           ssr?: { noExternal?: string[] };
         };
@@ -191,7 +191,10 @@ describe('environment & configuration lifecycle', () => {
       const returnedConfig = core.config?.(userConfig);
 
       expect(returnedConfig?.resolve?.alias?.['@']).toBe(dir);
+      expect(returnedConfig?.resolve?.dedupe).toContain('@airlib/core');
+      expect(returnedConfig?.resolve?.dedupe).toContain('solid-js');
       expect(returnedConfig?.optimizeDeps?.exclude).toContain('@airlib-cache/manifest');
+      expect(returnedConfig?.optimizeDeps?.exclude).toContain('@airlib/react/client');
       expect(returnedConfig?.ssr?.noExternal).toContain('@airlib-cache/metadata');
 
       core.configResolved?.({ root: dir });

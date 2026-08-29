@@ -1,7 +1,3 @@
-import './client/index.js';
-
-export const __AIR_REACT_CLIENT_INIT__ = 'preprocessed';
-
 export type {
   AnchorSettings,
   AnyType,

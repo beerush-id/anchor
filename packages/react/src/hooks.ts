@@ -1,6 +1,8 @@
+'use client';
+
 /* istanbul ignore file */
-import { captureStack, isBrowser } from '@airlib/core';
-import type { FunctionComponent, memo, useEffect, useMemo, useRef, useState } from 'react';
+import { captureStack } from '@airlib/core';
+import { type FunctionComponent, memo, useEffect, useMemo, useRef, useState } from 'react';
 
 /**
  * ⚠️⚠️⚠️ LOW-LEVEL APIS - AVOID DIRECT USAGE ⚠️⚠️⚠️
@@ -15,189 +17,12 @@ import type { FunctionComponent, memo, useEffect, useMemo, useRef, useState } fr
  * REFER TO OFFICIAL DOCUMENTATION FOR RECOMMENDED USAGE PATTERNS.
  */
 
-/**
- * Internal effect hook implementation that safely no-ops on the server.
- * On the client, this throws an error if used before initialization.
- * This hook is replaced by the actual React useEffect hook when setEffectHook is called.
- */
-let effectHook = (() => {
-  if (isBrowser()) {
-    const error = new Error('createEffect hook binding is not initialized.');
-    captureStack.violation.general(
-      'Uninitialized createEffect hook detected.',
-      'Attempted to use createEffect before the React hook binding is initialized. This usually happens when @airlib/react/client is not imported in your client entry file.',
-      error,
-      [
-        'Import "@airlib/react/client" at the top of your client entry file (e.g., app/layout.tsx or pages/_app.tsx).',
-        'Ensure the import runs before any components that use createEffect.',
-        'Documentation: https://airlib.dev/react/getting-started#client-initialization',
-      ]
-    );
-  }
-}) as typeof useEffect;
-
-/**
- * Internal state hook implementation that safely no-ops on the server.
- * On the client, this throws an error if used before initialization.
- * This hook is replaced by the actual React useState hook when setStateHook is called.
- */
-let stateHook = ((init) => {
-  if (isBrowser()) {
-    const error = new Error('createState hook binding is not initialized.');
-    captureStack.violation.general(
-      'Uninitialized createState hook detected.',
-      'Attempted to use createState before the React hook binding is initialized. This usually happens when @airlib/react/client is not imported in your client entry file.',
-      error,
-      [
-        'Import "@airlib/react/client" at the top of your client entry file (e.g., app/layout.tsx or pages/_app.tsx).',
-        'Ensure the import runs before any components that use createState.',
-        'Documentation: https://airlib.dev/react/getting-started#client-initialization',
-      ]
-    );
-  }
-
-  let current = typeof init === 'function' ? (init as () => unknown)() : init;
-  const setCurrent = (value: unknown | ((current: unknown) => unknown)) => {
-    current = value;
-  };
-
-  return [current, setCurrent];
-}) as typeof useState;
-
-/**
- * Internal ref hook implementation that safely no-ops on the server.
- * On the client, this throws an error if used before initialization.
- * This hook is replaced by the actual React useRef hook when setRefHook is called.
- *
- * @template T - The type of the ref value
- * @param init - The initial value for the ref
- * @returns A ref object with a current property
- */
-let refHook = <T>(init: T) => {
-  if (isBrowser()) {
-    const error = new Error('createRef hook binding is not initialized.');
-    captureStack.violation.general(
-      'Uninitialized createRef hook detected.',
-      'Attempted to use createRef before the React hook binding is initialized. This usually happens when @airlib/react/client is not imported in your client entry file.',
-      error,
-      [
-        'Import "@airlib/react/client" at the top of your client entry file (e.g., app/layout.tsx or pages/_app.tsx).',
-        'Ensure the import runs before any components that use createRef.',
-        'Documentation: https://airlib.dev/react/getting-started#client-initialization',
-      ]
-    );
-  }
-
-  return {
-    get current() {
-      return init;
-    },
-    set current(value: T) {
-      init = value;
-    },
-  };
-};
-
-/**
- * Internal memo hook implementation that safely no-ops on the server.
- * On the client, this throws an error if used before initialization.
- * This hook is replaced by the actual React useMemo hook when setMemoHook is called.
- */
-let memoHook = ((fn) => {
-  if (isBrowser()) {
-    const error = new Error('createMemo hook binding is not initialized.');
-    captureStack.violation.general(
-      'Uninitialized createMemo hook detected.',
-      'Attempted to use createMemo before the React hook binding is initialized. This usually happens when @airlib/react/client is not imported in your client entry file.',
-      error,
-      [
-        'Import "@airlib/react/client" at the top of your client entry file (e.g., app/layout.tsx or pages/_app.tsx).',
-        'Ensure the import runs before any components that use createMemo.',
-        'Documentation: https://airlib.dev/react/getting-started#client-initialization',
-      ]
-    );
-  }
-
-  return fn();
-}) as typeof useMemo;
-
-/**
- * Internal memo HOC implementation that safely no-ops on the server.
- * On the client, this throws an error if used before initialization.
- * This HOC is replaced by the actual React memo HOC when setMemoHOC is called.
- */
-let memoHOC = ((Component: FunctionComponent) => {
-  if (isBrowser()) {
-    const error = new Error('memoize HOC binding is not initialized.');
-    captureStack.violation.general(
-      'Uninitialized memoize HOC detected.',
-      'Attempted to use memoize before the React hook binding is initialized. This usually happens when @airlib/react/client is not imported in your client entry file.',
-      error,
-      [
-        'Import "@airlib/react/client" at the top of your client entry file (e.g., app/layout.tsx or pages/_app.tsx).',
-        'Ensure the import runs before any components that use memoize.',
-        'Documentation: https://airlib.dev/react/getting-started#client-initialization',
-      ]
-    );
-  }
-
-  return ((props) => {
-    return Component(props);
-  }) as FunctionComponent;
-}) as typeof memo;
-
-/**
- * Sets the memo HOC implementation to use React's memo.
- * This should be called during initialization by @airlib/react/client.
- *
- * @param hook - The React memo HOC to use
- */
-export const setMemoHOC = (hook: typeof memo) => {
-  memoHOC = hook;
-};
-
-/**
- * Sets the effect hook implementation to use React's useEffect.
- * This should be called during initialization by @airlib/react/client.
- *
- * @param hook - The React useEffect hook to use
- */
-export const setEffectHook = (hook: typeof useEffect) => {
-  effectHook = hook;
-};
-
-/**
- * Sets the state hook implementation to use React's useState.
- * This should be called during initialization by @airlib/react/client.
- *
- * @template T - The type of the state value
- * @param hook - The React useState hook to use
- */
-export const setStateHook = <T>(hook: typeof useState<T>) => {
-  stateHook = hook;
-};
-
-/**
- * Sets the ref hook implementation to use React's useRef.
- * This should be called during initialization by @airlib/react/client.
- *
- * @template T - The type of the ref value
- * @param hook - The React useRef hook to use
- */
-export const setRefHook = <T>(hook: typeof useRef<T>) => {
-  refHook = hook;
-};
-
-/**
- * Sets the memo hook implementation to use React's useMemo.
- * This should be called during initialization by @airlib/react/client.
- *
- * @template T - The type of the memoized value
- * @param hook - The React useMemo hook to use
- */
-export const setMemoHook = <T>(hook: typeof useMemo<T>) => {
-  memoHook = hook as typeof memoHook;
-};
+const IDENTITY = Symbol.for('anchor-for-reacct');
+if (IDENTITY in globalThis) {
+  const error = new Error('Multiple instance detected.');
+  captureStack.violation.general('Multiple instances detected.', 'Anchor for React registered more than once.', error);
+}
+globalThis[IDENTITY as never] = true as never;
 
 /**
  * ⚠️ LOW-LEVEL API - NOT RECOMMENDED FOR STANDARD USAGE ⚠️
@@ -219,7 +44,7 @@ export const setMemoHook = <T>(hook: typeof useMemo<T>) => {
  * @returns void
  */
 export const createEffect = ((cb, deps) => {
-  return effectHook(cb, deps);
+  return useEffect(cb, deps);
 }) as typeof useEffect;
 
 /**
@@ -242,7 +67,7 @@ export const createEffect = ((cb, deps) => {
  * @returns A tuple of [state, setState]
  */
 export const createState = <T>(init: T | (() => T)) => {
-  return stateHook(init);
+  return useState(init);
 };
 
 /**
@@ -265,7 +90,7 @@ export const createState = <T>(init: T | (() => T)) => {
  * @returns A ref object with a current property
  */
 export const createRef = <T>(init: T) => {
-  return refHook(init);
+  return useRef(init);
 };
 
 /**
@@ -288,7 +113,7 @@ export const createRef = <T>(init: T) => {
  * @returns The memoized value
  */
 export const createMemo = ((fn, deps) => {
-  return memoHook(fn, deps);
+  return useMemo(fn, deps);
 }) as typeof useMemo;
 
 /**
@@ -311,5 +136,5 @@ export const createMemo = ((fn, deps) => {
  * @returns A memoized version of the component
  */
 export const memoize = ((Component: FunctionComponent, propsAreEqual: () => boolean) => {
-  return memoHOC(Component, propsAreEqual);
+  return memo(Component, propsAreEqual);
 }) as typeof memo;
