@@ -1,5 +1,3 @@
-import '@airlib/react/client';
-
 import { hydrateRoot } from 'react-dom/client';
 import App from './app.js';
 import router from './router.js';
