@@ -1,6 +1,6 @@
 ---
 title: 'AirLib Form'
-description: 'Schema-driven reactive form engine for the AirLib — define the shape once, and the engine derives validation, state, and submission.'
+description: 'Schema-driven reactive form engine for AirLib — define the shape once, and the engine derives validation, state, and submission.'
 nav: 'Overview'
 nav-icon: checklist
 nav-priority: 110
@@ -8,64 +8,49 @@ nav-priority: 110
 
 # AirLib Form
 
-Forms are coordination problems. Multiple inputs must share state, validate together, track changes, and submit as one unit. In most frameworks, solving this means wiring `onChange`, managing error state, tracking dirty fields, handling submission lifecycle, and repeating this pattern for every form.
+**Zero-Boilerplate, Schema-Driven Reactive Forms**
 
-The typical escape route is a form library — but most of them trade one kind of boilerplate for another. You replace `onChange` with `register()`, swap `useState` for `useFieldArray`, and gain a new API surface to learn, debug, and maintain.
+Forms are the primary medium of user interaction on the web. They capture user input, enforce data integrity through business rules, track user mutations, and coordinate asynchronous submission lifecycles.
 
-AirLib Form takes a different approach: the **Zod schema is the contract**. Define the shape once, and the engine derives everything — validation, error messages, change tracking, touched states, cross-field matching, and the submit lifecycle. Your job is to describe *what* the form is. The engine handles *how* it works.
+:::details[The traditional form dilemma]
+In modern web applications, handling forms often means navigating repetitive boilerplate and fragmented tooling:
 
-## What It Looks Like
+- Manually writing imperative `onChange`, `onBlur`, and `value` bindings across every input.
+- Synchronizing validation rules across UI components, client schemas, and backend payloads.
+- Implementing custom state machines for dirty tracking, field touched states, and error arrays.
+- Coordinating multi-step submission states (`idle`, `pending`, `success`, `error`) and input-locking logic.
+- Managing coarse-grained component re-renders where a keystroke in one input forces the entire form to re-evaluate.
+
+Most form libraries address this by adding new abstractions — custom register hooks, controller wrappers, and field arrays — which trade native HTML simplicity for framework-specific DSLs.
+:::
+
+When form architecture demands dozens of lines of glue code for everyday fields, the tooling slows down product development.
+
+:::tip[What if:]
+**Your Zod schema is the single source of truth, and the form engine derives the rest?**
+:::
+
+AirLib Form aligns form development with native web principles: define your **Zod schema once**, and the engine autonomously derives **fine-grained reactivity**, **runtime validation**, **error collections**, **dirty-state tracking**, **cross-field matching**, and the **submit lifecycle**.
 
 :::code-group{group="framework"}
-
-```tsx [React] name="react"
-import { setup, render, mutable } from '@airlib/react';
+```tsx [React] name="react" executable
 import { z } from 'zod';
-import { createForm, TextInput, EmailInput, FormSubmit } from '@airlib/react-form';
+import { setup, mutable } from '@airlib/react';
+import { createForm, TextInput, EmailInput, Textarea } from '@airlib/react-form';
 
-const schema = z.object({
+const userSchema = z.object({
   name: z.string().min(3, 'Name is too short'),
   email: z.string().email('Invalid email'),
+  bio: z.string().max(160, 'Bio is too long').optional(),
 });
 
-const UserForm = createForm(schema);
+const UserForm = createForm(userSchema);
 
-export const ProfileEditor = setup(() => {
-  const profile = mutable({ name: '', email: '' });
-
-  return render(() => (
-    <UserForm value={profile} onSubmit={(data) => saveProfile(data)}>
-      <UserForm.Field name="name" label="Name">
-        <TextInput placeholder="Enter name" />
-      </UserForm.Field>
-
-      <UserForm.Field name="email" label="Email">
-        <EmailInput placeholder="Enter email" />
-      </UserForm.Field>
-
-      <FormSubmit>Save</FormSubmit>
-    </UserForm>
-  ));
-});
-```
-
-```tsx [SolidJS] name="solid"
-import { setup, mutable } from '@airlib/solid';
-import { z } from 'zod';
-import { createForm, TextInput, EmailInput, FormSubmit } from '@airlib/solid-form';
-
-const schema = z.object({
-  name: z.string().min(3, 'Name is too short'),
-  email: z.string().email('Invalid email'),
-});
-
-const UserForm = createForm(schema);
-
-export const ProfileEditor = setup(() => {
-  const profile = mutable({ name: '', email: '' });
+const ProfileEditor = setup(() => {
+  const profile = mutable({ name: '', email: '', bio: '' });
 
   return (
-    <UserForm value={profile} onSubmit={(data) => saveProfile(data)}>
+    <UserForm value={profile} onSubmit={(data) => console.log('Saved:', data)}>
       <UserForm.Field name="name" label="Name">
         <TextInput placeholder="Enter name" />
       </UserForm.Field>
@@ -74,61 +59,154 @@ export const ProfileEditor = setup(() => {
         <EmailInput placeholder="Enter email" />
       </UserForm.Field>
 
-      <FormSubmit>Save</FormSubmit>
+      <UserForm.Field name="bio" label="Bio">
+        <Textarea placeholder="Tell us about yourself" />
+      </UserForm.Field>
+
+      <div className="flex gap-2">
+        <UserForm.Reset>Reset</UserForm.Reset>
+        <UserForm.Submit className="flex-1">Save</UserForm.Submit>
+      </div>
     </UserForm>
   );
 });
 ```
+```tsx [SolidJS] name="solid"
+import { z } from 'zod';
+import { setup, mutable } from '@airlib/solid';
+import { createForm, TextInput, EmailInput, Textarea, FormSubmit, FormReset } from '@airlib/solid-form';
+
+const schema = z.object({
+  name: z.string().min(3, 'Name is too short'),
+  email: z.string().email('Invalid email'),
+  bio: z.string().max(160, 'Bio is too long').optional(),
+});
+
+const UserForm = createForm(schema);
+
+const ProfileEditor = setup(() => {
+  const profile = mutable({ name: '', email: '', bio: '' });
+
+  return (
+    <UserForm value={profile} onSubmit={(data) => console.log('Saved:', data)}>
+      <UserForm.Field name="name" label="Name">
+        <TextInput placeholder="Enter name" />
+      </UserForm.Field>
+
+      <UserForm.Field name="email" label="Email">
+        <EmailInput placeholder="Enter email" />
+      </UserForm.Field>
+
+      <UserForm.Field name="bio" label="Bio">
+        <Textarea placeholder="Tell us about yourself" />
+      </UserForm.Field>
+
+      <div className="flex gap-2">
+        <FormReset>Reset</FormReset>
+        <FormSubmit className="flex-1">Save</FormSubmit>
+      </div>
+    </UserForm>
+  );
+});
+```
+:::
+
+:::interactive[See it in action]
+<div className='w-full p-2 md:py-8'>
+  <ProfileEditor />
+</div>
+:::
+
+With AirLib Form, you don't need to write repetitive form glue code to build forms that are **strictly typed**, **fine-grained reactive**, and **accessible**—delivering complete **validation**, **dirty tracking**, and **submission lifecycles** with zero boilerplate.
+
+:::tip[Schema as the Single Source of Truth]
+The Zod schema is the **contract**. Every field name, type constraint, and error message is derived automatically—catching typos (`name="typo"`) at compile time and validating mutations with zero runtime glue code.
+:::
+
+## Installation
+
+Install `@airlib/react-form` or `@airlib/solid-form` into your project using your package manager of choice.
+
+### React
+
+Install the React form components and reactive primitives for your application:
+
+:::code-group{group="pm"}
+
+```bash [Bun] name="bun"
+bun add @airlib/react-form
+```
+
+```bash [NPM] name="npm"
+npm install @airlib/react-form
+```
+
+```bash [PNPM] name="pnpm"
+pnpm add @airlib/react-form
+```
+
+```bash [Yarn] name="yarn"
+yarn add @airlib/react-form
+```
 
 :::
 
-Every line describes *what* the form is. `name="typo"` is a compile error — the components are typed against the schema.
+### SolidJS
+
+Install the SolidJS form components and reactive primitives for your application:
+
+:::code-group{group="pm"}
+
+```bash [Bun] name="bun"
+bun add @airlib/solid-form
+```
+
+```bash [NPM] name="npm"
+npm install @airlib/solid-form
+```
+
+```bash [PNPM] name="pnpm"
+pnpm add @airlib/solid-form
+```
+
+```bash [Yarn] name="yarn"
+yarn add @airlib/solid-form
+```
+
+:::
 
 ## Architecture
 
-AirLib Form is split into two layers:
+AirLib Form is split into two modular layers:
 
 ### Core Engine
 
 The core package `@airlib/form` is framework-agnostic. It handles:
 
-- **Schema validation** — Zod schemas define the contract, the engine validates on every mutation
-- **Reactive store** — Each field is a granular reactive signal, only the changed field re-renders
-- **Change tracking** — Which fields differ from the initial value, and by how much
-- **Touched tracking** — Which fields were ever mutated, persists until reset
-- **Cross-field matching** — Equality checks or custom logic, tracked as a separate signal
-- **Submit lifecycle** — `idle → pending → success/error`, with automatic input locking
+- **Schema validation** — Zod schemas define the contract, and the engine validates on every mutation
+- **Reactive store** — Each field is a granular reactive signal, ensuring only the changed field updates
+- **Change tracking** — Tracks which fields differ from baseline values, and by how much
+- **Touched tracking** — Records mutated fields reliably, persisting until explicitly reset
+- **Cross-field matching** — Evaluates equality checks or custom comparison logic as isolated signals
+- **Submit lifecycle** — Coordinates `idle → pending → success/error` transitions with automatic input locking
 
 ### View Layer
 
-The view layer (`@airlib/react-form`, `@airlib/solid-form`) provides framework-specific components that compose the core signals into UI:
+The view layer (`@airlib/react-form`, `@airlib/solid-form`) provides framework-specific components that compose core signals into native UI:
 
-- **Form** — Wraps children in form context, handles submit
-- **Field** — Connects a field name to its label, error display, and accessibility attributes
-- **FieldList** — Exposes reactive arrays for dynamic field lists
-- **Input components** — Pre-built inputs that auto-wire to the form context
-- **FormSubmit / FormReset** — Buttons that track form readiness
+- **Form** — Wraps children in form context and orchestrates submission
+- **Field** — Connects field names to labels, error displays, and accessibility attributes
+- **FieldList** — Exposes reactive arrays for dynamic lists with fine-grained tracking
+- **Input components** — Pre-built, accessible inputs that auto-wire to the active form context
+- **FormSubmit / FormReset** — Self-governing buttons that automatically track form readiness and dirty states
 
-The core provides raw, unopinionated truth signals. The view layer decides how to render them. This split means you can use the core engine in any framework — or no framework at all.
+The core engine provides raw, unopinionated reactive state, while the view layer delivers ergonomic UI primitives. This separation means you get the same unified mental model across React, SolidJS, or headless environments.
 
-## Installation
-
-:::code-group{group="framework"}
-
-```sh [React] name="react"
-npm install @airlib/form @airlib/react-form
-```
-
-```sh [SolidJS] name="solid"
-npm install @airlib/form @airlib/solid-form
-```
-
+:::note[Learn more about AirLib Form]
+- **Getting Started** — Build your first schema-driven form step by step. Learn more in [Getting Started](/docs/form/getting-started).
+- **Form Inputs** — Pre-built, zero-configuration bindings for 14 standard HTML input types. Learn more in [Form Inputs](/docs/form/inputs).
+- **Composition & Matching** — Cross-field validation, dynamic array fields, and headless customization. Learn more in [Composition](/docs/form/composition).
+- **Global Configuration** — Set global styling defaults, error classes, and behavioral overrides. Learn more in [Configuration](/docs/form/configuration).
+- **General Form** — Build dynamic, untyped forms driven by server responses or CMS schemas. Learn more in [General Form](/docs/form/general).
+- **Core API** — Use the engine directly without framework components. Learn more in [Core API](/docs/form/core-api).
 :::
-
-## What's Next
-
-- [Getting Started](./getting-started) — Build your first form, step by step
-- [Composition](./composition) — Cross-field matching, arrays, headless mode, accessibility
-- [Configuration](./configuration) — Global defaults, styling, and behavior overrides
-- [General Form](./general) — Using the untyped Form, Field, Submit, and Reset components
-- [Core API](./core-api) — Use the engine without components

@@ -1,8 +1,8 @@
-import type { InputHTMLAttributes } from 'react';
-import { createInput } from './createInput.js';
 import type { Bindable } from '@airlib/react';
+import type { ComponentProps } from 'react';
+import { createInput } from './createInput.js';
 
-export interface TextInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'value'> {
+export interface TextInputProps extends Omit<ComponentProps<'input'>, 'value'> {
   errorClass?: string;
   value?: Bindable<string>;
 }

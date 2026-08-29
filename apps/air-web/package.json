@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@airlib/react": "workspace:*",
+    "@airlib/react-form": "workspace:*",
     "@irpclib/http": "workspace:*",
     "@irpclib/irpc": "workspace:*",
     "@irpclib/ws": "workspace:*",

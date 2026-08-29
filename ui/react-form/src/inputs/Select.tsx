@@ -1,9 +1,9 @@
 import { type AnyType, formInput } from '@airlib/form';
-import { type Bindable, derived, render, setup } from '@airlib/react';
-import type { ChangeEvent, SelectHTMLAttributes } from 'react';
+import { type Bindable, classx, derived, render, setup } from '@airlib/react';
+import type { ChangeEvent, ComponentProps } from 'react';
 import { getInputClasses, INPUT_OPTIONS_KEYS, SELECT_OPTIONS, SELECT_OPTIONS_KEYS } from '../config.js';
 
-export interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'value'> {
+export interface SelectProps extends Omit<ComponentProps<'select'>, 'value'> {
   errorClass?: string;
   value?: Bindable<string | number>;
 }
@@ -26,19 +26,20 @@ export const Select = setup<SelectProps>((props) => {
     input.value = e.currentTarget.value;
     props.onChange?.(e);
   };
-  const className = derived(() => {
-    if (input.touched && (input.error || !input.matched)) {
-      return [props.className ?? baseClass, props.errorClass ?? errorClass].filter(Boolean).join(' ');
-    }
-    return props.className ?? baseClass;
-  });
+  const className = derived(() =>
+    classx(
+      baseClass,
+      props.className,
+      Boolean(input.touched && (input.error || !input.matched)) && (props.errorClass ?? errorClass)
+    )
+  );
 
   return render(
     () => (
       <select
         {...rest}
         name={input.name}
-        value={input.value}
+        value={input.value as AnyType}
         disabled={input.disabled}
         className={className.value}
         onChange={handleChange}

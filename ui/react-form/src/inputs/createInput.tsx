@@ -1,6 +1,6 @@
 import type { AnyType, FormInputOptions } from '@airlib/form';
 import { formInput } from '@airlib/form';
-import { derived, render, setup } from '@airlib/react';
+import { classx, derived, effect, render, setup } from '@airlib/react';
 import type { FocusEvent, InputEvent } from 'react';
 import { getInputClasses, getSpecificOptions, INPUT_OPTIONS_KEYS } from '../config.js';
 
@@ -24,6 +24,7 @@ export function createInput<P, T = AnyType>(type: string, options?: FormInputOpt
       'className',
       'onInput',
       'onBlur',
+      'ref',
       ...specificOptionKeys,
       ...INPUT_OPTIONS_KEYS,
     ]);
@@ -41,23 +42,46 @@ export function createInput<P, T = AnyType>(type: string, options?: FormInputOpt
       $props.onBlur?.(e);
     };
 
-    const className = derived(() => {
-      if (input.touched && (input.error || !input.matched)) {
-        return [$props.className ?? baseClass, $props.errorClass ?? errorClass].filter(Boolean).join(' ');
+    const className = derived(() =>
+      classx(
+        baseClass,
+        $props.className,
+        Boolean(input.touched && (input.error || !input.matched)) && ($props.errorClass ?? errorClass)
+      )
+    );
+
+    let ref: HTMLInputElement | undefined;
+
+    const assignRef = (el: HTMLInputElement) => {
+      ref = el;
+
+      if ('ref' in $props) {
+        const $ref = $props.ref;
+
+        if (typeof $ref === 'function') {
+          $ref(el);
+        } else if ($ref && typeof $ref === 'object') {
+          $ref.current = el;
+        }
       }
-      return $props.className ?? baseClass;
+    };
+
+    effect(() => {
+      const value = input.value;
+      if (ref && ref.value !== value) ref.value = (value ?? '') as AnyType;
     });
 
     return render(
       () => (
         <input
           {...rest}
+          ref={assignRef}
           id={fieldId}
           type={input.type}
           name={input.name}
-          value={input.value}
           disabled={input.disabled}
           className={className.value}
+          defaultValue={input.value as AnyType}
           aria-invalid={input.error ? true : undefined}
           aria-describedby={input.error ? errorId : undefined}
           onInput={handleInput}

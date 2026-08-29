@@ -2,7 +2,8 @@
 
 @import 'tailwindcss';
 @import '@airlib/react/mdx/default.css' layer(mdx);
-@import './docs.css';
+@import './styles/docs.css' layer(components);
+@import './styles/form.css' layer(components);
 
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 

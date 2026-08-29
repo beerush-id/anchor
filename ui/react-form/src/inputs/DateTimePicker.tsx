@@ -1,8 +1,8 @@
 import type { Bindable } from '@airlib/react';
-import type { InputHTMLAttributes } from 'react';
+import type { ComponentProps } from 'react';
 import { createInput } from './createInput.js';
 
-export interface DateTimePickerProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'value'> {
+export interface DateTimePickerProps extends Omit<ComponentProps<'input'>, 'value'> {
   value?: Bindable<Date>;
   errorClass?: string;
 }

@@ -1,9 +1,9 @@
 import { type AnyType, formInput } from '@airlib/form';
-import { derived, render, setup } from '@airlib/react';
-import type { ChangeEvent, InputHTMLAttributes } from 'react';
+import { classx, derived, render, setup } from '@airlib/react';
+import type { ChangeEvent, ComponentProps } from 'react';
 import { FILE_OPTIONS, FILE_OPTIONS_KEYS, getInputClasses, INPUT_OPTIONS_KEYS } from '../config.js';
 
-export interface FilePickerProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'value'> {
+export interface FilePickerProps extends Omit<ComponentProps<'input'>, 'value'> {
   onFiles?: (files: FileList | null) => void;
   errorClass?: string;
 }
@@ -28,12 +28,13 @@ export const FilePicker = setup<FilePickerProps>((props) => {
     props.onChange?.(e);
   };
 
-  const className = derived(() => {
-    if (input.touched && (input.error || !input.matched)) {
-      return [props.className ?? baseClass, props.errorClass ?? errorClass].filter(Boolean).join(' ');
-    }
-    return props.className ?? baseClass;
-  });
+  const className = derived(() =>
+    classx(
+      baseClass,
+      props.className,
+      Boolean(input.touched && (input.error || !input.matched)) && (props.errorClass ?? errorClass)
+    )
+  );
 
   return render(
     () => (

@@ -1,9 +1,9 @@
 import { type AnyType, formInput } from '@airlib/form';
-import { type Bindable, derived, render, setup } from '@airlib/react';
-import type { ChangeEvent, InputHTMLAttributes } from 'react';
+import { type Bindable, classx, derived, render, setup } from '@airlib/react';
+import type { ChangeEvent, ComponentProps } from 'react';
 import { CHECKBOX_OPTIONS, CHECKBOX_OPTIONS_KEYS, getInputClasses, INPUT_OPTIONS_KEYS } from '../config.js';
 
-export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'checked'> {
+export interface CheckboxProps extends Omit<ComponentProps<'input'>, 'checked'> {
   errorClass?: string;
   checked?: Bindable<boolean>;
 }
@@ -29,12 +29,13 @@ export const Checkbox = setup<CheckboxProps>((props) => {
     props.onChange?.(e);
   };
 
-  const className = derived(() => {
-    if (input.touched && (input.error || !input.matched)) {
-      return [props.className ?? baseClass, props.errorClass ?? errorClass].filter(Boolean).join(' ');
-    }
-    return props.className ?? baseClass;
-  });
+  const className = derived(() =>
+    classx(
+      baseClass,
+      props.className,
+      Boolean(input.touched && (input.error || !input.matched)) && (props.errorClass ?? errorClass)
+    )
+  );
 
   return render(
     () => (
