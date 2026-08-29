@@ -9,9 +9,9 @@ nav-priority: 116
 
 The core `@airlib/form` package provides the reactive form engine without UI components. Use it when you need direct control — building framework integrations, custom component libraries, or working outside React/Solid.
 
-## formState
+## Form State
 
-Creates the reactive form store from a Zod schema. This is the foundation — all field states, validation, change tracking, and submission lifecycle live here.
+The `formState` function creates the reactive form store from a Zod schema. This is the foundation — all field states, validation, change tracking, and submission lifecycle live here.
 
 :::code-group
 
@@ -124,9 +124,9 @@ form.unblock('async-check'); // removes a block condition
 
 :::
 
-## formField
+## Form Field
 
-Creates a reactive reference to a single field within the nearest form context. When used inside a component tree with an active form provider, it connects to that form.
+The `formField` function creates a reactive reference to a single field within the nearest form context. When used inside a component tree with an active form provider, it connects to that form.
 
 :::code-group
 
@@ -184,9 +184,9 @@ const endDate = formField('endDate', (form) =>
 
 The match function runs inside an Anchor `effect`. Dependencies are tracked — when `startDate` or `endDate` change, the function re-evaluates.
 
-## formInput
+## Form Input
 
-Creates an input controller that handles string buffering and type conversion. Useful for building input components that need to bridge between display strings and typed values.
+The `formInput` function creates an input controller that handles string buffering and type conversion. Useful for building input components that need to bridge between display strings and typed values.
 
 :::code-group
 
@@ -241,9 +241,9 @@ const priceInput = formInput(
 
 :::
 
-## formFactory
+## Form Factory
 
-Wraps `formState` with a factory pattern for reusable, typed form creation. Useful when the same schema is used across multiple components.
+The `formFactory` function wraps `formState` with a factory pattern for reusable, typed form creation. Useful when the same schema is used across multiple components.
 
 :::code-group
 

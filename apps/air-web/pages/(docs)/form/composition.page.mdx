@@ -17,9 +17,9 @@ When one field must match another — confirm password, date ranges, conditional
 
 Pass a field path as a string. The engine compares the two fields and exposes `matched` as a separate signal.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 const schema = z.object({
   password: z.string().min(6, 'At least 6 characters'),
   confirmPassword: z.string().min(6, 'At least 6 characters'),
@@ -42,7 +42,7 @@ const PasswordForm = createForm(schema);
 </PasswordForm>
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { For } from 'solid-js';
 
 const schema = z.object({
@@ -75,9 +75,9 @@ const PasswordForm = createForm(schema);
 
 For logic beyond equality, pass a function. The function receives the form state and returns a boolean.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 const rangeSchema = z.object({
   startDate: z.string(),
   endDate: z.string(),
@@ -94,7 +94,7 @@ const RangeForm = createForm(rangeSchema);
 </RangeForm.Field>
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 const rangeSchema = z.object({
   startDate: z.string(),
   endDate: z.string(),
@@ -123,9 +123,9 @@ Two signals track user interaction at the field level:
 
 **`changed`** — `true` when the current value differs from the initial value. Reverts to `false` if the user restores the original. It answers: "is this field different from what we started with?"
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 <UserForm.Field name="email">
   {(field) => (
     <div>
@@ -139,7 +139,7 @@ Two signals track user interaction at the field level:
 </UserForm.Field>
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 <UserForm.Field name="email">
   {(field) => (
     <div>
@@ -157,9 +157,16 @@ Two signals track user interaction at the field level:
 
 At the form level, `changed` aggregates all fields:
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
+const form = UserForm.get();
+
+form.changed;     // true if any field differs from initial
+form.changeList;  // { email: 'new@test.com' } — changed fields and their values
+```
+
+```tsx [SolidJS] name="solid"
 const form = UserForm.get();
 
 form.changed;     // true if any field differs from initial
@@ -172,9 +179,9 @@ form.changeList;  // { email: 'new@test.com' } — changed fields and their valu
 
 When implementing asynchronous validation, such as checking if a username is available, isolating the logic in a custom component prevents conflicts with the global form state.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { setup, render, mutable } from '@airlib/react';
 
 export const AsyncUsernameInput = setup(() => {
@@ -210,7 +217,7 @@ export const AsyncUsernameInput = setup(() => {
 });
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { setup, mutable } from '@airlib/solid';
 
 export const AsyncUsernameInput = setup(() => {
@@ -252,15 +259,15 @@ The custom component handles its own asynchronous state and uses `form.block()` 
 
 To use the component, place it inside a standard field wrapper.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 <UserForm.Field name="username" label="Username">
   <AsyncUsernameInput />
 </UserForm.Field>
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 <UserForm.Field name="username" label="Username">
   <AsyncUsernameInput />
 </UserForm.Field>
@@ -272,9 +279,9 @@ To use the component, place it inside a standard field wrapper.
 
 By default, `Field` renders a `<div>` with a label and error display. For full control, pass a function as children.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 <UserForm.Field name="email">
   {(field) => (
     <div className="custom-field">
@@ -293,7 +300,7 @@ By default, `Field` renders a `<div>` with a label and error display. For full c
 </UserForm.Field>
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { For } from 'solid-js';
 
 <UserForm.Field name="email">
@@ -335,9 +342,9 @@ The function receives the field state with these properties:
 
 For dynamic lists — team members, phone numbers, addresses — use `FieldList`.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 const teamSchema = z.object({
   name: z.string().min(1),
   members: z.array(z.object({
@@ -379,7 +386,7 @@ const TeamForm = createForm(teamSchema);
 </TeamForm>
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { For } from 'solid-js';
 
 const teamSchema = z.object({
@@ -433,9 +440,9 @@ const TeamForm = createForm(teamSchema);
 
 For deeply nested data, use dot-notation in field names.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 const schema = z.object({
   address: z.object({
     street: z.string().min(1, 'Required'),
@@ -459,7 +466,7 @@ const AddressForm = createForm(schema);
 </AddressForm>
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 const schema = z.object({
   address: z.object({
     street: z.string().min(1, 'Required'),
@@ -491,15 +498,15 @@ Dot-paths are sanitized to dashes for HTML `id` attributes: `address.city` produ
 
 Form components handle accessibility out of the box. No extra configuration needed. When you write this:
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 <UserForm.Field name="address.city" label="City" errorClass="error">
   <TextInput />
 </UserForm.Field>
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 <UserForm.Field name="address.city" label="City" errorClass="error">
   <TextInput />
 </UserForm.Field>
@@ -542,9 +549,9 @@ For headless fields, you are responsible for wiring these attributes yourself us
 
 For standard HTML inputs, `createInput` generates a form-aware component.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { createInput } from '@airlib/react-form';
 
 const PhoneInput = createInput('tel');
@@ -552,7 +559,7 @@ const SearchInput = createInput('search');
 const URLInput = createInput('url');
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { createInput } from '@airlib/solid-form';
 
 const PhoneInput = createInput('tel');
@@ -568,9 +575,9 @@ Each generated component auto-wires to the form context, handles `aria-*` attrib
 
 For inputs with custom behavior — formatted currency, rich text, third-party components — use `formInput` from the core.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { setup, render } from '@airlib/react';
 import { formInput } from '@airlib/form';
 
@@ -593,7 +600,7 @@ const CurrencyInput = setup<{ name: string }>((props) => {
 });
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { setup } from '@airlib/solid';
 import { formInput } from '@airlib/form';
 
@@ -626,9 +633,9 @@ If the built-in `<FormSubmit>` or `<FormReset>` components don't fit your needs,
 
 Because a form's readiness depends on validation, changes, and network state, writing robust action buttons by hand requires checking multiple signals.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { setup, render } from '@airlib/react';
 import { getForm } from '@airlib/form';
 
@@ -663,7 +670,7 @@ export const SubmitUserForm = setup(() => {
 });
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { setup } from '@airlib/solid';
 import { getForm } from '@airlib/form';
 

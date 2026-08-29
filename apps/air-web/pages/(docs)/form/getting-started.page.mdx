@@ -13,9 +13,9 @@ To build a form with AirLib Form, you need three things: a schema, a form factor
 
 The Zod schema is the single source of truth. It defines the data shape, validation rules, and error messages.
 
-:::code-group
+:::code-group{group="framework"}
 
-```ts [React]
+```ts [React] name="react"
 import { z } from 'zod';
 
 const userSchema = z.object({
@@ -25,7 +25,7 @@ const userSchema = z.object({
 });
 ```
 
-```ts [SolidJS]
+```ts [SolidJS] name="solid"
 import { z } from 'zod';
 
 const userSchema = z.object({
@@ -43,15 +43,15 @@ Every field in the schema maps to a field in the form. Validation runs on every 
 
 Pass the schema to `createForm` to generate typed components.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { createForm } from '@airlib/react-form';
 
 const UserForm = createForm(userSchema);
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { createForm } from '@airlib/solid-form';
 
 const UserForm = createForm(userSchema);
@@ -71,9 +71,9 @@ All three enforce the schema types. `<UserForm.Field name="typo">` is a compile 
 
 Drop `Field` components inside the form. Each `Field` takes a `name` (the schema path) and wraps an input component.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { setup, render, mutable } from '@airlib/react';
 import { TextInput, EmailInput, NumberInput, FormSubmit } from '@airlib/react-form';
 
@@ -107,7 +107,7 @@ export const ProfileEditor = setup(() => {
 });
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { setup, mutable } from '@airlib/solid';
 import { TextInput, EmailInput, NumberInput, FormSubmit } from '@airlib/solid-form';
 
@@ -156,9 +156,9 @@ The input components (`TextInput`, `EmailInput`, etc.) connect to the field cont
 
 Validation runs on every field change. Errors appear in the `Field` when the value violates the schema.
 
-:::code-group
+:::code-group{group="framework"}
 
-```ts [React]
+```ts [React] name="react"
 const schema = z.object({
   email: z.string().email('Please enter a valid email'),
   password: z.string()
@@ -168,7 +168,7 @@ const schema = z.object({
 });
 ```
 
-```ts [SolidJS]
+```ts [SolidJS] name="solid"
 const schema = z.object({
   email: z.string().email('Please enter a valid email'),
   password: z.string()
@@ -188,9 +188,9 @@ By default, `Field` renders the first error. For custom rendering, use [headless
 
 The `onSubmit` handler receives three arguments: the full data, the changed fields, and the original event.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 <UserForm
   value={existingUser}
   onSubmit={async (data, changes, event) => {
@@ -204,7 +204,7 @@ The `onSubmit` handler receives three arguments: the full data, the changed fiel
 >
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 <UserForm
   value={existingUser}
   onSubmit={async (data, changes, event) => {
@@ -239,9 +239,9 @@ AirLib Form provides `<FormSubmit>` and `<FormReset>` components that automatica
 
 Similarly, `<FormReset>` reverts all fields to their initial values, clears touched states, and resets the submission status. It disables itself when the form is unchanged.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { FormSubmit, FormReset } from '@airlib/react-form';
 
 <div>
@@ -250,7 +250,7 @@ import { FormSubmit, FormReset } from '@airlib/react-form';
 </div>
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { FormSubmit, FormReset } from '@airlib/solid-form';
 
 <div>
@@ -263,9 +263,9 @@ import { FormSubmit, FormReset } from '@airlib/solid-form';
 
 Both components also accept a function as `children`, providing direct access to the form state so you can change their contents dynamically.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 <FormSubmit className="btn-primary">
   {(form) => (
     <>
@@ -276,7 +276,7 @@ Both components also accept a function as `children`, providing direct access to
 </FormSubmit>
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 <FormSubmit class="btn-primary">
   {(form) => (
     <>

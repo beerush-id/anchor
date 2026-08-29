@@ -17,9 +17,9 @@ For this, AirLib Form provides the general-purpose, untyped `<Form>` and `<Field
 
 The general `<Form>` component takes the schema and initial value as props. It creates the reactive form state and provides it to all child fields.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { setup, render, mutable } from '@airlib/react';
 import { z } from 'zod';
 import { Form, Field, TextInput, FormSubmit } from '@airlib/react-form';
@@ -53,7 +53,7 @@ export const DynamicForm = setup(() => {
 });
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { setup, mutable } from '@airlib/solid';
 import { z } from 'zod';
 import { Form, Field, TextInput, FormSubmit } from '@airlib/solid-form';
@@ -93,9 +93,9 @@ export const DynamicForm = setup(() => {
 
 The general `<Field>` component accepts any `string` as its `name` prop. It functions exactly like a typed field — providing label association, error rendering, and context for nested inputs.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { setup, render } from '@airlib/react';
 
 // A generic field renderer for dynamic forms
@@ -120,7 +120,7 @@ export const DynamicFormRenderer = setup<{ fields: any[]; schema: any; initialVa
 });
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { setup } from '@airlib/solid';
 import { For } from 'solid-js';
 import { Form, Field, TextInput, EmailInput, FormSubmit } from '@airlib/solid-form';

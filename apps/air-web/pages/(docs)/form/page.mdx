@@ -16,9 +16,9 @@ AirLib Form takes a different approach: the **Zod schema is the contract**. Defi
 
 ## What It Looks Like
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { setup, render, mutable } from '@airlib/react';
 import { z } from 'zod';
 import { createForm, TextInput, EmailInput, FormSubmit } from '@airlib/react-form';
@@ -49,7 +49,7 @@ export const ProfileEditor = setup(() => {
 });
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { setup, mutable } from '@airlib/solid';
 import { z } from 'zod';
 import { createForm, TextInput, EmailInput, FormSubmit } from '@airlib/solid-form';
@@ -88,9 +88,9 @@ Every line describes *what* the form is. `name="typo"` is a compile error — th
 
 AirLib Form is split into two layers:
 
-### Core Engine (`@airlib/form`)
+### Core Engine
 
-The core is framework-agnostic. It handles:
+The core package `@airlib/form` is framework-agnostic. It handles:
 
 - **Schema validation** — Zod schemas define the contract, the engine validates on every mutation
 - **Reactive store** — Each field is a granular reactive signal, only the changed field re-renders
@@ -99,9 +99,9 @@ The core is framework-agnostic. It handles:
 - **Cross-field matching** — Equality checks or custom logic, tracked as a separate signal
 - **Submit lifecycle** — `idle → pending → success/error`, with automatic input locking
 
-### View Layer (`@airlib/react-form`, `@airlib/solid-form`)
+### View Layer
 
-The view layer provides framework-specific components that compose the core signals into UI:
+The view layer (`@airlib/react-form`, `@airlib/solid-form`) provides framework-specific components that compose the core signals into UI:
 
 - **Form** — Wraps children in form context, handles submit
 - **Field** — Connects a field name to its label, error display, and accessibility attributes
@@ -113,13 +113,13 @@ The core provides raw, unopinionated truth signals. The view layer decides how t
 
 ## Installation
 
-:::code-group
+:::code-group{group="framework"}
 
-```sh [React]
+```sh [React] name="react"
 npm install @airlib/form @airlib/react-form
 ```
 
-```sh [SolidJS]
+```sh [SolidJS] name="solid"
 npm install @airlib/form @airlib/solid-form
 ```
 

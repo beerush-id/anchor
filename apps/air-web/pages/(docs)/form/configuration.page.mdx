@@ -15,9 +15,9 @@ AirLib Form provides a global configuration API through `configureForm`. This al
 
 To avoid repeating props on every component, we can define global defaults.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { configureForm } from '@airlib/react-form';
 
 configureForm({
@@ -45,7 +45,7 @@ configureForm({
 });
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { configureForm } from '@airlib/solid-form';
 
 configureForm({
@@ -81,9 +81,9 @@ By calling `configureForm` at the root of your application, every form component
 
 Different types of inputs often require different default styling. For example, a checkbox looks very different from a text area.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { configureForm } from '@airlib/react-form';
 
 configureForm({
@@ -99,7 +99,7 @@ configureForm({
 });
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { configureForm } from '@airlib/solid-form';
 
 configureForm({
@@ -123,9 +123,9 @@ The engine automatically applies `INPUT_OPTIONS` as the base, and then merges th
 
 Global defaults provide the baseline, but you often need to override them for specific use cases.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 <UserForm.Field 
   name="email" 
   label="Email Address" 
@@ -135,7 +135,7 @@ Global defaults provide the baseline, but you often need to override them for sp
 </UserForm.Field>
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 <UserForm.Field 
   name="email" 
   label="Email Address" 
