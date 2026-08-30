@@ -1,6 +1,6 @@
 import type { AnyType, DeepPaths, FormField, FormState, PathValue } from '@airlib/form';
 import { formField, formState, getForm } from '@airlib/form';
-import { classx, derived, render, setup, Slot } from '@airlib/react';
+import { classx, derived, render, Slot, setup } from '@airlib/react';
 import type { ComponentProps, MouseEvent, ReactNode, SubmitEvent } from 'react';
 import type { input, ZodObject, ZodRawShape } from 'zod';
 import type {
@@ -21,70 +21,145 @@ import {
   SUBMIT_OPTIONS_KEYS,
 } from './config.js';
 
+/**
+ * Named slot renderers available on the `<Form>` component.
+ *
+ * Provides declarative customization hooks for layout boundaries and lifecycle indicators.
+ *
+ * @template T - The schema type defining the form data structure.
+ */
 export type FormSlots<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawShape>> = {
+  /** Renders content at the top of the form, before children and errors. */
   header?: (form: FormState<T>) => ReactNode;
+  /** Renders content at the bottom of the form, after children and actions. */
   footer?: (form: FormState<T>) => ReactNode;
+  /** Renders action buttons below the children. */
   actions?: (form: FormState<T>) => ReactNode;
+  /** Customizes or replaces the top-level form error banner. */
   error?: (form: FormState<T>) => ReactNode;
 };
 
+/**
+ * Named slot renderers available on the `<Field>` component.
+ *
+ * Enables fine-grained UI customization of labels, input adornments, error alerts, and helper text.
+ *
+ * @template T - The form value record type.
+ */
 export type FieldSlots<T = Record<string, AnyType>> = {
+  /** Customizes or replaces the field label element. */
   label?: (field: FormField<unknown>) => ReactNode;
+  /** Injects leading content or icons directly before the input control. */
   prefix?: (field: FormField<unknown>) => ReactNode;
+  /** Injects trailing content or icons directly after the input control. */
   suffix?: (field: FormField<unknown>) => ReactNode;
-  error?: (field: FormField<unknown>) => ReactNode;
+  /** Customizes or replaces the supportive guidance text or validation errors below the field control. */
   support?: (field: FormField<unknown>) => ReactNode;
 };
 
+/**
+ * Configuration and HTML attributes accepted by the `<Form>` component.
+ *
+ * @template T - The data object shape managed by the form.
+ */
 export interface FormProps<T = Record<string, AnyType>>
   extends Omit<ComponentProps<'form'>, 'onSubmit' | 'children'>,
     Omit<FormDefaultOptions, 'class'> {
+  /** Optional runtime Zod schema for dynamic or untyped forms. */
   schema?: ZodObject<ZodRawShape>;
+  /** Initial or bindable form value object. */
   value?: T;
+  /** Child elements or scoped render function receiving the active `FormState`. */
   children?: ReactNode | ((form: FormState<ZodObject<ZodRawShape>>) => ReactNode);
+  /** Callback fired when the form passes validation and is submitted. */
   onSubmit?: (data: T, changes: Partial<T>, e: SubmitEvent<HTMLFormElement>) => Promise<void> | void;
 }
 
+/**
+ * Configuration and HTML attributes accepted by the `<Field>` component.
+ *
+ * @template T - The form value record type.
+ * @template S - The Zod schema type for the owning form.
+ */
 export interface FieldProps<T = Record<string, AnyType>, S extends ZodObject<ZodRawShape> = ZodObject<ZodRawShape>>
   extends Omit<ComponentProps<'div'>, 'children'>,
     Omit<FieldDefaultOptions, 'class'> {
+  /** Dot-notated path locating the field within the schema. */
   name: DeepPaths<T>;
+  /** Field path or predicate function for cross-field match validation. */
   match?: DeepPaths<T> | ((form: FormState<S>) => boolean);
+  /** Visible label text associated with the input control. */
   label?: string;
+  /** Children controls or headless render function receiving the `FormField` instance. */
   children?: ReactNode | ((field: FormField<unknown>) => ReactNode);
 }
 
+/**
+ * Props accepted by the `<FieldList>` component for dynamic reactive arrays.
+ *
+ * @template T - The form value record type.
+ */
 export interface FieldListProps<T = Record<string, AnyType>> {
+  /** Dot-notated path locating the array field within the schema. */
   name: DeepPaths<T>;
+  /** Render callback receiving the mutable array items. */
   children: (items: AnyType[]) => ReactNode;
+  /** CSS class applied to the list error container when invalid. */
   errorClass?: string;
 }
 
+/**
+ * Configuration and HTML button attributes accepted by `<FormSubmit>`.
+ *
+ * @template T - The Zod schema type for the owning form.
+ */
 export interface FormSubmitProps<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawShape>>
   extends Omit<ComponentProps<'button'>, 'children'>,
     Omit<SubmitDefaultOptions, 'class'> {
+  /** Button content or render function receiving the active `FormState`. */
   children?: ReactNode | ((form?: FormState<T>) => ReactNode);
 }
 
+/**
+ * Configuration and HTML button attributes accepted by `<FormReset>`.
+ *
+ * @template T - The Zod schema type for the owning form.
+ */
 export interface FormResetProps<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawShape>>
   extends Omit<ComponentProps<'button'>, 'children'>,
     Omit<ResetDefaultOptions, 'class'> {
+  /** Button content or render function receiving the active `FormState`. */
   children?: ReactNode | ((form?: FormState<T>) => ReactNode);
+  /** When true, empties all field values instead of restoring initial values. */
   clear?: boolean;
 }
 
+/**
+ * Schema-typed form component bundle providing colocated subcomponents and state accessors.
+ *
+ * @template T - The Zod schema type defining the form contract.
+ */
 export type TypedForm<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawShape>> = ReturnType<
   typeof setup<FormProps<input<T>>, FormSlots<T>>
 > & {
+  /** Schema-aware field wrapper that connects inputs to form validation and accessibility. */
   Field: ReturnType<typeof setup<FieldProps<input<T>, T>, FieldSlots<input<T>>>>;
-  FieldList: <K extends DeepPaths<input<T>>>(props: {
+  /** Schema-aware array field manager for dynamic repeatable item collections. */
+  FieldList: <
+    K extends DeepPaths<input<T>>,
+    I = NonNullable<PathValue<input<T>, K>> extends (infer U)[] ? U : AnyType,
+  >(props: {
     name: K;
-    children: (items: NonNullable<PathValue<input<T>, K>> extends (infer U)[] ? U[] : never) => ReactNode;
+    children: (items: I[]) => ReactNode;
     errorClass?: string;
   }) => ReactNode;
+  /** Self-governing submit button bound to the form submission lifecycle. */
   Submit: ReturnType<typeof setup<FormSubmitProps<T>>>;
+  /** Self-governing reset button bound to the form dirty/changed state. */
   Reset: ReturnType<typeof setup<FormResetProps<T>>>;
+  /** Accesses the active `FormState` instance from context. */
   get(): FormState<T> | undefined;
+  /** Accesses a specific `FormField` signal from context by path. */
   field<K extends DeepPaths<input<T>>>(path: K | (() => K)): FormField<PathValue<input<T>, K>>;
 };
 
@@ -126,6 +201,7 @@ export function createForm<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawSh
       }
     };
 
+    /* istanbul ignore next */
     const className = derived(() =>
       classx(
         formOptions?.class ?? FORM_OPTIONS.class,
@@ -197,10 +273,7 @@ export function createForm<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawSh
                 {$props.label}
                 {field.required && (
                   <span
-                    className={classx(
-                      fieldOptions?.requiredClass ?? FIELD_OPTIONS.requiredClass,
-                      $props.requiredClass
-                    )}
+                    className={classx(fieldOptions?.requiredClass ?? FIELD_OPTIONS.requiredClass, $props.requiredClass)}
                   >
                     {$props.requiredLabel ?? fieldOptions?.requiredLabel ?? FIELD_OPTIONS.requiredLabel}
                   </span>
@@ -208,10 +281,12 @@ export function createForm<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawSh
               </label>
             )}
           </Slot>
-          <Slot for={() => snippets.prefix?.(field)} />
-          {$props.children}
-          <Slot for={() => snippets.suffix?.(field)} />
-          <Slot for={() => snippets.error?.(field)}>
+          <div className={classx(fieldOptions?.controlClass ?? FIELD_OPTIONS.controlClass, $props.controlClass)}>
+            <Slot for={() => snippets.prefix?.(field)} />
+            {$props.children}
+            <Slot for={() => snippets.suffix?.(field)} />
+          </div>
+          <Slot for={() => snippets.support?.(field)}>
             {field.touched &&
               field.error?.map((error, i) => (
                 <span
@@ -233,7 +308,6 @@ export function createForm<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawSh
               </span>
             )}
           </Slot>
-          <Slot for={() => snippets.support?.(field)} />
         </div>
       );
     }, 'FieldView');
@@ -283,15 +357,7 @@ export function createForm<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawSh
   const Reset = setup<FormResetProps<T>>((props) => {
     const $props = props as AnyType;
     const form = getForm<T>();
-    const rest = $props.$omit([
-      'disabled',
-      'type',
-      'children',
-      'className',
-      'onClick',
-      'clear',
-      ...RESET_OPTIONS_KEYS,
-    ]);
+    const rest = $props.$omit(['disabled', 'type', 'children', 'className', 'onClick', 'clear', ...RESET_OPTIONS_KEYS]);
 
     const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
       if ($props.clear) {

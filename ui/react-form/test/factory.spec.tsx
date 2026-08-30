@@ -2,9 +2,9 @@ import { mutable } from '@airlib/react';
 import { act, cleanup, fireEvent, render as renderComponent, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
+import { FIELD_OPTIONS } from '../src/config.js';
 import { createForm } from '../src/factory.js';
 import { TextInput } from '../src/index.js';
-import { FIELD_OPTIONS } from '../src/config.js';
 
 afterEach(cleanup);
 
@@ -278,7 +278,8 @@ describe('createForm', () => {
       await act(async () => {
         fireEvent.blur(screen.getByTestId('opt-input'));
       });
-      expect(screen.getByRole('alert').className).toBe('opt-field-err');
+      expect(field.className).toBe('opt-field opt-field-err');
+      expect(field.querySelector('[role="alert"]')).toBeDefined();
 
       errorSpy.mockRestore();
     });
@@ -329,20 +330,20 @@ describe('createForm', () => {
 
       const form = screen.getByTestId('exp-form');
       const field = screen.getByTestId('exp-field');
-      expect(form.className).toBe('explicit-form');
-      expect(field.className).toBe('explicit-field');
-      expect(screen.getByText('Name').className).toBe('explicit-label');
-      expect(screen.getByText('**').className).toBe('explicit-req');
+      expect(form.className).toBe('opt-form explicit-form');
+      expect(field.className).toBe('opt-field explicit-field');
+      expect(screen.getByText('Name').className).toBe('air-form-field-label explicit-label');
+      expect(screen.getByText('**').className).toBe('air-form-field-required explicit-req');
 
       await act(async () => {
         fireEvent.click(screen.getByTestId('exp-submit'));
       });
-      expect(form.className).toBe('explicit-form explicit-form-pend');
+      expect(form.className).toBe('opt-form explicit-form explicit-form-pend');
 
       await act(async () => {
         rejectSubmit(new Error('fail'));
       });
-      expect(form.className).toBe('explicit-form explicit-form-err');
+      expect(form.className).toBe('opt-form explicit-form explicit-form-err');
 
       await act(async () => {
         fireEvent.input(screen.getByTestId('exp-input'), { target: { value: '' } });
@@ -350,7 +351,8 @@ describe('createForm', () => {
       await act(async () => {
         fireEvent.blur(screen.getByTestId('exp-input'));
       });
-      expect(screen.getByRole('alert').className).toBe('explicit-field-err');
+      expect(field.className).toBe('opt-field explicit-field explicit-field-err');
+      expect(field.querySelector('[role="alert"]')).toBeDefined();
 
       errorSpy.mockRestore();
     });
@@ -436,7 +438,7 @@ describe('createForm', () => {
         fireEvent.click(screen.getByTestId('submit-null'));
         fireEvent.click(screen.getByTestId('submit-undef'));
       });
-      expect(screen.getByTestId('nullish-empty').className).toBe('');
+      expect(screen.getByTestId('nullish-empty').className).toBe('opt-form');
       expect(screen.getByTestId('nullish-null').className).toBe('opt-form opt-form-pend');
       expect(screen.getByTestId('nullish-undef').className).toBe('opt-form opt-form-pend');
 
@@ -444,7 +446,7 @@ describe('createForm', () => {
       await act(async () => {
         rejectSubmits.forEach((reject) => reject(new Error('fail')));
       });
-      expect(screen.getByTestId('nullish-empty').className).toBe('');
+      expect(screen.getByTestId('nullish-empty').className).toBe('opt-form');
       expect(screen.getByTestId('nullish-null').className).toBe('opt-form opt-form-err');
       expect(screen.getByTestId('nullish-undef').className).toBe('opt-form opt-form-err');
 
@@ -460,13 +462,9 @@ describe('createForm', () => {
         fireEvent.blur(screen.getByTestId('input-undef'));
       });
 
-      const alerts = screen.getAllByRole('alert');
-      // alerts[0] is for field empty
-      // alerts[1] is for field null
-      // alerts[2] is for field undef
-      expect(alerts[0].className).toBe('');
-      expect(alerts[1].className).toBe('opt-field-err');
-      expect(alerts[2].className).toBe('opt-field-err');
+      expect(screen.getByTestId('field-empty').className).toBe('opt-field');
+      expect(screen.getByTestId('field-null').className).toBe('opt-field opt-field-err');
+      expect(screen.getByTestId('field-undef').className).toBe('opt-field opt-field-err');
 
       errorSpy.mockRestore();
     });
@@ -508,10 +506,10 @@ describe('createForm', () => {
 
       const form = screen.getByTestId('def-form');
       const field = screen.getByTestId('def-field');
-      expect(form.className).toBe('');
-      expect(field.className).toBe('');
-      expect(screen.getByText('Name').className).toBe('');
-      expect(screen.getByText('*').className).toBe('');
+      expect(form.className).toBe('air-form');
+      expect(field.className).toBe('air-form-field');
+      expect(screen.getByText('Name').className).toBe('air-form-field-label');
+      expect(screen.getByText('*').className).toBe('air-form-field-required');
 
       await act(async () => {
         fireEvent.input(screen.getByTestId('def-input'), { target: { value: 'Changed' } });
@@ -520,12 +518,12 @@ describe('createForm', () => {
       await act(async () => {
         fireEvent.click(screen.getByTestId('def-submit'));
       });
-      expect(form.className).toBe('');
+      expect(form.className).toBe('air-form air-form-pending');
 
       await act(async () => {
         rejectSubmit(new Error('fail'));
       });
-      expect(form.className).toBe('');
+      expect(form.className).toBe('air-form air-form-error');
     });
 
     it('Form and Field should handle empty config options gracefully', async () => {
@@ -550,10 +548,10 @@ describe('createForm', () => {
 
       const form = screen.getByTestId('empty-form');
       const field = screen.getByTestId('empty-field');
-      expect(form.className).toBe('');
-      expect(field.className).toBe('');
-      expect(screen.getByText('Name').className).toBe('');
-      expect(screen.getByText('*').className).toBe('');
+      expect(form.className).toBe('air-form');
+      expect(field.className).toBe('air-form-field');
+      expect(screen.getByText('Name').className).toBe('air-form-field-label');
+      expect(screen.getByText('*').className).toBe('air-form-field-required');
 
       await act(async () => {
         fireEvent.input(screen.getByTestId('empty-input'), { target: { value: 'Changed' } });
@@ -562,12 +560,12 @@ describe('createForm', () => {
       await act(async () => {
         fireEvent.click(screen.getByTestId('empty-submit'));
       });
-      expect(form.className).toBe('');
+      expect(form.className).toBe('air-form air-form-pending');
 
       await act(async () => {
         rejectSubmit(new Error('fail'));
       });
-      expect(form.className).toBe('');
+      expect(form.className).toBe('air-form air-form-error');
 
       await act(async () => {
         fireEvent.input(screen.getByTestId('empty-input'), { target: { value: '' } });
@@ -575,8 +573,8 @@ describe('createForm', () => {
       await act(async () => {
         fireEvent.blur(screen.getByTestId('empty-input'));
       });
-      // Now the field should have an error, triggering line 132
-      expect(screen.getByRole('alert').className).toBe('');
+      expect(field.className).toBe('air-form-field air-form-field-error');
+      expect(field.querySelector('#name-error')?.className).toBe('air-form-field-support');
       errorSpy.mockRestore();
     });
 
@@ -605,7 +603,7 @@ describe('createForm', () => {
       );
 
       const form = screen.getByTestId('error-form');
-      expect(form.className).toBe('base-class');
+      expect(form.className).toBe('air-form base-class');
 
       await act(async () => {
         fireEvent.input(screen.getByTestId('input'), { target: { value: 'Valid Changed' } });
@@ -615,7 +613,7 @@ describe('createForm', () => {
         fireEvent.click(screen.getByTestId('submit-btn'));
       });
 
-      expect(form.className).toBe('base-class error-state');
+      expect(form.className).toBe('air-form base-class error-state');
     });
 
     it('Form should apply pendingClass when form is pending', async () => {
@@ -646,7 +644,7 @@ describe('createForm', () => {
       );
 
       const form = screen.getByTestId('pending-form');
-      expect(form.className).toBe('base-class');
+      expect(form.className).toBe('air-form base-class');
 
       await act(async () => {
         fireEvent.input(screen.getByTestId('input'), { target: { value: 'Jane Doe' } });
@@ -656,13 +654,13 @@ describe('createForm', () => {
         fireEvent.click(screen.getByTestId('submit'));
       });
 
-      expect(form.className).toBe('base-class pending-state');
+      expect(form.className).toBe('air-form base-class pending-state');
 
       await act(async () => {
         resolveSubmit();
       });
 
-      expect(form.className).toBe('base-class');
+      expect(form.className).toBe('air-form base-class');
     });
 
     it('Field should render error message when name is not provided', async () => {
@@ -695,7 +693,8 @@ describe('createForm', () => {
         fireEvent.input(screen.getByTestId('input'), { target: { value: 'A' } });
       });
 
-      const error = field.querySelector('.custom-error');
+      expect(field.className).toBe('air-form-field custom-error');
+      const error = field.querySelector('[role="alert"]');
       expect(error).toBeDefined();
       expect(error?.textContent).toBe('Name too short');
     });
@@ -753,7 +752,7 @@ describe('createForm', () => {
             name="confirmPassword"
             match="password"
             mismatchLabel="Passwords do not match!"
-            errorClass="custom-mismatch-error"
+            supportClass="custom-mismatch-error"
             data-testid="field"
           >
             <TextInput />
@@ -763,7 +762,7 @@ describe('createForm', () => {
 
       const field = screen.getByTestId('field');
       const error = field.querySelector('[role="alert"]');
-      expect(error?.className).toBe('custom-mismatch-error');
+      expect(error?.className).toBe('air-form-field-support custom-mismatch-error');
     });
 
     it('should fallback to default errorClass when fieldOptions is missing', () => {
@@ -784,7 +783,7 @@ describe('createForm', () => {
 
       const field = screen.getByTestId('field');
       const error = field.querySelector('[role="alert"]');
-      expect(error?.className).toBe(FIELD_OPTIONS.errorClass);
+      expect(error?.className).toBe(FIELD_OPTIONS.supportClass);
     });
   });
 });

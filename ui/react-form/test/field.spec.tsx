@@ -40,7 +40,7 @@ describe('Field', () => {
       );
 
       const field = screen.getByTestId('field');
-      expect(field.className).toBe('field-group');
+      expect(field.className).toBe('air-form-field field-group');
       expect(field.id).toBe('name-field');
     });
 
@@ -54,13 +54,13 @@ describe('Field', () => {
       );
 
       const label = screen.getByText('Name');
-      expect(label.className).toBe('label-style');
+      expect(label.className).toBe('air-form-field-label label-style');
     });
 
     it('should display validation errors with errorClass', async () => {
       render(
         <Form schema={userSchema} value={{ name: 'Al', email: 'john@test.com' }}>
-          <Field name="name" label="Name" errorClass="error-text" data-testid="field">
+          <Field name="name" label="Name" errorClass="error-text" supportClass="error-text" data-testid="field">
             <TextInput data-testid="input" />
           </Field>
         </Form>
@@ -68,14 +68,18 @@ describe('Field', () => {
 
       // The engine validates on init — 'Al' is < 3 chars
       const field = screen.getByTestId('field');
-      let error = field.querySelector('.error-text');
+      expect(field.className).toBe('air-form-field');
+      let error = field.querySelector('[role="alert"]');
       expect(error).toBeNull(); // not touched yet
 
       // touch it
       const input = screen.getByTestId('input');
-      await act(() => fireEvent.input(input, { target: { value: 'A' } }));
+      await act(async () => {
+        fireEvent.input(input, { target: { value: 'A' } });
+      });
 
-      error = field.querySelector('.error-text');
+      expect(field.className).toBe('air-form-field error-text');
+      error = field.querySelector('[role="alert"]');
       expect(error).toBeDefined();
       expect(error?.textContent).toBe('Name too short');
     });
@@ -304,7 +308,9 @@ describe('Field', () => {
 
       expect(screen.getByTestId('touched').textContent).toBe('false');
 
-      await act(() => fireEvent.input(screen.getByTestId('input'), { target: { value: 'Jane' } }));
+      await act(async () => {
+        fireEvent.input(screen.getByTestId('input'), { target: { value: 'Jane' } });
+      });
 
       expect(screen.getByTestId('touched').textContent).toBe('true');
     });
@@ -334,32 +340,30 @@ describe('Field', () => {
           </Field>
         </Form>
       );
-      expect(screen.getByText('[FieldError]: Name property is required!').className).toBe('');
+      expect(screen.getByText('[FieldError]: Name property is required!').className).toBe('air-form-field-error');
       errorSpy.mockRestore();
     });
 
     it('FieldList should render error message when name is not provided', async () => {
-      render(
-        <Form schema={userSchema} value={{ name: 'John', email: 'john@test.com' }}>
-          <FieldList name={'' as never} errorClass="list-error">
-            {() => <div />}
-          </FieldList>
-        </Form>
-      );
-      expect(screen.getByText('[FieldListError]: Name property is required!')).toBeDefined();
-      expect(screen.getByText('[FieldListError]: Name property is required!').className).toBe('list-error');
-
-      await act(async () => {});
-    });
-
-    it('FieldList should render default error message class when errorClass is omitted', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       render(
         <Form schema={userSchema} value={{ name: 'John', email: 'john@test.com' }}>
           <FieldList name={'' as never}>{() => <div />}</FieldList>
         </Form>
       );
-      expect(screen.getByText('[FieldListError]: Name property is required!').className).toBe('');
+      expect(screen.getByText('[FieldListError]: Name property is required!')).toBeDefined();
+      errorSpy.mockRestore();
+    });
 
+    it('FieldList should render default error message class when errorClass is omitted', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      render(
+        <Form schema={userSchema} value={{ name: 'John', email: 'john@test.com' }}>
+          <FieldList name={'' as never}>{() => <div />}</FieldList>
+        </Form>
+      );
+      expect(screen.getByText('[FieldListError]: Name property is required!').className).toBe('air-form-field-error');
+      errorSpy.mockRestore();
       await act(async () => {});
     });
   });

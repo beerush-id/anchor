@@ -57,7 +57,9 @@ describe('NumberInput', () => {
     expect((input as HTMLInputElement).value).toBe('30');
     expect(handleInput).toHaveBeenCalledTimes(1);
 
-    fireEvent.blur(input);
+    await act(async () => {
+      fireEvent.blur(input);
+    });
     expect(handleBlur).toHaveBeenCalledTimes(1);
   });
 });
@@ -97,7 +99,9 @@ describe('DatePicker', () => {
     });
     expect(handleInput).toHaveBeenCalledTimes(1);
 
-    fireEvent.blur(input);
+    await act(async () => {
+      fireEvent.blur(input);
+    });
     expect(handleBlur).toHaveBeenCalledTimes(1);
   });
 });
@@ -137,7 +141,9 @@ describe('DateTimePicker', () => {
     });
     expect(handleInput).toHaveBeenCalledTimes(1);
 
-    fireEvent.blur(input);
+    await act(async () => {
+      fireEvent.blur(input);
+    });
     expect(handleBlur).toHaveBeenCalledTimes(1);
   });
 });
@@ -177,7 +183,9 @@ describe('TimePicker', () => {
     });
     expect(handleInput).toHaveBeenCalledTimes(1);
 
-    fireEvent.blur(input);
+    await act(async () => {
+      fireEvent.blur(input);
+    });
     expect(handleBlur).toHaveBeenCalledTimes(1);
   });
 });
@@ -217,7 +225,9 @@ describe('ColorPicker', () => {
     });
     expect(handleInput).toHaveBeenCalledTimes(1);
 
-    fireEvent.blur(input);
+    await act(async () => {
+      fireEvent.blur(input);
+    });
     expect(handleBlur).toHaveBeenCalledTimes(1);
   });
 });
@@ -258,7 +268,9 @@ describe('Slider', () => {
     expect((input as HTMLInputElement).value).toBe('75');
     expect(handleInput).toHaveBeenCalledTimes(1);
 
-    fireEvent.blur(input);
+    await act(async () => {
+      fireEvent.blur(input);
+    });
     expect(handleBlur).toHaveBeenCalledTimes(1);
   });
 });
@@ -380,7 +392,9 @@ describe('Textarea', () => {
     expect((textarea as HTMLTextAreaElement).value).toBe('Updated bio');
     expect(handleInput).toHaveBeenCalledTimes(1);
 
-    fireEvent.blur(textarea);
+    await act(async () => {
+      fireEvent.blur(textarea);
+    });
     expect(handleBlur).toHaveBeenCalledTimes(1);
   });
 });

@@ -37,7 +37,7 @@ describe('TextInput', () => {
     );
 
     const input = screen.getByTestId('input') as HTMLInputElement;
-    expect(input.className).toBe('my-input');
+    expect(input.className).toBe('air-text-input my-input');
     expect(input.placeholder).toBe('Enter name');
   });
 
@@ -51,7 +51,9 @@ describe('TextInput', () => {
     );
 
     const input = screen.getByTestId('input') as HTMLInputElement;
-    await act(() => fireEvent.input(input, { target: { value: 'Jane' } }));
+    await act(async () => {
+      fireEvent.input(input, { target: { value: 'Jane' } });
+    });
     expect(input.value).toBe('Jane');
   });
 
@@ -71,11 +73,13 @@ describe('TextInput', () => {
       </Form>
     );
 
-    await act(() => fireEvent.input(screen.getByTestId('input'), { target: { value: 'Jane' } }));
+    await act(async () => {
+      fireEvent.input(screen.getByTestId('input'), { target: { value: 'Jane' } });
+    });
     expect(inputCalled).toBe(true);
   });
 
-  it('should call user onBlur handler alongside settled()', () => {
+  it('should call user onBlur handler alongside settled()', async () => {
     let blurCalled = false;
 
     render(
@@ -91,7 +95,9 @@ describe('TextInput', () => {
       </Form>
     );
 
-    fireEvent.blur(screen.getByTestId('input'));
+    await act(async () => {
+      fireEvent.blur(screen.getByTestId('input'));
+    });
     expect(blurCalled).toBe(true);
   });
 
@@ -106,7 +112,7 @@ describe('TextInput', () => {
     );
 
     const input = screen.getByTestId('input') as HTMLInputElement;
-    expect(input.className).toBe('base-input');
+    expect(input.className).toBe('air-text-input base-input');
 
     // Make it touched by firing an input event
     await act(async () => {
@@ -114,7 +120,7 @@ describe('TextInput', () => {
       fireEvent.blur(input);
     });
 
-    expect(input.className).toBe('base-input err-input');
+    expect(input.className).toBe('air-text-input base-input err-input');
   });
 });
 
@@ -143,7 +149,9 @@ describe('Checkbox', () => {
     );
 
     const checkbox = screen.getByTestId('checkbox') as HTMLInputElement;
-    await act(() => fireEvent.change(checkbox, { target: { checked: true } }));
+    await act(async () => {
+      fireEvent.change(checkbox, { target: { checked: true } });
+    });
     expect(checkbox.checked).toBe(true);
   });
 
@@ -157,10 +165,10 @@ describe('Checkbox', () => {
     );
 
     const checkbox = screen.getByTestId('checkbox') as HTMLInputElement;
-    expect(checkbox.className).toBe('my-checkbox');
+    expect(checkbox.className).toBe('air-checkbox-input my-checkbox');
   });
 
-  it('should call user onChange handler alongside form binding', () => {
+  it('should call user onChange handler alongside form binding', async () => {
     let changeCalled = false;
 
     render(
@@ -176,7 +184,9 @@ describe('Checkbox', () => {
       </Form>
     );
 
-    fireEvent.click(screen.getByTestId('checkbox'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('checkbox'));
+    });
     expect(changeCalled).toBe(true);
   });
 
@@ -201,13 +211,13 @@ describe('Checkbox', () => {
     );
 
     const cb = screen.getByTestId('checkbox') as HTMLInputElement;
-    expect(cb.className).toBe('base-cb');
+    expect(cb.className).toBe('air-checkbox-input base-cb');
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('touch'));
     });
 
-    expect(cb.className).toBe('base-cb err-cb');
+    expect(cb.className).toBe('air-checkbox-input base-cb err-cb');
   });
 
   it('Checkbox applies default classes when not provided', async () => {
@@ -235,7 +245,7 @@ describe('Checkbox', () => {
       fireEvent.click(screen.getByTestId('touch-def'));
     });
     // Checkbox has no specific default, it inherits from input
-    expect(cb.className).toBe('');
+    expect(cb.className).toBe('air-checkbox-input air-checkbox-input-error');
   });
 });
 
@@ -269,7 +279,7 @@ describe('Other Inputs Error State', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('touch'));
     });
-    expect(input.className).toBe('base err');
+    expect(input.className).toBe('air-radio-input base err');
   });
 
   it('Radio applies default errorClass', async () => {
@@ -294,7 +304,7 @@ describe('Other Inputs Error State', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('touch-def'));
     });
-    expect(input.className).toBe('');
+    expect(input.className).toBe('air-radio-input air-radio-input-error');
   });
 
   it('Select applies errorClass', async () => {
@@ -313,7 +323,7 @@ describe('Other Inputs Error State', () => {
       fireEvent.change(input, { target: { value: 'no' } });
       fireEvent.blur(input);
     });
-    expect(input.className).toBe('base err');
+    expect(input.className).toBe('air-select-input base err');
   });
 
   it('Textarea applies errorClass', async () => {
@@ -329,7 +339,7 @@ describe('Other Inputs Error State', () => {
       fireEvent.input(input, { target: { value: 'Ali' } });
       fireEvent.blur(input);
     });
-    expect(input.className).toBe('base err');
+    expect(input.className).toBe('air-textarea-input base err');
   });
 
   it('Textarea applies default errorClass', async () => {
@@ -345,7 +355,7 @@ describe('Other Inputs Error State', () => {
       fireEvent.input(input, { target: { value: 'Ali' } });
       fireEvent.blur(input);
     });
-    expect(input.className).toBe('');
+    expect(input.className).toBe('air-textarea-input air-textarea-input-error');
   });
 
   it('Select applies default errorClass', async () => {
@@ -362,7 +372,7 @@ describe('Other Inputs Error State', () => {
       fireEvent.change(input, { target: { value: 'no' } });
       fireEvent.blur(input);
     });
-    expect(input.className).toBe('');
+    expect(input.className).toBe('air-select-input air-select-input-error');
   });
 
   it('FilePicker applies errorClass', async () => {
@@ -387,7 +397,7 @@ describe('Other Inputs Error State', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('touch'));
     });
-    expect(input.className).toBe('base err');
+    expect(input.className).toBe('air-file-input base err');
   });
 
   it('FilePicker applies default errorClass', async () => {
@@ -412,7 +422,7 @@ describe('Other Inputs Error State', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('touch-def'));
     });
-    expect(input.className).toBe('');
+    expect(input.className).toBe('air-file-input air-file-input-error');
   });
 
   it('createInput returns default classes for unknown type', () => {
@@ -425,6 +435,6 @@ describe('Other Inputs Error State', () => {
       </Form>
     );
     const input = screen.getByTestId('unknown');
-    expect(input.className).toBe('');
+    expect(input.className).toBe('air-text-input');
   });
 });

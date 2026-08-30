@@ -29,7 +29,7 @@ describe('Form', () => {
       />
     );
     const form = screen.getByTestId('form');
-    expect(form.className).toBe('my-form');
+    expect(form.className).toBe('air-form my-form');
     expect(form.id).toBe('test-form');
   });
 
@@ -118,7 +118,7 @@ describe('Form', () => {
     );
 
     const form = screen.getByTestId('error-form');
-    expect(form.className).toBe('base-class');
+    expect(form.className).toBe('air-form base-class');
 
     // Mutate the data so form canSubmit
     await act(async () => {
@@ -130,7 +130,7 @@ describe('Form', () => {
       fireEvent.click(screen.getByTestId('submit-btn'));
     });
 
-    expect(form.className).toBe('base-class error-state');
+    expect(form.className).toBe('air-form base-class error-state');
   });
 
   it('should apply default errorClass when form has errors and omitted', async () => {
@@ -213,8 +213,8 @@ describe('Form', () => {
       fireEvent.click(screen.getByTestId('submit-only-error'));
     });
 
-    expect(screen.getByTestId('form-only-class').className).toBe('only-class');
-    expect(screen.getByTestId('form-only-error').className).toBe('only-error');
+    expect(screen.getByTestId('form-only-class').className).toBe('air-form only-class air-form-error');
+    expect(screen.getByTestId('form-only-error').className).toBe('air-form only-error');
   });
 
   it('should apply empty string, null, and explicitly undefined classes correctly on error', async () => {
@@ -284,9 +284,9 @@ describe('Form', () => {
       fireEvent.click(screen.getByTestId('submit-undef-class'));
     });
 
-    expect(screen.getByTestId('form-empty-class').className).toBe('');
-    expect(screen.getByTestId('form-null-class').className).toBe('');
-    expect(screen.getByTestId('form-undef-class').className).toBe('');
+    expect(screen.getByTestId('form-empty-class').className).toBe('air-form');
+    expect(screen.getByTestId('form-null-class').className).toBe('air-form air-form-error');
+    expect(screen.getByTestId('form-undef-class').className).toBe('air-form air-form-error');
   });
 
   it('FormSubmit should apply default pendingClass when omitted', async () => {
@@ -307,7 +307,7 @@ describe('Form', () => {
     );
 
     const btn = screen.getByTestId('form-submit');
-    expect(btn.className).toBe('');
+    expect(btn.className).toBe('air-form-submit');
 
     await act(async () => {
       fireEvent.input(screen.getByTestId('input-submit'), { target: { value: 'Changed' } });
@@ -317,7 +317,7 @@ describe('Form', () => {
       fireEvent.click(btn);
     });
 
-    expect(btn.className).toBe('');
+    expect(btn.className).toBe('air-form-submit air-form-submit-pending');
 
     await act(async () => {
       resolveSubmit();

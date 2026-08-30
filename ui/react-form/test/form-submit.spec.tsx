@@ -64,7 +64,7 @@ describe('FormSubmit', () => {
     );
 
     const btn = screen.getByTestId('btn');
-    expect(btn.className).toBe('btn-primary');
+    expect(btn.className).toBe('air-form-submit btn-primary');
     expect(btn.id).toBe('submit-btn');
   });
 
@@ -123,7 +123,7 @@ describe('FormSubmit', () => {
     });
 
     const btn = screen.getByTestId('btn') as HTMLButtonElement;
-    expect(btn.className).toBe('btn-base');
+    expect(btn.className).toBe('air-form-submit btn-base');
 
     // Trigger submit
     await act(async () => {
@@ -131,13 +131,13 @@ describe('FormSubmit', () => {
     });
 
     // Form is now pending
-    expect(btn.className).toBe('btn-base btn-pending');
+    expect(btn.className).toBe('air-form-submit btn-base btn-pending');
 
     // Complete the submission
     await act(async () => {
       resolveSubmit();
     });
 
-    expect(btn.className).toBe('btn-base');
+    expect(btn.className).toBe('air-form-submit btn-base');
   });
 });

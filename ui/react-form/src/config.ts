@@ -13,6 +13,7 @@ export const FIELD_OPTIONS = {
   class: 'air-form-field',
   errorClass: 'air-form-field-error',
   labelClass: 'air-form-field-label',
+  controlClass: 'air-form-field-control',
   supportClass: 'air-form-field-support',
   requiredLabel: '*',
   requiredClass: 'air-form-field-required',

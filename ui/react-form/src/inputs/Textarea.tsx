@@ -1,22 +1,27 @@
-import { type AnyType, formInput } from '@airlib/form';
+import { type AnyType, type FormInput, formInput } from '@airlib/form';
 import { type Bindable, classx, derived, effect, render, setup } from '@airlib/react';
-import type { ComponentProps, FocusEvent, InputEvent } from 'react';
+import type { ComponentProps, FocusEvent, InputEvent, ReactNode } from 'react';
 import { getInputClasses, INPUT_OPTIONS_KEYS, TEXTAREA_OPTIONS, TEXTAREA_OPTIONS_KEYS } from '../config.js';
 
-export interface TextareaProps extends Omit<ComponentProps<'textarea'>, 'value'> {
-  value?: Bindable<string>;
+export interface TextareaProps extends Omit<ComponentProps<'textarea'>, 'value' | 'children'> {
+  for?: TextareaProps;
   errorClass?: string;
+  value?: Bindable<string>;
+  children?: ReactNode | ((props: ComponentProps<'textarea'>, input: FormInput<string>) => ReactNode);
 }
 
 export const Textarea = setup<TextareaProps>((props) => {
-  const $props = props as AnyType;
-  const input = formInput(props as AnyType);
+  const $props = ((props as AnyType).for ?? props) as AnyType;
+
+  const input = formInput<string>($props);
   const rest = $props.$omit([
+    'for',
     'value',
     'name',
     'id',
     'disabled',
     'className',
+    'children',
     'onInput',
     'onBlur',
     'ref',
@@ -51,38 +56,39 @@ export const Textarea = setup<TextareaProps>((props) => {
   const assignRef = (el: HTMLTextAreaElement) => {
     ref = el;
 
-    if ('ref' in props) {
-      const $ref = (props as AnyType).ref;
-
-      if (typeof $ref === 'function') {
-        $ref(el);
-      } else if ($ref && typeof $ref === 'object') {
-        $ref.current = el;
-      }
+    if (typeof $props.ref === 'function') {
+      $props.ref(el);
+    } else if ($props.ref && typeof $props.ref === 'object') {
+      $props.ref.current = el;
     }
   };
 
   effect(() => {
     const value = input.value;
+    /* istanbul ignore next */
     if (ref && ref.value !== value) ref.value = (value ?? '') as AnyType;
   });
 
-  return render(
-    () => (
-      <textarea
-        {...rest}
-        ref={assignRef}
-        id={fieldId}
-        name={input.name}
-        defaultValue={input.value as AnyType}
-        disabled={input.disabled}
-        className={className.value}
-        aria-invalid={input.error ? true : undefined}
-        aria-describedby={input.error ? errorId : undefined}
-        onInput={handleInput}
-        onBlur={handleBlur}
-      />
-    ),
-    'TextareaView'
-  );
+  return render(() => {
+    const textareaProps = {
+      ...rest,
+      ref: assignRef,
+      id: fieldId,
+      name: input.name,
+      disabled: input.disabled,
+      className: className.value,
+      defaultValue: input.value as AnyType,
+      'aria-invalid': input.error ? (true as const) : undefined,
+      'aria-describedby': input.error ? errorId : undefined,
+      onInput: handleInput,
+      onBlur: handleBlur,
+    };
+
+    const children = (props as AnyType).children ?? $props.children;
+    if (typeof children === 'function') {
+      return children(textareaProps, input);
+    }
+
+    return <textarea {...textareaProps} />;
+  }, 'TextareaView');
 }, 'Textarea');

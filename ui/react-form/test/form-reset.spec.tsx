@@ -34,7 +34,7 @@ describe('FormReset', () => {
     });
 
     expect(btn.disabled).toBe(false);
-    expect(btn.className).toBe('btn-base btn-dirty');
+    expect(btn.className).toBe('air-form-reset btn-base btn-dirty');
 
     // Trigger reset
     await act(async () => {
@@ -43,7 +43,7 @@ describe('FormReset', () => {
 
     expect((screen.getByTestId('input') as HTMLInputElement).value).toBe('John');
     expect(btn.disabled).toBe(true);
-    expect(btn.className).toBe('btn-base');
+    expect(btn.className).toBe('air-form-reset btn-base');
   });
 
   it('should clear the form state when clear prop is true', async () => {
