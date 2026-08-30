@@ -67,7 +67,7 @@
     "packages/*",
     "irpclib/*",
     "demos/*",
-    "ui/*"
+    "ui-kits/*"
   ],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "homepage": "https://github.com/beerush-id/airstack",
