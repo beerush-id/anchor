@@ -116,7 +116,14 @@ export function setup<P extends Record<string, any>, S extends ComponentSlots>(
 
 function findSlots(children: unknown) {
   if (!children) return {} as ComponentSlots;
-  const resolved = typeof children === 'function' ? (children as () => unknown)() : children;
+  let resolved: unknown = children;
+  if (typeof children === 'function' && children.length === 0) {
+    try {
+      resolved = (children as () => unknown)();
+    } catch {
+      return {} as ComponentSlots;
+    }
+  }
   const nodes = Array.isArray(resolved) ? resolved : [resolved];
   const slots = {} as ComponentSlots;
 
