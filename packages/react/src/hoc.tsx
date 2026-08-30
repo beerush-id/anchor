@@ -98,7 +98,7 @@ export function setup<P, S extends ComponentSlots>(
 
   const componentName = displayName || (Component as FunctionComponent).displayName || Component.name || 'Anonymous';
 
-  const render = Component as (props: unknown, snippets: ComponentSlots) => ReactNode;
+  const view = Component as (props: unknown, snippets: ComponentSlots) => ReactNode | (() => ReactNode);
   const propsMap = new WeakMap();
 
   const Finish: FC<{ context: RenderContext }> = ({ context }) => {
@@ -144,7 +144,10 @@ export function setup<P, S extends ComponentSlots>(
 
     const children = () => {
       try {
-        return lifecycle.render(() => render(props, findSlots(props.children as ReactElement[])));
+        return lifecycle.render(() => {
+          const result = view(props, findSlots(props.children as ReactElement[]));
+          return typeof result === 'function' ? render(result) : result;
+        });
       } catch (error) {
         const newErr = new Error(`[${componentName}] failed to render.`);
         captureStack.error.external(

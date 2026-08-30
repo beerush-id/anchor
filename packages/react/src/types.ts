@@ -173,7 +173,10 @@ export type ComponentSlots = Record<string, (...args: AnyType[]) => ReactNode>;
  * @param snippets Named slot renderers
  * @returns Rendered view
  */
-export type ComponentWithSnippet<P, S extends ComponentSlots> = (props: ComponentProps<P>, snippets: S) => ReactNode;
+export type ComponentWithSnippet<P, S extends ComponentSlots> = (
+  props: ComponentProps<P>,
+  snippets: S
+) => ReactNode | ((props: ComponentProps<P>) => ReactNode);
 
 /**
  * Target slot identifier and renderer content passed when declaring a snippet.
@@ -203,7 +206,7 @@ export type ComponentSnippet<S extends ComponentSlots> = (props: ComponentSnippe
  * @param props - The component props with additional $omit functionality
  * @returns A ReactNode representing the rendered component
  */
-export type Component<P> = (props: ComponentProps<P>) => ReactNode;
+export type Component<P> = (props: ComponentProps<P>) => ReactNode | ((props: ComponentProps<P>) => ReactNode);
 
 /**
  * Reactive component that preserves render stability across updates.
