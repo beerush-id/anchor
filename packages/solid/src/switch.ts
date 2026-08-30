@@ -1,4 +1,4 @@
-import { createMemo, type JSX, untrack } from 'solid-js';
+import { createMemo, type JSX } from 'solid-js';
 import { render } from './hoc.tsx';
 
 export type ShowProps<T> = {
@@ -18,21 +18,18 @@ export type ShowProps<T> = {
  */
 export function Show<T>(props: ShowProps<T>): JSX.Element {
   const condition = createMemo(() => props.when);
-
   return createMemo(() => {
     const value = condition();
     if (value) {
       const child = props.children;
-      const isRenderProp = typeof child === 'function' && child.length > 0;
-
-      return isRenderProp ? untrack(() => (child as any)(value as NonNullable<T>)) : child;
+      return typeof child === 'function' ? child(value as NonNullable<T>) : child;
     }
     return props.fallback;
   }) as unknown as JSX.Element;
 }
 
 export type SnippetProps<T> = {
-  data?: T | (() => T);
+  data?: T;
   children: (data: T) => JSX.Element;
 };
 
@@ -47,16 +44,17 @@ export type SnippetProps<T> = {
  * @returns A JSX element.
  */
 export function Snippet<T>(props: SnippetProps<T>): JSX.Element {
-  return render(({ data, children }) => {
+  const data = createMemo(() => props.data);
+  return render(({ children }) => {
     if (typeof children !== 'function') {
       return `[Snippet Error: Snippet must pass function as the children]`;
     }
-    return children(typeof data === 'function' ? (data as () => T)() : (data as T));
+    return children(data() as T);
   }, props) as unknown as JSX.Element;
 }
 
 export type SlotProps = {
-  for: JSX.Element | (() => JSX.Element);
+  for: JSX.Element;
   children?: JSX.Element | (() => JSX.Element);
 };
 
@@ -68,8 +66,7 @@ export type SlotProps = {
  * @returns The rendered content from the slot function or children.
  */
 export function Slot(props: SlotProps): JSX.Element {
-  const content = createMemo(() => (typeof props.for === 'function' ? (props.for as () => JSX.Element)() : props.for));
-
+  const content = createMemo(() => props.for);
   return createMemo(() => {
     const value = content();
     if (value !== undefined && value !== null) {

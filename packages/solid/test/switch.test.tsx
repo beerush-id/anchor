@@ -58,6 +58,12 @@ describe('Show Component', () => {
 });
 
 describe('Snippet Component', () => {
+  it('should render snippet content', () => {
+    const { container } = render(() => <Snippet>{() => <div>Success!</div>}</Snippet>);
+
+    expect(container.textContent).toContain('Success!');
+  });
+
   it('should render snippet content with object data', () => {
     const { container } = render(() => (
       <Snippet data={{ text: 'Success!' }}>{({ text }) => <div>{text}</div>}</Snippet>
@@ -84,7 +90,7 @@ describe('Snippet Component', () => {
 
   it('should render snippet content with undefined data', () => {
     const { container } = render(() => (
-      <Snippet data={() => undefined as never as { text: string }}>{(data) => <div>{data?.text}</div>}</Snippet>
+      <Snippet data={undefined as never as { text: string }}>{(data) => <div>{data?.text}</div>}</Snippet>
     ));
 
     expect(container.textContent).not.toContain('undefined');
@@ -136,9 +142,7 @@ describe('Slot Component', () => {
   });
 
   it('should render slot function output when provided', () => {
-    const { container } = render(() => (
-      <Slot for={() => <span>Injected Function</span>}>{() => <span>Default</span>}</Slot>
-    ));
+    const { container } = render(() => <Slot for={<span>Injected Function</span>}>{() => <span>Default</span>}</Slot>);
     expect(container.textContent).toContain('Injected Function');
   });
 
