@@ -2,24 +2,29 @@
 nav: 'Derived State'
 nav-priority: 83
 title: "Derived State"
-description: "Computed state and the single source of truth — getters, derived(), and reactive sorted views."
+description: "Eliminate state synchronization bugs and expensive recalculations using getters, derived computations, object projections, and incremental aggregations."
 keywords:
   - derived state
   - computed
   - single source of truth
+  - incremental reduction
+  - sorted views
 ---
 
 # Derived State
 
-A core principle of robust state management is the **Single Source of Truth**. You should not store data that can be computed from other data. Storing redundant blocks of state leads to synchronization bugs.
+A common source of bugs in application development is **redundant state**—manually updating computed values whenever dependencies change (e.g. updating `total` across multiple cart event handlers, keeping filtered lists synchronized with search inputs, or maintaining row counts).
 
-Derived state ensures that your data is always consistent by automatically recalculating values whenever the underlying dependencies change.
+When state is duplicated across variables:
+- Event handlers easily miss updates, leading to stale or conflicting data.
+- Recalculating entire collections on every keystroke causes frame drops and UI lag.
+- Creating fresh object wrappers on every render causes reference instability and unnecessary re-renders.
 
-## Intrinsic Computation
+Anchor solves these problems by providing dedicated derivation primitives tailored to specific data relationships.
 
-When a computed value belongs logically to a specific object, use standard **JavaScript Getters**. This keeps the data and its computation encapsulated together.
+## Intrinsic Properties
 
-This is the most common form of derivation in Anchor.
+When a computed value belongs logically to a single state object, standard **JavaScript Getters** encapsulate the computation with the data. The getter re-evaluates automatically whenever any accessed property changes:
 
 :::code-group
 
@@ -29,14 +34,16 @@ import { mutable } from '@airlib/react';
 const cart = mutable({
   price: 10,
   quantity: 2,
-  
-  // The 'total' is a property of the cart, derived from its other properties.
+
+  // Automatically computed from internal properties
   get total() {
     return this.price * this.quantity;
   }
 });
 
 console.log(cart.total); // 20
+cart.quantity = 3;
+console.log(cart.total); // 30
 ```
 
 ```ts [SolidJS]
@@ -45,35 +52,37 @@ import { mutable } from '@airlib/solid';
 const cart = mutable({
   price: 10,
   quantity: 2,
-  
-  // The 'total' is a property of the cart, derived from its other properties.
+
+  // Automatically computed from internal properties
   get total() {
     return this.price * this.quantity;
   }
 });
 
 console.log(cart.total); // 20
+cart.quantity = 3;
+console.log(cart.total); // 30
 ```
 
 :::
 
-## Composite Computation
+## Combining Independent State Sources
 
-Sometimes, a value depends on multiple *separate* state sources that do not share a common parent object. Or, you may need to transform data for a specific UI view (like a View Model) without modifying the original domain object.
-
-In these cases, you define a **Reactive Computation** that combines these sources.
+When a computed value depends on multiple *separate* state sources that do not share a parent object (such as combining a data list with an active search filter), `derived()` combines them into a single reactive reference:
 
 :::code-group
 
 ```ts [React]
 import { mutable, derived } from '@airlib/react';
 
-const todos = mutable([{ text: 'Buy milk', done: false }]);
+const todos = mutable([{ text: 'Buy groceries', done: false }]);
 const filter = mutable('SHOW_ALL');
 
-// This value is computed from two independent sources: 'todos' and 'filter'
+// Re-computes whenever either 'todos' or 'filter' changes
 const visibleTodos = derived(() => {
-  if (filter.value === 'SHOW_COMPLETED') return todos.filter(t => t.done);
+  if (filter.value === 'SHOW_COMPLETED') {
+    return todos.filter((todo) => todo.done);
+  }
   return todos;
 });
 ```
@@ -81,27 +90,157 @@ const visibleTodos = derived(() => {
 ```ts [SolidJS]
 import { mutable, derived } from '@airlib/solid';
 
-const todos = mutable([{ text: 'Buy milk', done: false }]);
+const todos = mutable([{ text: 'Buy groceries', done: false }]);
 const filter = mutable('SHOW_ALL');
 
-// This value is computed from two independent sources: 'todos' and 'filter'
+// Re-computes whenever either 'todos' or 'filter' changes
 const visibleTodos = derived(() => {
-  if (filter.value === 'SHOW_COMPLETED') return todos.filter(t => t.done);
+  if (filter.value === 'SHOW_COMPLETED') {
+    return todos.filter((todo) => todo.done);
+  }
   return todos;
 });
 ```
 
 :::
 
-### Characteristics
+## Stable Object Projections
 
-- **Automatic Dependency Tracking**: The system automatically detects which state properties are accessed during computation. You do not need dependency arrays.
-- **Read-Only**: Derived values flow one way (Data -> View). You cannot manually assign a value to a derived property.
-- **Lazy Evaluation**: Computations are optimized to only re-run when necessary.
+When building component ViewModels or complex derived objects, wrapping the result in standard `derived()` introduces `.value` indirection (`profile.value.fullName`). Re-creating plain objects on every change also breaks reference identity for downstream consumers.
 
-## Reactive Sorting (`ordered`)
+`derived.as()` returns a **stable object proxy** whose individual properties update in-place whenever dependencies change:
 
-When maintaining sorted lists in a reactive system, calling `array.sort()` on every update triggers a full `O(N log N)` re-evaluation. The `ordered()` primitive solves this by maintaining a reactive sorted view using **binary search insertion**. When the source array updates, it computes the exact index to insert the new items in `O(log N)` time, preventing expensive full array re-sorts.
+:::code-group
+
+```ts [React]
+import { mutable, derived } from '@airlib/react';
+
+const user = mutable({ firstName: 'John', lastName: 'Doe' });
+
+// Returns a stable object matching the factory shape directly
+const profile = derived.as(() => ({
+  fullName: `${user.firstName} ${user.lastName}`,
+  initials: `${user.firstName[0]}${user.lastName[0]}`,
+}));
+
+// Access properties directly without .value
+console.log(profile.fullName); // "John Doe"
+console.log(profile.initials); // "JD"
+
+// Properties update in-place without replacing the 'profile' reference
+user.firstName = 'Jane';
+console.log(profile.fullName); // "Jane Doe"
+```
+
+```ts [SolidJS]
+import { mutable, derived } from '@airlib/solid';
+
+const user = mutable({ firstName: 'John', lastName: 'Doe' });
+
+// Returns a stable object matching the factory shape directly
+const profile = derived.as(() => ({
+  fullName: `${user.firstName} ${user.lastName}`,
+  initials: `${user.firstName[0]}${user.lastName[0]}`,
+}));
+
+// Access properties directly without .value
+console.log(profile.fullName); // "John Doe"
+console.log(profile.initials); // "JD"
+
+// Properties update in-place without replacing the 'profile' reference
+user.firstName = 'Jane';
+console.log(profile.fullName); // "Jane Doe"
+```
+
+:::
+
+## Large Collection Aggregation
+
+Aggregating large arrays (such as order totals, completion counters, or dictionary lookups) with standard `.reduce()` forces a full $O(N)$ re-scan of the entire collection whenever any single item or property mutates.
+
+`derived.reduce()` maintains a continuous accumulated state by applying **fine-grained $O(1)$ delta updates** as items are added, modified, or removed:
+
+:::code-group
+
+```ts [React]
+import { mutable, derived } from '@airlib/react';
+
+const todos = mutable([
+  { id: 1, text: 'Design UI', done: true },
+  { id: 2, text: 'Write tests', done: false },
+]);
+
+// Continuously maintains total and completed counts
+const stats = derived.reduce({ total: 0, completed: 0 }, todos, (stats, todo, remove) => {
+  if (remove) {
+    if (todo.done) stats.completed--;
+    stats.total--;
+  } else {
+    if (todo.done) stats.completed++;
+    stats.total++;
+  }
+});
+
+console.log(stats.total);     // 2
+console.log(stats.completed); // 1
+
+// Only evaluates the modified item in O(1) time without re-scanning the array
+todos[1].done = true;
+console.log(stats.completed); // 2
+```
+
+```ts [SolidJS]
+import { mutable, derived } from '@airlib/solid';
+
+const todos = mutable([
+  { id: 1, text: 'Design UI', done: true },
+  { id: 2, text: 'Write tests', done: false },
+]);
+
+// Continuously maintains total and completed counts
+const stats = derived.reduce({ total: 0, completed: 0 }, todos, (stats, todo, remove) => {
+  if (remove) {
+    if (todo.done) stats.completed--;
+    stats.total--;
+  } else {
+    if (todo.done) stats.completed++;
+    stats.total++;
+  }
+});
+
+console.log(stats.total);     // 2
+console.log(stats.completed); // 1
+
+// Only evaluates the modified item in O(1) time without re-scanning the array
+todos[1].done = true;
+console.log(stats.completed); // 2
+```
+
+:::
+
+### Primitive Accumulators
+
+For single-value accumulations (such as price totals or counters), pass a primitive initial value. The accumulated value is accessible via `.value`:
+
+```ts
+const cart = mutable([
+  { price: 15, qty: 2 },
+  { price: 40, qty: 1 },
+]);
+
+const total = derived.reduce(0, cart, (sum, item, remove) => {
+  const amount = item.price * item.qty;
+  sum.value += remove ? -amount : amount;
+});
+
+console.log(total.value); // 70
+```
+
+## Continuous Sorted Views
+
+Re-sorting an entire array with `Array.prototype.sort()` on every update causes $O(N \log N)$ recalculations and mutates the source array.
+
+`ordered()` creates a **reactive, read-only sorted view** that uses binary search insertion to maintain sorted order in $O(\log N)$ time without modifying the original collection:
 
 ```typescript
 import { mutable, ordered } from '@airlib/core';
@@ -110,17 +249,18 @@ const state = mutable({
   movies: [{ title: 'Zoolander' }, { title: 'Alien' }]
 });
 
-// Creates a reactive, read-only sorted view
-// It automatically updates whenever the source array changes
+// A read-only sorted view that tracks changes to the source list
 const sortedMovies = ordered(state.movies, (a, b) => a.title.localeCompare(b.title));
 
 console.log(sortedMovies); // [{ title: 'Alien' }, { title: 'Zoolander' }]
 ```
 
-## Choosing an Approach
+## Choosing the Right Approach
 
-| Pattern | Implementation | Best For |
+| Problem to Solve | Implementation | Practical Use Case |
 | :--- | :--- | :--- |
-| **Intrinsic** | JavaScript Getter | Domain logic (`User.fullName`) and encapsulation. |
-| **Composite** | `derived()` function | Combining separate states (`Search` + `List`) or View Models. |
-| **Sorted View** | `ordered()` function | Maintaining a reactive sorted list without mutating the source. |
+| Computing a property from data on the **same object** | JavaScript Getter | `User.fullName`, `Cart.total`, encapsulation. |
+| Combining **multiple independent state sources** | `derived()` function | Combining `SearchQuery` + `ProductList`. |
+| Creating a **multi-property ViewModel** with stable references | `derived.as()` | Derived component props and UI models. |
+| Aggregating **dynamic collections** without re-scanning | `derived.reduce()` | Cart subtotals, completion counters, lookup dictionaries. |
+| Maintaining a **sorted list** without mutating the source | `ordered()` function | Sorted tables, leaderboards, feeds. |

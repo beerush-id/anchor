@@ -96,7 +96,7 @@ The general `<Field>` component accepts any `string` as its `name` prop. It func
 :::code-group{group="framework"}
 
 ```tsx [React] name="react"
-import { setup, render } from '@airlib/react';
+import { For, render, setup } from '@airlib/react';
 
 // A generic field renderer for dynamic forms
 const RenderDynamicField = setup<{ name: string; label: string; type: string }>((props) => {
@@ -111,9 +111,9 @@ const RenderDynamicField = setup<{ name: string; label: string; type: string }>(
 export const DynamicFormRenderer = setup<{ fields: any[]; schema: any; initialValue: any }>((props) => {
   return render(() => (
     <Form schema={props.schema} value={props.initialValue}>
-      {props.fields.map(f => (
-        <RenderDynamicField key={f.name} {...f} />
-      ))}
+      <For each={() => props.fields}>
+        {(f) => <RenderDynamicField {...f} />}
+      </For>
       <FormSubmit>Submit</FormSubmit>
     </Form>
   ));

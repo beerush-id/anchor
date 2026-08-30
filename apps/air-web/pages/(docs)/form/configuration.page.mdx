@@ -157,15 +157,15 @@ The complete `configureForm` object accepts the following top-level keys. Each k
 
 | Key | Properties | Description |
 |---|---|---|
-| `form` | `class`, `errorClass`, `strict` | Configuration for the main `<Form>` container. |
-| `field` | `class`, `labelClass`, `errorClass`, `requiredLabel`, `requiredClass`, `mismatchLabel` | Configuration for the `<Field>` wrapper, including its internal label and error display. |
+| `form` | `class`, `errorClass`, `pendingClass`, `strict`, `validateOnInit`, `settleOnSubmit` | Configuration for the main `<Form>` container. |
+| `field` | `class`, `labelClass`, `controlClass`, `supportClass`, `errorClass`, `requiredLabel`, `requiredClass`, `mismatchLabel` | Configuration for the `<Field>` wrapper, including its label, control container, and support/error display. |
 
 ### Action Buttons
 
 | Key | Properties | Description |
 |---|---|---|
 | `submit` | `class`, `pendingClass` | Default classes for `<FormSubmit>` buttons. |
-| `reset` | `class`, `pendingClass` | Default classes for `<FormReset>` buttons. |
+| `reset` | `class`, `dirtyClass` | Default classes for `<FormReset>` buttons. |
 
 ### Input Components
 

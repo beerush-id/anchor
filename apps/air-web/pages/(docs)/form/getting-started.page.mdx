@@ -64,6 +64,8 @@ const UserForm = createForm(userSchema);
 - `<UserForm>` — The form wrapper
 - `<UserForm.Field>` — Typed field wrapper
 - `<UserForm.FieldList>` — Array field wrapper
+- `<UserForm.Submit>` — Typed submit button
+- `<UserForm.Reset>` — Typed reset button
 
 All three enforce the schema types. `<UserForm.Field name="typo">` is a compile error.
 
@@ -75,7 +77,7 @@ Drop `Field` components inside the form. Each `Field` takes a `name` (the schema
 
 ```tsx [React] name="react"
 import { setup, render, mutable } from '@airlib/react';
-import { TextInput, EmailInput, NumberInput, FormSubmit } from '@airlib/react-form';
+import { TextInput, EmailInput, NumberInput } from '@airlib/react-form';
 
 export const ProfileEditor = setup(() => {
   const profile = mutable({
@@ -101,7 +103,7 @@ export const ProfileEditor = setup(() => {
         <NumberInput />
       </UserForm.Field>
 
-      <FormSubmit>Save Profile</FormSubmit>
+      <UserForm.Submit>Save Profile</UserForm.Submit>
     </UserForm>
   ));
 });
@@ -109,7 +111,7 @@ export const ProfileEditor = setup(() => {
 
 ```tsx [SolidJS] name="solid"
 import { setup, mutable } from '@airlib/solid';
-import { TextInput, EmailInput, NumberInput, FormSubmit } from '@airlib/solid-form';
+import { TextInput, EmailInput, NumberInput } from '@airlib/solid-form';
 
 export const ProfileEditor = setup(() => {
   const profile = mutable({
@@ -135,7 +137,7 @@ export const ProfileEditor = setup(() => {
         <NumberInput />
       </UserForm.Field>
 
-      <FormSubmit>Save Profile</FormSubmit>
+      <UserForm.Submit>Save Profile</UserForm.Submit>
     </UserForm>
   );
 });
@@ -230,61 +232,61 @@ During submission:
 
 ## Submit & Reset Components
 
-AirLib Form provides `<FormSubmit>` and `<FormReset>` components that automatically connect to the form state.
+When creating a typed form with `createForm`, use the colocated `<UserForm.Submit>` and `<UserForm.Reset>` components. Standalone `<FormSubmit>` and `<FormReset>` components are also available for general dynamic forms.
 
-`<FormSubmit>` tracks the form's readiness. It disables itself when:
+`<UserForm.Submit>` tracks the form's readiness. It disables itself when:
 1. The form is `pending` (currently submitting)
 2. The form is invalid (violates the schema)
 3. The form is unchanged (no fields have been modified)
 
-Similarly, `<FormReset>` reverts all fields to their initial values, clears touched states, and resets the submission status. It disables itself when the form is unchanged.
+Similarly, `<UserForm.Reset>` reverts all fields to their initial values, clears touched states, and resets the submission status. It disables itself when the form is unchanged.
 
 :::code-group{group="framework"}
 
 ```tsx [React] name="react"
-import { FormSubmit, FormReset } from '@airlib/react-form';
-
 <div>
-  <FormReset className="btn-secondary">Undo Changes</FormReset>
-  <FormSubmit className="btn-primary">Save Profile</FormSubmit>
+  <UserForm.Reset className="btn-secondary">Undo Changes</UserForm.Reset>
+  <UserForm.Submit className="btn-primary">Save Profile</UserForm.Submit>
 </div>
 ```
 
 ```tsx [SolidJS] name="solid"
-import { FormSubmit, FormReset } from '@airlib/solid-form';
-
 <div>
-  <FormReset class="btn-secondary">Undo Changes</FormReset>
-  <FormSubmit class="btn-primary">Save Profile</FormSubmit>
+  <UserForm.Reset class="btn-secondary">Undo Changes</UserForm.Reset>
+  <UserForm.Submit class="btn-primary">Save Profile</UserForm.Submit>
 </div>
 ```
 
 :::
 
-Both components also accept a function as `children`, providing direct access to the form state so you can change their contents dynamically.
+Both components also accept a function as `children`, providing direct access to the form state with full TypeScript inference from your schema.
 
 :::code-group{group="framework"}
 
 ```tsx [React] name="react"
-<FormSubmit className="btn-primary">
+<UserForm.Submit className="btn-primary">
   {(form) => (
     <>
-      {form?.pending && <Spinner />}
+      <Show when={() => form?.pending}>
+        <Spinner />
+      </Show>
       <span>{form?.pending ? 'Saving...' : 'Save Profile'}</span>
     </>
   )}
-</FormSubmit>
+</UserForm.Submit>
 ```
 
 ```tsx [SolidJS] name="solid"
-<FormSubmit class="btn-primary">
+<UserForm.Submit class="btn-primary">
   {(form) => (
     <>
-      {form?.pending && <Spinner />}
+      <Show when={form?.pending}>
+        <Spinner />
+      </Show>
       <span>{form?.pending ? 'Saving...' : 'Save Profile'}</span>
     </>
   )}
-</FormSubmit>
+</UserForm.Submit>
 ```
 
 :::

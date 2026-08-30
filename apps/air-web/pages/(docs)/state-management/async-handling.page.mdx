@@ -402,11 +402,13 @@ export const Dashboard = setup(() => {
     }
   });
   
-  return render(() => (
+  return (
     <div>
-      {store.isReady ? <Content data={store} /> : <Loading />}
+      <Show when={() => store.isReady} fallback={() => <Loading />}>
+        {() => <Content data={store} />}
+      </Show>
     </div>
-  ));
+  );
 });
 ```
 

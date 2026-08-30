@@ -255,9 +255,9 @@ For `Radio` inputs, the browser groups them by the `name` attribute. Since all r
         <Radio value="pro" /> Pro ($19/mo)
       </label>
       
-      {field.touched && field.error?.[0] && (
+      <Show when={() => field.touched && field.error?.[0]}>
         <span className="error">{field.error[0]}</span>
-      )}
+      </Show>
     </div>
   )}
 </UserForm.Field>
@@ -274,9 +274,9 @@ For `Radio` inputs, the browser groups them by the `name` attribute. Since all r
         <Radio value="pro" /> Pro ($19/mo)
       </label>
       
-      {field.touched && field.error?.[0] && (
+      <Show when={field.touched && field.error?.[0]}>
         <span class="error">{field.error[0]}</span>
-      )}
+      </Show>
     </div>
   )}
 </UserForm.Field>

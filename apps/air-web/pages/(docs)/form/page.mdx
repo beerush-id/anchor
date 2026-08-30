@@ -74,7 +74,7 @@ const ProfileEditor = setup(() => {
 ```tsx [SolidJS] name="solid"
 import { z } from 'zod';
 import { setup, mutable } from '@airlib/solid';
-import { createForm, TextInput, EmailInput, Textarea, FormSubmit, FormReset } from '@airlib/solid-form';
+import { createForm, TextInput, EmailInput, Textarea } from '@airlib/solid-form';
 
 const schema = z.object({
   name: z.string().min(3, 'Name is too short'),
@@ -102,8 +102,8 @@ const ProfileEditor = setup(() => {
       </UserForm.Field>
 
       <div className="flex gap-2">
-        <FormReset>Reset</FormReset>
-        <FormSubmit className="flex-1">Save</FormSubmit>
+        <UserForm.Reset>Reset</UserForm.Reset>
+        <UserForm.Submit className="flex-1">Save</UserForm.Submit>
       </div>
     </UserForm>
   );

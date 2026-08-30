@@ -130,10 +130,12 @@ Two signals track user interaction at the field level:
   {(field) => (
     <div>
       <EmailInput />
-      {field.touched && !field.valid && (
-        <span className="error">{field.error?.[0]}</span>
-      )}
-      {field.changed && <span className="badge">Modified</span>}
+      <Show when={() => field.touched && !field.valid}>
+        {() => <span className="error">{field.error?.[0]}</span>}
+      </Show>
+      <Show when={() => field.changed}>
+        {() => <span className="badge">Modified</span>}
+      </Show>
     </div>
   )}
 </UserForm.Field>
@@ -144,10 +146,12 @@ Two signals track user interaction at the field level:
   {(field) => (
     <div>
       <EmailInput />
-      {field.touched && !field.valid && (
+      <Show when={field.touched && !field.valid}>
         <span class="error">{field.error?.[0]}</span>
-      )}
-      {field.changed && <span class="badge">Modified</span>}
+      </Show>
+      <Show when={field.changed}>
+        <span class="badge">Modified</span>
+      </Show>
     </div>
   )}
 </UserForm.Field>
@@ -182,7 +186,7 @@ When implementing asynchronous validation, such as checking if a username is ava
 :::code-group{group="framework"}
 
 ```tsx [React] name="react"
-import { setup, render, mutable } from '@airlib/react';
+import { setup, render, mutable, Show } from '@airlib/react';
 
 export const AsyncUsernameInput = setup(() => {
   const form = UserForm.get();
@@ -210,15 +214,19 @@ export const AsyncUsernameInput = setup(() => {
   return render(() => (
     <div>
       <TextInput onBlur={checkAvailability} />
-      {state.checking && <span className="info">Checking availability...</span>}
-      {state.taken && <span className="error">This username is already taken</span>}
+      <Show when={() => state.checking}>
+        {() => <span className="info">Checking availability...</span>}
+      </Show>
+      <Show when={() => state.taken}>
+        {() => <span className="error">This username is already taken</span>}
+      </Show>
     </div>
   ));
 });
 ```
 
 ```tsx [SolidJS] name="solid"
-import { setup, mutable } from '@airlib/solid';
+import { setup, mutable, Show } from '@airlib/solid';
 
 export const AsyncUsernameInput = setup(() => {
   const form = UserForm.get();
@@ -246,8 +254,12 @@ export const AsyncUsernameInput = setup(() => {
   return (
     <div>
       <TextInput onBlur={checkAvailability} />
-      {state.checking && <span class="info">Checking availability...</span>}
-      {state.taken && <span class="error">This username is already taken</span>}
+      <Show when={state.checking}>
+        <span class="info">Checking availability...</span>
+      </Show>
+      <Show when={state.taken}>
+        <span class="error">This username is already taken</span>
+      </Show>
     </div>
   );
 });
@@ -282,6 +294,8 @@ By default, `Field` renders a `<div>` with a label and error display. For full c
 :::code-group{group="framework"}
 
 ```tsx [React] name="react"
+import { Show, For } from '@airlib/react';
+
 <UserForm.Field name="email">
   {(field) => (
     <div className="custom-field">
@@ -289,11 +303,17 @@ By default, `Field` renders a `<div>` with a label and error display. For full c
       <EmailInput id="email" className="custom-input" />
 
       <div className="field-meta">
-        {field.touched && field.error?.map(err => (
-          <span key={err} className="error" role="alert">{err}</span>
-        ))}
-        {field.changed && <span className="badge">Edited</span>}
-        {!field.matched && <span className="warning">Doesn't match</span>}
+        <Show when={() => field.touched}>
+          <For each={() => field.error}>
+            {(err) => <span className="error" role="alert">{err}</span>}
+          </For>
+        </Show>
+        <Show when={() => field.changed}>
+          {() => <span className="badge">Edited</span>}
+        </Show>
+        <Show when={() => !field.matched}>
+          {() => <span className="warning">Doesn't match</span>}
+        </Show>
       </div>
     </div>
   )}
@@ -301,7 +321,7 @@ By default, `Field` renders a `<div>` with a label and error display. For full c
 ```
 
 ```tsx [SolidJS] name="solid"
-import { For } from 'solid-js';
+import { Show, For } from 'solid-js';
 
 <UserForm.Field name="email">
   {(field) => (
@@ -310,13 +330,17 @@ import { For } from 'solid-js';
       <EmailInput id="email" class="custom-input" />
 
       <div class="field-meta">
-        {field.touched && (
+        <Show when={field.touched}>
           <For each={field.error}>
             {(err) => <span class="error" role="alert">{err}</span>}
           </For>
-        )}
-        {field.changed && <span class="badge">Edited</span>}
-        {!field.matched && <span class="warning">Doesn't match</span>}
+        </Show>
+        <Show when={field.changed}>
+          <span class="badge">Edited</span>
+        </Show>
+        <Show when={!field.matched}>
+          <span class="warning">Doesn't match</span>
+        </Show>
       </div>
     </div>
   )}
@@ -338,6 +362,140 @@ The function receives the field state with these properties:
 | `changed` | `boolean` | Differs from initial value |
 | `disabled` | `boolean` | Form is pending |
 
+## Form & Field Slots
+
+Both `Form` and `Field` support declarative **named component slots** via `<Component.Snippet>` to customize structural layout regions without giving up built-in styling or state wiring.
+
+### Field Slots
+
+Inject prefixes, suffixes, custom labels, or specialized error renderers into any field:
+
+:::code-group{group="framework"}
+
+```tsx [React] name="react"
+<UserForm.Field name="email" label="Email">
+  <UserForm.Field.Snippet for="prefix">
+    {() => <span className="input-icon">✉️</span>}
+  </UserForm.Field.Snippet>
+
+  <EmailInput placeholder="name@company.com" />
+
+  <UserForm.Field.Snippet for="support">
+    {(field) => (
+      <span className="text-xs text-muted">
+        We will send verification instructions here.
+      </span>
+    )}
+  </UserForm.Field.Snippet>
+</UserForm.Field>
+```
+
+```tsx [SolidJS] name="solid"
+<UserForm.Field name="email" label="Email">
+  <UserForm.Field.Snippet for="prefix">
+    {() => <span class="input-icon">✉️</span>}
+  </UserForm.Field.Snippet>
+
+  <EmailInput placeholder="name@company.com" />
+
+  <UserForm.Field.Snippet for="support">
+    {(field) => (
+      <span class="text-xs text-muted">
+        We will send verification instructions here.
+      </span>
+    )}
+  </UserForm.Field.Snippet>
+</UserForm.Field>
+```
+
+:::
+
+Available `<Field>` slots:
+
+| Slot | Parameter | Description |
+|------|-----------|-------------|
+| `label` | `field` | Customizes or replaces the field label element |
+| `prefix` | `field` | Renders leading content/icons directly before the input control |
+| `suffix` | `field` | Renders trailing content/icons directly after the input control |
+| `support` | `field` | Customizes the support region below the control (defaults to validation errors and mismatch alerts) |
+
+### Form Slots
+
+Inject custom banners, headers, footers, or action bars directly inside the form boundaries:
+
+:::code-group{group="framework"}
+
+```tsx [React] name="react"
+<UserForm onSubmit={save}>
+  <UserForm.Snippet for="header">
+    {(form) => (
+      <header className="form-header">
+        <h2>Account Settings</h2>
+        <Show when={() => form.changed}>
+          {() => <span className="badge">Unsaved changes</span>}
+        </Show>
+      </header>
+    )}
+  </UserForm.Snippet>
+
+  <UserForm.Field name="name" label="Name">
+    <TextInput />
+  </UserForm.Field>
+
+  <UserForm.Snippet for="actions">
+    {(form) => (
+      <div className="flex gap-2">
+        <UserForm.Reset>Reset</UserForm.Reset>
+        <UserForm.Submit className="flex-1">
+          {form.pending ? 'Saving...' : 'Save Profile'}
+        </UserForm.Submit>
+      </div>
+    )}
+  </UserForm.Snippet>
+</UserForm>
+```
+
+```tsx [SolidJS] name="solid"
+<UserForm onSubmit={save}>
+  <UserForm.Snippet for="header">
+    {(form) => (
+      <header class="form-header">
+        <h2>Account Settings</h2>
+        <Show when={form.changed}>
+          <span class="badge">Unsaved changes</span>
+        </Show>
+      </header>
+    )}
+  </UserForm.Snippet>
+
+  <UserForm.Field name="name" label="Name">
+    <TextInput />
+  </UserForm.Field>
+
+  <UserForm.Snippet for="actions">
+    {(form) => (
+      <div class="flex gap-2">
+        <UserForm.Reset>Reset</UserForm.Reset>
+        <UserForm.Submit className="flex-1">
+          {form.pending ? 'Saving...' : 'Save Profile'}
+        </UserForm.Submit>
+      </div>
+    )}
+  </UserForm.Snippet>
+</UserForm>
+```
+
+:::
+
+Available `<Form>` slots:
+
+| Slot | Parameter | Description |
+|------|-----------|-------------|
+| `header` | `form` | Renders at the top of the form, before fields |
+| `error` | `form` | Customizes or replaces the top-level form error banner |
+| `actions` | `form` | Renders action controls below the fields |
+| `footer` | `form` | Renders at the bottom of the form boundary |
+
 ## Array Fields
 
 For dynamic lists — team members, phone numbers, addresses — use `FieldList`.
@@ -345,6 +503,8 @@ For dynamic lists — team members, phone numbers, addresses — use `FieldList`
 :::code-group{group="framework"}
 
 ```tsx [React] name="react"
+import { For } from '@airlib/react';
+
 const teamSchema = z.object({
   name: z.string().min(1),
   members: z.array(z.object({
@@ -364,19 +524,21 @@ const TeamForm = createForm(teamSchema);
     {(members) => (
       <div>
         <h3>Members</h3>
-        {members.map((member, i) => (
-          <div key={i} className="member-row">
-            <TeamForm.Field name={`members.${i}.name`} label="Name">
-              <TextInput />
-            </TeamForm.Field>
-            <TeamForm.Field name={`members.${i}.role`} label="Role">
-              <TextInput />
-            </TeamForm.Field>
-            <button type="button" onClick={() => members.splice(i, 1)}>
-              Remove
-            </button>
-          </div>
-        ))}
+        <For each={() => members}>
+          {(member, i) => (
+            <div className="member-row">
+              <TeamForm.Field name={`members.${i}.name`} label="Name">
+                <TextInput />
+              </TeamForm.Field>
+              <TeamForm.Field name={`members.${i}.role`} label="Role">
+                <TextInput />
+              </TeamForm.Field>
+              <button type="button" onClick={() => members.splice(i, 1)}>
+                Remove
+              </button>
+            </div>
+          )}
+        </For>
         <button type="button" onClick={() => members.push({ name: '', role: '' })}>
           Add Member
         </button>
@@ -544,6 +706,140 @@ The engine automatically generates all the necessary ARIA attributes and IDs to 
 For headless fields, you are responsible for wiring these attributes yourself using the properties provided by the field state.
 
 ## Custom Inputs
+
+### Headless Input Customization
+
+All built-in inputs (`Checkbox`, `Radio`, `TextInput`, `Select`, `Textarea`, `FilePicker`) accept a function as `children`. When provided, the input prepares all necessary HTML properties, event handlers, IDs, and ARIA attributes and yields `(props, input)` so you can easily spread `{...props}` onto your custom markup:
+
+:::code-group{group="framework"}
+
+```tsx [React] name="react"
+import { Checkbox, Radio, TextInput } from '@airlib/react-form';
+import { classx, Show } from '@airlib/react';
+
+// Custom Search Box with Inner Icon
+<TextInput placeholder="Search users...">
+  {(props, input) => (
+    <div className="custom-input-box">
+      <span className="search-icon">🔍</span>
+      <input {...props} />
+      <Show when={() => input.touched && input.error}>
+        {() => <span className="error-badge">!</span>}
+      </Show>
+    </div>
+  )}
+</TextInput>
+
+// Custom Animated Switch
+<Checkbox name="notifications">
+  {(props, input) => (
+    <label className={classx('custom-switch', { active: input.checked })}>
+      <input {...props} className="sr-only" />
+      <span className="switch-knob" />
+    </label>
+  )}
+</Checkbox>
+
+// Custom Radio Card
+<Radio value="pro">
+  {(props, input) => (
+    <label className={classx('plan-card', { active: input.checked })}>
+      <input {...props} className="sr-only" />
+      <h4>Pro Plan</h4>
+      <span>$19/mo</span>
+    </label>
+  )}
+</Radio>
+```
+
+```tsx [SolidJS] name="solid"
+import { Checkbox, Radio, TextInput } from '@airlib/solid-form';
+import { classx } from '@airlib/solid';
+import { Show } from 'solid-js';
+
+// Custom Search Box with Inner Icon
+<TextInput placeholder="Search users...">
+  {(props, input) => (
+    <div class="custom-input-box">
+      <span class="search-icon">🔍</span>
+      <input {...props} />
+      <Show when={input.touched && input.error}>
+        <span class="error-badge">!</span>
+      </Show>
+    </div>
+  )}
+</TextInput>
+
+// Custom Animated Switch
+<Checkbox name="notifications">
+  {(props, input) => (
+    <label class={classx('custom-switch', { active: input.checked })}>
+      <input {...props} class="sr-only" />
+      <span class="switch-knob" />
+    </label>
+  )}
+</Checkbox>
+
+// Custom Radio Card
+<Radio value="pro">
+  {(props, input) => (
+    <label class={classx('plan-card', { active: input.checked })}>
+      <input {...props} class="sr-only" />
+      <h4>Pro Plan</h4>
+      <span>$19/mo</span>
+    </label>
+  )}
+</Radio>
+```
+
+:::
+
+### Building Reusable Custom Inputs
+
+Use `for={props}` to wrap built-in inputs inside custom reusable components without writing any manual event or state wiring:
+
+:::code-group{group="framework"}
+
+```tsx [React] name="react"
+import { setup, Show } from '@airlib/react';
+import { TextInput, TextInputProps } from '@airlib/react-form';
+
+export const SearchInput = setup<TextInputProps>((props) => (
+  <TextInput for={props}>
+    {(inputProps, input) => (
+      <div className="search-field-box">
+        <span className="search-icon">🔍</span>
+        <input {...inputProps} />
+        <Show when={() => input.touched && input.error}>
+          {() => <span className="error-dot" />}
+        </Show>
+      </div>
+    )}
+  </TextInput>
+));
+```
+
+```tsx [SolidJS] name="solid"
+import { setup } from '@airlib/solid';
+import { Show } from 'solid-js';
+import { TextInput, TextInputProps } from '@airlib/solid-form';
+
+export const SearchInput = setup<TextInputProps>((props) => (
+  <TextInput for={props}>
+    {(inputProps, input) => (
+      <div class="search-field-box">
+        <span class="search-icon">🔍</span>
+        <input {...inputProps} />
+        <Show when={input.touched && input.error}>
+          <span class="error-dot" />
+        </Show>
+      </div>
+    )}
+  </TextInput>
+));
+```
+
+:::
 
 ### Factory
 
