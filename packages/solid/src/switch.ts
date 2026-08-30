@@ -1,5 +1,5 @@
-import type { AnyType } from '@airlib/core';
 import { createMemo, type JSX, untrack } from 'solid-js';
+import { render } from './hoc.tsx';
 
 export type ShowProps<T> = {
   when: T;
@@ -31,12 +31,9 @@ export function Show<T>(props: ShowProps<T>): JSX.Element {
   }) as unknown as JSX.Element;
 }
 
-export type SnippetProxy<T extends Record<string | symbol, AnyType>> = {
-  [K in keyof T]: T[K] extends object ? () => T[K] : T[K];
-};
-export type SnippetProps<T extends Record<string | symbol, AnyType>> = {
-  data?: T;
-  children: (data: SnippetProxy<T>) => JSX.Element;
+export type SnippetProps<T> = {
+  data?: T | (() => T);
+  children: (data: T) => JSX.Element;
 };
 
 /**
@@ -49,14 +46,13 @@ export type SnippetProps<T extends Record<string | symbol, AnyType>> = {
  * @param props.children - The render function that takes the data and returns a JSX element.
  * @returns A JSX element.
  */
-export function Snippet<T extends Record<string | symbol, AnyType>>(props: SnippetProps<T>) {
-  const dataProxy = new Proxy(props.data ?? ({} as T), {
-    get(target, prop) {
-      return () => (target as object)[prop as never];
-    },
-  });
-
-  return props.children(dataProxy as T);
+export function Snippet<T>(props: SnippetProps<T>): JSX.Element {
+  return render(({ data, children }) => {
+    if (typeof children !== 'function') {
+      return `[Snippet Error: Snippet must pass function as the children]`;
+    }
+    return children(typeof data === 'function' ? (data as () => T)() : (data as T));
+  }, props) as unknown as JSX.Element;
 }
 
 export type SlotProps = {

@@ -146,7 +146,7 @@ export function setup<P, S extends ComponentSlots>(
       try {
         return lifecycle.render(() => {
           const result = view(props, findSlots(props.children as ReactElement[]));
-          return typeof result === 'function' ? render(result) : result;
+          return typeof result === 'function' ? render(result, componentName) : result;
         });
       } catch (error) {
         const newErr = new Error(`[${componentName}] failed to render.`);

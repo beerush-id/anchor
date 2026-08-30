@@ -68,15 +68,23 @@ describe('Snippet Component', () => {
 
   it('should render snippet content with array data', () => {
     const { container } = render(() => (
-      <Snippet data={[{ text: 'Success!' }]}>{({ 0: item }) => <div>{item().text}</div>}</Snippet>
+      <Snippet data={[{ text: 'Success!' }]}>{({ 0: item }) => <div>{item.text}</div>}</Snippet>
     ));
 
     expect(container.textContent).toContain('Success!');
   });
 
+  it('should render error when children is not function', () => {
+    const { container } = render(() => (
+      <Snippet data={[{ text: 'Success!' }]}>{(<div>Success!</div>) as never}</Snippet>
+    ));
+
+    expect(container.textContent).toContain('Snippet Error');
+  });
+
   it('should render snippet content with undefined data', () => {
     const { container } = render(() => (
-      <Snippet data={undefined as never as { text: string }}>{({ text }) => <div>{text}</div>}</Snippet>
+      <Snippet data={() => undefined as never as { text: string }}>{(data) => <div>{data?.text}</div>}</Snippet>
     ));
 
     expect(container.textContent).not.toContain('undefined');
