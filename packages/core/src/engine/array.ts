@@ -2,6 +2,7 @@ import { ARRAY_MUTATIONS, HEURISTIC_THRESHOLD } from '../shared/constant.js';
 import { captureStack } from '../shared/index.js';
 import { plugin } from '../shared/plugin.js';
 import type {
+  ArrayChange,
   ArrayMutation,
   ArrayMutator,
   Broadcaster,
@@ -251,12 +252,14 @@ export function createArrayMutator<T extends unknown[]>(init: T, options?: TrapO
         }
       }
 
-      const event: StateChange = {
+      const event: ArrayChange = {
         type: method as ArrayMutation,
         prev: current,
         keys: [],
         error,
         value: args,
+        added: addedItems,
+        removed: deletedItems,
       };
 
       // Broadcast the array mutation event to all subscribers

@@ -50,6 +50,8 @@ describe('Anchor Core - Observable Array', () => {
         keys: [],
         prev: [1, 2, 3],
         value: [4],
+        added: [4],
+        removed: [],
       });
     });
 
@@ -92,6 +94,8 @@ describe('Anchor Core - Observable Array', () => {
         keys: [],
         prev: [1, 2, 3],
         value: [4],
+        added: [4],
+        removed: [],
       });
 
       state.pop(); // [1, 2, 3]
@@ -100,6 +104,8 @@ describe('Anchor Core - Observable Array', () => {
         keys: [],
         prev: 4,
         value: [],
+        added: [],
+        removed: [4],
       });
 
       state.shift(); // [2, 3]
@@ -108,6 +114,8 @@ describe('Anchor Core - Observable Array', () => {
         keys: [],
         prev: 1,
         value: [],
+        added: [],
+        removed: [1],
       });
 
       state.unshift(0); // [0, 2, 3]
@@ -116,6 +124,8 @@ describe('Anchor Core - Observable Array', () => {
         keys: [],
         prev: [2, 3],
         value: [0],
+        added: [0],
+        removed: [],
       });
 
       state.splice(1, 1, 5); // [0, 5, 3]
@@ -124,6 +134,8 @@ describe('Anchor Core - Observable Array', () => {
         keys: [],
         prev: [0, 2, 3],
         value: [1, 1, 5],
+        added: [5],
+        removed: [2],
       });
     });
 

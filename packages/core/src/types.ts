@@ -206,6 +206,12 @@ export type StateChange = {
   error?: ModelError;
   emitter?: string;
 };
+
+export type ArrayChange = StateChange & {
+  added?: unknown[];
+  removed?: unknown[];
+};
+
 export type BatchChange = StateChange & {
   changes: KeyLike[];
 };

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setReactive } from '../../src/engine/config.js';
-import { anchor, type AnyType, createLifecycle, MapMutations, SetMutations, subscribe } from '../../src/index.js';
+import { type AnyType, anchor, createLifecycle, MapMutations, SetMutations, subscribe } from '../../src/index.js';
 
 describe('Anchor Core - Subscription', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -75,7 +75,14 @@ describe('Anchor Core - Subscription', () => {
 
       expect(handler).toHaveBeenCalledTimes(2); // init + push
       expect(handler).toHaveBeenNthCalledWith(1, state, { type: 'init', keys: [] });
-      expect(handler).toHaveBeenNthCalledWith(2, state, { type: 'push', prev: [1, 2, 3], keys: [], value: [4] });
+      expect(handler).toHaveBeenNthCalledWith(2, state, {
+        type: 'push',
+        prev: [1, 2, 3],
+        keys: [],
+        value: [4],
+        added: [4],
+        removed: [],
+      });
 
       unsubscribe();
     });
@@ -145,6 +152,8 @@ describe('Anchor Core - Subscription', () => {
         prev: [{ id: 1, title: 'foo', completed: true }],
         keys: ['todos'],
         value: [{ id: 2, title: 'bar', completed: false }],
+        added: [{ id: 2, title: 'bar', completed: false }],
+        removed: [],
       });
 
       unsubscribe();
@@ -196,6 +205,8 @@ describe('Anchor Core - Subscription', () => {
         keys: [],
         prev: ['a', 'b'],
         value: ['c'],
+        added: ['c'],
+        removed: [],
       });
       expect(state).toEqual(['a', 'b', 'c']);
 
@@ -219,6 +230,8 @@ describe('Anchor Core - Subscription', () => {
         prev: [{ name: 'John' }],
         keys: [],
         value: [{ name: 'Jane' }],
+        added: [{ name: 'Jane' }],
+        removed: [],
       });
 
       // This change should not trigger a top-level notification, but should trigger a child notification.
