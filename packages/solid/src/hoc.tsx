@@ -7,12 +7,13 @@ import {
   getContextStore,
   isFunction,
 } from '@airlib/core';
-import { type Component, getOwner, type JSX, type Owner } from 'solid-js';
+import { type Accessor, type Component, createMemo, getOwner, type JSX, type Owner } from 'solid-js';
 import { proxyProps, setCurrentProps } from './props.js';
 import type {
   BindableComponentProps,
   BindableProps,
   ComponentSlots,
+  ComponentView,
   ComponentWithSnippet,
   SlottedComponent,
 } from './types.js';
@@ -71,7 +72,7 @@ export function setup<P extends Record<string, any>, S extends ComponentSlots>(
  */
 // biome-ignore lint/suspicious/noExplicitAny: library
 export function setup<P extends Record<string, any>>(
-  Component: Component<BindableComponentProps<P>>,
+  Component: ComponentView<BindableComponentProps<P>>,
   displayName?: string
 ): BindableComponent<BindableProps<P>>;
 
@@ -84,7 +85,7 @@ export function setup<P extends Record<string, any>>(
  */
 // biome-ignore lint/suspicious/noExplicitAny: library
 export function setup<P extends Record<string, any>, S extends ComponentSlots>(
-  Component: Component<BindableComponentProps<P>> | ComponentWithSnippet<P, S>,
+  Component: ComponentView<BindableComponentProps<P>> | ComponentWithSnippet<P, S>,
   displayName?: string
 ): BindableComponent<BindableProps<P>> {
   const Setup = (props: BindableComponentProps<P>) => {
@@ -100,7 +101,8 @@ export function setup<P extends Record<string, any>, S extends ComponentSlots>(
     }
 
     const slots = findSlots((props as AnyType).children);
-    return (Component as ComponentWithSnippet<P, S>)(bindableProps as never, slots as never);
+    const result = (Component as ComponentWithSnippet<P, S>)(bindableProps as never, slots as never);
+    return typeof result === 'function' ? render(result, bindableProps as never) : result;
   };
 
   const SetupSlot = (props: AnyType) => {
@@ -114,13 +116,55 @@ export function setup<P extends Record<string, any>, S extends ComponentSlots>(
   return Setup as never;
 }
 
-function findSlots(children: unknown) {
+/**
+ * Creates a memoized reactive JSX element from a view factory function.
+ *
+ * @param view - Factory function returning a JSX element or an accessor.
+ * @param props - The props to pass to the view function.
+ * @returns A memoized accessor resolving to the evaluated JSX element.
+ */
+export function render<P>(view: ((props: P) => JSX.Element) | Accessor<JSX.Element>, props: P): Accessor<JSX.Element> {
+  return createMemo(() => view(props));
+}
+
+/**
+ * Resolves dynamic child nodes or accessor functions into evaluated JSX elements.
+ * Invokes the accessor/render-prop with optional arguments, or returns the static element directly.
+ * Catches runtime execution errors and returns an error diagnostic string.
+ *
+ * @param children - Static JSX element or an accessor/render function returning a JSX element.
+ * @param args - Arguments to pass when `children` is a function.
+ * @returns The resolved JSX element or an error diagnostic string.
+ */
+export function renderDynamic(
+  children: Accessor<JSX.Element> | ((...args: AnyType[]) => JSX.Element) | JSX.Element,
+  ...args: AnyType[]
+): JSX.Element {
+  if (typeof children === 'function') {
+    try {
+      return (children as (...args: AnyType[]) => JSX.Element)(...args);
+    } catch (error) {
+      return `[Render Error]: Failed to render dynamic: ${(error as Error).message}`;
+    }
+  }
+  return children;
+}
+
+/**
+ * Extracts named component snippets (slots) from component children.
+ * Resolves child accessors if needed, flattens the node hierarchy, and maps snippet functions by their target slot name.
+ *
+ * @param children - The children or child accessor to inspect for snippets.
+ * @returns A record mapping slot names to snippet render functions.
+ */
+function findSlots(children: unknown): ComponentSlots {
   if (!children) return {} as ComponentSlots;
   let resolved: unknown = children;
   if (typeof children === 'function' && children.length === 0) {
     try {
       resolved = (children as () => unknown)();
     } catch {
+      /* istanbul ignore next */
       return {} as ComponentSlots;
     }
   }

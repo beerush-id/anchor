@@ -7,6 +7,17 @@ import type { Component, JSX } from 'solid-js';
 export type ComponentSlots = Record<string, (...args: AnyType[]) => JSX.Element>;
 
 /**
+ * Reactive component view function that consumes reactive props and returns view output.
+ *
+ * @template P Component props type
+ * @param props Component props
+ * @returns Rendered view
+ */
+export type ComponentView<P> = (
+  props: BindableComponentProps<P>
+) => JSX.Element | ((props: BindableComponentProps<P>) => JSX.Element);
+
+/**
  * Component definition that consumes reactive props and slot renderers to produce view output.
  *
  * @template P Component props type
@@ -18,7 +29,7 @@ export type ComponentSlots = Record<string, (...args: AnyType[]) => JSX.Element>
 export type ComponentWithSnippet<P, S extends ComponentSlots> = (
   props: BindableComponentProps<P>,
   snippets: S
-) => JSX.Element;
+) => JSX.Element | ((props: BindableComponentProps<P>) => JSX.Element);
 
 /**
  * Target slot identifier and renderer content passed when declaring a snippet.
