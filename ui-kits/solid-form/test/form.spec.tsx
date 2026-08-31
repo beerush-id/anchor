@@ -5,8 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { Field } from '../src/Field.js';
 import { Form } from '../src/Form.js';
-import { TextInput } from '../src/inputs/TextInput.js';
-import { configureForm } from '../src/config.js';
+import { FormSubmit, TextInput } from '../src/index.js';
 
 afterEach(cleanup);
 
@@ -32,7 +31,7 @@ describe('Form', () => {
       />
     ));
     const form = screen.getByTestId('form');
-    expect(form.className).toBe('my-form');
+    expect(form.className).toBe('air-form my-form');
     expect(form.id).toBe('test-form');
   });
 
@@ -52,7 +51,7 @@ describe('Form', () => {
     expect(screen.getByText('Submit')).toBeDefined();
   });
 
-  it('should call onSubmit with validated data on form submission', async () => {
+  it('should call onSubmit with validated data on form submission', () => {
     const handleSubmit = vi.fn();
 
     const { container } = render(() => (
@@ -90,138 +89,213 @@ describe('Form', () => {
     expect(prevented).toBe(true);
   });
 
-  it('should apply error class when onSubmit handler throws', async () => {
-    const handleSubmit = async () => {
-      throw new Error('Submit error');
+  it('should apply errorClass when form has errors on submit', async () => {
+    const schema = z.object({ name: z.string() });
+    const handleSubmit = () => {
+      throw new Error('Server validation failed');
     };
+
     render(() => (
       <Form
-        schema={userSchema}
-        value={{ name: 'John', email: 'john@test.com' }}
-        class="my-form"
-        errorClass="form-err"
-        data-testid="form"
+        schema={schema}
+        value={{ name: 'Valid' }}
         onSubmit={handleSubmit}
+        class="base-class"
+        errorClass="error-state"
+        data-testid="error-form"
       >
-        <button type="submit">Submit</button>
+        <Field name="name">
+          <TextInput data-testid="input" />
+        </Field>
+        <button type="submit" data-testid="submit-btn">
+          Submit
+        </button>
       </Form>
     ));
-    const form = screen.getByTestId('form');
-    fireEvent.submit(form);
+
+    const form = screen.getByTestId('error-form');
+    expect(form.className).toBe('air-form base-class');
+
+    fireEvent.input(screen.getByTestId('input'), { target: { value: 'Valid Changed' } });
+    fireEvent.click(screen.getByTestId('submit-btn'));
     await new Promise((r) => setTimeout(r, 10));
-    expect(form.className).toContain('form-err');
+
+    expect(form.className).toBe('air-form base-class error-state');
   });
 
-  it('should fallback to default options when errorClass is omitted', async () => {
-    const handleSubmit = async () => {
-      throw new Error('Submit error');
+  it('should apply default errorClass when form has errors and omitted', async () => {
+    const schema = z.object({ name: z.string() });
+    const handleSubmit = () => {
+      throw new Error('Server validation failed');
     };
+
     render(() => (
-      <Form
-        schema={userSchema}
-        value={{ name: 'John', email: 'john@test.com' }}
-        data-testid="form-fallback"
-        onSubmit={handleSubmit}
-      >
-        <button type="submit">Submit</button>
+      <Form schema={schema} value={{ name: 'Valid' }} onSubmit={handleSubmit} data-testid="error-form-def">
+        <Field name="name">
+          <TextInput data-testid="input-def" />
+        </Field>
+        <button type="submit" data-testid="submit-btn-def">
+          Submit
+        </button>
       </Form>
     ));
-    const form = screen.getByTestId('form-fallback');
-    fireEvent.submit(form);
+
+    const form = screen.getByTestId('error-form-def');
+    expect(form.className).toBe('air-form');
+
+    fireEvent.input(screen.getByTestId('input-def'), { target: { value: 'Valid Changed' } });
+    fireEvent.click(screen.getByTestId('submit-btn-def'));
     await new Promise((r) => setTimeout(r, 10));
+
+    expect(form.className).toBe('air-form air-form-error');
   });
 
-  it('should cover all class branches for error in Form', async () => {
-    const handleSubmit = async () => {
-      throw new Error('Submit error');
+  it('should apply partial errorClass or class correctly on error', async () => {
+    const schema = z.object({ name: z.string() });
+    const handleSubmit = () => {
+      throw new Error('Server validation failed');
     };
+
     render(() => (
-      <div>
+      <>
         <Form
-          schema={userSchema}
-          value={{ name: 'John', email: 'john@test.com' }}
-          data-testid="form-c"
-          class="my-c"
+          schema={schema}
+          value={{ name: 'Valid' }}
           onSubmit={handleSubmit}
+          data-testid="form-only-class"
+          class="only-class"
         >
-          <button type="submit">Submit</button>
+          <Field name="name">
+            <TextInput data-testid="input-only-class" />
+          </Field>
+          <button type="submit" data-testid="submit-only-class">
+            Submit
+          </button>
         </Form>
         <Form
-          schema={userSchema}
-          value={{ name: 'John', email: 'john@test.com' }}
-          data-testid="form-e"
-          errorClass="my-e"
+          schema={schema}
+          value={{ name: 'Valid' }}
           onSubmit={handleSubmit}
+          data-testid="form-only-error"
+          errorClass="only-error"
         >
-          <button type="submit">Submit</button>
+          <Field name="name">
+            <TextInput data-testid="input-only-error" />
+          </Field>
+          <button type="submit" data-testid="submit-only-error">
+            Submit
+          </button>
         </Form>
-      </div>
+      </>
     ));
 
-    fireEvent.submit(screen.getByTestId('form-c'));
-    fireEvent.submit(screen.getByTestId('form-e'));
+    fireEvent.input(screen.getByTestId('input-only-class'), { target: { value: 'Changed' } });
+    fireEvent.input(screen.getByTestId('input-only-error'), { target: { value: 'Changed' } });
+
+    fireEvent.click(screen.getByTestId('submit-only-class'));
+    fireEvent.click(screen.getByTestId('submit-only-error'));
     await new Promise((r) => setTimeout(r, 10));
+
+    expect(screen.getByTestId('form-only-class').className).toBe('air-form only-class air-form-error');
+    expect(screen.getByTestId('form-only-error').className).toBe('air-form only-error');
   });
 
-  it('should use globally configured FORM_OPTIONS when props are omitted', async () => {
-    configureForm({
-      form: { class: 'global-c', errorClass: 'global-e' },
-    });
-
-    const handleSubmit = async () => {
-      throw new Error('err');
+  it('should apply empty string, null, and explicitly undefined classes correctly on error', async () => {
+    const schema = z.object({ name: z.string() });
+    const handleSubmit = () => {
+      throw new Error('Server validation failed');
     };
+
     render(() => (
-      <Form schema={userSchema} value={{ name: 'x', email: 'x' }} data-testid="global-form" onSubmit={handleSubmit}>
-        <button type="submit">Submit</button>
+      <>
+        <Form
+          schema={schema}
+          value={{ name: 'Valid' }}
+          onSubmit={handleSubmit}
+          data-testid="form-empty-class"
+          class=""
+          errorClass=""
+        >
+          <Field name="name">
+            <TextInput data-testid="input-empty-class" />
+          </Field>
+          <button type="submit" data-testid="submit-empty-class">
+            Submit
+          </button>
+        </Form>
+        <Form
+          schema={schema}
+          value={{ name: 'Valid' }}
+          onSubmit={handleSubmit}
+          data-testid="form-null-class"
+          class={null as any}
+          errorClass={null as any}
+        >
+          <Field name="name">
+            <TextInput data-testid="input-null-class" />
+          </Field>
+          <button type="submit" data-testid="submit-null-class">
+            Submit
+          </button>
+        </Form>
+        <Form
+          schema={schema}
+          value={{ name: 'Valid' }}
+          onSubmit={handleSubmit}
+          data-testid="form-undef-class"
+          class={undefined}
+          errorClass={undefined}
+        >
+          <Field name="name">
+            <TextInput data-testid="input-undef-class" />
+          </Field>
+          <button type="submit" data-testid="submit-undef-class">
+            Submit
+          </button>
+        </Form>
+      </>
+    ));
+
+    fireEvent.input(screen.getByTestId('input-empty-class'), { target: { value: 'Changed' } });
+    fireEvent.input(screen.getByTestId('input-null-class'), { target: { value: 'Changed' } });
+    fireEvent.input(screen.getByTestId('input-undef-class'), { target: { value: 'Changed' } });
+
+    fireEvent.click(screen.getByTestId('submit-empty-class'));
+    fireEvent.click(screen.getByTestId('submit-null-class'));
+    fireEvent.click(screen.getByTestId('submit-undef-class'));
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(screen.getByTestId('form-empty-class').className).toBe('air-form');
+    expect(screen.getByTestId('form-null-class').className).toBe('air-form air-form-error');
+    expect(screen.getByTestId('form-undef-class').className).toBe('air-form air-form-error');
+  });
+
+  it('FormSubmit should apply default pendingClass when omitted', async () => {
+    const schema = z.object({ name: z.string() });
+    let resolveSubmit: any;
+    const handleSubmit = () =>
+      new Promise<void>((resolve) => {
+        resolveSubmit = resolve;
+      });
+
+    render(() => (
+      <Form schema={schema} value={{ name: 'Valid' }} onSubmit={handleSubmit}>
+        <Field name="name">
+          <TextInput data-testid="input-submit" />
+        </Field>
+        <FormSubmit data-testid="form-submit">Submit</FormSubmit>
       </Form>
     ));
 
-    const form = screen.getByTestId('global-form');
-    // Initially, error is false, so it uses FORM_OPTIONS.class
-    expect(form.className).toContain('global-c');
+    const btn = screen.getByTestId('form-submit');
+    expect(btn.className).toBe('air-form-submit');
 
-    // Trigger error
-    fireEvent.submit(form);
+    fireEvent.input(screen.getByTestId('input-submit'), { target: { value: 'Changed' } });
+    fireEvent.click(btn);
+
+    expect(btn.className).toBe('air-form-submit air-form-submit-pending');
+
+    resolveSubmit();
     await new Promise((r) => setTimeout(r, 10));
-
-    // Now it uses FORM_OPTIONS.class AND FORM_OPTIONS.errorClass
-    expect(form.className).toContain('global-c');
-    expect(form.className).toContain('global-e');
-
-    // Reset config
-    configureForm({ form: { class: undefined, errorClass: undefined } });
-  });
-
-  it('should evaluate right side of ?? by passing explicit undefined', async () => {
-    configureForm({
-      form: { class: 'global-c', errorClass: 'global-e' },
-    });
-
-    const handleSubmit = async () => {
-      throw new Error('err');
-    };
-    // Pass explicitly undefined so Object.hasOwn is true, bypassing the forEach fallback
-    render(() => (
-      <Form
-        schema={userSchema}
-        value={{ name: 'x', email: 'x' }}
-        class={undefined}
-        errorClass={undefined}
-        data-testid="global-form-explicit"
-        onSubmit={handleSubmit}
-      >
-        <button type="submit">Submit</button>
-      </Form>
-    ));
-
-    const form = screen.getByTestId('global-form-explicit');
-    fireEvent.submit(form);
-    await new Promise((r) => setTimeout(r, 10));
-
-    expect(form.className).toContain('global-c');
-    expect(form.className).toContain('global-e');
-
-    configureForm({ form: { class: undefined, errorClass: undefined } });
   });
 });

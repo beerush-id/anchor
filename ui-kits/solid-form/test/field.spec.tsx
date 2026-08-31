@@ -1,12 +1,12 @@
 /** @jsxImportSource solid-js */
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
-import { act } from 'react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { Field } from '../src/Field.js';
+import { FieldList } from '../src/FieldList.js';
 import { Form } from '../src/Form.js';
-import { TextInput } from '../src/inputs/TextInput.js';
+import { TextInput } from '../src/index.js';
 
 afterEach(cleanup);
 
@@ -42,7 +42,7 @@ describe('Field', () => {
       ));
 
       const field = screen.getByTestId('field');
-      expect(field.className).toBe('field-group');
+      expect(field.className).toBe('air-form-field field-group');
       expect(field.id).toBe('name-field');
     });
 
@@ -56,30 +56,46 @@ describe('Field', () => {
       ));
 
       const label = screen.getByText('Name');
-      expect(label.className).toBe('label-style');
+      expect(label.className).toBe('air-form-field-label label-style');
     });
 
-    it('should display validation errors with errorClass', () => {
+    it('should render the control wrapper with controlClass', () => {
       render(() => (
-        <Form schema={userSchema} value={{ name: 'Al', email: 'john@test.com' }}>
-          <Field name="name" label="Name" errorClass="error-text" data-testid="field">
+        <Form schema={userSchema} value={{ name: 'John', email: 'john@test.com' }}>
+          <Field name="name" controlClass="custom-control" data-testid="field">
             <TextInput data-testid="input" />
           </Field>
         </Form>
       ));
 
-      const input = screen.getByTestId('input');
-      expect((input as HTMLInputElement).value).toBe('Al');
+      const control = screen.getByTestId('field').querySelector('.air-form-field-control');
+      expect(control).not.toBeNull();
+      expect(control?.className).toBe('air-form-field-control custom-control');
+      expect(control?.contains(screen.getByTestId('input'))).toBe(true);
+    });
 
-      act(() => {
-        fireEvent.input(input, { target: { value: 'A' } });
-      });
+    it('should display validation errors with supportClass', () => {
+      render(() => (
+        <Form schema={userSchema} value={{ name: 'Al', email: 'john@test.com' }}>
+          <Field name="name" label="Name" errorClass="error-text" supportClass="support-text" data-testid="field">
+            <TextInput data-testid="input" />
+          </Field>
+        </Form>
+      ));
 
       const field = screen.getByTestId('field');
-      const error = field.querySelector('.error-text');
+      expect(field.className).toBe('air-form-field');
+      let error = field.querySelector('[role="alert"]');
+      expect(error).toBeNull();
 
+      const input = screen.getByTestId('input');
+      fireEvent.input(input, { target: { value: 'A' } });
+
+      expect(field.className).toBe('air-form-field error-text');
+      error = field.querySelector('[role="alert"]');
       expect(error).toBeDefined();
-      expect(error?.textContent).toContain('Name too short');
+      expect(error?.className).toBe('air-form-field-support support-text');
+      expect(error?.textContent).toBe('Name too short');
     });
 
     it('should not leak name, label, labelClass, errorClass to the DOM', () => {
@@ -96,17 +112,6 @@ describe('Field', () => {
       expect(field.getAttribute('label')).toBeNull();
       expect(field.getAttribute('labelClass')).toBeNull();
       expect(field.getAttribute('errorClass')).toBeNull();
-    });
-
-    it('should render an error when name is not provided', () => {
-      render(() => (
-        <Form schema={userSchema} value={{ name: 'John', email: 'john@test.com' }}>
-          <Field name={'' as any} data-testid="field">
-            <TextInput />
-          </Field>
-        </Form>
-      ));
-      expect(screen.getByText('[FieldError]: Name property is required!')).toBeDefined();
     });
   });
 
@@ -131,7 +136,7 @@ describe('Field', () => {
   });
 
   describe('Accessibility', () => {
-    it('should link label to input via htmlFor and auto-id', () => {
+    it('should link label to input via for and auto-id', () => {
       render(() => (
         <Form schema={userSchema} value={{ name: 'John', email: 'john@test.com' }}>
           <Field name="name" label="Full Name" data-testid="field">
@@ -157,18 +162,13 @@ describe('Field', () => {
       ));
 
       const input = screen.getByTestId('input');
-      expect((input as HTMLInputElement).value).toBe('Al');
-
-      act(() => {
-        fireEvent.input(input, { target: { value: 'A' } });
-      });
+      fireEvent.input(input, { target: { value: 'A' } });
 
       const field = screen.getByTestId('field');
-      const error = field.querySelector('.error-text') as HTMLElement;
+      const error = field.querySelector('[role="alert"]') as HTMLElement;
 
-      expect(error).toBeDefined();
+      expect(error).not.toBeNull();
       expect(error.id).toBe('name-error');
-      expect(error.getAttribute('role')).toBe('alert');
     });
 
     it('should set aria-invalid and aria-describedby on input when errors exist', () => {
@@ -329,6 +329,57 @@ describe('Field', () => {
       fireEvent.input(screen.getByTestId('input'), { target: { value: 'Jane' } });
 
       expect(screen.getByTestId('touched').textContent).toBe('true');
+    });
+  });
+
+  describe('Missing properties fallback', () => {
+    it('should render error message when name is not provided', () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      render(() => (
+        <Form schema={userSchema} value={{ name: 'John', email: 'john@test.com' }}>
+          <Field name={'' as never} errorClass="custom-error">
+            <TextInput data-testid="input" />
+          </Field>
+        </Form>
+      ));
+      expect(screen.getByText('[FieldError]: Name property is required!')).toBeDefined();
+      expect(screen.getByText('[FieldError]: Name property is required!').className).toBe('custom-error');
+      errorSpy.mockRestore();
+    });
+
+    it('should render default error message class when name is not provided and errorClass is omitted', () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      render(() => (
+        <Form schema={userSchema} value={{ name: 'John', email: 'john@test.com' }}>
+          <Field name={'' as never}>
+            <TextInput data-testid="input" />
+          </Field>
+        </Form>
+      ));
+      expect(screen.getByText('[FieldError]: Name property is required!').className).toBe('air-form-field-error');
+      errorSpy.mockRestore();
+    });
+
+    it('FieldList should render error message when name is not provided', () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      render(() => (
+        <Form schema={userSchema} value={{ name: 'John', email: 'john@test.com' }}>
+          <FieldList name={'' as never}>{() => <div />}</FieldList>
+        </Form>
+      ));
+      expect(screen.getByText('[FieldListError]: Name property is required!')).toBeDefined();
+      errorSpy.mockRestore();
+    });
+
+    it('FieldList should render default error message class when errorClass is omitted', () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      render(() => (
+        <Form schema={userSchema} value={{ name: 'John', email: 'john@test.com' }}>
+          <FieldList name={'' as never}>{() => <div />}</FieldList>
+        </Form>
+      ));
+      expect(screen.getByText('[FieldListError]: Name property is required!').className).toBe('air-form-field-error');
+      errorSpy.mockRestore();
     });
   });
 });

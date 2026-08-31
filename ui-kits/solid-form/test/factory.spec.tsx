@@ -2,13 +2,12 @@
 
 import { mutable } from '@airlib/solid';
 import { cleanup, fireEvent, render as renderComponent, screen } from '@solidjs/testing-library';
-import { act } from 'react';
 import { For } from 'solid-js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { configureForm, FIELD_OPTIONS } from '../src/config.js';
+import { FIELD_OPTIONS } from '../src/config.js';
 import { createForm } from '../src/factory.js';
-import { TextInput } from '../src/inputs/TextInput.js';
+import { TextInput } from '../src/index.js';
 
 afterEach(cleanup);
 
@@ -25,10 +24,12 @@ describe('createForm', () => {
     expect(UserForm.Field).toBeDefined();
   });
 
-  it('should expose get() and field() static methods', () => {
+  it('should expose get(), field(), Submit, and Reset members', () => {
     const UserForm = createForm(userSchema);
     expect(typeof UserForm.get).toBe('function');
     expect(typeof UserForm.field).toBe('function');
+    expect(UserForm.Submit).toBeDefined();
+    expect(UserForm.Reset).toBeDefined();
   });
 
   it('should render a working form with typed field', () => {
@@ -50,7 +51,7 @@ describe('createForm', () => {
     expect(input.value).toBe('John');
   });
 
-  it('should handle onSubmit with validated data', async () => {
+  it('should handle onSubmit with validated data', () => {
     const UserForm = createForm(userSchema);
     const handleSubmit = vi.fn();
 
@@ -73,45 +74,16 @@ describe('createForm', () => {
     expect(changes.name).toBe('Jane');
   });
 
-  it('should apply error class to typed form when onSubmit throws', async () => {
-    const TestForm = createForm(userSchema);
-    const handleSubmit = async () => {
-      throw new Error('Submit error');
-    };
+  it('should support dynamic schema via props when created without schema', () => {
+    const DynForm = createForm();
 
     renderComponent(() => (
-      <TestForm
-        value={{ name: 'John', email: 'j@t.com', tags: [] }}
-        errorClass="t-err"
-        data-testid="t-form"
-        onSubmit={handleSubmit}
-      >
-        <button type="submit">Submit</button>
-      </TestForm>
+      <DynForm schema={userSchema} value={{ name: 'John', email: 'john@test.com' }}>
+        <TextInput name="name" data-testid="input" />
+      </DynForm>
     ));
-    const form = screen.getByTestId('t-form');
-    fireEvent.submit(form);
-    await new Promise((r) => setTimeout(r, 10));
-    expect(form.className).toContain('t-err');
-  });
 
-  it('should apply pending class to typed form while submitting', async () => {
-    const TestForm = createForm(userSchema);
-    const handleSubmit = () => new Promise<void>((r) => setTimeout(r, 100));
-
-    renderComponent(() => (
-      <TestForm
-        value={{ name: 'John', email: 'j@t.com' }}
-        pendingClass="t-pending"
-        data-testid="t-form"
-        onSubmit={handleSubmit}
-      >
-        <button type="submit">Submit</button>
-      </TestForm>
-    ));
-    const form = screen.getByTestId('t-form');
-    fireEvent.submit(form);
-    expect(form.className).toContain('t-pending');
+    expect((screen.getByTestId('input') as HTMLInputElement).value).toBe('John');
   });
 
   it('should support headless Field with render function', () => {
@@ -143,28 +115,14 @@ describe('createForm', () => {
       </UserForm>
     ));
 
-    const input = screen.getByTestId('input') as HTMLInputElement;
-    expect(input.value).toBe('Al');
+    const field = screen.getByTestId('field');
+    expect(field.querySelector('.error-text')).toBeNull();
 
-    act(() => {
-      fireEvent.input(input, { target: { value: 'A' } });
-    });
+    fireEvent.input(screen.getByTestId('input'), { target: { value: 'A' } });
 
-    const error = screen.getByTestId('field').querySelector('.error-text');
+    const error = field.querySelector('[role="alert"]');
     expect(error).not.toBeNull();
     expect(error?.textContent).toContain('Name too short');
-  });
-
-  it('should render an error when name is not provided for Field', () => {
-    const UserForm = createForm(userSchema);
-    renderComponent(() => (
-      <UserForm value={{ name: 'John', email: 'john@test.com' }}>
-        <UserForm.Field name={'' as any} data-testid="field">
-          <TextInput />
-        </UserForm.Field>
-      </UserForm>
-    ));
-    expect(screen.getByText('[FieldError]: Name property is required!')).toBeDefined();
   });
 
   it('should access form state via get()', () => {
@@ -207,7 +165,7 @@ describe('createForm', () => {
     renderComponent(() => (
       <UserForm value={{ name: 'John', email: 'j@t.com', tags: ['react', 'vue'] }}>
         <UserForm.FieldList name="tags">
-          {(items: any[]) => (
+          {(items) => (
             <>
               <For each={items}>
                 {(_, i) => (
@@ -241,7 +199,7 @@ describe('createForm', () => {
     expect(screen.getByTestId('count').textContent).toBe('0');
   });
 
-  it('should support array mutations like push() in FieldList', async () => {
+  it('should support array mutations like push() in FieldList', () => {
     const UserForm = createForm(userSchema);
     const data = mutable({ name: 'John', email: 'j@t.com', tags: ['react'] });
 
@@ -280,326 +238,453 @@ describe('createForm', () => {
     expect((screen.getByTestId('tag-1') as HTMLInputElement).value).toBe('vue');
   });
 
-  it('should render an error when name is not provided for FieldList', () => {
-    const Schema = z.object({ tags: z.array(z.string()).default([]) });
-    const TestForm = createForm(Schema);
+  describe('Factory Edge Cases', () => {
+    it('Form and Field should fallback to factory options', async () => {
+      const Schema = z.object({ name: z.string().min(3) });
+      const OptForm = createForm(Schema, {
+        form: { class: 'opt-form', errorClass: 'opt-form-err', pendingClass: 'opt-form-pend' },
+        field: {
+          class: 'opt-field',
+          errorClass: 'opt-field-err',
+          labelClass: 'opt-label',
+          requiredClass: 'opt-req',
+          requiredLabel: '*',
+        },
+      });
+      let rejectSubmit: any;
+      const handleSubmit = () =>
+        new Promise<void>((_, reject) => {
+          rejectSubmit = reject;
+        });
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    renderComponent(() => (
-      <TestForm value={{ tags: ['react', 'vue'] }}>
-        <TestForm.FieldList name={'' as any}>{(items: any[]) => <span>{items.length}</span>}</TestForm.FieldList>
-      </TestForm>
-    ));
+      renderComponent(() => (
+        <OptForm value={{ name: 'Valid' }} onSubmit={handleSubmit} data-testid="opt-form">
+          <OptForm.Field name="name" label="Name" data-testid="opt-field">
+            <TextInput data-testid="opt-input" />
+          </OptForm.Field>
+          <OptForm.FieldList name={'' as never}>{() => <div />}</OptForm.FieldList>
+          <OptForm.Field name={'' as never}>
+            <TextInput />
+          </OptForm.Field>
+          <button type="submit" data-testid="opt-submit" />
+        </OptForm>
+      ));
 
-    expect(screen.getByText('[FieldListError]: Name property is required!')).toBeDefined();
-  });
+      const form = screen.getByTestId('opt-form');
+      const field = screen.getByTestId('opt-field');
+      expect(form.className).toBe('opt-form');
+      expect(field.className).toBe('opt-field');
+      expect(screen.getByText('Name').className).toBe('opt-label');
+      expect(screen.getByText('*').className).toBe('opt-req');
 
-  it('should use formOptions and fieldOptions when props are missing', async () => {
-    const CustomForm = createForm(userSchema, {
-      form: { class: 'f-class', errorClass: 'f-err' },
-      field: {
-        class: 'fld-class',
-        errorClass: 'fld-err',
-        labelClass: 'lbl-class',
-        requiredClass: 'req-class',
-        requiredLabel: '(*)',
-      },
+      fireEvent.input(screen.getByTestId('opt-input'), { target: { value: 'Changed' } });
+      fireEvent.click(screen.getByTestId('opt-submit'));
+      expect(form.className).toBe('opt-form opt-form-pend');
+
+      rejectSubmit(new Error('fail'));
+      await new Promise((r) => setTimeout(r, 10));
+      expect(form.className).toBe('opt-form opt-form-err');
+
+      fireEvent.input(screen.getByTestId('opt-input'), { target: { value: '' } });
+      fireEvent.blur(screen.getByTestId('opt-input'));
+      expect(field.className).toBe('opt-field opt-field-err');
+      expect(field.querySelector('[role="alert"]')).not.toBeNull();
+
+      errorSpy.mockRestore();
     });
 
-    const handleSubmit = async () => {
-      throw new Error('err');
-    };
+    it('Form and Field should bypass factory options when explicit props are provided', async () => {
+      const Schema = z.object({ name: z.string().min(3) });
+      const ExplicitForm = createForm(Schema, {
+        form: { class: 'opt-form', errorClass: 'opt-form-err', pendingClass: 'opt-form-pend' },
+        field: { class: 'opt-field', errorClass: 'opt-field-err' },
+      });
+      let rejectSubmit: any;
+      const handleSubmit = () =>
+        new Promise<void>((_, reject) => {
+          rejectSubmit = reject;
+        });
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    renderComponent(() => (
-      <CustomForm value={{ name: 'Al', email: 'j@t.com', tags: [] }} data-testid="c-form" onSubmit={handleSubmit}>
-        <CustomForm.Field name="name" label="Name" data-testid="c-field">
-          <TextInput data-testid="c-input" />
-        </CustomForm.Field>
-        <CustomForm.Field name={'' as any}>
-          <TextInput />
-        </CustomForm.Field>
-        <CustomForm.FieldList name={'' as any}>{() => <span />}</CustomForm.FieldList>
-        <button type="submit">Submit</button>
-      </CustomForm>
-    ));
-
-    const form = screen.getByTestId('c-form');
-    expect(form.className).toContain('f-class');
-
-    const field = screen.getByTestId('c-field');
-    expect(field.className).toContain('fld-class');
-
-    expect(screen.getByText('(*)')).toBeDefined();
-    expect(screen.getByText('Name').className).toContain('lbl-class');
-
-    fireEvent.input(screen.getByTestId('c-input'), { target: { value: 'A' } });
-    expect(field.querySelector('.fld-err')).not.toBeNull();
-
-    fireEvent.submit(form);
-    await new Promise((r) => setTimeout(r, 10));
-    expect(form.className).toContain('f-err');
-
-    expect(screen.getByText('[FieldError]: Name property is required!').className).toContain('fld-err');
-    expect(screen.getByText('[FieldListError]: Name property is required!').className).toContain('fld-err');
-  });
-
-  it('should apply pendingClass from formOptions', async () => {
-    const CustomForm = createForm(userSchema, { form: { class: 'f-class', pendingClass: 'f-pend' } });
-    const handleSubmit = () => new Promise<void>((r) => setTimeout(r, 100));
-
-    renderComponent(() => (
-      <CustomForm value={{ name: 'John', email: 'j@t.com', tags: [] }} data-testid="p-form" onSubmit={handleSubmit}>
-        <button type="submit">Submit</button>
-      </CustomForm>
-    ));
-
-    const form = screen.getByTestId('p-form');
-    fireEvent.submit(form);
-    expect(form.className).toContain('f-pend');
-  });
-
-  it('should hit global defaults when neither props nor options provide classes', async () => {
-    const GlobalForm = createForm(userSchema);
-    const handleSubmit = async () => {
-      throw new Error('err');
-    };
-
-    renderComponent(() => (
-      <GlobalForm value={{ name: 'Al', email: 'j@t.com', tags: [] }} onSubmit={handleSubmit}>
-        <GlobalForm.Field name="name" label="Name" data-testid="g-field">
-          <TextInput data-testid="g-input" />
-        </GlobalForm.Field>
-        <GlobalForm.Field name={'' as any}>
-          <TextInput />
-        </GlobalForm.Field>
-        <GlobalForm.FieldList name={'' as any}>{() => <span />}</GlobalForm.FieldList>
-        <button type="submit" data-testid="g-btn">
-          Submit
-        </button>
-      </GlobalForm>
-    ));
-
-    fireEvent.input(screen.getByTestId('g-input'), { target: { value: 'A' } });
-
-    fireEvent.submit(screen.getByTestId('g-btn'));
-    await new Promise((r) => setTimeout(r, 10));
-  });
-
-  it('should hit global pending default', () => {
-    const GlobalForm = createForm(userSchema);
-    const handleSubmit = () => new Promise<void>((r) => setTimeout(r, 100));
-
-    renderComponent(() => (
-      <GlobalForm value={{ name: 'John', email: 'j@t.com', tags: [] }} onSubmit={handleSubmit}>
-        <button type="submit" data-testid="g-pend-btn">
-          Submit
-        </button>
-      </GlobalForm>
-    ));
-
-    fireEvent.submit(screen.getByTestId('g-pend-btn'));
-  });
-
-  it('should use explicit props over options for all classes', async () => {
-    const TestForm = createForm(userSchema, {
-      form: { class: 'x', errorClass: 'x', pendingClass: 'x' },
-      field: { class: 'x', errorClass: 'x', labelClass: 'x', requiredClass: 'x', requiredLabel: 'x' },
-    });
-    const handleSubmit = async () => {
-      throw new Error('err');
-    };
-
-    renderComponent(() => (
-      <TestForm
-        value={{ name: 'Al', email: 'j@t.com', tags: [] }}
-        class="prop-class"
-        errorClass="prop-err"
-        data-testid="prop-form"
-        onSubmit={handleSubmit}
-      >
-        <TestForm.Field
-          name="name"
-          label="Name"
-          class="prop-fld"
-          errorClass="prop-fld-err"
-          labelClass="prop-lbl"
-          requiredClass="prop-req"
-          requiredLabel="(R)"
+      renderComponent(() => (
+        <ExplicitForm
+          value={{ name: 'Valid' }}
+          onSubmit={handleSubmit}
+          data-testid="exp-form"
+          class="explicit-form"
+          errorClass="explicit-form-err"
+          pendingClass="explicit-form-pend"
         >
-          <TextInput data-testid="prop-input" />
-        </TestForm.Field>
+          <ExplicitForm.Field
+            name="name"
+            label="Name"
+            data-testid="exp-field"
+            class="explicit-field"
+            errorClass="explicit-field-err"
+            labelClass="explicit-label"
+            requiredClass="explicit-req"
+            requiredLabel="**"
+          >
+            <TextInput data-testid="exp-input" />
+          </ExplicitForm.Field>
+          <ExplicitForm.FieldList name={'' as never} errorClass="explicit-list-err">
+            {() => <div />}
+          </ExplicitForm.FieldList>
+          <ExplicitForm.Field name={'' as never} errorClass="explicit-field-err">
+            <TextInput />
+          </ExplicitForm.Field>
+          <button type="submit" data-testid="exp-submit" />
+        </ExplicitForm>
+      ));
 
-        <TestForm.Field name={'' as any} class="prop-fld" errorClass="prop-fld-err">
-          <TextInput />
-        </TestForm.Field>
+      const form = screen.getByTestId('exp-form');
+      const field = screen.getByTestId('exp-field');
+      expect(form.className).toBe('opt-form explicit-form');
+      expect(field.className).toBe('opt-field explicit-field');
+      expect(screen.getByText('Name').className).toBe('air-form-field-label explicit-label');
+      expect(screen.getByText('**').className).toBe('air-form-field-required explicit-req');
 
-        <TestForm.FieldList name={'' as any} errorClass="prop-fld-err">
-          {() => <span />}
-        </TestForm.FieldList>
-        <button type="submit">Submit</button>
-      </TestForm>
-    ));
+      fireEvent.click(screen.getByTestId('exp-submit'));
+      expect(form.className).toBe('opt-form explicit-form explicit-form-pend');
 
-    fireEvent.input(screen.getByTestId('prop-input'), { target: { value: 'A' } });
-    fireEvent.submit(screen.getByTestId('prop-form'));
-    await new Promise((r) => setTimeout(r, 10));
-  });
+      rejectSubmit(new Error('fail'));
+      await new Promise((r) => setTimeout(r, 10));
+      expect(form.className).toBe('opt-form explicit-form explicit-form-err');
 
-  it('should handle options with empty objects (optional chaining branches)', async () => {
-    const EmptyForm = createForm(userSchema, { form: {}, field: {} });
-    const handleSubmit = async () => {
-      throw new Error('err');
-    };
+      fireEvent.input(screen.getByTestId('exp-input'), { target: { value: '' } });
+      fireEvent.blur(screen.getByTestId('exp-input'));
+      expect(field.className).toBe('opt-field explicit-field explicit-field-err');
+      expect(field.querySelector('[role="alert"]')).not.toBeNull();
 
-    renderComponent(() => (
-      <EmptyForm value={{ name: 'Al', email: 'j@t.com', tags: [] }} onSubmit={handleSubmit}>
-        <EmptyForm.Field name="name" label="Name" data-testid="e-field">
-          <TextInput data-testid="e-input" />
-        </EmptyForm.Field>
-        <EmptyForm.Field name={'' as any}>
-          <TextInput />
-        </EmptyForm.Field>
-        <EmptyForm.FieldList name={'' as any}>{() => <span />}</EmptyForm.FieldList>
-        <button type="submit" data-testid="e-btn">
-          Submit
-        </button>
-      </EmptyForm>
-    ));
-
-    fireEvent.input(screen.getByTestId('e-input'), { target: { value: 'A' } });
-    fireEvent.submit(screen.getByTestId('e-btn'));
-    await new Promise((r) => setTimeout(r, 10));
-  });
-
-  it('should handle pending with empty options', () => {
-    const EmptyForm = createForm(userSchema, { form: {}, field: {} });
-    const handleSubmit = () => new Promise<void>((r) => setTimeout(r, 100));
-
-    renderComponent(() => (
-      <EmptyForm value={{ name: 'John', email: 'j@t.com', tags: [] }} onSubmit={handleSubmit}>
-        <button type="submit" data-testid="e-pend-btn">
-          Submit
-        </button>
-      </EmptyForm>
-    ));
-
-    fireEvent.submit(screen.getByTestId('e-pend-btn'));
-  });
-
-  it('should cover all class branches for factory error and pending', async () => {
-    const TestForm = createForm(userSchema);
-
-    // Test class only
-    const handleSubmitErr = async () => {
-      throw new Error('err');
-    };
-    renderComponent(() => (
-      <TestForm value={{ name: 'Al', email: 'j@t.com', tags: [] }} class="c-only" onSubmit={handleSubmitErr}>
-        <button type="submit" data-testid="btn-c">
-          Submit
-        </button>
-      </TestForm>
-    ));
-    fireEvent.submit(screen.getByTestId('btn-c'));
-    await new Promise((r) => setTimeout(r, 10));
-
-    // Test pending explicitly with both
-    const handleSubmitPend = () => new Promise<void>((r) => setTimeout(r, 100));
-    renderComponent(() => (
-      <TestForm
-        value={{ name: 'Al', email: 'j@t.com', tags: [] }}
-        class="c-both"
-        pendingClass="p-both"
-        onSubmit={handleSubmitPend}
-      >
-        <button type="submit" data-testid="btn-p">
-          Submit
-        </button>
-      </TestForm>
-    ));
-    fireEvent.submit(screen.getByTestId('btn-p'));
-
-    // Test pending with pendingClass only
-    renderComponent(() => (
-      <TestForm value={{ name: 'Al', email: 'j@t.com', tags: [] }} pendingClass="p-only" onSubmit={handleSubmitPend}>
-        <button type="submit" data-testid="btn-p-only">
-          Submit
-        </button>
-      </TestForm>
-    ));
-    fireEvent.submit(screen.getByTestId('btn-p-only'));
-  });
-
-  it('should evaluate right side of final ?? fallback with truthy global FORM_OPTIONS', async () => {
-    configureForm({
-      form: { class: 'global-f-c', errorClass: 'global-f-e', pendingClass: 'global-f-p' },
-    });
-    const GlobalForm = createForm(userSchema);
-
-    // Error test
-    const handleSubmitErr = async () => {
-      throw new Error('err');
-    };
-    renderComponent(() => (
-      <GlobalForm value={{ name: 'Al', email: 'j@t.com', tags: [] }} data-testid="gf-err" onSubmit={handleSubmitErr}>
-        <button type="submit">Submit</button>
-      </GlobalForm>
-    ));
-    fireEvent.submit(screen.getByTestId('gf-err'));
-    await new Promise((r) => setTimeout(r, 10));
-
-    // Pending test
-    const handleSubmitPend = () => new Promise<void>((r) => setTimeout(r, 100));
-    renderComponent(() => (
-      <GlobalForm value={{ name: 'Al', email: 'j@t.com', tags: [] }} data-testid="gf-pend" onSubmit={handleSubmitPend}>
-        <button type="submit">Submit</button>
-      </GlobalForm>
-    ));
-    fireEvent.submit(screen.getByTestId('gf-pend'));
-
-    configureForm({
-      form: { class: undefined, errorClass: undefined, pendingClass: undefined },
-    });
-  });
-
-  it('should evaluate right side of factory ?? fallbacks by passing explicit undefined to formOptions', async () => {
-    const OptForm = createForm(userSchema, {
-      form: { class: 'opt-c', errorClass: 'opt-e', pendingClass: 'opt-p' },
+      errorSpy.mockRestore();
     });
 
-    // Error test
-    const handleSubmitErr = async () => {
-      throw new Error('err');
-    };
-    renderComponent(() => (
-      <OptForm
-        value={{ name: 'Al', email: 'j@t.com', tags: [] }}
-        class={undefined}
-        errorClass={undefined}
-        pendingClass={undefined}
-        data-testid="of-err"
-        onSubmit={handleSubmitErr}
-      >
-        <button type="submit">Submit</button>
-      </OptForm>
-    ));
-    fireEvent.submit(screen.getByTestId('of-err'));
-    await new Promise((r) => setTimeout(r, 10));
+    it('Form and Field should handle empty string, null, and explicitly undefined props correctly', async () => {
+      const Schema = z.object({ name: z.string().min(3) });
+      const NullishForm = createForm(Schema, {
+        form: { class: 'opt-form', errorClass: 'opt-form-err', pendingClass: 'opt-form-pend' },
+        field: { class: 'opt-field', errorClass: 'opt-field-err' },
+      });
+      const rejectSubmits: any[] = [];
+      const handleSubmit = () =>
+        new Promise<void>((_, reject) => {
+          rejectSubmits.push(reject);
+        });
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    // Pending test
-    const handleSubmitPend = () => new Promise<void>((r) => setTimeout(r, 100));
-    renderComponent(() => (
-      <OptForm
-        value={{ name: 'Al', email: 'j@t.com', tags: [] }}
-        class={undefined}
-        errorClass={undefined}
-        pendingClass={undefined}
-        data-testid="of-pend"
-        onSubmit={handleSubmitPend}
-      >
-        <button type="submit">Submit</button>
-      </OptForm>
-    ));
-    fireEvent.submit(screen.getByTestId('of-pend'));
+      renderComponent(() => (
+        <>
+          <NullishForm
+            value={{ name: 'Valid' }}
+            onSubmit={handleSubmit}
+            data-testid="nullish-empty"
+            class=""
+            errorClass=""
+            pendingClass=""
+          >
+            <NullishForm.Field name="name" data-testid="field-empty" class="" errorClass="">
+              <TextInput data-testid="input-empty" />
+            </NullishForm.Field>
+            <NullishForm.FieldList name={'' as never} errorClass="">
+              {() => <div />}
+            </NullishForm.FieldList>
+            <NullishForm.Field name={'' as never} errorClass="">
+              <TextInput />
+            </NullishForm.Field>
+            <button type="submit" data-testid="submit-empty" />
+          </NullishForm>
+          <NullishForm
+            value={{ name: 'Valid' }}
+            onSubmit={handleSubmit}
+            data-testid="nullish-null"
+            class={null as any}
+            errorClass={null as any}
+            pendingClass={null as any}
+          >
+            <NullishForm.Field
+              name="name"
+              data-testid="field-null"
+              class={null as any}
+              errorClass={null as any}
+            >
+              <TextInput data-testid="input-null" />
+            </NullishForm.Field>
+            <NullishForm.FieldList name={'' as never} errorClass={null as any}>
+              {() => <div />}
+            </NullishForm.FieldList>
+            <NullishForm.Field name={'' as never} errorClass={null as any}>
+              <TextInput />
+            </NullishForm.Field>
+            <button type="submit" data-testid="submit-null" />
+          </NullishForm>
+          <NullishForm
+            value={{ name: 'Valid' }}
+            onSubmit={handleSubmit}
+            data-testid="nullish-undef"
+            class={undefined}
+            errorClass={undefined}
+            pendingClass={undefined}
+          >
+            <NullishForm.Field name="name" data-testid="field-undef" class={undefined} errorClass={undefined}>
+              <TextInput data-testid="input-undef" />
+            </NullishForm.Field>
+            <NullishForm.FieldList name={'' as never} errorClass={undefined}>
+              {() => <div />}
+            </NullishForm.FieldList>
+            <NullishForm.Field name={'' as never} errorClass={undefined}>
+              <TextInput />
+            </NullishForm.Field>
+            <button type="submit" data-testid="submit-undef" />
+          </NullishForm>
+        </>
+      ));
+
+      fireEvent.click(screen.getByTestId('submit-empty'));
+      fireEvent.click(screen.getByTestId('submit-null'));
+      fireEvent.click(screen.getByTestId('submit-undef'));
+      expect(screen.getByTestId('nullish-empty').className).toBe('opt-form');
+      expect(screen.getByTestId('nullish-null').className).toBe('opt-form opt-form-pend');
+      expect(screen.getByTestId('nullish-undef').className).toBe('opt-form opt-form-pend');
+
+      rejectSubmits.forEach((reject) => reject(new Error('fail')));
+      await new Promise((r) => setTimeout(r, 10));
+      expect(screen.getByTestId('nullish-empty').className).toBe('opt-form');
+      expect(screen.getByTestId('nullish-null').className).toBe('opt-form opt-form-err');
+      expect(screen.getByTestId('nullish-undef').className).toBe('opt-form opt-form-err');
+
+      fireEvent.input(screen.getByTestId('input-empty'), { target: { value: '' } });
+      fireEvent.input(screen.getByTestId('input-null'), { target: { value: '' } });
+      fireEvent.input(screen.getByTestId('input-undef'), { target: { value: '' } });
+      fireEvent.blur(screen.getByTestId('input-empty'));
+      fireEvent.blur(screen.getByTestId('input-null'));
+      fireEvent.blur(screen.getByTestId('input-undef'));
+
+      expect(screen.getByTestId('field-empty').className).toBe('opt-field');
+      expect(screen.getByTestId('field-null').className).toBe('opt-field opt-field-err');
+      expect(screen.getByTestId('field-undef').className).toBe('opt-field opt-field-err');
+
+      errorSpy.mockRestore();
+    });
+
+    it('Field should handle strictly undefined fieldOptions gracefully', () => {
+      const Schema = z.object({ name: z.string() });
+      const NoFieldOptionsForm = createForm(Schema, { form: {} });
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      renderComponent(() => (
+        <NoFieldOptionsForm value={{ name: 'Valid' }} data-testid="no-field-options-form">
+          <NoFieldOptionsForm.Field name={'' as never} />
+          <NoFieldOptionsForm.FieldList name={'' as never}>{() => <div />}</NoFieldOptionsForm.FieldList>
+        </NoFieldOptionsForm>
+      ));
+
+      const alerts = screen.getAllByText(/Name property is required!/);
+      expect(alerts.length).toBeGreaterThan(0);
+      errorSpy.mockRestore();
+    });
+
+    it('Form and Field should fallback to global defaults', async () => {
+      const Schema = z.object({ name: z.string() });
+      const DefForm = createForm(Schema);
+      let rejectSubmit: any;
+      const handleSubmit = () =>
+        new Promise<void>((_, reject) => {
+          rejectSubmit = reject;
+        });
+
+      renderComponent(() => (
+        <DefForm value={{ name: 'Valid' }} onSubmit={handleSubmit} data-testid="def-form">
+          <DefForm.Field name="name" label="Name" data-testid="def-field">
+            <TextInput data-testid="def-input" />
+          </DefForm.Field>
+          <button type="submit" data-testid="def-submit" />
+        </DefForm>
+      ));
+
+      const form = screen.getByTestId('def-form');
+      const field = screen.getByTestId('def-field');
+      expect(form.className).toBe('air-form');
+      expect(field.className).toBe('air-form-field');
+      expect(screen.getByText('Name').className).toBe('air-form-field-label');
+      expect(screen.getByText('*').className).toBe('air-form-field-required');
+
+      fireEvent.input(screen.getByTestId('def-input'), { target: { value: 'Changed' } });
+      fireEvent.click(screen.getByTestId('def-submit'));
+      expect(form.className).toBe('air-form air-form-pending');
+
+      rejectSubmit(new Error('fail'));
+      await new Promise((r) => setTimeout(r, 10));
+      expect(form.className).toBe('air-form air-form-error');
+    });
+
+    it('Form and Field should handle empty config options gracefully', async () => {
+      const Schema = z.object({ name: z.string().min(3) });
+      const EmptyForm = createForm(Schema, { form: {}, field: {} });
+      let rejectSubmit: any;
+      const handleSubmit = () =>
+        new Promise<void>((_, reject) => {
+          rejectSubmit = reject;
+        });
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      renderComponent(() => (
+        <EmptyForm value={{ name: 'Valid' }} onSubmit={handleSubmit} data-testid="empty-form">
+          <EmptyForm.Field name="name" label="Name" data-testid="empty-field">
+            <TextInput data-testid="empty-input" />
+          </EmptyForm.Field>
+          <EmptyForm.FieldList name={'' as never}>{() => <div />}</EmptyForm.FieldList>
+          <button type="submit" data-testid="empty-submit" />
+        </EmptyForm>
+      ));
+
+      const form = screen.getByTestId('empty-form');
+      const field = screen.getByTestId('empty-field');
+      expect(form.className).toBe('air-form');
+      expect(field.className).toBe('air-form-field');
+      expect(screen.getByText('Name').className).toBe('air-form-field-label');
+      expect(screen.getByText('*').className).toBe('air-form-field-required');
+
+      fireEvent.input(screen.getByTestId('empty-input'), { target: { value: 'Changed' } });
+      fireEvent.click(screen.getByTestId('empty-submit'));
+      expect(form.className).toBe('air-form air-form-pending');
+
+      rejectSubmit(new Error('fail'));
+      await new Promise((r) => setTimeout(r, 10));
+      expect(form.className).toBe('air-form air-form-error');
+
+      fireEvent.input(screen.getByTestId('empty-input'), { target: { value: '' } });
+      fireEvent.blur(screen.getByTestId('empty-input'));
+      expect(field.className).toBe('air-form-field air-form-field-error');
+      expect(field.querySelector('#name-error')?.className).toBe('air-form-field-support');
+      errorSpy.mockRestore();
+    });
+
+    it('Form should apply errorClass when form has errors on submit', async () => {
+      const Schema = z.object({ name: z.string() });
+      const TestForm = createForm(Schema);
+      const handleSubmit = () => {
+        throw new Error('Server error');
+      };
+
+      renderComponent(() => (
+        <TestForm
+          value={{ name: 'Valid' }}
+          onSubmit={handleSubmit}
+          class="base-class"
+          errorClass="error-state"
+          data-testid="error-form"
+        >
+          <TestForm.Field name="name">
+            <TextInput data-testid="input" />
+          </TestForm.Field>
+          <button type="submit" data-testid="submit-btn">
+            Submit
+          </button>
+        </TestForm>
+      ));
+
+      const form = screen.getByTestId('error-form');
+      expect(form.className).toBe('air-form base-class');
+
+      fireEvent.input(screen.getByTestId('input'), { target: { value: 'Valid Changed' } });
+      fireEvent.click(screen.getByTestId('submit-btn'));
+      await new Promise((r) => setTimeout(r, 10));
+
+      expect(form.className).toBe('air-form base-class error-state');
+    });
+
+    it('Form should apply pendingClass when form is pending', async () => {
+      const Schema = z.object({ name: z.string().min(5) });
+      const TestForm = createForm(Schema);
+      let resolveSubmit!: () => void;
+      const handleSubmit = () => {
+        return new Promise<void>((resolve) => {
+          resolveSubmit = resolve;
+        });
+      };
+
+      renderComponent(() => (
+        <TestForm
+          value={{ name: 'Alice' }}
+          onSubmit={handleSubmit}
+          class="base-class"
+          pendingClass="pending-state"
+          data-testid="pending-form"
+        >
+          <TestForm.Field name="name">
+            <TextInput data-testid="input" />
+          </TestForm.Field>
+          <button type="submit" data-testid="submit">
+            Submit
+          </button>
+        </TestForm>
+      ));
+
+      const form = screen.getByTestId('pending-form');
+      expect(form.className).toBe('air-form base-class');
+
+      fireEvent.input(screen.getByTestId('input'), { target: { value: 'Jane Doe' } });
+      fireEvent.click(screen.getByTestId('submit'));
+
+      expect(form.className).toBe('air-form base-class pending-state');
+
+      resolveSubmit();
+      await new Promise((r) => setTimeout(r, 10));
+
+      expect(form.className).toBe('air-form base-class');
+    });
+
+    it('Field should render error message when name is not provided', () => {
+      const TestForm = createForm(userSchema);
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      renderComponent(() => (
+        <TestForm value={{ name: 'John', email: 'john@test.com' }}>
+          <TestForm.Field name={'' as never} errorClass="custom-error">
+            <TextInput />
+          </TestForm.Field>
+        </TestForm>
+      ));
+      expect(screen.getByText('[FieldError]: Name property is required!')).toBeDefined();
+      expect(screen.getByText('[FieldError]: Name property is required!').className).toBe('custom-error');
+      errorSpy.mockRestore();
+    });
+
+    it('Field should display rendered error message when touched and invalid', () => {
+      const TestForm = createForm(userSchema);
+      renderComponent(() => (
+        <TestForm value={{ name: 'John', email: 'john@test.com' }}>
+          <TestForm.Field name="name" errorClass="custom-error" data-testid="field">
+            <TextInput data-testid="input" />
+          </TestForm.Field>
+        </TestForm>
+      ));
+
+      const field = screen.getByTestId('field');
+      expect(field.querySelector('.custom-error')).toBeNull();
+
+      fireEvent.input(screen.getByTestId('input'), { target: { value: 'A' } });
+
+      expect(field.className).toBe('air-form-field custom-error');
+      const error = field.querySelector('[role="alert"]');
+      expect(error).not.toBeNull();
+      expect(error?.textContent).toBe('Name too short');
+    });
+
+    it('FieldList should render error message when name is not provided', () => {
+      const TestForm = createForm(userSchema);
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      renderComponent(() => (
+        <TestForm value={{ name: 'John', email: 'john@test.com' }}>
+          <TestForm.FieldList name={'' as never} errorClass="list-error">
+            {() => <div />}
+          </TestForm.FieldList>
+        </TestForm>
+      ));
+      expect(screen.getByText('[FieldListError]: Name property is required!')).toBeDefined();
+      expect(screen.getByText('[FieldListError]: Name property is required!').className).toBe('list-error');
+      errorSpy.mockRestore();
+    });
   });
 
   describe('Match prop', () => {
@@ -626,11 +711,11 @@ describe('createForm', () => {
 
       const field = screen.getByTestId('field');
       const error = field.querySelector('[role="alert"]');
-      expect(error).toBeDefined();
+      expect(error).not.toBeNull();
       expect(error?.textContent).toBe('Passwords do not match!');
     });
 
-    it('should use provided errorClass for mismatchLabel', () => {
+    it('should use provided supportClass for mismatchLabel', () => {
       const PasswordForm = createForm(passwordSchema);
 
       renderComponent(() => (
@@ -639,7 +724,7 @@ describe('createForm', () => {
             name="confirmPassword"
             match="password"
             mismatchLabel="Passwords do not match!"
-            errorClass="custom-mismatch-error"
+            supportClass="custom-mismatch-error"
             data-testid="field"
           >
             <TextInput />
@@ -649,10 +734,10 @@ describe('createForm', () => {
 
       const field = screen.getByTestId('field');
       const error = field.querySelector('[role="alert"]');
-      expect(error?.className).toBe('custom-mismatch-error');
+      expect(error?.className).toBe('air-form-field-support custom-mismatch-error');
     });
 
-    it('should fallback to default errorClass when fieldOptions is missing', () => {
+    it('should fallback to default supportClass when fieldOptions is missing', () => {
       const PasswordForm = createForm(passwordSchema, { field: {} as any });
 
       renderComponent(() => (
@@ -670,7 +755,7 @@ describe('createForm', () => {
 
       const field = screen.getByTestId('field');
       const error = field.querySelector('[role="alert"]');
-      expect(error?.className).toBe(FIELD_OPTIONS.errorClass);
+      expect(error?.className).toBe(FIELD_OPTIONS.supportClass);
     });
   });
 });

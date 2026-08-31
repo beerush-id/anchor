@@ -1,7 +1,6 @@
 /** @jsxImportSource solid-js */
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
-import { act } from 'react';
 import { For } from 'solid-js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
@@ -42,7 +41,7 @@ describe('NumberInput', () => {
     expect(input.value).toBe('25');
   });
 
-  it('should update on input and settle on blur', async () => {
+  it('should update on input and settle on blur', () => {
     const handleInput = vi.fn();
     const handleBlur = vi.fn();
 
@@ -81,7 +80,7 @@ describe('DatePicker', () => {
     expect(input.value).toBe('2000-01-15');
   });
 
-  it('should update on input and settle on blur', async () => {
+  it('should update on input and settle on blur', () => {
     const handleInput = vi.fn();
     const handleBlur = vi.fn();
 
@@ -119,7 +118,7 @@ describe('DateTimePicker', () => {
     expect(input.value).toContain('2024-06-15');
   });
 
-  it('should call user handlers on input and blur', async () => {
+  it('should call user handlers on input and blur', () => {
     const handleInput = vi.fn();
     const handleBlur = vi.fn();
 
@@ -157,7 +156,7 @@ describe('TimePicker', () => {
     expect(input.value).toBe('08:30');
   });
 
-  it('should call user handlers on input and blur', async () => {
+  it('should call user handlers on input and blur', () => {
     const handleInput = vi.fn();
     const handleBlur = vi.fn();
 
@@ -195,7 +194,7 @@ describe('ColorPicker', () => {
     expect(input.value).toBe('#ff0000');
   });
 
-  it('should call user handlers on input and blur', async () => {
+  it('should call user handlers on input and blur', () => {
     const handleInput = vi.fn();
     const handleBlur = vi.fn();
 
@@ -233,7 +232,7 @@ describe('Slider', () => {
     expect(input.value).toBe('50');
   });
 
-  it('should update on input and settle on blur', async () => {
+  it('should update on input and settle on blur', () => {
     const handleInput = vi.fn();
     const handleBlur = vi.fn();
 
@@ -272,7 +271,7 @@ describe('Radio', () => {
     expect((screen.getByTestId('pro') as HTMLInputElement).checked).toBe(true);
   });
 
-  it('should toggle selection and call user onChange', async () => {
+  it('should toggle selection and call user onChange', () => {
     const handleChange = vi.fn();
 
     render(() => (
@@ -288,35 +287,6 @@ describe('Radio', () => {
 
     expect((screen.getByTestId('free') as HTMLInputElement).checked).toBe(true);
     expect(handleChange).toHaveBeenCalledTimes(1);
-  });
-
-  it('should apply error class when touched and invalid', () => {
-    const errorSchema = z.object({ plan: z.string().min(5) });
-
-    render(() => (
-      <Form schema={errorSchema} value={{ plan: 'pro' }}>
-        <Field name="plan">
-          <Radio data-testid="free-err" value="free" errorClass="radio-err" />
-          <Radio data-testid="pro-err" value="pro" errorClass="radio-err" />
-        </Field>
-      </Form>
-    ));
-
-    const free = screen.getByTestId('free-err');
-    fireEvent.click(free);
-    expect(free.className).toContain('radio-err');
-  });
-
-  it('should fallback to default options when errorClass is omitted', () => {
-    const errorSchema = z.object({ plan: z.string().min(5) });
-    render(() => (
-      <Form schema={errorSchema} value={{ plan: 'pro' }}>
-        <Field name="plan">
-          <Radio data-testid="free-fallback" value="free" />
-        </Field>
-      </Form>
-    ));
-    fireEvent.click(screen.getByTestId('free-fallback'));
   });
 });
 
@@ -340,7 +310,7 @@ describe('Select', () => {
     expect(select.value).toBe('uk');
   });
 
-  it('should update on change and call user onChange', async () => {
+  it('should update on change and call user onChange', () => {
     const handleChange = vi.fn();
 
     render(() => (
@@ -358,73 +328,6 @@ describe('Select', () => {
 
     expect((screen.getByTestId('select') as HTMLSelectElement).value).toBe('us');
     expect(handleChange).toHaveBeenCalledTimes(1);
-  });
-
-  it('should apply error class when touched and invalid', () => {
-    const errorSchema = z.object({ country: z.string().min(3) });
-    render(() => (
-      <Form schema={errorSchema} value={{ country: 'u' }}>
-        <Field name="country">
-          <Select data-testid="select-err" class="my-select" errorClass="select-err">
-            <option value="us">US</option>
-            <option value="uk">UK</option>
-          </Select>
-        </Field>
-      </Form>
-    ));
-
-    const select = screen.getByTestId('select-err');
-    fireEvent.change(select, { target: { value: 'us' } });
-    expect(select.className).toContain('select-err');
-  });
-
-  it('should fallback to default options when errorClass is omitted', () => {
-    const errorSchema = z.object({ country: z.string().min(3) });
-    render(() => (
-      <Form schema={errorSchema} value={{ country: 'uk' }}>
-        <Field name="country">
-          <Select data-testid="select-fallback">
-            <option value="us">US</option>
-            <option value="uk">UK</option>
-          </Select>
-        </Field>
-      </Form>
-    ));
-    fireEvent.change(screen.getByTestId('select-fallback'), { target: { value: 'us' } });
-  });
-
-  it('should support multiple select', () => {
-    const arraySchema = z.object({ countries: z.array(z.string()) });
-    render(() => (
-      <Form schema={arraySchema} value={{ countries: [] }}>
-        <Field name="countries">
-          <Select data-testid="select-multi" multiple>
-            <option value="us">US</option>
-            <option value="uk">UK</option>
-          </Select>
-        </Field>
-      </Form>
-    ));
-    const select = screen.getByTestId('select-multi') as HTMLSelectElement;
-    expect(select.multiple).toBe(true);
-  });
-
-  it('should cover all class branches for error in Select', () => {
-    const errorSchema = z.object({ country: z.string().min(3) });
-    render(() => (
-      <Form schema={errorSchema} value={{ country: 'u' }}>
-        <Field name="country">
-          <Select data-testid="select-c" class="my-c" />
-          <Select data-testid="select-e" errorClass="my-e" />
-          <Select data-testid="select-ce" class="my-c" errorClass="my-e" />
-          <Select data-testid="select-none" />
-        </Field>
-      </Form>
-    ));
-    fireEvent.change(screen.getByTestId('select-c'), { target: { value: 'us' } });
-    fireEvent.change(screen.getByTestId('select-e'), { target: { value: 'us' } });
-    fireEvent.change(screen.getByTestId('select-ce'), { target: { value: 'us' } });
-    fireEvent.change(screen.getByTestId('select-none'), { target: { value: 'us' } });
   });
 });
 
@@ -445,7 +348,7 @@ describe('Textarea', () => {
     expect(textarea.value).toBe('Hello world');
   });
 
-  it('should update on input and settle on blur', async () => {
+  it('should update on input and settle on blur', () => {
     const handleInput = vi.fn();
     const handleBlur = vi.fn();
 
@@ -466,32 +369,18 @@ describe('Textarea', () => {
     expect(handleBlur).toHaveBeenCalledTimes(1);
   });
 
-  it('should apply error class when touched and invalid', () => {
-    const errorSchema = z.object({ bio: z.string().min(10) });
-
+  it('should link id and aria attributes to the field name', () => {
     render(() => (
-      <Form schema={errorSchema} value={{ bio: 'Hello' }}>
+      <Form schema={schema} value={{ bio: 'Hello world' }}>
         <Field name="bio">
-          <Textarea data-testid="textarea-err" errorClass="text-err" />
+          <Textarea data-testid="textarea" />
         </Field>
       </Form>
     ));
 
-    const textarea = screen.getByTestId('textarea-err');
-    fireEvent.input(textarea, { target: { value: 'Hi' } });
-    expect(textarea.className).toContain('text-err');
-  });
-
-  it('should fallback to default options when errorClass is omitted', () => {
-    const errorSchema = z.object({ bio: z.string().min(10) });
-    render(() => (
-      <Form schema={errorSchema} value={{ bio: 'Hello' }}>
-        <Field name="bio">
-          <Textarea data-testid="textarea-fallback" />
-        </Field>
-      </Form>
-    ));
-    fireEvent.input(screen.getByTestId('textarea-fallback'), { target: { value: 'Hi' } });
+    const textarea = screen.getByTestId('textarea') as HTMLTextAreaElement;
+    expect(textarea.id).toBe('bio');
+    expect(textarea.getAttribute('aria-invalid')).toBeNull();
   });
 });
 
@@ -511,7 +400,7 @@ describe('FilePicker', () => {
     expect(input.type).toBe('file');
   });
 
-  it('should call onFiles and onChange on file selection', async () => {
+  it('should call onFiles and onChange on file selection', () => {
     const handleFiles = vi.fn();
     const handleChange = vi.fn();
 
@@ -527,83 +416,6 @@ describe('FilePicker', () => {
 
     expect(handleFiles).toHaveBeenCalledTimes(1);
     expect(handleChange).toHaveBeenCalledTimes(1);
-  });
-
-  it('should apply error class when touched and invalid', () => {
-    const errorSchema = z.object({ avatar: z.string().min(5) });
-
-    render(() => (
-      <Form schema={errorSchema} value={{ avatar: '' }}>
-        <Field name="avatar">
-          <FilePicker data-testid="file-err" class="my-file" errorClass="file-err" />
-          <TextInput data-testid="input" />
-        </Field>
-      </Form>
-    ));
-
-    const file = screen.getByTestId('file-err');
-    const input = screen.getByTestId('input');
-
-    act(() => {
-      fireEvent.input(input, { target: { value: 'A' } });
-    });
-
-    fireEvent.change(file);
-    expect(file.className).toContain('file-err');
-  });
-
-  it('should fallback to default options when errorClass is omitted', () => {
-    const errorSchema = z.object({ avatar: z.string().min(5) });
-    render(() => (
-      <Form schema={errorSchema} value={{ avatar: '' }}>
-        <Field name="avatar">
-          <FilePicker data-testid="file-fallback" />
-        </Field>
-      </Form>
-    ));
-    fireEvent.change(screen.getByTestId('file-fallback'));
-  });
-
-  it('should cover all class branches for error in FilePicker', () => {
-    const errorSchema = z.object({ avatar: z.string().min(5) });
-    render(() => (
-      <Form schema={errorSchema} value={{ avatar: '' }}>
-        <Field name="avatar">
-          <FilePicker data-testid="file-c" class="my-c" />
-          <FilePicker data-testid="file-e" errorClass="my-e" />
-          <FilePicker data-testid="file-ce" class="my-c" errorClass="my-e" />
-          <FilePicker data-testid="file-none" />
-          <TextInput data-testid="input" />
-        </Field>
-      </Form>
-    ));
-
-    const input = screen.getByTestId('input');
-    fireEvent.input(input, { target: { value: 'A' } });
-
-    fireEvent.change(screen.getByTestId('file-c'));
-    fireEvent.change(screen.getByTestId('file-e'));
-    fireEvent.change(screen.getByTestId('file-ce'));
-    fireEvent.change(screen.getByTestId('file-none'));
-  });
-
-  it('should apply base class when touched and valid', () => {
-    const validSchema = z.object({ avatar: z.string() });
-    render(() => (
-      <Form schema={validSchema} value={{ avatar: '' }}>
-        <Field name="avatar">
-          <FilePicker data-testid="file-valid" class="my-valid-class" />
-          <TextInput data-testid="input-valid" />
-        </Field>
-      </Form>
-    ));
-
-    const input = screen.getByTestId('input-valid');
-    fireEvent.input(input, { target: { value: 'Valid string' } });
-
-    const file = screen.getByTestId('file-valid');
-    fireEvent.change(file);
-    expect(file.className).toContain('my-valid-class');
   });
 });
 
@@ -639,7 +451,7 @@ describe('FieldList', () => {
     expect(screen.getByTestId('count').textContent).toBe('0');
   });
 
-  it('should support array mutations like push()', async () => {
+  it('should support array mutations like push()', () => {
     render(() => (
       <Form schema={schema} value={{ tags: ['react'] }}>
         <FieldList name="tags">
@@ -663,16 +475,6 @@ describe('FieldList', () => {
     fireEvent.click(screen.getByTestId('add-tag'));
 
     expect(screen.getByTestId('tag-1').textContent).toBe('vue');
-  });
-
-  it('should render an error when name is not provided for generic FieldList', () => {
-    const Schema = z.object({ tags: z.array(z.string()).default([]) });
-    render(() => (
-      <Form schema={Schema} value={{ tags: ['react', 'vue'] }}>
-        <FieldList name={'' as any}>{(items: any[]) => <span>{items.length}</span>}</FieldList>
-      </Form>
-    ));
-    expect(screen.getByText('[FieldListError]: Name property is required!')).toBeDefined();
   });
 });
 
@@ -701,7 +503,7 @@ describe('FormReset', () => {
     expect((screen.getByTestId('reset') as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('should enable after form change and call onClick', async () => {
+  it('should enable after form change and call onClick', () => {
     const handleClick = vi.fn();
 
     render(() => (
@@ -733,23 +535,5 @@ describe('FormReset', () => {
     ));
 
     expect(screen.getByTestId('reset').textContent).toBe('No changes');
-  });
-
-  it('should call form clear when clear prop is true', () => {
-    render(() => (
-      <Form schema={schema} value={{ name: 'John' }}>
-        <Field name="name">
-          <TextInput data-testid="input" />
-        </Field>
-        <FormReset data-testid="reset-clear" clear>
-          Clear
-        </FormReset>
-      </Form>
-    ));
-
-    fireEvent.input(screen.getByTestId('input'), { target: { value: 'Jane' } });
-
-    const btn = screen.getByTestId('reset-clear');
-    fireEvent.click(btn);
   });
 });

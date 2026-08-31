@@ -7,8 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { Field } from '../src/Field.js';
 import { Form } from '../src/Form.js';
-import { FormSubmit } from '../src/FormSubmit.js';
-import { TextInput } from '../src/inputs/TextInput.js';
+import { FormSubmit, TextInput } from '../src/index.js';
 
 afterEach(cleanup);
 
@@ -40,7 +39,7 @@ describe('FormSubmit', () => {
     expect((screen.getByTestId('btn') as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('should be enabled after a change', async () => {
+  it('should be enabled after a change', () => {
     render(() => (
       <Form schema={schema} value={{ name: 'John' }}>
         <Field name="name">
@@ -65,7 +64,7 @@ describe('FormSubmit', () => {
     ));
 
     const btn = screen.getByTestId('btn');
-    expect(btn.className).toBe('btn-primary');
+    expect(btn.className).toBe('air-form-submit btn-primary');
     expect(btn.id).toBe('submit-btn');
   });
 
@@ -98,41 +97,37 @@ describe('FormSubmit', () => {
     expect((screen.getByTestId('btn') as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('should apply pending class when form is submitting', async () => {
-    const handleSubmit = () => new Promise<void>((resolve) => setTimeout(resolve, 100));
+  it('should apply pendingClass when form is pending', async () => {
+    let resolveSubmit!: () => void;
+    const handleSubmit = () => {
+      return new Promise<void>((resolve) => {
+        resolveSubmit = resolve;
+      });
+    };
 
     render(() => (
       <Form schema={schema} value={{ name: 'John' }} onSubmit={handleSubmit}>
         <Field name="name">
           <TextInput data-testid="input" />
         </Field>
-        <FormSubmit data-testid="btn" pendingClass="submitting">
+        <FormSubmit data-testid="btn" class="btn-base" pendingClass="btn-pending">
           Save
         </FormSubmit>
       </Form>
     ));
 
     fireEvent.input(screen.getByTestId('input'), { target: { value: 'Jane' } });
-    const btn = screen.getByTestId('btn');
+
+    const btn = screen.getByTestId('btn') as HTMLButtonElement;
+    expect(btn.className).toBe('air-form-submit btn-base');
+
     fireEvent.click(btn);
 
-    expect(btn.className).toContain('submitting');
-  });
+    expect(btn.className).toBe('air-form-submit btn-base btn-pending');
 
-  it('should fallback to default options when pendingClass is omitted', async () => {
-    const handleSubmit = () => new Promise<void>((resolve) => setTimeout(resolve, 100));
+    resolveSubmit();
+    await new Promise((r) => setTimeout(r, 10));
 
-    render(() => (
-      <Form schema={schema} value={{ name: 'John' }} onSubmit={handleSubmit}>
-        <Field name="name">
-          <TextInput data-testid="input" />
-        </Field>
-        <FormSubmit data-testid="btn-fallback">Save</FormSubmit>
-      </Form>
-    ));
-
-    fireEvent.input(screen.getByTestId('input'), { target: { value: 'Jane' } });
-    const btn = screen.getByTestId('btn-fallback');
-    fireEvent.click(btn);
+    expect(btn.className).toBe('air-form-submit btn-base');
   });
 });
