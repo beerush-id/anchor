@@ -1,0 +1,499 @@
+---
+nav: 'AirLib v2.1.0'
+version: '2.1.0'
+title: 'AirLib v2.1.0 — Form Libraries, Frozen Read Detection, and Incremental State'
+description: 'New @airlib/react-form and @airlib/solid-form packages for schema-driven reactive forms, setup-time frozen read detection, O(1) incremental array reduction, and refined component ergonomics across React and Solid.'
+date: '2026-08-31'
+category: 'Release'
+keywords:
+  - AirLib v2.1.0
+  - react-form
+  - solid-form
+  - frozen read detection
+  - derived.reduce
+  - component architecture
+---
+
+import { Image } from '@airlib/react';
+import diagnosticImage from '@/assets/frozen-read-diagnostic.png?asset';
+
+# AirLib v2.1.0
+
+:badge[v2.1.0]{variant="tip"} :badge[Minor]{variant="info"}
+
+**AirLib v2.1.0** introduces dedicated schema-driven reactive form libraries for React and Solid, frozen read detection to catch unobserved state reads at setup time, $O(1)$ incremental array reduction for large collections, and a streamlined component model that removes boilerplate `render()` wrappers and proxy ceremony.
+
+## Highlights
+
+### Schema-Driven Reactive Forms
+
+New `@airlib/react-form` and `@airlib/solid-form` packages derive validation rules, reactive field states, and lifecycle management directly from Zod schemas:
+
+:::code-group
+```tsx [React]
+import { createForm, TextInput } from '@airlib/react-form';
+import { z } from 'zod';
+
+const userSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+const UserForm = createForm(userSchema);
+
+<UserForm onSubmit={(data) => console.log('Registered:', data)}>
+  <UserForm.Field name="email" label="Email Address">
+    <TextInput placeholder="you@example.com" />
+  </UserForm.Field>
+  <UserForm.Field name="password" label="Password">
+    <TextInput type="password" placeholder="••••••••" />
+  </UserForm.Field>
+  <UserForm.Submit>Create Account</UserForm.Submit>
+</UserForm>
+```
+
+```tsx [Solid]
+import { createForm, TextInput } from '@airlib/solid-form';
+import { z } from 'zod';
+
+const userSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+const UserForm = createForm(userSchema);
+
+<UserForm onSubmit={(data) => console.log('Registered:', data)}>
+  <UserForm.Field name="email" label="Email Address">
+    <TextInput placeholder="you@example.com" />
+  </UserForm.Field>
+  <UserForm.Field name="password" label="Password">
+    <TextInput type="password" placeholder="••••••••" />
+  </UserForm.Field>
+  <UserForm.Submit>Create Account</UserForm.Submit>
+</UserForm>
+```
+:::
+
+### Frozen Read Detection
+
+Reading reactive state in a component's `setup()` body captures a static snapshot that will not trigger UI updates. AirLib now intercepts these unobserved static reads and emits diagnostic warnings in the console:
+
+<Image from={diagnosticImage} alt="Frozen Read Diagnostic Warning in Console" className="rounded-xl border border-primary/20 my-4" />
+
+### Incremental Array Reduction
+
+`derived.reduce()` calculates array aggregates in $O(N)$ initially and updates in $O(1)$ on subsequent item additions, removals, or property mutations without re-traversing the collection.
+
+### Direct Function Returns from Setup
+
+Components built with `setup()` now return view functions directly (`setup((initProps) => (props) => JSX)`), eliminating `render()` boilerplate and enabling safe prop destructuring with live props.
+
+## Reactive Forms
+
+### Dynamic Schema Binding
+
+When a schema is not known statically at definition time, the generic `<Form>` component accepts dynamic schemas via props:
+
+:::code-group
+```tsx [React]
+import { Form, Field, TextInput, FormSubmit } from '@airlib/react-form';
+
+<Form schema={runtimeSchema} value={initialData} onSubmit={handleSave}>
+  <Field name="title" label="Title">
+    <TextInput placeholder="Enter title" />
+  </Field>
+  <FormSubmit>Save Changes</FormSubmit>
+</Form>
+```
+
+```tsx [Solid]
+import { Form, Field, TextInput, FormSubmit } from '@airlib/solid-form';
+
+<Form schema={props.runtimeSchema} value={props.initialData} onSubmit={props.handleSave}>
+  <Field name="title" label="Title">
+    <TextInput placeholder="Enter title" />
+  </Field>
+  <FormSubmit>Save Changes</FormSubmit>
+</Form>
+```
+:::
+
+### Input Customization with Render Props
+
+Every built-in input component — `TextInput`, `EmailInput`, `NumberInput`, `PasswordInput`, `Textarea`, `Checkbox`, `Radio`, `Select`, `Slider`, `ColorPicker`, `DatePicker`, `TimePicker`, `DateTimePicker`, and `FilePicker` — accepts `children` as a render function receiving resolved input props and the active form input model:
+
+:::code-group
+```tsx [React]
+import { Field, TextInput } from '@airlib/react-form';
+
+<Field name="email" label="Email">
+  <TextInput placeholder="Enter your email">
+    {(inputProps, input) => (
+      <div className="custom-input-group">
+        <input {...inputProps} className="input-control" />
+        {input.touched && input.error && (
+          <span className="error-badge">{input.error}</span>
+        )}
+      </div>
+    )}
+  </TextInput>
+</Field>
+```
+
+```tsx [Solid]
+import { Field, TextInput } from '@airlib/solid-form';
+
+<Field name="email" label="Email">
+  <TextInput placeholder="Enter your email">
+    {(inputProps, input) => (
+      <div class="custom-input-group">
+        <input {...inputProps} class="input-control" />
+        {input.touched && input.error && (
+          <span class="error-badge">{input.error}</span>
+        )}
+      </div>
+    )}
+  </TextInput>
+</Field>
+```
+:::
+
+### Form Slots and Snippets
+
+Customizing form layout without fighting CSS specificity is supported through built-in named slots. `<Form>` exposes `header`, `footer`, `actions`, and `error` slots. `<Field>` exposes `label`, `prefix`, `suffix`, and `support` slots. Content is injected via `.Snippet`:
+
+```tsx
+<UserForm onSubmit={handleSave}>
+  <UserForm.Snippet for="header">
+    {(form) => <h2>Create Account ({form.dirty ? 'Unsaved' : 'Saved'})</h2>}
+  </UserForm.Snippet>
+
+  <UserForm.Field name="email">
+    <UserForm.Field.Snippet for="label">
+      {(field) => <label>Email Address {field.touched && field.error && ' (invalid)'}</label>}
+    </UserForm.Field.Snippet>
+    <TextInput placeholder="you@example.com" />
+    <UserForm.Field.Snippet for="support">
+      We will never share your email.
+    </UserForm.Field.Snippet>
+  </UserForm.Field>
+
+  <UserForm.Submit>Submit</UserForm.Submit>
+</UserForm>
+```
+
+Inputs automatically manage `aria-invalid` and `aria-describedby` linked to field error identifiers. Error messages render with `role="alert"`.
+
+Learn more about schema definitions, input controls, and custom layouts in the [Forms Documentation](/docs/form).
+
+## Reactivity & Diagnostics
+
+### Frozen Read Detection
+
+Reading reactive state outside of an active reactive tracking boundary is a common bug in component setup. Because `setup()` executes **only once** upon initialization, reading `state.property` directly in the setup body captures a static snapshot that will never trigger UI re-renders when the state updates.
+
+AirLib now detects unobserved static reads and emits actionable diagnostics:
+
+```tsx
+import { mutable, setup } from '@airlib/react';
+
+const session = mutable({ user: 'Guest', loggedIn: false });
+
+export const UserGreeting = setup(() => {
+  // Reading reactive state inside setup() captures a static snapshot:
+  const name = session.user; // Caught here upon component initialization
+
+  return () => <div>Welcome, {name}</div>;
+});
+```
+
+The warning suggests four clear remedies:
+1. **Return a reactive view function**: `return () => <div>Welcome, {session.user}</div>;`
+2. **Isolate inside a snippet**: `<Snippet>{() => <span>{session.user}</span>}</Snippet>`
+3. **Wrap with static reader for intentional reads**: `$static(() => session.user)`
+4. **Declare controlled keys**: Pass intentional setup keys as the third argument: `setup(fn, 'UserGreeting', ['user'])`.
+
+### Incremental Array Reduction
+
+Computing totals, aggregations, or filtered counters over large reactive arrays using standard derived pipelines (`derived(() => list.reduce(...))`) triggers an expensive $O(N)$ full re-traversal on every item addition, removal, or property mutation.
+
+The new `derived.reduce()` API performs an initial $O(N)$ calculation and subsequently computes updates in $O(1)$ time by tracking differential array mutation deltas (`added` and `removed` items) and observing individual item properties:
+
+```ts
+import { anchor, derived } from '@airlib/core';
+
+interface OrderItem {
+  id: string;
+  price: number;
+  quantity: number;
+}
+
+const cart = anchor<OrderItem[]>([
+  { id: 'item-1', price: 25, quantity: 2 },
+  { id: 'item-2', price: 40, quantity: 1 },
+]);
+
+// Initial computation: O(N)
+// Subsequent updates on cart mutations or item property changes: O(1)
+const orderSummary = derived.reduce(
+  { totalCost: 0, totalItems: 0 },
+  cart,
+  (stats, item, remove) => {
+    const itemTotal = item.price * item.quantity;
+    if (remove) {
+      stats.totalCost -= itemTotal;
+      stats.totalItems -= item.quantity;
+    } else {
+      stats.totalCost += itemTotal;
+      stats.totalItems += item.quantity;
+    }
+  }
+);
+
+console.log(orderSummary.totalCost); // 90
+console.log(orderSummary.totalItems); // 3
+
+// Adding an item or updating a tracked property updates stats in O(1)
+cart.push({ id: 'item-3', price: 15, quantity: 2 });
+console.log(orderSummary.totalCost); // 120
+console.log(orderSummary.totalItems); // 5
+```
+
+The reducer receives a `remove` flag (`true` when an item is removed, `false` when added or when a tracked item property updates). Accumulators mutate in-place, allowing fine-grained updates without full array iterations.
+
+Learn more about state primitives, observation, and derivations in [State Management](/docs/state-management).
+
+## Component Model
+
+### Direct Function Returns from Setup
+
+Previously, creating a reactive stateful component required wrapping the view in a `render()` utility:
+
+```tsx
+const Counter = setup(() => {
+  const count = mutable(0);
+  return render(() => <button onClick={() => count.value++}>{count.value}</button>);
+});
+```
+
+Components created with `setup()` now return render functions directly. The setup body runs one-time initialization, while the returned function executes as the reactive view:
+
+```tsx
+const Counter = setup(() => {
+  const count = mutable(0);
+  return () => <button onClick={() => count.value++}>{count.value}</button>;
+});
+```
+
+:::code-group
+```tsx [React]
+import { mutable, setup } from '@airlib/react';
+
+interface CounterProps {
+  step?: number;
+}
+
+export const Counter = setup<CounterProps>((initProps) => {
+  // One-time setup: local state allocated ONCE
+  const count = mutable(0);
+
+  // Reactive view: receives LIVE props from parent and reads reactive state
+  return ({ step = 1 }) => (
+    <button onClick={() => count.value += step}>
+      Current Count: {count.value} (Step: {step})
+    </button>
+  );
+});
+```
+
+```tsx [Solid]
+import { mutable, setup } from '@airlib/solid';
+
+interface CounterProps {
+  step?: number;
+}
+
+export const Counter = setup<CounterProps>((initProps) => {
+  // One-time setup: local state allocated ONCE
+  const count = mutable(0);
+
+  // Reactive view: receives LIVE props from parent and reads reactive state
+  return ({ step = 1 }) => (
+    <button onClick={() => count.value += step}>
+      Current Count: {count.value} (Step: {step})
+    </button>
+  );
+});
+```
+:::
+
+This pattern cleanly separates setup concerns from view concerns:
+- **One-Time Initialization**: State allocation, timers, and external subscriptions run once in the outer function.
+- **Live Props in Views**: The returned view function receives the current `props` parameter, enabling safe prop destructuring without reading stale setup snapshots.
+
+### Eliminating Conditional Fallback Traps
+
+One of the largest sources of friction in one-time component setup models (especially in SolidJS) was handling asynchronous loading or conditional rendering. Writing an early `if (!data) return <Loading />` in the setup body executed once upon mounting, trapping the component in the fallback state forever. Developers were forced into "fallback hell" — wrapping views in deeply nested `<Show>` components or nested ternaries.
+
+Because the returned view function executes reactively, developers can use standard JavaScript `if` statements and early returns directly inside the view:
+
+:::code-group
+```tsx [React]
+import { setup } from '@airlib/react';
+
+export const UserProfileView = setup((initProps) => {
+  // Setup scope: runs ONCE
+  const profile = profileService.fetch(initProps.userId);
+
+  // Reactive view: standard JS control flow and early returns
+  return () => {
+    if (profile.pending) {
+      return <div className="loading-state">Loading user profile...</div>;
+    }
+
+    if (profile.error) {
+      return <div className="error-state">{profile.error.message}</div>;
+    }
+
+    return (
+      <div className="user-profile">
+        <h2>{profile.data.name}</h2>
+        <p>{profile.data.bio}</p>
+      </div>
+    );
+  };
+});
+```
+
+```tsx [Solid]
+import { setup } from '@airlib/solid';
+
+export const UserProfileView = setup((initProps) => {
+  // Setup scope: runs ONCE
+  const profile = profileService.fetch(initProps.userId);
+
+  // Reactive view: standard JS control flow and early returns
+  return () => {
+    if (profile.pending) {
+      return <div class="loading-state">Loading user profile...</div>;
+    }
+
+    if (profile.error) {
+      return <div class="error-state">{profile.error.message}</div>;
+    }
+
+    return (
+      <div class="user-profile">
+        <h2>{profile.data.name}</h2>
+        <p>{profile.data.bio}</p>
+      </div>
+    );
+  };
+});
+```
+:::
+
+:::note[Does this trigger full re-renders in Solid?]
+While returning view functions looks like a React-style full re-render, it is not:
+
+1. **Setup scope never re-runs**: State initialization, timers, and subscriptions in the outer `setup()` body run strictly once on mount.
+2. **Fine-grained updates inside branches**: Once a branch is active (e.g., the rendered profile), property changes inside that branch continue to update individual DOM nodes directly without re-evaluating the view function.
+3. **Branch switching only**: The view function only re-evaluates when the guard condition itself changes (e.g., `pending` transitions from `true` to `false`).
+:::
+
+### Solid Dynamic Rendering Utilities
+
+- **`renderDynamic(children, ...args)`**: Safely resolves children that may be static JSX elements or dynamic render callbacks. It forwards parameters when children is a function, catches runtime errors gracefully with clear diagnostics, and passes static JSX through unchanged.
+- **`isDynamic(children)`**: Distinguishes render callbacks expecting arguments (`(arg) => JSX`) from zero-argument accessors and static JSX elements.
+
+### Snippet and Slot Simplified
+
+The `<Snippet>` and `<Slot>` components have been simplified across frameworks:
+
+#### Snippet Data Unwrapping in Solid
+
+In Solid, `<Snippet>` previously wrapped data properties in a function proxy where each property required a function call:
+
+```tsx
+<Snippet data={props.user}>
+  {(user) => <b>{user().name}</b>}
+</Snippet>
+```
+
+In v2.1.0, `<Snippet>` passes the reactive object directly, allowing standard property access:
+
+```tsx
+<Snippet data={props.user}>
+  {(user) => <b>{user.name}</b>}
+</Snippet>
+```
+
+#### Direct Slot Projection in Solid
+
+In `@airlib/solid`, `<Slot>` projects injected snippet content into a layout with fallback children. Previously, the `for` prop required a function wrapper closure:
+
+```tsx
+<Slot for={() => snippets.header}>
+  <DefaultHeader />
+</Slot>
+```
+
+In Solid v2.1.0, `<Slot>` accepts snippet elements directly:
+
+```tsx
+<Slot for={snippets.header}>
+  <DefaultHeader />
+</Slot>
+```
+
+#### Type-Safe Value Narrowing in Show
+
+When rendering conditional content with `<Show>`, the render callback receives the resolved condition narrowed to its non-nullable, truthy type:
+
+:::code-group
+```tsx [React]
+<Show when={() => session.user} fallback={<LoginButton />}>
+  {(user) => <span>Welcome back, <b>{user.name}</b></span>}
+</Show>
+```
+
+```tsx [Solid]
+<Show when={session.user} fallback={<LoginButton />}>
+  {(user) => <span>Welcome back, <b>{user.name}</b></span>}
+</Show>
+```
+:::
+
+In React, passing an accessor function `when={() => session.user}` ensures the condition is tracked reactively within `<Show>`. In Solid, the JSX compiler transpiles property reads into reactive getters automatically. In both frameworks, the callback parameter (`user`) is strictly typed to the non-nullable condition type.
+
+Learn more about component lifecycles, snippets, and rendering patterns in [User Interface](/docs/user-interface).
+
+## Markdown & Tooling
+
+### Code Block Title Metadata
+
+The MDX compiler in `@airlib/vite-ssr` now supports bracketed title annotations on fenced code blocks:
+
+````markdown
+```tsx [UserForm.tsx]
+<UserForm onSubmit={handleSave}>
+  <UserForm.Field name="email" label="Email">
+    <TextInput />
+  </UserForm.Field>
+  <UserForm.Submit>Submit</UserForm.Submit>
+</UserForm>
+```
+````
+
+Titles specified in square brackets (`[title]`) are extracted directly into `data-title` attributes on the rendered `<pre>` / `<code>` elements and cleanly stripped from the remaining meta string so auxiliary attributes (`lineNumbers=true`, `focus=1`, `diff`) parse without conflicts.
+
+Learn more about code annotations, admonitions, and directives in [Extended Markdown](/docs/extended-markdown).
+
+## Fixes & Improvements
+
+- **Reactivity Core**: Excluded symbol keys and internal collection mutation properties from static read tracking to eliminate false-positive diagnostics.
+- **Solid**: Prevented unhandled runtime exceptions during slot resolution by catching errors when invoking dynamic child functions in `findSlots()`.
+- **Solid**: Added accessible ARIA landmarks to sidebar navigation and aligned route renderer setup with controlled property keys.
+- **Form Styles**: Excluded focus states from hover border color changes, preventing conflicting borders when an input is focused.
+- **Ecosystem & Build**: Upgraded `unplugin-solid` to `2.0.0` and structured UI packages under `ui-kits/*`.
