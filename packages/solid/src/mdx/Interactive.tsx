@@ -24,8 +24,8 @@ const DEFAULT_ICON = (
 
 export const Interactive = setup<InteractiveProps>((props) => {
   const $restProps = props.$omit(['title', 'icon', 'panel', 'children', 'class', 'id', 'standalone']);
-  const name = props.id ?? `air-interactive-${uIndex(INTERACTIVE_INDEX)}`;
-  props.panel = props.panel ?? 'preview';
+  const name = () => props.id ?? `air-interactive-${uIndex(INTERACTIVE_INDEX)}`;
+  const panel = () => props.panel ?? 'preview';
 
   let ref: HTMLDivElement | null = null;
   onMount(() => {
@@ -34,7 +34,7 @@ export const Interactive = setup<InteractiveProps>((props) => {
     ref.style.setProperty('--air-mdx-interactive-height', `${ref.offsetHeight}px`);
   });
 
-  return (
+  return () => (
     <div
       {...$restProps}
       ref={(el) => {
@@ -56,13 +56,13 @@ export const Interactive = setup<InteractiveProps>((props) => {
           <span class="air-interactive-title">{props.title ?? 'Interactive Demo'}</span>
         </div>
         <Show when={!props.standalone}>
-          <div class="air-interactive-toggle" role="radiogroup" aria-label="Toggle panel" data-panel={props.panel}>
+          <div class="air-interactive-toggle" role="radiogroup" aria-label="Toggle panel" data-panel={panel()}>
             <label>
               <input
                 type="radio"
-                name={name}
+                name={name()}
                 value="source"
-                checked={props.panel === 'source'}
+                checked={panel() === 'source'}
                 onChange={() => {
                   props.panel = 'source';
                 }}
@@ -75,9 +75,9 @@ export const Interactive = setup<InteractiveProps>((props) => {
             <label>
               <input
                 type="radio"
-                name={name}
+                name={name()}
                 value="preview"
-                checked={props.panel === 'preview'}
+                checked={panel() === 'preview'}
                 onChange={() => {
                   props.panel = 'preview';
                 }}

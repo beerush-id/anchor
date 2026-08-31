@@ -1,4 +1,4 @@
-import { $symbol, type AnyType, classx, effect, mutable, uIndex } from '@airlib/core';
+import { $symbol, type AnyType, classx, effect, mutable, uIndex, untrack } from '@airlib/core';
 import type { PreloadMode } from '@airlib/router';
 import { Link, uiRouterCtx } from '../router/index.js';
 import { For, type JSX, splitProps } from '../solid.js';
@@ -27,15 +27,19 @@ export function Sidebar(allProps: SidebarProps): JSX.Element {
   const [props, restProps] = splitProps(allProps, ['nav', 'class', 'preload', 'collapsible']);
 
   return (
-    <nav {...restProps} class={classx('air-mdx-sidebar-nav', props.class)}>
+    <nav
+      {...restProps}
+      aria-label="Documentation sidebar"
+      class={classx('air-mdx-sidebar air-mdx-sidebar-nav', props.class)}
+    >
       <For each={props.nav}>
-        {(item) => <SidebarNode item={item} preload={props.preload} collapsible={props.collapsible} />}
+        {(item) => <SidebarNode item={item} level={0} preload={props.preload} collapsible={props.collapsible} />}
       </For>
     </nav>
   );
 }
 
-export interface SidebarNodeProps extends JSX.HTMLAttributes<AnyType> {
+export interface SidebarNodeProps extends Omit<JSX.HTMLAttributes<HTMLElement>, 'ref'> {
   item: NavItem;
   level?: number;
   preload?: PreloadMode;
@@ -46,9 +50,8 @@ export function SidebarNode(allProps: SidebarNodeProps): JSX.Element {
   const [props, restProps] = splitProps(allProps, ['item', 'class', 'level', 'preload', 'collapsible']);
 
   const ctx = uiRouterCtx.get();
-  const collapsible = props.collapsible ?? false;
   const state = mutable({
-    collapsed: collapsible && (props.item.collapsed ?? false),
+    collapsed: untrack(() => (props.collapsible ?? false) && (props.item?.collapsed ?? false)),
   });
   const childrenId = `sbn-${uIndex(SIDEBAR_NODE_INDEX)}`;
 
@@ -150,7 +153,7 @@ export function SidebarNode(allProps: SidebarNodeProps): JSX.Element {
               when={props.item.route}
               fallback={
                 <Show
-                  when={collapsible}
+                  when={props.collapsible}
                   fallback={
                     <div class="air-mdx-sidebar-group" aria-hidden="true">
                       <SidebarItem icon={props.item.icon} text={props.item.text} />
@@ -180,7 +183,7 @@ export function SidebarNode(allProps: SidebarNodeProps): JSX.Element {
                 >
                   <SidebarItem icon={props.item.icon} text={props.item.text} />
                 </Link>
-                <Show when={collapsible}>
+                <Show when={props.collapsible}>
                   <button
                     type="button"
                     class="air-mdx-sidebar-toggle-btn"
@@ -202,7 +205,7 @@ export function SidebarNode(allProps: SidebarNodeProps): JSX.Element {
                   item={child}
                   level={(props.level ?? 0) + 1}
                   preload={props.preload}
-                  collapsible={collapsible}
+                  collapsible={props.collapsible}
                 />
               )}
             </For>

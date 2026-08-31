@@ -1,6 +1,6 @@
 /** @jsxImportSource solid-js */
 
-import { Redirect } from '@airlib/router';
+import { GuardError, Redirect } from '@airlib/router';
 import { render } from '@solidjs/testing-library';
 import type { JSX } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -168,7 +168,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const router = createRouter();
       const testRoute = router.route('/error');
       testRoute.render(({ children }) => <div>{children as any}</div>);
-      testRoute.catch(({ error }) => <div data-testid="error-view">Error! {error.message}</div>);
+      testRoute.catch((props) => () => <div data-testid="error-view">Error! {props.error.message}</div>);
       const stacks = createStacks();
 
       // Activate a non-matching URL to trigger exception on the route
@@ -185,13 +185,14 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
 
     it('renders the Exception component when the route is not authenticated', () => {
       const router = createRouter();
-      const ExceptionComponent = () => <div data-testid="unauth-error-view">Unauthenticated!</div>;
+      const ExceptionComponent = () => () => <div data-testid="unauth-error-view">Unauthenticated!</div>;
       const testRoute = router.route().route('/protected-route');
       const child = testRoute.route('/');
       testRoute.render(({ children }) => children as any).catch(ExceptionComponent);
 
       // Simulate route without authentication
       testRoute.state.authenticated = false;
+      testRoute.state.error = new GuardError('Auth required');
       child.state.authenticated = false;
       child.active = true;
       testRoute.active = true;
@@ -204,6 +205,23 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       ));
 
       expect(container.querySelector('[data-testid="unauth-error-view"]')).not.toBeNull();
+    });
+
+    it('renders isolated Exception component when unauthenticated without children', () => {
+      const router = createRouter();
+      const ExceptionComponent = (props: { error?: Error }) => () => (
+        <div data-testid="unauth-isolated-view">Unauth: {props.error?.message}</div>
+      );
+      const testRoute = router.route('/isolated-protected');
+      testRoute.catch(ExceptionComponent);
+
+      testRoute.state.authenticated = false;
+      testRoute.state.error = new GuardError('Access denied');
+      testRoute.active = true;
+      const stacks = createStacks();
+
+      const { container } = render(() => <RouteViewer route={testRoute as never} stacks={stacks} />);
+      expect(container.querySelector('[data-testid="unauth-isolated-view"]')?.textContent).toContain('Access denied');
     });
 
     it('renders null renderer when route has an exception', async () => {
@@ -228,7 +246,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const router = createRouter();
       const testRoute = router.route('/error');
       testRoute.render(({ children }) => <div data-testid="layout-wrapper">{children as any}</div>);
-      testRoute.catch(({ error }) => <div data-testid="error-view">Error! {error.message}</div>);
+      testRoute.catch((props) => () => <div data-testid="error-view">Error! {props.error.message}</div>);
 
       // Add a child route so route.children.size > 0
       testRoute.route('/child');
@@ -253,7 +271,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const router = createRouter();
       const testRoute = router.route('/protected-route');
       testRoute.render(({ children }) => <div data-testid="layout-wrapper">{children as any}</div>);
-      testRoute.catch(({ error }) => <div data-testid="unauth-error-view">Error!</div>);
+      testRoute.catch(() => () => <div data-testid="unauth-error-view">Error!</div>);
 
       // Add a child route so route.children.size > 0
       const child = testRoute.route('/child');
@@ -281,7 +299,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const router = createRouter();
       const testRoute = router.route('/error');
       testRoute.render(({ children }) => <div data-testid="layout-wrapper">{children as any}</div>);
-      testRoute.catch(({ error }) => <div data-testid="error-view">Error! {error.message}</div>);
+      testRoute.catch((props) => () => <div data-testid="error-view">Error! {props.error.message}</div>);
 
       // Add an index route with a renderer
       const indexRoute = testRoute.route('/');
@@ -302,7 +320,7 @@ describe('Anchor Solid - UIRouter & RouteViewer Components', () => {
       const router = createRouter();
       const testRoute = router.route('/protected-route');
       testRoute.render(({ children }) => <div data-testid="layout-wrapper">{children as any}</div>);
-      testRoute.catch(({ error }) => <div data-testid="unauth-error-view">Error!</div>);
+      testRoute.catch(() => () => <div data-testid="unauth-error-view">Error!</div>);
 
       // Add an index route with a renderer
       const indexRoute = testRoute.route('/');

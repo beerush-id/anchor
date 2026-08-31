@@ -267,37 +267,28 @@ const createRenderer = <TPath, TParams, TQueryParams, TData, PParams, PQuery, PD
   route: UnknownRoute,
   renderer: RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>
 ): RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput> => {
-  return setup((props) => {
-    setContext(ROUTE_CTX, route.state);
-    return renderer(props as never) as never;
-  }, `Route(${route.path})`) as unknown as RouteRenderer<
-    TPath,
-    TParams,
-    TQueryParams,
-    TData,
-    PParams,
-    PQuery,
-    PData,
-    TOutput
-  >;
+  return setup(
+    (props) => {
+      setContext(ROUTE_CTX, route.state);
+      return renderer(props as never) as never;
+    },
+    `Route(${route.path})`,
+    ['children']
+  ) as unknown as RouteRenderer<TPath, TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>;
 };
 
 const createExceptionRenderer = <TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>(
   route: UnknownRoute,
   renderer: RouteExceptionRenderer<TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>
 ): RouteExceptionRenderer<TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput> => {
-  return setup((props) => {
-    setContext(ROUTE_CTX, route.state);
-    return renderer(props as never) as never;
-  }, `Exception(${route.path})`) as unknown as RouteExceptionRenderer<
-    TParams,
-    TQueryParams,
-    TData,
-    PParams,
-    PQuery,
-    PData,
-    TOutput
-  >;
+  return setup(
+    (props) => {
+      setContext(ROUTE_CTX, route.state);
+      return renderer(props as never) as never;
+    },
+    `Exception(${route.path})`,
+    ['children']
+  ) as unknown as RouteExceptionRenderer<TParams, TQueryParams, TData, PParams, PQuery, PData, TOutput>;
 };
 
 setRendererFactory(createRenderer);

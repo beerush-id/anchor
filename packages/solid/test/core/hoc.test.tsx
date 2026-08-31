@@ -5,8 +5,8 @@ import { render } from '@solidjs/testing-library';
 import type { JSX } from 'solid-js';
 import { describe, expect, it, vi } from 'vitest';
 import { BindingRef } from '../../src/binding.js';
-import { bindable, render as renderView, renderDynamic, setup } from '../../src/hoc.js';
-import { type BindableComponentProps, classx, getContext, setContext, Slot } from '../../src/index.js';
+import { bindable, renderDynamic, render as renderView, setup } from '../../src/hoc.js';
+import { type BindableComponentProps, classx, getContext, Slot, setContext } from '../../src/index.js';
 
 describe('Anchor Solid - HOC API', () => {
   describe('bindable', () => {
@@ -185,7 +185,7 @@ describe('Anchor Solid - HOC API', () => {
         return ({ children }) => <div class="top">{children}</div>;
       });
 
-      const BottomComponent = setup<{ children?: JSX.Element }>((props) => (
+      const BottomComponent = setup<{ children?: JSX.Element }>((props) => () => (
         <div class="bottom">
           {props.children}
           <span class="name">{getContext('name')}</span>
@@ -209,11 +209,11 @@ describe('Anchor Solid - HOC API', () => {
     it('should isolate context between sibling and nested setup components', async () => {
       const Tab = setup<{ name: string; children?: JSX.Element; className?: string }>(function TabComp(props) {
         setContext('tab', props.name);
-        return <div class={props.className}>{props.children}</div>;
+        return () => <div class={props.className}>{props.children}</div>;
       });
 
       const Child = setup<{ id: string }>(function ChildComp(props) {
-        return <span data-testid={props.id}>{getContext('tab')}</span>;
+        return () => <span data-testid={props.id}>{getContext('tab')}</span>;
       });
 
       const { unmount, getByTestId, container } = render(() => (
@@ -463,6 +463,42 @@ describe('Anchor Solid - HOC API', () => {
 
       state.prefix = 'Goodbye';
       expect(container.textContent).toBe('Goodbye World');
+      unmount();
+    });
+
+    it('triggers violation on frozen static reads inside setup', () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const state = mutable({ count: 1 });
+      const Comp = setup((_props) => {
+        const frozen = state.count;
+        return <div>{frozen}</div>;
+      }, 'FrozenComp');
+
+      const { unmount } = render(() => <Comp />);
+      expect(errorSpy).toHaveBeenCalled();
+
+      errorSpy.mockRestore();
+      unmount();
+    });
+
+    it('ignores violation on controlled keys inside setup', () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const state = mutable({ count: 1 });
+      const Comp = setup(
+        (_props) => {
+          const frozen = state.count;
+          return <div>{frozen}</div>;
+        },
+        'ControlledComp',
+        ['count']
+      );
+
+      const { unmount } = render(() => <Comp />);
+      expect(errorSpy).not.toHaveBeenCalled();
+
+      errorSpy.mockRestore();
       unmount();
     });
   });

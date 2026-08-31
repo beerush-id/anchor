@@ -49,6 +49,7 @@ export type {
 
 export {
   $module,
+  $static,
   $symbol,
   $unit,
   ASYNC_STATUS,

@@ -4,8 +4,11 @@ import {
   type AsyncKey,
   AsyncStore,
   CONTEXT_STORE,
+  captureStack,
   getContextStore,
   isFunction,
+  setStaticTracker,
+  untrack,
 } from '@airlib/core';
 import { type Accessor, type Component, createMemo, getOwner, type JSX, type Owner } from 'solid-js';
 import { proxyProps, setCurrentProps } from './props.js';
@@ -54,12 +57,14 @@ type ContextOwner = Owner & {
  *
  * @param Component - The component with snippets to wrap.
  * @param displayName - The display name of the component.
+ * @param controlled - List of controlled keys to not trigger violation warnings.
  * @returns Slotted component.
  */
 // biome-ignore lint/suspicious/noExplicitAny: library
 export function setup<P extends Record<string, any>, S extends ComponentSlots>(
   Component: ComponentWithSnippet<P, S>,
-  displayName?: string
+  displayName?: string,
+  controlled?: string[]
 ): SlottedComponent<P, S>;
 
 /**
@@ -68,12 +73,14 @@ export function setup<P extends Record<string, any>, S extends ComponentSlots>(
  *
  * @param Component - The component to wrap.
  * @param displayName - The display name of the component.
+ * @param controlled - List of controlled keys to not trigger violation warnings.
  * @returns Bindable component.
  */
 // biome-ignore lint/suspicious/noExplicitAny: library
 export function setup<P extends Record<string, any>>(
-  Component: ComponentView<BindableComponentProps<P>>,
-  displayName?: string
+  Component: ComponentView<P>,
+  displayName?: string,
+  controlled?: string[]
 ): BindableComponent<BindableProps<P>>;
 
 /**
@@ -81,12 +88,14 @@ export function setup<P extends Record<string, any>>(
  *
  * @param Component - The component to wrap.
  * @param displayName - The display name of the component.
+ * @param controlled - List of controlled keys to not trigger violation warnings.
  * @returns Bindable component.
  */
 // biome-ignore lint/suspicious/noExplicitAny: library
 export function setup<P extends Record<string, any>, S extends ComponentSlots>(
-  Component: ComponentView<BindableComponentProps<P>> | ComponentWithSnippet<P, S>,
-  displayName?: string
+  Component: ComponentView<P> | ComponentWithSnippet<P, S>,
+  displayName?: string,
+  controlled?: string[]
 ): BindableComponent<BindableProps<P>> {
   const Setup = (props: BindableComponentProps<P>) => {
     const bindableProps = proxyProps(props);
@@ -100,9 +109,32 @@ export function setup<P extends Record<string, any>, S extends ComponentSlots>(
       self[SETUP_NAME] = name;
     }
 
-    const slots = findSlots((props as AnyType).children);
-    const result = (Component as ComponentWithSnippet<P, S>)(bindableProps as never, slots as never);
-    return typeof result === 'function' ? render(result, bindableProps as never) : result;
+    const restore = setStaticTracker((_state, key) => {
+      if (controlled?.includes(String(key))) return;
+
+      const error = new Error(`[${name}] Frozen read on "${String(key)}".`);
+      captureStack.violation.general(
+        'Frozen reactive read detected:',
+        `Attempted to read "${String(key)}" inside <${name}> setup() without a reactive boundary.`,
+        error,
+        [
+          `Component setup executes once upon initialization; reads here will not trigger re-renders.`,
+          '- Return an accessor function: `return () => <JSX />` instead of static JSX.',
+          '- Or isolate dynamic reads inside a `<Snippet>` / reactive boundary.',
+          '- If static is expected, wrap with `$static(() => ...)` to silence this warning.',
+        ]
+      );
+    });
+
+    let result: unknown;
+    try {
+      const slots = untrack(() => findSlots((props as AnyType).children));
+      result = (Component as ComponentWithSnippet<P, S>)(bindableProps as never, slots as never);
+    } finally {
+      restore();
+    }
+
+    return typeof result === 'function' ? render(result as never, bindableProps as never) : result;
   };
 
   const SetupSlot = (props: AnyType) => {
