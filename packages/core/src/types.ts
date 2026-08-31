@@ -40,6 +40,7 @@ export type ParseResult<T> = ZodSafeParseResult<T>;
 export type StateTracker = (init: Linkable, key: KeyLike) => boolean;
 export type StateKeyTracker = (key: KeyLike) => boolean;
 export type StatePublicTracker = (init: Linkable, observers: StateObserverList, key: KeyLike) => void;
+export type StateReadTracker = (init: Linkable, key: KeyLike) => void;
 export type StateObserver = {
   readonly id: string;
   readonly active: boolean;

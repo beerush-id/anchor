@@ -17,6 +17,7 @@ import type {
   StateMetadata,
   StateObserver,
   StatePublicTracker,
+  StateReadTracker,
   StateTracker,
   StateUnsubscribe,
 } from '../types.js';
@@ -163,7 +164,13 @@ export const effect = effectFn as Effect;
  * @param fn - The function to execute outside of observer context
  */
 export function untrack<T>(fn: () => T): T {
-  return switchable.untrack(fn) as T;
+  const restore = setStaticTracker(undefined);
+
+  try {
+    return switchable.untrack(fn) as T;
+  } finally {
+    restore();
+  }
 }
 
 /**
@@ -427,4 +434,24 @@ export function setTracker(tracker: StatePublicTracker) {
  */
 export function getTracker(): StatePublicTracker | undefined {
   return plugin.track;
+}
+
+export function $static<T>(reader: () => T) {
+  const restore = setStaticTracker(undefined);
+  try {
+    return reader();
+  } finally {
+    restore();
+  }
+}
+
+export function setStaticTracker(tracker: StateReadTracker | undefined) {
+  if (!isReactive()) return () => {};
+  const current = plugin.trackStatic;
+  plugin.trackStatic = tracker;
+  return () => (plugin.trackStatic = current);
+}
+
+export function getStaticTracker(): StateReadTracker | undefined {
+  return plugin.trackStatic;
 }

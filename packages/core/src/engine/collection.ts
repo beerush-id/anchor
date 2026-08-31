@@ -70,6 +70,7 @@ export function createCollectionGetter<T extends Set<unknown> | Map<KeyLike, unk
       /* istanbul ignore else */
       if (configs.observable && !COLLECTION_MUTATION_KEYS.has(prop as never)) {
         plugin.track?.(init, observers, OBSERVER_KEYS.COLLECTION_MUTATIONS);
+        if (!observer) plugin.trackStatic?.(init, OBSERVER_KEYS.COLLECTION_MUTATIONS);
       }
 
       if (configs.observable && observer && !COLLECTION_MUTATION_KEYS.has(prop as never)) {
