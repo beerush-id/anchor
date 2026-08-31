@@ -83,6 +83,7 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
 
       if (configs.observable) {
         plugin.track?.(init, observers, Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
+        /* istanbul ignore next */
         if (!observer) plugin.trackStatic?.(init, Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
       }
 

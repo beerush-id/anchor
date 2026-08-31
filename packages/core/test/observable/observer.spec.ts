@@ -1,5 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { $do, anchor, createObserver, effect, getObserver, getTracker, mutable, setTracker } from '../../src/index.js';
+import {
+  $do,
+  anchor,
+  createObserver,
+  effect,
+  getObserver,
+  getStaticTracker,
+  getTracker,
+  mutable,
+  setStaticTracker,
+  setTracker,
+} from '../../src/index.js';
 
 describe('Anchor Core - Observable Observer Management', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
@@ -45,6 +56,17 @@ describe('Anchor Core - Observable Observer Management', () => {
       map.set('key', 1);
 
       expect(tracker).toHaveBeenCalledTimes(3);
+    });
+
+    it('should properly set and get static tracker', () => {
+      const tracker = vi.fn();
+      expect(getStaticTracker()).toBeUndefined();
+
+      const restore = setStaticTracker(tracker);
+      expect(getStaticTracker()).toBe(tracker);
+
+      restore();
+      expect(getStaticTracker()).toBeUndefined();
     });
 
     it('should handle outside of observer function', () => {
