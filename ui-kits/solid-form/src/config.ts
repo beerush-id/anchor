@@ -1,7 +1,7 @@
 export const FORM_OPTIONS = {
-  class: '',
-  errorClass: '',
-  pendingClass: '',
+  class: 'air-form',
+  errorClass: 'air-form-error',
+  pendingClass: 'air-form-pending',
   strict: true,
   validateOnInit: true,
   settleOnSubmit: true,
@@ -10,19 +10,21 @@ export const FORM_OPTIONS_KEYS = Object.keys(FORM_OPTIONS);
 export type FormDefaultOptions = Partial<typeof FORM_OPTIONS>;
 
 export const FIELD_OPTIONS = {
-  class: '',
-  labelClass: '',
-  errorClass: '',
+  class: 'air-form-field',
+  errorClass: 'air-form-field-error',
+  labelClass: 'air-form-field-label',
+  controlClass: 'air-form-field-control',
+  supportClass: 'air-form-field-support',
   requiredLabel: '*',
-  requiredClass: '',
-  mismatchLabel: '',
+  requiredClass: 'air-form-field-required',
+  mismatchLabel: 'air-form-field-mismatch',
 };
 export const FIELD_OPTIONS_KEYS = Object.keys(FIELD_OPTIONS);
 export type FieldDefaultOptions = Partial<typeof FIELD_OPTIONS>;
 
 export const INPUT_OPTIONS = {
-  class: '',
-  errorClass: '',
+  class: 'air-text-input',
+  errorClass: 'air-text-input-error',
 };
 export const INPUT_OPTIONS_KEYS = Object.keys(INPUT_OPTIONS);
 export type InputDefaultOptions = Partial<typeof INPUT_OPTIONS>;
@@ -56,50 +58,50 @@ export const PASSWORD_OPTIONS_KEYS = Object.keys(PASSWORD_OPTIONS);
 export type PasswordDefaultOptions = Partial<typeof PASSWORD_OPTIONS>;
 
 export const CHECKBOX_OPTIONS = {
-  class: '',
-  errorClass: '',
+  class: 'air-checkbox-input',
+  errorClass: 'air-checkbox-input-error',
 };
 export const CHECKBOX_OPTIONS_KEYS = Object.keys(CHECKBOX_OPTIONS);
 export type CheckboxDefaultOptions = Partial<typeof CHECKBOX_OPTIONS>;
 
 export const RADIO_OPTIONS = {
-  class: '',
-  errorClass: '',
+  class: 'air-radio-input',
+  errorClass: 'air-radio-input-error',
 };
 export const RADIO_OPTIONS_KEYS = Object.keys(RADIO_OPTIONS);
 export type RadioDefaultOptions = Partial<typeof RADIO_OPTIONS>;
 
 export const SLIDER_OPTIONS = {
-  class: '',
-  errorClass: '',
+  class: 'air-slider-input',
+  errorClass: 'air-slider-input-error',
 };
 export const SLIDER_OPTIONS_KEYS = Object.keys(SLIDER_OPTIONS);
 export type SliderDefaultOptions = Partial<typeof SLIDER_OPTIONS>;
 
 export const SELECT_OPTIONS = {
-  class: '',
-  errorClass: '',
+  class: 'air-select-input',
+  errorClass: 'air-select-input-error',
 };
 export const SELECT_OPTIONS_KEYS = Object.keys(SELECT_OPTIONS);
 export type SelectDefaultOptions = Partial<typeof SELECT_OPTIONS>;
 
 export const TEXTAREA_OPTIONS = {
-  class: '',
-  errorClass: '',
+  class: 'air-textarea-input',
+  errorClass: 'air-textarea-input-error',
 };
 export const TEXTAREA_OPTIONS_KEYS = Object.keys(TEXTAREA_OPTIONS);
 export type TextareaDefaultOptions = Partial<typeof TEXTAREA_OPTIONS>;
 
 export const FILE_OPTIONS = {
-  class: '',
-  errorClass: '',
+  class: 'air-file-input',
+  errorClass: 'air-file-input-error',
 };
 export const FILE_OPTIONS_KEYS = Object.keys(FILE_OPTIONS);
 export type FileDefaultOptions = Partial<typeof FILE_OPTIONS>;
 
 export const COLOR_OPTIONS = {
-  class: '',
-  errorClass: '',
+  class: 'air-color-input',
+  errorClass: 'air-color-input-error',
 };
 export const COLOR_OPTIONS_KEYS = Object.keys(COLOR_OPTIONS);
 export type ColorDefaultOptions = Partial<typeof COLOR_OPTIONS>;
@@ -126,15 +128,15 @@ export const DATETIME_OPTIONS_KEYS = Object.keys(DATETIME_OPTIONS);
 export type DatetimeDefaultOptions = Partial<typeof DATETIME_OPTIONS>;
 
 export const RESET_OPTIONS = {
-  class: '',
-  dirtyClass: '',
+  class: 'air-form-reset',
+  dirtyClass: 'air-form-reset-changed',
 };
 export const RESET_OPTIONS_KEYS = Object.keys(RESET_OPTIONS);
 export type ResetDefaultOptions = Partial<typeof RESET_OPTIONS>;
 
 export const SUBMIT_OPTIONS = {
-  class: '',
-  pendingClass: '',
+  class: 'air-form-submit',
+  pendingClass: 'air-form-submit-pending',
 };
 export const SUBMIT_OPTIONS_KEYS = Object.keys(SUBMIT_OPTIONS);
 export type SubmitDefaultOptions = Partial<typeof SUBMIT_OPTIONS>;
@@ -185,8 +187,8 @@ export function configureForm(options: FormGeneralOptions) {
 
 export function getInputClasses(specificOptions?: { class?: string; errorClass?: string }) {
   return {
-    baseClass: [INPUT_OPTIONS.class, specificOptions?.class].filter(Boolean).join(' '),
-    errorClass: [INPUT_OPTIONS.errorClass, specificOptions?.errorClass].filter(Boolean).join(' '),
+    baseClass: specificOptions?.class || INPUT_OPTIONS.class,
+    errorClass: specificOptions?.errorClass || INPUT_OPTIONS.errorClass,
   };
 }
 

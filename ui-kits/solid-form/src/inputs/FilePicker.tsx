@@ -1,54 +1,84 @@
-import { type AnyType, formInput } from '@airlib/form';
-import { derived, setup } from '@airlib/solid';
-import type { JSX } from 'solid-js';
+import { type AnyType, type FormInput, formInput } from '@airlib/form';
+import { classx, derived, type JSX, setup } from '@airlib/solid';
 import { FILE_OPTIONS, FILE_OPTIONS_KEYS, getInputClasses, INPUT_OPTIONS_KEYS } from '../config.js';
 
-export interface FilePickerProps extends Omit<JSX.InputHTMLAttributes<HTMLInputElement>, 'value'> {
+export interface FilePickerProps extends Omit<JSX.InputHTMLAttributes<HTMLInputElement>, 'value' | 'children'> {
+  for?: FilePickerProps;
   onFiles?: (files: FileList | null) => void;
   errorClass?: string;
+  children?:
+    | JSX.Element
+    | ((props: JSX.InputHTMLAttributes<HTMLInputElement>, input: FormInput<FileList | null>) => JSX.Element);
 }
 
 export const FilePicker = setup<FilePickerProps>((props) => {
-  (props as AnyType).type = 'file';
-  const restProps = props.$omit([
+  const $props = ((props as AnyType).for ?? props) as AnyType;
+
+  const rest = $props.$omit([
+    'for',
     'type',
     'name',
+    'id',
     'disabled',
     'class',
+    'children',
     'onChange',
     'onFiles',
     ...(FILE_OPTIONS_KEYS as never[]),
     ...(INPUT_OPTIONS_KEYS as never[]),
   ]);
-  const input = formInput(props as AnyType);
 
-  const { baseClass, errorClass } = getInputClasses(FILE_OPTIONS);
+  const attrs = derived.as(() => {
+    const input = formInput<FileList | null>($props);
+    const fieldId = $props.id || input.name.replace(/\./g, '-');
+    const errorId = `${fieldId}-error`;
+
+    return { input, fieldId, errorId };
+  });
 
   const handleChange = (e: Event) => {
-    const files = (e.currentTarget as HTMLInputElement).files;
-    if (typeof props.onFiles === 'function') {
-      props.onFiles(files);
-    }
-    if (typeof props.onChange === 'function') {
-      props.onChange(e as AnyType);
-    }
+    $props.onFiles?.((e.currentTarget as HTMLInputElement).files);
+    $props.onChange?.(e as AnyType);
   };
 
   const className = derived(() => {
-    if (input.touched && (input.error || !input.matched)) {
-      return [props.class ?? baseClass, props.errorClass ?? errorClass].filter(Boolean).join(' ');
-    }
-    return props.class ?? baseClass;
+    const { baseClass, errorClass } = getInputClasses(FILE_OPTIONS);
+    return classx(
+      baseClass,
+      $props.class,
+      Boolean(attrs.input.touched && (attrs.input.error || !attrs.input.matched)) && ($props.errorClass ?? errorClass)
+    );
   });
 
-  return (
-    <input
-      {...restProps}
-      type="file"
-      name={input.name}
-      disabled={input.disabled}
-      class={className.value}
-      onChange={handleChange}
-    />
-  );
-});
+  return () => {
+    const children = (props as AnyType).children ?? $props.children;
+    if (typeof children === 'function') {
+      const inputProps = {
+        ...rest,
+        id: attrs.fieldId,
+        type: 'file',
+        name: attrs.input.name,
+        disabled: attrs.input.disabled,
+        class: className.value,
+        'aria-invalid': attrs.input.error ? (true as const) : undefined,
+        'aria-describedby': attrs.input.error ? attrs.errorId : undefined,
+        onChange: handleChange,
+      };
+      return children(inputProps as AnyType, attrs.input);
+    }
+
+    return (
+      <input
+        {...rest}
+        id={attrs.fieldId}
+        type="file"
+        name={attrs.input.name}
+        disabled={attrs.input.disabled}
+        class={className.value}
+        aria-invalid={attrs.input.error ? (true as const) : undefined}
+        aria-describedby={attrs.input.error ? attrs.errorId : undefined}
+        onChange={handleChange}
+      />
+    );
+  };
+}, 'FilePicker');

@@ -1,56 +1,85 @@
-import { type AnyType, formInput } from '@airlib/form';
-import { type Bindable, derived, setup } from '@airlib/solid';
-import { createEffect, type JSX as Jsx } from 'solid-js';
+import { type AnyType, type FormInput, formInput } from '@airlib/form';
+import { type Bindable, classx, derived, type JSX, setup } from '@airlib/solid';
 import { getInputClasses, INPUT_OPTIONS_KEYS, SELECT_OPTIONS, SELECT_OPTIONS_KEYS } from '../config.js';
 
-export interface SelectProps extends Omit<Jsx.SelectHTMLAttributes<HTMLSelectElement>, 'value'> {
+export interface SelectProps extends Omit<JSX.SelectHTMLAttributes<HTMLSelectElement>, 'value' | 'children'> {
+  for?: SelectProps;
   errorClass?: string;
   value?: Bindable<string | number>;
+  children?:
+    | JSX.Element
+    | ((props: JSX.SelectHTMLAttributes<HTMLSelectElement>, input: FormInput<string | number>) => JSX.Element);
 }
 
 export const Select = setup<SelectProps>((props) => {
-  const input = formInput(props as AnyType);
-  const restProps = props.$omit([
+  const $props = ((props as AnyType).for ?? props) as AnyType;
+
+  const rest = $props.$omit([
+    'for',
     'value',
     'name',
+    'id',
     'disabled',
     'class',
+    'children',
     'onChange',
     ...(SELECT_OPTIONS_KEYS as never[]),
     ...(INPUT_OPTIONS_KEYS as never[]),
   ]);
-  const { baseClass, errorClass } = getInputClasses(SELECT_OPTIONS);
 
-  let ref: HTMLSelectElement | undefined;
-  createEffect(() => {
-    if (ref) ref.value = input.value;
+  const attrs = derived.as(() => {
+    const input = formInput<string | number>($props);
+    const fieldId = $props.id || input.name.replace(/\./g, '-');
+    const errorId = `${fieldId}-error`;
+
+    return { input, fieldId, errorId };
   });
 
   const handleChange = (e: Event) => {
-    input.value = (e.currentTarget as HTMLSelectElement).value;
-    if (typeof props.onChange === 'function') {
-      props.onChange(e as AnyType);
-    }
+    attrs.input.value = (e.currentTarget as HTMLSelectElement).value;
+    $props.onChange?.(e as AnyType);
   };
 
   const className = derived(() => {
-    if (input.touched && (input.error || !input.matched)) {
-      return [props.class ?? baseClass, props.errorClass ?? errorClass].filter(Boolean).join(' ');
-    }
-    return props.class ?? baseClass;
+    const { baseClass, errorClass } = getInputClasses(SELECT_OPTIONS);
+    return classx(
+      baseClass,
+      $props.class,
+      Boolean(attrs.input.touched && (attrs.input.error || !attrs.input.matched)) && ($props.errorClass ?? errorClass)
+    );
   });
 
-  return (
-    <select
-      ref={(el) => (ref = el)}
-      {...restProps}
-      name={input.name}
-      value={input.value}
-      disabled={input.disabled}
-      class={className.value}
-      onChange={handleChange}
-    >
-      {props.children}
-    </select>
-  );
-});
+  return () => {
+    const children = (props as AnyType).children ?? $props.children;
+    if (typeof children === 'function') {
+      const selectProps = {
+        ...rest,
+        id: attrs.fieldId,
+        name: attrs.input.name,
+        disabled: attrs.input.disabled,
+        class: className.value,
+        value: attrs.input.value as AnyType,
+        'aria-invalid': attrs.input.error ? (true as const) : undefined,
+        'aria-describedby': attrs.input.error ? attrs.errorId : undefined,
+        onChange: handleChange,
+      };
+      return children(selectProps as AnyType, attrs.input);
+    }
+
+    return (
+      <select
+        {...rest}
+        id={attrs.fieldId}
+        name={attrs.input.name}
+        disabled={attrs.input.disabled}
+        class={className.value}
+        value={attrs.input.value as AnyType}
+        aria-invalid={attrs.input.error ? (true as const) : undefined}
+        aria-describedby={attrs.input.error ? attrs.errorId : undefined}
+        onChange={handleChange}
+      >
+        {children}
+      </select>
+    );
+  };
+}, 'Select');
