@@ -1,7 +1,7 @@
 import type { PreloadMode } from '@airlib/router';
 import type { HTMLAttributes, ReactNode } from 'react';
 import { cookiePair } from '../cookie.js';
-import { classx, mutable, setup, Show, Slot, Snippet } from '../index.js';
+import { classx, mutable, Show, Slot, Snippet, setup } from '../index.js';
 import type { SlottedComponent } from '../types.js';
 import { type MdxContext, mdxCtx } from './context.js';
 import { Pagination } from './Pagination.js';
@@ -35,7 +35,7 @@ export const Layout: SlottedComponent<LayoutProps, LayoutSlots> = setup<LayoutPr
     state.drawer = '';
   };
 
-  return (
+  return () => (
     <div {...$restProps} className={classx('air-mdx air-mdx-container', props.className)}>
       <div className="air-mdx-mobile-bar">
         <button

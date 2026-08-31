@@ -342,7 +342,7 @@ if (isBrowser()) {
     history.replaceState(null, '', url);
   }
 
-  setRedirectHandler((redirect) => {
+  setRedirectHandler((redirect: AnyType) => {
     navigate(redirect.url ?? (redirect as AnyType).route, {
       query: redirect.query,
       params: redirect.params,

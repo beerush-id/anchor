@@ -383,11 +383,11 @@ export type RouteLayoutRenderer<Params, QueryParams, Data, PParams, PQueryParams
   state: ContextReader<Params, QueryParams, Data>;
   context: RouterContext<PParams, PQueryParams, PData>;
   children: Output;
-}) => Output;
+}) => Output | (() => Output);
 export type RouteIndexRenderer<Params, QueryParams, Data, PParams, PQueryParams, PData, Output> = (props: {
   state: ContextReader<Params, QueryParams, Data>;
   context: RouterContext<PParams, PQueryParams, PData>;
-}) => Output;
+}) => Output | (() => Output);
 export type RouteRenderer<Path, Params, QueryParams, Data, PParams, PQueryParams, PData, Output> = Path extends '/'
   ? RouteIndexRenderer<Params, QueryParams, Data, PParams, PQueryParams, PData, Output>
   : RouteLayoutRenderer<Params, QueryParams, Data, PParams, PQueryParams, PData, Output>;
@@ -396,7 +396,7 @@ export type RouteExceptionRenderer<Params, QueryParams, Data, PParams, PQueryPar
   error: RouteError;
   state: ContextReader<Params, QueryParams, Data>;
   context: RouterContext<PParams, PQueryParams, PData>;
-}) => Output;
+}) => Output | (() => Output);
 
 export type RouteTarget<T> = T extends { path: string } ? T : never;
 

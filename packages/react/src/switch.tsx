@@ -56,10 +56,14 @@ export function createSwitch<T, K>(
   displayName = 'Anonymous',
   scopeName = 'Switch'
 ) {
-  const Switch = setup((props) => {
-    setContext(ctx, (props as never as SwitchProps<T>).for);
-    return render(() => (props as never as SwitchProps<T>).children);
-  }, displayName) as unknown as SwitchNode<T, K>;
+  const Switch = setup(
+    (props) => {
+      setContext(ctx, (props as never as SwitchProps<T>).for);
+      return () => (props as never as SwitchProps<T>).children;
+    },
+    displayName,
+    ['for', 'children']
+  ) as unknown as SwitchNode<T, K>;
 
   Switch.displayName = `${scopeName}(${displayName})`;
   Switch.Slot = createSlot<K>(ctx, key, displayName);
