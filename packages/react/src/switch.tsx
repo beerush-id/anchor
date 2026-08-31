@@ -71,9 +71,11 @@ export function createSwitch<T, K>(
   return Switch as SwitchNode<T, K>;
 }
 
+type ShowValue<T> = T extends false | null | undefined | 0 | '' ? never : T;
+
 export type ShowProps<T> = {
   when: T | (() => T);
-  children: ReactNode | ((value: T) => ReactNode);
+  children: ReactNode | ((value: ShowValue<T>) => ReactNode);
   fallback?: () => ReactNode;
 };
 
