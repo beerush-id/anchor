@@ -1,4 +1,4 @@
-import { classx, mutable, Snippet, setup } from '@airlib/react';
+import { classx, derived, mutable, Show, Snippet, setup } from '@airlib/react';
 import type { MouseEvent } from 'react';
 import type { StockItem, TimeInterval } from './StockTable.js';
 
@@ -14,6 +14,25 @@ export const StockChart = setup<StockChartProps>((props) => {
   const state = mutable({
     interval: '1D' as TimeInterval,
     hoveredIndex: -1,
+  });
+
+  const displayPrice = derived(() => {
+    const history = props.item?.history;
+    const hovered = state.hoveredIndex;
+    if (hovered >= 0 && history?.[hovered] !== undefined) {
+      return history[hovered];
+    }
+    return props.item?.price ?? 0;
+  });
+
+  const changeInfo = derived(() => {
+    const change = props.item?.change ?? 0;
+    const pct = props.item?.changePercent ?? 0;
+    const isPositive = change >= 0;
+    return {
+      text: `${isPositive ? '+' : ''}$${Math.abs(change).toFixed(2)} (${pct.toFixed(2)}%)`,
+      className: isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400',
+    };
   });
 
   return () => (
@@ -35,30 +54,17 @@ export const StockChart = setup<StockChartProps>((props) => {
           </div>
 
           <div className="mt-0.5 flex items-baseline gap-2">
-            <Snippet
-              data={() => ({ price: props.item?.price, hovered: state.hoveredIndex, history: props.item?.history })}
-            >
-              {({ price, hovered, history }) => {
-                const display = hovered >= 0 && history?.[hovered] !== undefined ? history[hovered] : price;
-
-                return (
-                  <span className="font-mono text-2xl sm:text-3xl font-extrabold text-on-surface">
-                    ${formatNumber(display ?? 0)}
-                  </span>
-                );
-              }}
+            <Snippet data={() => displayPrice.value}>
+              {(price) => (
+                <span className="font-mono text-2xl sm:text-3xl font-extrabold text-on-surface">
+                  ${formatNumber(price)}
+                </span>
+              )}
             </Snippet>
 
-            <Snippet data={() => ({ change: props.item?.change ?? 0, pct: props.item?.changePercent ?? 0 })}>
-              {({ change, pct }) => (
-                <span
-                  className={classx(
-                    'font-mono text-xs sm:text-sm font-semibold',
-                    change >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-                  )}
-                >
-                  {change >= 0 ? '+' : ''}${Math.abs(change).toFixed(2)} ({pct.toFixed(2)}%)
-                </span>
+            <Snippet data={() => changeInfo.value}>
+              {({ text, className }) => (
+                <span className={classx('font-mono text-xs sm:text-sm font-semibold', className)}>{text}</span>
               )}
             </Snippet>
           </div>
@@ -89,22 +95,7 @@ export const StockChart = setup<StockChartProps>((props) => {
 
       {/* SVG Area Chart */}
       <div className="relative my-auto flex h-36 sm:h-44 lg:h-48 w-full items-center justify-center">
-        <Snippet
-          data={() => ({
-            history: props.item?.history,
-            isPos: (props.item?.change ?? 0) >= 0,
-            hovered: state.hoveredIndex,
-          })}
-        >
-          {({ history, isPos, hovered }) => (
-            <StockAreaChart
-              history={history ?? []}
-              isPositive={isPos}
-              hoveredIndex={hovered}
-              onHover={(index) => (state.hoveredIndex = index)}
-            />
-          )}
-        </Snippet>
+        <StockAreaChart item={props.item} state={state} />
       </div>
 
       {/* Statistics Grid */}
@@ -150,59 +141,74 @@ export const StockChart = setup<StockChartProps>((props) => {
   );
 });
 
-interface StockAreaChartProps {
-  history: number[];
-  isPositive: boolean;
-  hoveredIndex: number;
-  onHover: (index: number) => void;
+export interface StockAreaChartProps {
+  item: StockItem;
+  state: { hoveredIndex: number };
 }
 
-const StockAreaChart = ({ history, isPositive, hoveredIndex, onHover }: StockAreaChartProps) => {
-  if (!history || history.length < 2) return null;
-
+export const StockAreaChart = setup<StockAreaChartProps>((props) => {
   const width = 500;
   const height = 200;
   const paddingY = 20;
 
-  const min = Math.min(...history);
-  const max = Math.max(...history);
-  const range = max - min || 1;
+  const points = derived(() => {
+    const history = props.item?.history;
+    if (!history || history.length < 2) return [];
 
-  const points = history.map((val, i) => {
-    const x = (i / (history.length - 1)) * width;
-    const y = height - paddingY - ((val - min) / range) * (height - paddingY * 2);
-    return { x, y, val };
+    const min = Math.min(...history);
+    const max = Math.max(...history);
+    const range = max - min || 1;
+
+    return history.map((val, i) => ({
+      x: (i / (history.length - 1)) * width,
+      y: height - paddingY - ((val - min) / range) * (height - paddingY * 2),
+      val,
+    }));
   });
 
-  const linePath = buildSmoothPath(points);
-  const areaPath = `${linePath} L ${width} ${height} L 0 ${height} Z`;
+  const linePath = derived(() => buildSmoothPath(points.value));
+  const areaPath = derived(() => {
+    const path = linePath.value;
+    return path ? `${path} L ${width} ${height} L 0 ${height} Z` : '';
+  });
 
-  const strokeColor = isPositive ? 'rgb(16, 185, 129)' : 'rgb(244, 63, 94)';
-  const gradientId = `chart-gradient-${isPositive ? 'green' : 'red'}`;
+  const isPositive = derived(() => (props.item?.change ?? 0) >= 0);
+  const strokeColor = derived(() => (isPositive.value ? 'rgb(16, 185, 129)' : 'rgb(244, 63, 94)'));
+  const gradientId = derived(() => `chart-gradient-${isPositive.value ? 'green' : 'red'}`);
+
+  const activePoint = derived(() => {
+    const pts = points.value;
+    const idx = props.state.hoveredIndex;
+    return idx >= 0 && pts[idx] ? { point: pts[idx], color: strokeColor.value } : null;
+  });
 
   const handleMouseMove = (e: MouseEvent<SVGSVGElement>) => {
+    const pts = points.value;
+    if (!pts.length) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const relX = (e.clientX - rect.left) / rect.width;
-    const index = Math.round(relX * (history.length - 1));
-    onHover(Math.max(0, Math.min(history.length - 1, index)));
+    const index = Math.round(relX * (pts.length - 1));
+    props.state.hoveredIndex = Math.max(0, Math.min(pts.length - 1, index));
   };
 
-  const activePoint = hoveredIndex >= 0 && points[hoveredIndex] ? points[hoveredIndex] : null;
-
-  return (
+  return () => (
     <svg
       viewBox={`0 0 ${width} ${height}`}
       className="h-full w-full overflow-visible"
       preserveAspectRatio="none"
       onMouseMove={handleMouseMove}
-      onMouseLeave={() => onHover(-1)}
+      onMouseLeave={() => (props.state.hoveredIndex = -1)}
     >
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={strokeColor} stopOpacity="0.25" />
-          <stop offset="100%" stopColor={strokeColor} stopOpacity="0.0" />
-        </linearGradient>
-      </defs>
+      <Snippet data={() => ({ id: gradientId.value, color: strokeColor.value })}>
+        {({ id, color }) => (
+          <defs>
+            <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+              <stop offset="100%" stopColor={color} stopOpacity="0.0" />
+            </linearGradient>
+          </defs>
+        )}
+      </Snippet>
 
       <line
         x1="0"
@@ -232,26 +238,33 @@ const StockAreaChart = ({ history, isPositive, hoveredIndex, onHover }: StockAre
         className="text-border/40"
       />
 
-      <path d={areaPath} fill={`url(#${gradientId})`} />
-      <path d={linePath} fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" />
+      <Snippet data={() => ({ d: areaPath.value, id: gradientId.value })}>
+        {({ d, id }) => <path d={d} fill={`url(#${id})`} />}
+      </Snippet>
 
-      {activePoint && (
-        <g>
-          <line
-            x1={activePoint.x}
-            y1={0}
-            x2={activePoint.x}
-            y2={height}
-            stroke="currentColor"
-            strokeDasharray="2 2"
-            className="text-on-surface-variant/40"
-          />
-          <circle cx={activePoint.x} cy={activePoint.y} r="5" fill={strokeColor} className="stroke-surface stroke-2" />
-        </g>
-      )}
+      <Snippet data={() => ({ d: linePath.value, color: strokeColor.value })}>
+        {({ d, color }) => <path d={d} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" />}
+      </Snippet>
+
+      <Show when={() => activePoint.value}>
+        {({ point, color }) => (
+          <g>
+            <line
+              x1={point.x}
+              y1={0}
+              x2={point.x}
+              y2={height}
+              stroke="currentColor"
+              strokeDasharray="2 2"
+              className="text-on-surface-variant/40"
+            />
+            <circle cx={point.x} cy={point.y} r="5" fill={color} className="stroke-surface stroke-2" />
+          </g>
+        )}
+      </Show>
     </svg>
   );
-};
+});
 
 function buildSmoothPath(points: { x: number; y: number }[]): string {
   if (points.length < 2) return '';
