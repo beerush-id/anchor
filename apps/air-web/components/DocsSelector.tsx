@@ -1,4 +1,4 @@
-import { classx, For, mutable, render, Show, setup } from '@airlib/react';
+import { $static, classx, For, mutable, render, setup, Show } from '@airlib/react';
 import { mdxCtx } from '@airlib/react/mdx';
 import type { FocusEvent, KeyboardEvent } from 'react';
 
@@ -21,7 +21,7 @@ export interface DocsSelectorProps {
  * `code-group` with the same `group` key reacts to.
  */
 export const DocsSelector = setup<DocsSelectorProps>((props) => {
-  const store = mdxCtx.get()?.store;
+  const store = $static(() => mdxCtx.get()?.store);
   const state = mutable({ open: false });
 
   const value = () => String(store?.[props.name] ?? props.options[0]?.value);
