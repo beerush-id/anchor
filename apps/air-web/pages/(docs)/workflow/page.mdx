@@ -80,11 +80,11 @@ export const ChatButton = setup(() => {
     }
   };
 
-  return render(() => (
+  return () => (
     <button onClick={ask} disabled={isPending.value}>
       {isPending.value ? 'Thinking...' : 'Ask AI'}
     </button>
-  ));
+  );
 });
 ```
 

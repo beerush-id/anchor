@@ -76,7 +76,7 @@ Drop `Field` components inside the form. Each `Field` takes a `name` (the schema
 :::code-group{group="framework"}
 
 ```tsx [React] name="react"
-import { setup, render, mutable } from '@airlib/react';
+import { setup, mutable } from '@airlib/react';
 import { TextInput, EmailInput, NumberInput } from '@airlib/react-form';
 
 export const ProfileEditor = setup(() => {
@@ -86,7 +86,7 @@ export const ProfileEditor = setup(() => {
     age: 18,
   });
 
-  return render(() => (
+  return () => (
     <UserForm
       value={profile}
       onSubmit={(data) => console.log('Saved:', data)}
@@ -105,7 +105,7 @@ export const ProfileEditor = setup(() => {
 
       <UserForm.Submit>Save Profile</UserForm.Submit>
     </UserForm>
-  ));
+  );
 });
 ```
 

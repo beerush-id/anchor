@@ -402,13 +402,13 @@ Runs the function **exactly once** when the component body runs on the browser. 
 :::code-group
 
 ```tsx [React]
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 import { getAppConfig } from './rpc/config/index.js';
 
 export const ConfigWidget = setup(() => {
   const config = getAppConfig.once('web');
 
-  return render(() => <div>Version: {config.data?.version}</div>);
+  return () => <div>Version: {config.data?.version}</div>;
 });
 ```
 
@@ -434,13 +434,13 @@ You can pass an optional `debounce` (in milliseconds) as the second argument to 
 :::code-group
 
 ```tsx [React]
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 import { getUser } from './rpc/users/index.js';
 
 export const UserProfile = setup<{ id: string }>((props) => {
   const user = getUser.with(() => [props.id]);
 
-  return render(() => <div>User: {user.data?.name}</div>);
+  return () => <div>User: {user.data?.name}</div>;
 });
 ```
 
@@ -466,21 +466,21 @@ Like `.with()`, it accepts an optional `debounce` (in milliseconds) as the secon
 :::code-group
 
 ```tsx [React]
-import { setup, render, mutable, $bind } from '@airlib/react';
+import { setup, mutable, $bind } from '@airlib/react';
 import { searchUsers } from './rpc/users/index.js';
 
 export const SearchBar = setup(() => {
   const state = mutable({ query: '' });
   const search = searchUsers.when(() => [state.query], 300); // 300ms debounce
 
-  return render(() => (
+  return () => (
     <div>
       <input value={$bind(state, 'query')} placeholder="Search..." />
       <ul>
         {search.data?.map(u => <li key={u.id}>{u.name}</li>)}
       </ul>
     </div>
-  ));
+  );
 });
 ```
 
@@ -515,18 +515,18 @@ Creates an imperative manual execution binding. It returns an `IRPCReader` augme
 :::code-group
 
 ```tsx [React]
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 import { uploadAvatar } from './rpc/users/index.js';
 
 export const ProfileEditor = setup<{ id: string }>((props) => {
   const uploader = uploadAvatar.later(200);
 
-  return render(() => (
+  return () => (
     <div>
       <button onClick={() => uploader.dispatch(props.id, 'file')}>Upload</button>
       {uploader.status === 'pending' && <span>Uploading...</span>}
     </div>
-  ));
+  );
 });
 ```
 

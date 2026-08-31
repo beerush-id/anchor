@@ -35,13 +35,13 @@ export const checkoutFlow = plan<{ cartId: string }>()
 
 :::code-group
 ```tsx [React]
-import { setup, render, Show } from '@airlib/react';
+import { setup, Show } from '@airlib/react';
 import { checkoutFlow } from './workflow.js';
 
 export const Checkout = setup((props: { cartId: string }) => {
   const reader = checkoutFlow.when(() => ({ cartId: props.cartId }));
 
-  return (
+  return () => (
     <div>
       <Show when={() => reader.status === 'pending'}>
         {() => (
@@ -71,7 +71,7 @@ import { checkoutFlow } from './workflow.js';
 export const Checkout = setup((props: { cartId: string }) => {
   const reader = checkoutFlow.when(() => ({ cartId: props.cartId }));
 
-  return (
+  return () => (
     <div>
       <Show when={reader.status === 'pending'}>
         {() => (

@@ -271,7 +271,7 @@ export const userInviteRoute = usersRoute.route('/invite');
 
 ```tsx [React]
 // routes/users/invite/page.tsx
-import { modal, render } from '@airlib/react';
+import { modal } from '@airlib/react';
 import { userInviteRoute } from './route.js';
 
 export const UserInvitePage = modal(userInviteRoute).render(() => (
@@ -325,11 +325,11 @@ You can leverage `state.status` to render loading layouts while preserving the l
 
 ```tsx [React]
 .render(({ state, context }) => {
-  return render(() => {
+  return () => {
     if (state.status === 'pending') return <div>Loading Profile...</div>;
 
     return <h1>{context?.data?.profile?.name}</h1>;
-  });
+  };
 })
 ```
 

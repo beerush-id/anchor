@@ -40,7 +40,7 @@ irpc.construct(checkout, (cartId, userId) => {
 
 :::code-group
 ```tsx [React]
-import { setup, render, mutable } from '@airlib/react';
+import { setup, mutable } from '@airlib/react';
 import { checkout } from './function.js';
 
 export const CheckoutButton = setup((props: { cartId: string; userId: string }) => {
@@ -57,11 +57,11 @@ export const CheckoutButton = setup((props: { cartId: string; userId: string }) 
     }
   };
 
-  return render(() => (
+  return () => (
     <button onClick={pay} disabled={isPending.value}>
       {isPending.value ? 'Processing...' : 'Checkout'}
     </button>
-  ));
+  );
 });
 ```
 
@@ -128,7 +128,7 @@ irpc.construct(getUserData, (token) => userFlow({ token }));
 
 :::code-group
 ```tsx [React]
-import { setup, render, mutable } from '@airlib/react';
+import { setup, mutable } from '@airlib/react';
 import { getAdminData } from './function.js';
 
 export const AdminPanel = setup((props: { token: string }) => {
@@ -144,11 +144,11 @@ export const AdminPanel = setup((props: { token: string }) => {
     }
   };
 
-  return render(() => (
+  return () => (
     <button onClick={loadData} disabled={isPending.value}>
       {isPending.value ? 'Loading...' : 'Load Admin Data'}
     </button>
-  ));
+  );
 });
 ```
 
@@ -203,7 +203,7 @@ irpc.construct(getData, (id) => resilientFlow({ id }));
 
 :::code-group
 ```tsx [React]
-import { setup, render, mutable } from '@airlib/react';
+import { setup, mutable } from '@airlib/react';
 import { getData } from './function.js';
 
 export const DataView = setup((props: { id: string }) => {
@@ -219,11 +219,11 @@ export const DataView = setup((props: { id: string }) => {
     }
   };
 
-  return render(() => (
+  return () => (
     <button onClick={load} disabled={isPending.value}>
       {isPending.value ? 'Loading...' : 'Load Data'}
     </button>
-  ));
+  );
 });
 ```
 
@@ -272,7 +272,7 @@ irpc.construct(processItem, (fileId) => resourceFlow({ fileId }));
 
 :::code-group
 ```tsx [React]
-import { setup, render, mutable } from '@airlib/react';
+import { setup, mutable } from '@airlib/react';
 import { processItem } from './function.js';
 
 export const FileProcessor = setup((props: { fileId: string }) => {
@@ -287,11 +287,11 @@ export const FileProcessor = setup((props: { fileId: string }) => {
     }
   };
 
-  return render(() => (
+  return () => (
     <button onClick={process} disabled={isPending.value}>
       {isPending.value ? 'Processing...' : 'Process File'}
     </button>
-  ));
+  );
 });
 ```
 

@@ -490,16 +490,16 @@ The moment your **UI demands internal state** (like toggling a menu), side-effec
 :::code-group
 
 ```tsx [React]
-import { setup, render, type Bindable } from '@airlib/react';
+import { setup, type Bindable } from '@airlib/react';
 
 export const ToggleButton = setup<{ active: Bindable<boolean> }>((props) => {
   const toggle = () => props.active = !props.active;
 
-  return render(() => (
+  return () => (
     <button className={props.active ? 'on' : 'off'} onClick={toggle}>
       {props.active ? 'Turn Off' : 'Turn On'}
     </button>
-  ));
+  );
 });
 ```
 
@@ -509,7 +509,7 @@ import { setup, type Bindable } from '@airlib/solid';
 export const ToggleButton = setup<{ active: Bindable<boolean> }>((props) => {
   const toggle = () => props.active = !props.active;
 
-  return (
+  return () => (
     <button class={props.active ? 'on' : 'off'} onClick={toggle}>
       {props.active ? 'Turn Off' : 'Turn On'}
     </button>

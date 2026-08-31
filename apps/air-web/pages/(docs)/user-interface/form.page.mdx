@@ -27,7 +27,7 @@ The foundation is a **single-purpose wrapper** around the native HTML `<input>`.
 :::code-group
 
 ```tsx [React]
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 import type { Bindable } from '@airlib/react';
 
 type InputProps = {
@@ -42,14 +42,14 @@ export const InputField = setup<InputProps>((props) => {
     props.onChange?.(props.value);
   };
 
-  return render(() => (
+  return () => (
     <input 
       type={props.type || 'text'} 
       value={props.value ?? ''} 
       onInput={handleInput}
       className="form-input"
     />
-  ));
+  );
 });
 ```
 
@@ -91,7 +91,7 @@ We use an **internal `mutable` state** specifically for the raw input text to **
 :::code-group
 
 ```tsx [React]
-import { setup, render, mutable } from '@airlib/react';
+import { setup, mutable } from '@airlib/react';
 import type { Bindable } from '@airlib/react';
 
 type NumberProps = {
@@ -117,14 +117,14 @@ export const NumberInput = setup<NumberProps>((props) => {
     }
   };
 
-  return render(() => (
+  return () => (
     <input 
       type="number"
       value={raw.value}
       onInput={handleInput}
       className="form-input number"
     />
-  ));
+  );
 });
 ```
 
@@ -217,7 +217,7 @@ Instead of forcing the parent page to manage the state of every field, the `Form
 :::code-group
 
 ```tsx [React]
-import { setup, render, setContext, form } from '@airlib/react';
+import { setup, setContext, form } from '@airlib/react';
 import { FormContext } from './context';
 
 export const Form = setup((props) => {
@@ -230,14 +230,14 @@ export const Form = setup((props) => {
     props.onSubmit?.(state);
   };
 
-  return render(() => (
+  return () => (
     <form 
       onSubmit={handleSubmit} 
       className="form-container"
     >
       {props.children}
     </form>
-  ));
+  );
 });
 ```
 
@@ -289,7 +289,7 @@ The `FormField` acts as a **structural bridge**. It uses `getContext()` to conne
 :::code-group
 
 ```tsx [React]
-import { setup, render, derived, getContext, setContext, $use } from '@airlib/react';
+import { setup, derived, getContext, setContext, $use } from '@airlib/react';
 import { FormContext, FieldContext } from './context';
 
 export const FormField = setup((props) => {
@@ -298,13 +298,13 @@ export const FormField = setup((props) => {
 
   setContext(FieldContext, { name: props.name });
 
-  return render(() => (
+  return () => (
     <div className="form-field">
       {props.label && <label>{props.label}</label>}
       {props.children}
       {error.value && <span className="error-message">{error.value}</span>}
     </div>
-  ));
+  );
 });
 ```
 
@@ -337,7 +337,7 @@ Finally, upgrade your primitive `InputField` and `NumberInput` components to **a
 :::code-group
 
 ```tsx [React]
-import { setup, render, getContext, derived } from '@airlib/react';
+import { setup, getContext, derived } from '@airlib/react';
 import { FormContext, FieldContext } from './context';
 
 export const Input = setup((props) => {
@@ -359,14 +359,14 @@ export const Input = setup((props) => {
     props.onChange?.(val);
   };
 
-  return render(() => (
+  return () => (
     <input 
       type={props.type || 'text'}
       value={output.value ?? ''} 
       onInput={handleInput}
       className="form-input"
     />
-  ));
+  );
 });
 ```
 
@@ -437,7 +437,7 @@ The factory uses the exact same `FormContext` and `FieldContext` Symbols from ea
 :::code-group
 
 ```tsx [React]
-import { setup, render, setContext, getContext, form } from '@airlib/react';
+import { setup, setContext, getContext, form, derived } from '@airlib/react';
 import { FormContext, FieldContext } from './context';
 import type { ZodSchema, z } from 'zod';
 
@@ -451,11 +451,11 @@ export function createForm<T extends ZodSchema>(schema: T, init: z.infer<T>) {
       props.onSubmit?.(state);
     };
 
-    return render(() => (
+    return () => (
       <form onSubmit={handleSubmit} className="form-container">
         {props.children}
       </form>
-    ));
+    );
   });
 
   const Field = setup<{ name: keyof z.infer<T>; label?: string }>((props) => {
@@ -466,13 +466,13 @@ export function createForm<T extends ZodSchema>(schema: T, init: z.infer<T>) {
       get name() { return props.name; }
     });
 
-    return render(() => (
+    return () => (
       <div className="form-field">
         {props.label && <label>{props.label}</label>}
         {props.children}
         {error.value && <span className="error-message">{error.value}</span>}
       </div>
-    ));
+    );
   });
 
   Form.Field = Field;

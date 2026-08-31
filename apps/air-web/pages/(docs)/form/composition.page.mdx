@@ -186,7 +186,7 @@ When implementing asynchronous validation, such as checking if a username is ava
 :::code-group{group="framework"}
 
 ```tsx [React] name="react"
-import { setup, render, mutable, Show } from '@airlib/react';
+import { setup, mutable, Show } from '@airlib/react';
 
 export const AsyncUsernameInput = setup(() => {
   const form = UserForm.get();
@@ -211,7 +211,7 @@ export const AsyncUsernameInput = setup(() => {
     state.checking = false;
   };
 
-  return render(() => (
+  return () => (
     <div>
       <TextInput onBlur={checkAvailability} />
       <Show when={() => state.checking}>
@@ -221,7 +221,7 @@ export const AsyncUsernameInput = setup(() => {
         {() => <span className="error">This username is already taken</span>}
       </Show>
     </div>
-  ));
+  );
 });
 ```
 
@@ -874,7 +874,7 @@ For inputs with custom behavior — formatted currency, rich text, third-party c
 :::code-group{group="framework"}
 
 ```tsx [React] name="react"
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 import { formInput } from '@airlib/form';
 
 const CurrencyInput = setup<{ name: string }>((props) => {
@@ -883,7 +883,7 @@ const CurrencyInput = setup<{ name: string }>((props) => {
     stringify: (v) => v ? `$${v.toFixed(2)}` : '',
   });
 
-  return render(() => (
+  return () => (
     <input
       id={input.name}
       name={input.name}
@@ -892,7 +892,7 @@ const CurrencyInput = setup<{ name: string }>((props) => {
       onInput={(e) => { input.value = e.currentTarget.value; }}
       onBlur={() => input.settled()}
     />
-  ));
+  );
 });
 ```
 
@@ -932,7 +932,7 @@ Because a form's readiness depends on validation, changes, and network state, wr
 :::code-group{group="framework"}
 
 ```tsx [React] name="react"
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 import { getForm } from '@airlib/form';
 
 // Generic Button (Reusable across any form)
@@ -943,11 +943,11 @@ export const CustomSubmit = setup(() => {
   // Derived state function
   const disabled = () => form.pending || !form.valid || !form.changed || form.blocked;
 
-  return render(() => (
+  return () => (
     <button type="submit" disabled={disabled()} className="my-custom-btn">
       {form.pending ? 'Saving...' : 'Save'}
     </button>
-  ));
+  );
 });
 
 // Specific Button (Strictly typed to UserForm schema)
@@ -958,11 +958,11 @@ export const SubmitUserForm = setup(() => {
   // Derived state function
   const disabled = () => form.pending || !form.valid || !form.changed || form.blocked;
 
-  return render(() => (
+  return () => (
     <button type="submit" disabled={disabled()} className="my-custom-btn">
       {form.pending ? 'Saving...' : 'Save Profile'}
     </button>
-  ));
+  );
 });
 ```
 

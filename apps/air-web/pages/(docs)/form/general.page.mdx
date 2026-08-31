@@ -20,7 +20,7 @@ The general `<Form>` component takes the schema and initial value as props. It c
 :::code-group{group="framework"}
 
 ```tsx [React] name="react"
-import { setup, render, mutable } from '@airlib/react';
+import { setup, mutable } from '@airlib/react';
 import { z } from 'zod';
 import { Form, Field, TextInput, FormSubmit } from '@airlib/react-form';
 
@@ -33,7 +33,7 @@ const dynamicSchema = z.object({
 export const DynamicForm = setup(() => {
   const profile = mutable({ firstName: '', lastName: '' });
 
-  return render(() => (
+  return () => (
     <Form
       schema={dynamicSchema}
       value={profile}
@@ -96,27 +96,27 @@ The general `<Field>` component accepts any `string` as its `name` prop. It func
 :::code-group{group="framework"}
 
 ```tsx [React] name="react"
-import { For, render, setup } from '@airlib/react';
+import { For, setup } from '@airlib/react';
 
 // A generic field renderer for dynamic forms
 const RenderDynamicField = setup<{ name: string; label: string; type: string }>((props) => {
-  return render(() => (
+  return () => (
     <Field name={props.name} label={props.label}>
       {props.type === 'email' ? <EmailInput /> : <TextInput />}
     </Field>
-  ));
+  );
 });
 
 // Rendering a list of fields driven by data
 export const DynamicFormRenderer = setup<{ fields: any[]; schema: any; initialValue: any }>((props) => {
-  return render(() => (
+  return () => (
     <Form schema={props.schema} value={props.initialValue}>
       <For each={() => props.fields}>
         {(f) => <RenderDynamicField {...f} />}
       </For>
       <FormSubmit>Submit</FormSubmit>
     </Form>
-  ));
+  );
 });
 ```
 

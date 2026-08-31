@@ -162,7 +162,7 @@ Because status is reactive, your UI automatically updates:
 :::code-group
 
 ```tsx [React]
-import { setup, render, query } from '@airlib/react';
+import { setup, query } from '@airlib/react';
 
 export const UserProfile = setup(() => {
   const user = query(
@@ -173,13 +173,13 @@ export const UserProfile = setup(() => {
     { name: '' }
   );
 
-  return render(() => (
+  return () => (
     <div>
       {user.status === 'pending' && <p>Loading...</p>}
       {user.status === 'error' && <p>Error: {user.error?.message}</p>}
       {user.status === 'success' && <p>Hello, {user.data.name}!</p>}
     </div>
-  ));
+  );
 });
 ```
 
