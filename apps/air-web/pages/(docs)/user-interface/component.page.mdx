@@ -738,6 +738,70 @@ Building a **dynamic structure** from configuration, then managing **two-way int
 - **SolidJS:** **`Index`** renders a fixed list **without re-creating DOM nodes**; only `classList` bindings update reactively
   :::
 
+### Dynamic & Conditional Views
+
+When a component needs **early returns**, **multi-branch view switching**, or **render-prop evaluation**, use **`render()`** and **`renderDynamic()`**:
+
+- **`render(view)`**: Declares a reactive view body that automatically re-evaluates whenever any state or props accessed inside it change. This enables clean conditional returns and branch switching in both React and SolidJS without extra markup wrappers.
+- **`renderDynamic(children, ...args)`**: Safely evaluates polymorphic child content — whether passed as static JSX, a dynamic accessor, or a parameterized render function `(props) => JSX`.
+
+:::code-group
+
+```tsx [React]
+import { setup, render, renderDynamic, type Bindable } from '@airlib/react';
+
+const StatusCard = setup<{
+  loading?: Bindable<boolean>;
+  children?: ((status: string) => JSX.Element) | JSX.Element;
+}>((props) => {
+  return render(() => {
+    if (props.loading) {
+      return <div className="card loading"><p>Loading details...</p></div>;
+    }
+
+    return (
+      <div className="card active">
+        { renderDynamic(props.children, 'Ready') }
+      </div>
+    );
+  });
+});
+```
+
+```tsx [SolidJS]
+import { setup, render, renderDynamic, type Bindable } from '@airlib/solid';
+
+const StatusCard = setup<{
+  loading?: Bindable<boolean>;
+  children?: ((status: string) => JSX.Element) | JSX.Element;
+}>((props) => {
+  return render(() => {
+    if (props.loading) {
+      return <div class="card loading"><p>Loading details...</p></div>;
+    }
+
+    return (
+      <div class="card active">
+        { renderDynamic(props.children, 'Ready') }
+      </div>
+    );
+  });
+});
+```
+
+:::
+
+:::details[What you learned]
+
+Using **`render()`** and **`renderDynamic()`** for reactive conditional returns and dynamic render props.
+
+**From these two examples, you know:**
+
+- **`render()`** enables conditional returns and branching directly in the view function while preserving full reactivity
+- **`renderDynamic()`** handles polymorphic children (static elements, accessors, or render functions with arguments)
+- Both frameworks share identical component semantics and ergonomic APIs
+:::
+
 ## Component Slots
 
 A component often needs to allow consumers to customize specific regions of its layout without relinquishing control over structural hierarchy and styling. Passing JSX elements as individual props creates awkward prop drilling and bloats component signatures. Named slots solve this by letting components define distinct placeholders that consumers populate declaratively.

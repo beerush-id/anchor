@@ -21,7 +21,7 @@ const LiveMarketStream = setup(() => {
     }
   };
 
-  return (
+  return () => (
     <div className={classes.root}>
       {/* Main Stock Table */}
       <Snippet data={() => stocks.data}>
@@ -36,14 +36,18 @@ const LiveMarketStream = setup(() => {
               when={() => stocks.status === 'pending'}
               fallback={() => <span className={classes.dotIdle} />}
             >
-              <span className={classes.dotPing} />
-              <span className={classes.dotActive} />
+              {() => (
+                <>
+                  <span className={classes.dotPing} />
+                  <span className={classes.dotActive} />
+                </>
+              )}
             </Show>
           </span>
 
           <span className={classes.statusText}>
             <Show when={() => stocks.status === 'pending'} fallback={() => 'Stream Inactive'}>
-              Live Edge Feed
+              {() => 'Live Edge Feed'}
             </Show>
           </span>
         </div>
@@ -76,7 +80,7 @@ const LiveMarketStream = setup(() => {
           <button
             type="button"
             className={classx('air-mdx-btn h-8 text-xs', {
-              'border-rose-500/50 text-rose-600 dark:text-rose-400': stocks.status === 'pending',
+              '!bg-rose-500 hover:!bg-rose-600 !text-white': stocks.status === 'pending',
             })}
             onClick={() => {
               if (stocks.status === 'pending') {
@@ -87,7 +91,7 @@ const LiveMarketStream = setup(() => {
             }}
           >
             <Show when={() => stocks.status === 'pending'} fallback={() => 'Watch Stock'}>
-              Stop Watching
+              {() => 'Stop Watching'}
             </Show>
           </button>
         </div>

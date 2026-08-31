@@ -1,6 +1,6 @@
 :::interactive[Reactive Workflow Live Demo]
 ```tsx
-import { classx, For, plan, render, setup, Show, sleep, Snippet } from '@airlib/react';
+import { classx, For, plan, setup, Show, sleep, Snippet } from '@airlib/react';
 
 // The pipeline: three sequential steps, each named so the UI can show which one is running
 const checkoutFlow = plan<{ cartId: string }>()
@@ -32,7 +32,7 @@ const STEPS = ['Validating cart', 'Processing payment', 'Finalizing order'];
 const Checkout = setup(() => {
   const checkout = checkoutFlow.later();
 
-  return render(() => (
+  return () => (
     <div className="flex w-full max-w-90 flex-col gap-4">
       <div className="flex flex-col gap-2">
         <For each={() => STEPS}>
@@ -79,7 +79,7 @@ const Checkout = setup(() => {
         )}
       </Snippet>
     </div>
-  ));
+  );
 });
 
 const item = '-ml-[2ch] font-mono text-sm text-on-surface-variant';

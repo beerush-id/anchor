@@ -228,7 +228,7 @@ Wrap multiple fenced code blocks in a `:::code-group` block. Each code block's l
 import { setup } from '@airlib/react';
 
 const Counter = setup(() => {
-  return render(() => <span>Count</span>);
+  return () => <span>Count</span>;
 });
 ```
 
@@ -312,7 +312,7 @@ Interactive blocks support standalone rendering when code snippets should be exe
 ```tsx
 const Counter = setup(() => {
   const count = mutable(0);
-  return render(() => <button onClick={() => count.value++}>Count: {count.value}</button>);
+  return () => <button onClick={() => count.value++}>Count: {count.value}</button>;
 });
 ```
 
@@ -330,16 +330,16 @@ Let's look at the markdown source before seeing it live:
 **1. Create a Counter component:**
 
 ```tsx
-import { setup, render, mutable } from '@airlib/react';
+import { setup, mutable } from '@airlib/react';
 
 const Counter = setup<{ start?: number }>((props) => {
   const counter = mutable(props.start ?? 0);
 
-  return render(() => (
+  return () => (
     <button onClick={() => counter.value++}>
       Click me {counter.value}
     </button>
-  ), 'Counter');
+  );
 }, 'Counter');
 ```
 
@@ -364,16 +364,16 @@ The live result:
 **1. Create a Counter component:**
 
 ```tsx
-import { setup, render, mutable } from '@airlib/react';
+import { setup, mutable } from '@airlib/react';
 
 const Counter = setup<{ start?: number }>((props) => {
   const counter = mutable(props.start ?? 0);
 
-  return render(() => (
+  return () => (
     <button onClick={() => counter.value++}>
       Click me {counter.value}
     </button>
-  ), 'Counter');
+  );
 }, 'Counter');
 ```
 

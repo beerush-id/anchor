@@ -6,7 +6,7 @@ import { classx, cookies, For, setup } from '@airlib/react';
 const ThemeCookie = setup(() => {
   const theme = cookies('app-theme', { mode: 'system' as ThemeMode });
 
-  return (
+  return () => (
     <div className="theme-selector">
       <div className="theme-selector-title">Select Theme</div>
       <div className="theme-selector-options">

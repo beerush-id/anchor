@@ -18,7 +18,7 @@ keywords:
 ---
 
 ```tsx executable="hidden"
-import { setup, render, Snippet, mutable, effect, plan, sleep } from '@airlib/react';
+import { setup, Snippet, mutable, effect, plan, sleep } from '@airlib/react';
 import { LIVE_SELECTION, LIVE_KEYBOARD } from '@airlib/react/browser';
 import { getUser, watchPrice } from './function.js';
 ```
@@ -79,7 +79,7 @@ demoRpc.construct(getUser, async (id: string) => {
 const UserCard = setup((props: { id: string }) => {
   const user = getUser.with(() => [props.id]);
 
-  return (
+  return () => (
     <div className="user-card">
       <Snippet data={() => user.data ?? {}}>
         {({ name, email, role }) => (
@@ -92,15 +92,15 @@ const UserCard = setup((props: { id: string }) => {
       </Snippet>
     </div>
   );
-});
+}, 'UserCard');
 ```
 ```tsx [SolidJS]
 const UserCard = setup((props: { id: string }) => {
   const user = getUser.with(() => [props.id]);
 
-  return (
+  return () => (
     <div class="user-card">
-      <Snippet data={() => user.data ?? {}}>
+      <Snippet data={user.data ?? {}}>
         {({ name, email, role }) => (
           <div class="user-card-info">
             <span class="user-card-name">{name ?? '...'}</span>
@@ -134,7 +134,7 @@ console.log(user);
 const UserCardPreview = setup(() => {
   const state = mutable({ id: '1' });
 
-  return render(() => (
+  return () => (
     <div className="flex flex-col items-center gap-4">
       <UserCard id={state.id} />
       <div className="flex items-center gap-2">
@@ -158,8 +158,8 @@ const UserCardPreview = setup(() => {
         </button>
       </div>
     </div>
-  ));
-});
+  );
+}, 'UserCardPreview');
 ```
 
 <div className="air-demos flex items-center justify-center p-4">
@@ -198,17 +198,17 @@ When state lives across so many disconnected tools, keeping your application in 
 :::code-group{group="framework"}
 
 ```tsx [React] name="react" executable
-import { setup, mutable, render } from '@airlib/react';
+import { setup, mutable } from '@airlib/react';
 
 const Counter = setup(() => {
   const state = mutable({ count: 0 });
 
-  return render(() => (
+  return () => (
     <button className="air-mdx-btn" onClick={() => state.count++}>
       Clicks: {state.count}
     </button>
-  ));
-});
+  );
+}, 'Counter');
 ```
 
 ```tsx [SolidJS] name="solid"
@@ -217,7 +217,7 @@ import { setup, mutable } from '@airlib/solid';
 const Counter = setup(() => {
   const state = mutable({ count: 0 });
 
-  return (
+  return () => (
     <button onClick={() => state.count++}>
       Clicks: {state.count}
     </button>
@@ -245,7 +245,7 @@ import { setup, Snippet } from '@airlib/react';
 export const MetricsCard = setup(() => {
   const metrics = watchMetrics.once();
 
-  return (
+  return () => (
     <div className="card">
       {/* Isolates the read so only this fragment re-renders on mutation */}
       <Snippet data={metrics.data}>
@@ -262,7 +262,7 @@ import { setup } from '@airlib/solid';
 export const MetricsCard = setup(() => {
   const metrics = watchMetrics.once();
 
-  return (
+  return () => (
     <div class="card">
       {/* Natively updates only this text node */}
       <span>CPU: {metrics.data?.cpu}%</span>
@@ -396,7 +396,7 @@ Consuming live streams in your application is fully reactive. The client automat
 const StockCard = setup((props: { symbol: string }) => {
   const stock = watchPrice.with(() => [props.symbol]);
 
-  return (
+  return () => (
     <div className="stock-card">
       <Snippet data={() => stock.data?.symbol}>
         {(symbol) => <span className="stock-card-symbol">{symbol}</span>}
@@ -417,12 +417,12 @@ const StockCard = setup((props: { symbol: string }) => {
 const StockCard = setup((props: { symbol: string }) => {
   const stock = watchPrice.with(() => [props.symbol]);
 
-  return (
+  return () => (
     <div class="stock-card">
-      <Snippet data={() => stock.data?.symbol}>
+      <Snippet data={stock.data?.symbol}>
         {(symbol) => <span class="stock-card-symbol">{symbol}</span>}
       </Snippet>
-      <Snippet data={() => stock.data?.price}>
+      <Snippet data={stock.data?.price}>
         {(price) => (
           <span class="stock-card-price">
             ${price ? price.toFixed(2) : '...'}
@@ -447,7 +447,7 @@ watchPrice('AAPL').subscribe((stock) => {
 const StockCardPreview = setup(() => {
   const state = mutable({ symbol: '' });
 
-  return render(() => (
+  return () => (
     <div className="flex flex-col items-center gap-4">
       {state.symbol ? (
         <StockCard symbol={state.symbol} />
@@ -482,7 +482,7 @@ const StockCardPreview = setup(() => {
         <span className="text-[11px] opacity-75">* Note: Stock prices and fluctuations are simulated demo data.</span>
       </p>
     </div>
-  ));
+  );
 });
 ```
 
@@ -653,7 +653,7 @@ const CopyCapture = setup(() => {
     }
   });
 
-  return (
+  return () => (
     <div className="copy-capture">
       <span className="copy-hint">Select any text on this page and press Ctrl+C (or ⌘+C)</span>
       <Snippet data={() => clip.value}>
@@ -679,10 +679,10 @@ const CopyCapture = setup(() => {
     }
   });
 
-  return (
+  return () => (
     <div class="copy-capture">
       <span class="copy-hint">Select any text on this page and press Ctrl+C (or ⌘+C)</span>
-      <Snippet data={() => clip.value}>
+      <Snippet data={clip.value}>
         {(text) => (
           <div class="clipboard-toast">
             {text ? `Captured: "${text}"` : 'Nothing copied yet'}
@@ -734,13 +734,13 @@ When server rendering forces you to split your application across two incompatib
 :::code-group{group="framework"}
 
 ```tsx [React] name="react"
-import { page, Head, mutable, render } from '@airlib/react';
+import { page, Head, mutable } from '@airlib/react';
 import { counterRoute } from './route.js';
 
 export default page(counterRoute).render(() => {
   const state = mutable({ count: 0 });
 
-  return render(() => (
+  return () => (
     <>
       <Head meta={{ title: 'Counter | AirLib', description: 'Interactive SSR counter.' }} />
       <div className="counter-page">
@@ -748,7 +748,7 @@ export default page(counterRoute).render(() => {
         <button onClick={() => state.count++}>Increment</button>
       </div>
     </>
-  ));
+  );
 });
 ```
 
@@ -759,7 +759,7 @@ import { counterRoute } from './route.js';
 export default page(counterRoute).render(() => {
   const state = mutable({ count: 0 });
 
-  return (
+  return () => (
     <>
       <Head meta={{ title: 'Counter | AirLib', description: 'Interactive SSR counter.' }} />
       <div class="counter-page">
@@ -815,7 +815,7 @@ description: "Live component directly inside Markdown."
 ```tsx [React] name="react"
 const Counter = setup(() => {
   const state = mutable({ count: 0 });
-  return <button onClick={() => state.count++}>Count: {state.count}</button>;
+  return () => <button onClick={() => state.count++}>Count: {state.count}</button>;
 });
 ```
 :::
@@ -1070,7 +1070,7 @@ You can execute the pipeline reactively inside UI components or invoke it direct
 const ChatBox = setup((props: { prompt: string; model: 'gpt-4' | 'claude-3' }) => {
   const chat = chatWorkflow.with(() => ({ prompt: props.prompt, model: props.model }));
 
-  return (
+  return () => (
     <div className="chat-box">
       <Snippet data={() => ({ status: chat.status, step: chat.current?.name, data: chat.data })}>
         {({ status, step, data }) => (
@@ -1088,9 +1088,9 @@ const ChatBox = setup((props: { prompt: string; model: 'gpt-4' | 'claude-3' }) =
 const ChatBox = setup((props: { prompt: string; model: 'gpt-4' | 'claude-3' }) => {
   const chat = chatWorkflow.with(() => ({ prompt: props.prompt, model: props.model }));
 
-  return (
+  return () => (
     <div class="chat-box">
-      <Snippet data={() => ({ status: chat.status, step: chat.current?.name, data: chat.data })}>
+      <Snippet data={{ status: chat.status, step: chat.current?.name, data: chat.data }}>
         {({ status, step, data }) => (
           <div class="chat-response">
             {status === 'pending' ? step : data.text}
@@ -1118,7 +1118,7 @@ console.log(response.text);
 const ChatBoxPreview = setup(() => {
   const state = mutable({ model: '' as 'gpt-4' | 'claude-3' | '' });
 
-  return render(() => (
+  return () => (
     <div className="flex flex-col items-center gap-4">
       {state.model ? (
         <ChatBox prompt="Hello AirLib!" model={state.model} />
@@ -1142,7 +1142,7 @@ const ChatBoxPreview = setup(() => {
         </button>
       </div>
     </div>
-  ));
+  );
 });
 ```
 
