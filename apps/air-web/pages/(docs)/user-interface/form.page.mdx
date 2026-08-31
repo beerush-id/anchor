@@ -462,7 +462,9 @@ export function createForm<T extends ZodSchema>(schema: T, init: z.infer<T>) {
     const form = getContext<Record<string, unknown>>(FormContext);
     const error = derived(() => form?.errors[props.name as string]?.message);
     
-    setContext(FieldContext, { name: props.name });
+    setContext(FieldContext, {
+      get name() { return props.name; }
+    });
 
     return render(() => (
       <div className="form-field">
@@ -504,7 +506,9 @@ export function createForm<T extends ZodSchema>(schema: T, init: z.infer<T>) {
     const form = getContext<Record<string, unknown>>(FormContext);
     const error = derived(() => form?.errors[props.name as string]?.message);
     
-    setContext(FieldContext, { name: props.name });
+    setContext(FieldContext, {
+      get name() { return props.name; }
+    });
 
     return (
       <div class="form-field">

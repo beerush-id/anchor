@@ -1,7 +1,7 @@
 import type { ExceptionMap } from '@airlib/react';
 import { type Bindable, createContext, derived, effect, form, mutable, render, setup, snapshot } from '@airlib/react';
 import type { FocusEvent, FocusEventHandler, FormEvent, InputEventHandler, ReactNode } from 'react';
-import { z, type ZodType } from 'zod';
+import { type ZodType, z } from 'zod';
 
 export type FormContext = {
   state: Record<string, any>;
@@ -56,7 +56,7 @@ export const NumberInput = setup<{
   const withForm = formState && field;
 
   const output = derived(() => (withForm ? formState.state[field.name] : props.value));
-  const raw = mutable({ value: String(output.value ?? ''), locked: false });
+  const raw = mutable({ value: '', locked: false });
 
   effect(() => {
     if (raw.locked) return;
@@ -111,8 +111,13 @@ export function createForm<T extends ZodType>(schema: T, init?: z.infer<T>) {
     children?: ReactNode;
   }>((props) => {
     const $props = props as any;
+    const [state, errors] = form(schema as any, (init ?? {}) as any);
 
-    const [state, errors] = form(schema as any, () => $props.data ?? init ?? {});
+    effect(() => {
+      if ($props.data) {
+        Object.assign(state, $props.data);
+      }
+    });
 
     formContext.set({
       state,
@@ -135,14 +140,18 @@ export function createForm<T extends ZodType>(schema: T, init?: z.infer<T>) {
     };
 
     return render(() => <form onSubmit={handleSubmit}>{$props.children}</form>);
-  });
+  }, 'Form');
 
   const Field = setup<{ name: keyof FormData; label?: string; children?: ReactNode }>((props) => {
     const $props = props as any;
     const ctx = formContext.get();
-    const error = derived(() => ctx?.errors[$props.name]?.message);
+    const error = derived(() => (ctx && $props.name ? ctx.errors[$props.name]?.message : undefined));
 
-    fieldContext.set({ name: $props.name });
+    fieldContext.set({
+      get name() {
+        return $props.name as string;
+      },
+    });
 
     return render(() => (
       <div className="flex flex-col gap-1.5 mb-5">
@@ -151,7 +160,7 @@ export function createForm<T extends ZodType>(schema: T, init?: z.infer<T>) {
         {error.value && <span className="text-sm font-medium text-red-500 mt-1">{error.value}</span>}
       </div>
     ));
-  });
+  }, 'Field');
 
   const Submit = setup<{ disabled?: Bindable<boolean>; children?: ReactNode }>((props) => {
     const $props = props as any;
@@ -166,7 +175,7 @@ export function createForm<T extends ZodType>(schema: T, init?: z.infer<T>) {
         {$props.children}
       </button>
     ));
-  });
+  }, 'Submit');
 
   return Object.assign(Form, { Field, Submit });
 }
