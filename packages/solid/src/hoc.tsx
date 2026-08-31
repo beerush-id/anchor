@@ -160,6 +160,19 @@ export function render<P>(view: ((props: P) => JSX.Element) | Accessor<JSX.Eleme
 }
 
 /**
+ * Determines whether a given children value is a dynamic render callback.
+ *
+ * Checks if the value is a function expecting arguments (e.g. `(field) => JSX`),
+ * distinguishing render props from static JSX elements or zero-argument accessors.
+ *
+ * @param children - The children prop or value to inspect.
+ * @returns True if children is a function accepting one or more arguments.
+ */
+export function isDynamic(children: unknown): children is (...args: AnyType[]) => JSX.Element {
+  return typeof children === 'function' && (children as (...args: AnyType[]) => JSX.Element).length > 0;
+}
+
+/**
  * Resolves dynamic child nodes or accessor functions into evaluated JSX elements.
  * Invokes the accessor/render-prop with optional arguments, or returns the static element directly.
  * Catches runtime execution errors and returns an error diagnostic string.
@@ -192,7 +205,7 @@ export function renderDynamic(
 function findSlots(children: unknown): ComponentSlots {
   if (!children) return {} as ComponentSlots;
   let resolved: unknown = children;
-  if (typeof children === 'function' && children.length === 0) {
+  if (typeof children === 'function' && children.length === 0 && !(children as AnyType)?.[COMPONENT_SNIPPET_KEY]) {
     try {
       resolved = (children as () => unknown)();
     } catch {

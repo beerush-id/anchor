@@ -5,7 +5,7 @@ import { render } from '@solidjs/testing-library';
 import type { JSX } from 'solid-js';
 import { describe, expect, it, vi } from 'vitest';
 import { BindingRef } from '../../src/binding.js';
-import { bindable, renderDynamic, render as renderView, setup } from '../../src/hoc.js';
+import { bindable, isDynamic, renderDynamic, render as renderView, setup } from '../../src/hoc.js';
 import { type BindableComponentProps, classx, getContext, Slot, setContext } from '../../src/index.js';
 
 describe('Anchor Solid - HOC API', () => {
@@ -353,6 +353,22 @@ describe('Anchor Solid - HOC API', () => {
       expect(container.textContent).toContain('none');
       expect(container.textContent).toContain('Fallback Children');
       unmount();
+    });
+  });
+
+  describe('isDynamic', () => {
+    it('returns true for functions with parameters', () => {
+      expect(isDynamic((x: unknown) => x)).toBe(true);
+      expect(isDynamic((a: unknown, b: unknown) => a)).toBe(true);
+    });
+
+    it('returns false for 0-arg accessors, primitives, and static elements', () => {
+      expect(isDynamic(() => 'test')).toBe(false);
+      expect(isDynamic('static')).toBe(false);
+      expect(isDynamic(123)).toBe(false);
+      expect(isDynamic(null)).toBe(false);
+      expect(isDynamic(undefined)).toBe(false);
+      expect(isDynamic(<div>test</div>)).toBe(false);
     });
   });
 
