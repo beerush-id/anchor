@@ -1,9 +1,11 @@
 import { createMemo, type JSX } from 'solid-js';
 import { render } from './hoc.tsx';
 
+type ShowValue<T> = T extends false | null | undefined | 0 | '' ? never : T;
+
 export type ShowProps<T> = {
   when: T;
-  children: JSX.Element | ((value: NonNullable<T>) => JSX.Element);
+  children: JSX.Element | ((value: ShowValue<T>) => JSX.Element);
   fallback?: JSX.Element;
 };
 
@@ -22,7 +24,7 @@ export function Show<T>(props: ShowProps<T>): JSX.Element {
     const value = condition();
     if (value) {
       const child = props.children;
-      return typeof child === 'function' ? child(value as NonNullable<T>) : child;
+      return typeof child === 'function' ? child(value as ShowValue<T>) : child;
     }
     return props.fallback;
   }) as unknown as JSX.Element;

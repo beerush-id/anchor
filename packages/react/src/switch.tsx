@@ -1,6 +1,6 @@
 import { getContext, setContext } from '@airlib/core';
 import type { ReactNode } from 'react';
-import { render, setup, snippet } from './hoc.js';
+import { setup, snippet } from './hoc.js';
 
 export type SwitchSlotProps<K> = {
   for: K;
