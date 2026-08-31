@@ -110,7 +110,7 @@ export function setup<P extends Record<string, any>, S extends ComponentSlots>(
     }
 
     const restore = setStaticTracker((_state, key) => {
-      if (controlled?.includes(String(key))) return;
+      if (typeof key === 'symbol' || controlled?.includes(String(key))) return;
 
       const error = new Error(`[${name}] Frozen read on "${String(key)}".`);
       captureStack.violation.general(

@@ -154,7 +154,7 @@ export function setup<P, S extends ComponentSlots>(
           const child = props.children;
 
           const restore = setStaticTracker((_state, key) => {
-            if (controlled?.includes(String(key))) return;
+            if (typeof key === 'symbol' || controlled?.includes(String(key))) return;
 
             const error = new Error(`[${componentName}] Frozen read on "${String(key)}".`);
             captureStack.violation.general(

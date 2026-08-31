@@ -1,4 +1,4 @@
-import { ANCHOR_SETTINGS, COLLECTION_MUTATION_KEYS } from '../shared/constant.js';
+import { ANCHOR_SETTINGS, COLLECTION_MUTATION_PROPS } from '../shared/constant.js';
 import { MapMutations, OBSERVER_KEYS, SetMutations } from '../shared/enum.js';
 import { captureStack } from '../shared/index.js';
 import { plugin } from '../shared/plugin.js';
@@ -68,12 +68,14 @@ export function createCollectionGetter<T extends Set<unknown> | Map<KeyLike, unk
       const observer = switchable.getObserver();
 
       /* istanbul ignore else */
-      if (configs.observable && !COLLECTION_MUTATION_KEYS.has(prop as never)) {
+      if (configs.observable) {
         plugin.track?.(init, observers, OBSERVER_KEYS.COLLECTION_MUTATIONS);
-        if (!observer) plugin.trackStatic?.(init, OBSERVER_KEYS.COLLECTION_MUTATIONS);
+        if (!observer && !COLLECTION_MUTATION_PROPS.has(prop as never)) {
+          plugin.trackStatic?.(init, OBSERVER_KEYS.COLLECTION_MUTATIONS);
+        }
       }
 
-      if (configs.observable && observer && !COLLECTION_MUTATION_KEYS.has(prop as never)) {
+      if (configs.observable && observer && !COLLECTION_MUTATION_PROPS.has(prop as never)) {
         const track = observer.assign(init, observers);
         const tracked = track(OBSERVER_KEYS.COLLECTION_MUTATIONS);
 
