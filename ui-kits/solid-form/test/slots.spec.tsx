@@ -40,7 +40,9 @@ describe('Form slots', () => {
   it('should pass the form state to slot renderers', () => {
     render(() => (
       <Form schema={schema} value={{ name: 'John' }}>
-        <Form.Snippet for="header">{(form: any) => <span data-testid="header-valid">{String(form.valid)}</span>}</Form.Snippet>
+        <Form.Snippet for="header">
+          {(form: any) => <span data-testid="header-valid">{String(form.valid)}</span>}
+        </Form.Snippet>
       </Form>
     ));
 
@@ -103,7 +105,9 @@ describe('Field slots', () => {
     render(() => (
       <Form schema={schema} value={{ name: 'John' }}>
         <Field name="name" label="Name">
-          <Field.Snippet for="label">{(field: any) => <span data-testid="custom-label">{field.name}</span>}</Field.Snippet>
+          <Field.Snippet for="label">
+            {(field: any) => <span data-testid="custom-label">{field.name}</span>}
+          </Field.Snippet>
           <TextInput data-testid="input" />
         </Field>
       </Form>

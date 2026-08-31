@@ -409,7 +409,9 @@ describe('Coverage & Edge Cases', () => {
         <CustomForm.Field name="text">
           <TextInput data-testid="input" />
         </CustomForm.Field>
-        <CustomForm.Submit data-testid="submit-btn" pendingClass="custom-submit-pending">Submit</CustomForm.Submit>
+        <CustomForm.Submit data-testid="submit-btn" pendingClass="custom-submit-pending">
+          Submit
+        </CustomForm.Submit>
         <CustomForm.Reset data-testid="reset-btn" clear dirtyClass="custom-reset-dirty" onClick={handleClick}>
           Clear
         </CustomForm.Reset>
@@ -458,7 +460,10 @@ describe('Coverage & Edge Cases', () => {
     let formRef: any;
 
     render(
-      <Form schema={schema} value={{ text: 'initial text', bio: 'initial bio', agree: true, plan: 'pro', country: 'us' }}>
+      <Form
+        schema={schema}
+        value={{ text: 'initial text', bio: 'initial bio', agree: true, plan: 'pro', country: 'us' }}
+      >
         {(form) => {
           formRef = form;
           return (

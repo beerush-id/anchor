@@ -402,12 +402,7 @@ describe('createForm', () => {
             errorClass={null as any}
             pendingClass={null as any}
           >
-            <NullishForm.Field
-              name="name"
-              data-testid="field-null"
-              class={null as any}
-              errorClass={null as any}
-            >
+            <NullishForm.Field name="name" data-testid="field-null" class={null as any} errorClass={null as any}>
               <TextInput data-testid="input-null" />
             </NullishForm.Field>
             <NullishForm.FieldList name={'' as never} errorClass={null as any}>

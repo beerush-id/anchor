@@ -379,7 +379,9 @@ describe('Coverage & Edge Cases', () => {
         <CustomForm.Field name="text">
           <TextInput data-testid="input" />
         </CustomForm.Field>
-        <CustomForm.Submit data-testid="submit-btn" pendingClass="custom-submit-pending">Submit</CustomForm.Submit>
+        <CustomForm.Submit data-testid="submit-btn" pendingClass="custom-submit-pending">
+          Submit
+        </CustomForm.Submit>
         <CustomForm.Reset data-testid="reset-btn" clear dirtyClass="custom-reset-dirty" onClick={handleClick}>
           Clear
         </CustomForm.Reset>
@@ -418,7 +420,10 @@ describe('Coverage & Edge Cases', () => {
     let formRef: any;
 
     render(() => (
-      <Form schema={schema} value={{ text: 'initial text', bio: 'initial bio', agree: true, plan: 'pro', country: 'us' }}>
+      <Form
+        schema={schema}
+        value={{ text: 'initial text', bio: 'initial bio', agree: true, plan: 'pro', country: 'us' }}
+      >
         {(form: any) => {
           formRef = form;
           return (
@@ -479,7 +484,14 @@ describe('Coverage & Edge Cases', () => {
     render(() => (
       <Form
         schema={errorSchema}
-        value={{ text: 'a', agree: false as never, plan: 'free' as never, country: 'us' as never, bio: 'a', file: null as never }}
+        value={{
+          text: 'a',
+          agree: false as never,
+          plan: 'free' as never,
+          country: 'us' as never,
+          bio: 'a',
+          file: null as never,
+        }}
         pendingClass="form-custom-pending"
         onSubmit={handleSubmit}
         data-testid="form-pending"
@@ -508,7 +520,9 @@ describe('Coverage & Edge Cases', () => {
               <Textarea>{(props: any) => <textarea data-testid="err-textarea" {...props} />}</Textarea>
             </Field>
             <Field name="file">
-              <FilePicker errorClass="file-err">{(props: any) => <input data-testid="err-file" {...props} />}</FilePicker>
+              <FilePicker errorClass="file-err">
+                {(props: any) => <input data-testid="err-file" {...props} />}
+              </FilePicker>
             </Field>
             <Field name="file">
               {(field: any) => (
