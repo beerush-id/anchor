@@ -181,7 +181,10 @@ describe('Anchor Core - derived.reduce', () => {
   });
 
   it('should handle property deletion on accumulator and array deletion', () => {
-    const list = anchor([{ id: 1, val: 10 }, { id: 2, val: 20 }]);
+    const list = anchor([
+      { id: 1, val: 10 },
+      { id: 2, val: 20 },
+    ]);
     const dict = derived.reduce({} as Record<number, number>, list, (acc, item, remove) => {
       if (remove) {
         delete acc[item.id];
