@@ -86,7 +86,7 @@ Creating a **stable component** that only runs-once. It **survives parent re-ren
 - `formatter` **recomputes only when `currency` changes**, avoiding unnecessary `Intl.NumberFormat` construction
 - `display` **recomputes when `amount` or `formatter` changes**, chaining dependencies automatically
 - **React:** **`setup()`** makes the component **function run once**, guaranteeing **stable closure** to survive parent re-renders.
-- Returning an **accessor `() => ()`** creates a **reactive view** that automatically tracks signals/properties and re-renders independently when accessed state changes.
+- Returning an **accessor `(props) => ()`** creates a **reactive view** that automatically tracks signals/properties, receives `props` as its argument (enabling direct destructuring like `return ({ children }) => (...)`), and re-renders independently when accessed state changes.
 - **SolidJS:** the function already runs once, and **JSX expressions are tracked automatically**
 :::
 
@@ -740,9 +740,9 @@ Building a **dynamic structure** from configuration, then managing **two-way int
 
 ### Dynamic & Conditional Views
 
-When a component needs **early returns**, **multi-branch view switching**, or **render-prop evaluation**, returning an accessor `() => ()` and using **`renderDynamic()`** handles it cleanly:
+When a component needs **early returns**, **multi-branch view switching**, or **render-prop evaluation**, returning an accessor `(props) => JSX` and using **`renderDynamic()`** handles it cleanly:
 
-- **`() => ()` (Reactive Accessor)**: Declares a reactive view body that automatically re-evaluates whenever any state or props accessed inside it change. This enables clean conditional returns and branch switching in both React and SolidJS without extra markup wrappers.
+- **`(props) => JSX` (Reactive Accessor)**: Declares a reactive view body that automatically re-evaluates whenever any state or props accessed inside it change. The accessor receives the component's `props` as its argument, enabling clean destructuring (e.g. `return ({ children }) => (...)`). This allows conditional returns and branch switching in both React and SolidJS without extra markup wrappers.
 - **`renderDynamic(children, ...args)`**: Safely evaluates polymorphic child content — whether passed as static JSX, a dynamic accessor, or a parameterized render function `(props) => JSX`.
 
 :::code-group
@@ -754,14 +754,15 @@ const StatusCard = setup<{
   loading?: Bindable<boolean>;
   children?: ((status: string) => JSX.Element) | JSX.Element;
 }>((props) => {
-  return () => {
-    if (props.loading) {
+  // The accessor receives props as its argument, allowing direct destructuring
+  return ({ loading, children }) => {
+    if (loading) {
       return <div className="card loading"><p>Loading details...</p></div>;
     }
 
     return (
       <div className="card active">
-        { renderDynamic(props.children, 'Ready') }
+        { renderDynamic(children, 'Ready') }
       </div>
     );
   };
@@ -775,14 +776,15 @@ const StatusCard = setup<{
   loading?: Bindable<boolean>;
   children?: ((status: string) => JSX.Element) | JSX.Element;
 }>((props) => {
-  return () => {
-    if (props.loading) {
+  // The accessor receives props as its argument, allowing direct destructuring
+  return ({ loading, children }) => {
+    if (loading) {
       return <div class="card loading"><p>Loading details...</p></div>;
     }
 
     return (
       <div class="card active">
-        { renderDynamic(props.children, 'Ready') }
+        { renderDynamic(children, 'Ready') }
       </div>
     );
   };
@@ -793,11 +795,12 @@ const StatusCard = setup<{
 
 :::details[What you learned]
 
-Using reactive accessors `() => ()` and **`renderDynamic()`** for reactive conditional returns and dynamic render props.
+Using reactive accessors `(props) => JSX` and **`renderDynamic()`** for reactive conditional returns and dynamic render props.
 
 **From these two examples, you know:**
 
-- Returning an accessor **`() => ()`** enables conditional returns and branching directly in the view function while preserving full reactivity
+- Returning an accessor **`(props) => JSX`** enables conditional returns and branching directly in the view function while preserving full reactivity
+- The accessor receives **`props` as its argument**, allowing clean destructuring directly in the return signature (e.g. `return ({ children }) => (...)`)
 - **`renderDynamic()`** handles polymorphic children (static elements, accessors, or render functions with arguments)
 - Both frameworks share identical component semantics and ergonomic APIs
 :::
