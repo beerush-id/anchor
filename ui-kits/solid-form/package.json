@@ -1,9 +1,19 @@
 {
   "type": "module",
   "name": "@airlib/solid-form",
-  "version": "1.2.3",
+  "version": "2.1.0",
   "description": "Reactive and declarative SolidJS form components built on AirLib. Typed forms, field validation, cross-field matching, and array fields with fine-grained reactivity.",
-  "keywords": ["solid", "solidjs", "form", "validation", "zod", "reactive", "airlib", "anchor", "typescript"],
+  "keywords": [
+    "solid",
+    "solidjs",
+    "form",
+    "validation",
+    "zod",
+    "reactive",
+    "airlib",
+    "anchor",
+    "typescript"
+  ],
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "repository": {
     "type": "git",
@@ -22,7 +32,10 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "src"],
+  "files": [
+    "dist",
+    "src"
+  ],
   "directories": {
     "dist": "dist",
     "src": "src"
