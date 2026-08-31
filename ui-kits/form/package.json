@@ -7,10 +7,10 @@
   "author": "Nanang Mahdaen El Agung <mahdaen@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/beerush-id/aristack.git"
+    "url": "git+https://github.com/beerush-id/airstack.git"
   },
   "bugs": {
-    "url": "https://github.com/beerush-id/aristack/issues"
+    "url": "https://github.com/beerush-id/airstack/issues"
   },
   "sideEffects": false,
   "types": "./dist/index.d.ts",
