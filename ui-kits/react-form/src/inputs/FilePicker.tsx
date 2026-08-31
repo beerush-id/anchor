@@ -1,5 +1,5 @@
 import { type AnyType, type FormInput, formInput } from '@airlib/form';
-import { classx, derived, render, setup } from '@airlib/react';
+import { $static, classx, derived, setup } from '@airlib/react';
 import type { ChangeEvent, ComponentProps, ReactNode } from 'react';
 import { FILE_OPTIONS, FILE_OPTIONS_KEYS, getInputClasses, INPUT_OPTIONS_KEYS } from '../config.js';
 
@@ -11,52 +11,63 @@ export interface FilePickerProps extends Omit<ComponentProps<'input'>, 'value' |
 }
 
 export const FilePicker = setup<FilePickerProps>((props) => {
-  const $props = ((props as AnyType).for ?? props) as AnyType;
-
-  const input = formInput<FileList | null>($props);
-  const rest = $props.$omit([
+  const $props = $static(() => ((props as AnyType).for ?? props) as AnyType);
+  const $restProps = $props.$omit([
     'for',
     'type',
     'name',
+    'id',
     'disabled',
     'className',
     'children',
     'onChange',
     'onFiles',
+    'ref',
     ...(FILE_OPTIONS_KEYS as never[]),
     ...(INPUT_OPTIONS_KEYS as never[]),
   ]);
 
-  const { baseClass, errorClass } = getInputClasses(FILE_OPTIONS);
+  const attrs = derived.as(() => {
+    const input = formInput<FileList | null>($props);
+    const fieldId = $props.id || input.name.replace(/\./g, '-');
+    const errorId = `${fieldId}-error`;
+
+    return { input, fieldId, errorId };
+  });
+
+  const className = derived(() => {
+    const { baseClass, errorClass } = getInputClasses(FILE_OPTIONS);
+    return classx(
+      baseClass,
+      $props.className,
+      Boolean(attrs.input.touched && (attrs.input.error || !attrs.input.matched)) && ($props.errorClass ?? errorClass)
+    );
+  });
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     $props.onFiles?.(e.currentTarget.files);
     $props.onChange?.(e);
   };
 
-  const className = derived(() =>
-    classx(
-      baseClass,
-      $props.className,
-      Boolean(input.touched && (input.error || !input.matched)) && ($props.errorClass ?? errorClass)
-    )
-  );
-
-  return render(() => {
+  return () => {
     const inputProps = {
-      ...rest,
+      ...$restProps,
+      ref: $props.ref,
+      id: attrs.fieldId,
       type: 'file',
-      name: input.name,
-      disabled: input.disabled,
+      name: attrs.input.name,
+      disabled: attrs.input.disabled,
       className: className.value,
+      'aria-invalid': attrs.input.error ? (true as const) : undefined,
+      'aria-describedby': attrs.input.error ? attrs.errorId : undefined,
       onChange: handleChange,
     };
 
     const children = (props as AnyType).children ?? $props.children;
     if (typeof children === 'function') {
-      return children(inputProps, input);
+      return children(inputProps, attrs.input);
     }
 
     return <input {...inputProps} />;
-  }, 'FilePickerView');
+  };
 }, 'FilePicker');

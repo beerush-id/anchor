@@ -1,6 +1,6 @@
 import type { AnyType, DeepPaths, FormField, FormState, PathValue } from '@airlib/form';
 import { formField, formState, getForm } from '@airlib/form';
-import { classx, derived, render, Slot, setup } from '@airlib/react';
+import { classx, derived, For, renderDynamic, setup, Show, Slot, untrack } from '@airlib/react';
 import type { ComponentProps, MouseEvent, ReactNode, SubmitEvent } from 'react';
 import type { input, ZodObject, ZodRawShape } from 'zod';
 import type {
@@ -48,13 +48,13 @@ export type FormSlots<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawShape>>
  */
 export type FieldSlots<T = Record<string, AnyType>> = {
   /** Customizes or replaces the field label element. */
-  label?: (field: FormField<unknown>) => ReactNode;
+  label?: (field: FormField<T>) => ReactNode;
   /** Injects leading content or icons directly before the input control. */
-  prefix?: (field: FormField<unknown>) => ReactNode;
+  prefix?: (field: FormField<T>) => ReactNode;
   /** Injects trailing content or icons directly after the input control. */
-  suffix?: (field: FormField<unknown>) => ReactNode;
+  suffix?: (field: FormField<T>) => ReactNode;
   /** Customizes or replaces the supportive guidance text or validation errors below the field control. */
-  support?: (field: FormField<unknown>) => ReactNode;
+  support?: (field: FormField<T>) => ReactNode;
 };
 
 /**
@@ -190,68 +190,79 @@ export function createForm<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawSh
       }
     });
 
-    const rest = $props.$omit(['schema', 'value', 'className', 'onSubmit', ...FORM_OPTIONS_KEYS]);
-    const form = formState((schema ?? $props.schema) as AnyType, $props);
+    const $restProps = $props.$omit(['schema', 'value', 'className', 'onSubmit', ...FORM_OPTIONS_KEYS]);
 
-    const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if ($props.onSubmit) {
-        form.submit((data: AnyType, changes: AnyType) => $props.onSubmit(data, changes, e));
-      }
-    };
+    const attrs = derived.as(() => {
+      const fallbackSchema = $props.schema;
+      const form = untrack(() => formState((schema ?? fallbackSchema) as AnyType, $props));
+      return { form };
+    });
 
     /* istanbul ignore next */
     const className = derived(() =>
       classx(
         formOptions?.class ?? FORM_OPTIONS.class,
         $props.className,
-        Boolean(form.error) && ($props.errorClass ?? formOptions?.errorClass ?? FORM_OPTIONS.errorClass),
-        Boolean(form.pending) && ($props.pendingClass ?? formOptions?.pendingClass ?? FORM_OPTIONS.pendingClass)
+        Boolean(attrs.form.error) && ($props.errorClass ?? formOptions?.errorClass ?? FORM_OPTIONS.errorClass),
+        Boolean(attrs.form.pending) && ($props.pendingClass ?? formOptions?.pendingClass ?? FORM_OPTIONS.pendingClass)
       )
     );
 
-    return render(
-      () => (
-        <form {...rest} className={className.value} onSubmit={handleSubmit}>
-          <Slot for={() => snippets.header?.(form)} />
-          <Slot for={() => snippets.error?.(form)}>
-            {form.error && (
-              <span
-                className={classx(formOptions?.errorClass ?? FORM_OPTIONS.errorClass, $props.errorClass)}
-                role="alert"
-              >
-                {form.error.message}
-              </span>
-            )}
-          </Slot>
-          {typeof $props.children === 'function' ? $props.children(form) : $props.children}
-          <Slot for={() => snippets.actions?.(form)} />
-          <Slot for={() => snippets.footer?.(form)} />
-        </form>
-      ),
-      'FormView'
+    const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if ($props.onSubmit) {
+        void attrs.form.submit((data: AnyType, changes: AnyType) => $props.onSubmit(data, changes, e));
+      }
+    };
+
+    return () => (
+      <form {...$restProps} className={className.value} onSubmit={handleSubmit}>
+        <Slot for={() => snippets.header?.(attrs.form)} />
+        <Slot for={() => snippets.error?.(attrs.form)}>
+          {() => (
+            <Show when={() => attrs.form.error}>
+              {(error) => (
+                <span
+                  className={classx(formOptions?.errorClass ?? FORM_OPTIONS.errorClass, $props.errorClass)}
+                  role="alert"
+                >
+                  {error.message}
+                </span>
+              )}
+            </Show>
+          )}
+        </Slot>
+        {renderDynamic($props.children, attrs.form)}
+        <Slot for={() => snippets.actions?.(attrs.form)} />
+        <Slot for={() => snippets.footer?.(attrs.form)} />
+      </form>
     );
   }, 'Form');
 
   const Field = setup<FieldProps<input<T>, T>, FieldSlots<input<T>>>((props, snippets) => {
     const $props = props as AnyType;
-    const rest = $props.$omit(['name', 'match', 'label', 'children', ...FIELD_OPTIONS_KEYS]);
-    const field = formField(() => $props.name, $props.match);
-    const fieldId = $props.name.replace(/\./g, '-');
-    const errorId = `${fieldId}-error`;
+    const $restProps = $props.$omit(['name', 'match', 'label', 'children', ...FIELD_OPTIONS_KEYS]);
+
+    const attrs = derived.as(() => {
+      const field = formField($props.name, $props.match) as FormField<AnyType>;
+      const fieldId = (field.name || '').replace(/\./g, '-');
+      const errorId = `${fieldId}-error`;
+
+      return { field, fieldId, errorId };
+    });
 
     const className = derived(() =>
       classx(
         fieldOptions?.class ?? FIELD_OPTIONS.class,
         $props.className,
-        Boolean(field.touched && field.error) &&
+        Boolean(attrs.field.touched && attrs.field.error) &&
           ($props.errorClass ?? fieldOptions?.errorClass ?? FIELD_OPTIONS.errorClass)
       )
     );
 
-    return render(() => {
-      if (!field.name) {
+    return () => {
+      if (!attrs.field.name) {
         return (
           <span className={$props.errorClass ?? fieldOptions?.errorClass ?? FIELD_OPTIONS.errorClass}>
             [FieldError]: Name property is required!
@@ -259,67 +270,95 @@ export function createForm<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawSh
         );
       }
       if (typeof $props.children === 'function') {
-        return $props.children(field);
+        return renderDynamic($props.children, attrs.field);
       }
 
       return (
-        <div {...rest} className={className.value}>
-          <Slot for={() => snippets.label?.(field)}>
-            {$props.label && (
-              <label
-                htmlFor={fieldId}
-                className={classx(fieldOptions?.labelClass ?? FIELD_OPTIONS.labelClass, $props.labelClass)}
-              >
-                {$props.label}
-                {field.required && (
-                  <span
-                    className={classx(fieldOptions?.requiredClass ?? FIELD_OPTIONS.requiredClass, $props.requiredClass)}
+        <div {...$restProps} className={className.value}>
+          <Slot for={() => snippets.label?.(attrs.field)}>
+            {() => (
+              <Show when={() => $props.label}>
+                {(label) => (
+                  <label
+                    htmlFor={attrs.fieldId}
+                    className={classx(fieldOptions?.labelClass ?? FIELD_OPTIONS.labelClass, $props.labelClass)}
                   >
-                    {$props.requiredLabel ?? fieldOptions?.requiredLabel ?? FIELD_OPTIONS.requiredLabel}
-                  </span>
+                    {label}
+                    <Show when={() => attrs.field.required}>
+                      {() => (
+                        <span
+                          className={classx(
+                            fieldOptions?.requiredClass ?? FIELD_OPTIONS.requiredClass,
+                            $props.requiredClass
+                          )}
+                        >
+                          {$props.requiredLabel ?? fieldOptions?.requiredLabel ?? FIELD_OPTIONS.requiredLabel}
+                        </span>
+                      )}
+                    </Show>
+                  </label>
                 )}
-              </label>
+              </Show>
             )}
           </Slot>
           <div className={classx(fieldOptions?.controlClass ?? FIELD_OPTIONS.controlClass, $props.controlClass)}>
-            <Slot for={() => snippets.prefix?.(field)} />
-            {$props.children}
-            <Slot for={() => snippets.suffix?.(field)} />
+            <Slot for={() => snippets.prefix?.(attrs.field)} />
+            {renderDynamic($props.children, attrs.field)}
+            <Slot for={() => snippets.suffix?.(attrs.field)} />
           </div>
-          <Slot for={() => snippets.support?.(field)}>
-            {field.touched &&
-              field.error?.map((error, i) => (
-                <span
-                  key={i}
-                  id={errorId}
-                  className={classx(fieldOptions?.supportClass ?? FIELD_OPTIONS.supportClass, $props.supportClass)}
-                  role="alert"
-                >
-                  {error}
-                </span>
-              ))}
-            {field.valid && !field.matched && $props.mismatchLabel && (
-              <span
-                id={errorId}
-                className={classx(fieldOptions?.supportClass ?? FIELD_OPTIONS.supportClass, $props.supportClass)}
-                role="alert"
-              >
-                {$props.mismatchLabel}
-              </span>
+          <Slot for={() => snippets.support?.(attrs.field)}>
+            {() => (
+              <>
+                <Show when={() => attrs.field.touched && attrs.field.error}>
+                  {(errors) => (
+                    <For each={() => errors}>
+                      {(error) => (
+                        <span
+                          id={attrs.errorId}
+                          className={classx(
+                            fieldOptions?.supportClass ?? FIELD_OPTIONS.supportClass,
+                            $props.supportClass
+                          )}
+                          role="alert"
+                        >
+                          {error}
+                        </span>
+                      )}
+                    </For>
+                  )}
+                </Show>
+                <Show when={() => attrs.field.valid && !attrs.field.matched && $props.mismatchLabel}>
+                  {(label) => (
+                    <span
+                      id={attrs.errorId}
+                      className={classx(fieldOptions?.supportClass ?? FIELD_OPTIONS.supportClass, $props.supportClass)}
+                      role="alert"
+                    >
+                      {label}
+                    </span>
+                  )}
+                </Show>
+              </>
             )}
           </Slot>
         </div>
       );
-    }, 'FieldView');
+    };
   }, 'Field');
 
   const FieldList = setup<FieldListProps<input<T>>>((props) => {
     const $props = props as AnyType;
-    const field = formField<AnyType[]>(() => $props.name);
-    if (field.name && !Array.isArray(field.value)) field.value = [];
 
-    return render(() => {
-      if (!field.name) {
+    const attrs = derived.as(() => {
+      const field = formField<AnyType[]>(() => $props.name);
+      untrack(() => {
+        if (field.name && !Array.isArray(field.value)) field.value = [];
+      });
+      return { field };
+    });
+
+    return () => {
+      if (!attrs.field.name) {
         return (
           <span className={$props.errorClass ?? fieldOptions?.errorClass ?? FIELD_OPTIONS.errorClass}>
             [FieldListError]: Name property is required!
@@ -327,62 +366,79 @@ export function createForm<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawSh
         );
       }
 
-      return $props.children(field.value);
-    }, 'FieldListView');
+      return renderDynamic($props.children, attrs.field.value);
+    };
   }, 'FieldList');
 
   const Submit = setup<FormSubmitProps<T>>((props) => {
     const $props = props as AnyType;
-    const form = getForm<T>();
-    const rest = $props.$omit(['disabled', 'type', 'className', 'children', ...SUBMIT_OPTIONS_KEYS]);
+    const $restProps = $props.$omit(['disabled', 'type', 'className', 'children', ...SUBMIT_OPTIONS_KEYS]);
+
+    const attrs = derived.as(() => {
+      const form = getForm<T>();
+      return { form };
+    });
 
     const className = derived(() =>
       classx(
         submitOptions?.class ?? SUBMIT_OPTIONS.class,
         $props.className,
-        Boolean(form?.pending) && ($props.pendingClass ?? submitOptions?.pendingClass ?? SUBMIT_OPTIONS.pendingClass)
+        Boolean(attrs.form?.pending) &&
+          ($props.pendingClass ?? submitOptions?.pendingClass ?? SUBMIT_OPTIONS.pendingClass)
       )
     );
 
-    return render(
-      () => (
-        <button {...rest} type="submit" className={className.value} disabled={!form?.canSubmit}>
-          {typeof $props.children === 'function' ? $props.children(form) : $props.children}
-        </button>
-      ),
-      'FormSubmitView'
+    return () => (
+      <button {...$restProps} type="submit" className={className.value} disabled={!attrs.form?.canSubmit}>
+        {renderDynamic($props.children, attrs.form)}
+      </button>
     );
   }, 'FormSubmit');
 
   const Reset = setup<FormResetProps<T>>((props) => {
     const $props = props as AnyType;
-    const form = getForm<T>();
-    const rest = $props.$omit(['disabled', 'type', 'children', 'className', 'onClick', 'clear', ...RESET_OPTIONS_KEYS]);
+    const $restProps = $props.$omit([
+      'disabled',
+      'type',
+      'children',
+      'className',
+      'onClick',
+      'clear',
+      ...RESET_OPTIONS_KEYS,
+    ]);
 
-    const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
-      if ($props.clear) {
-        form?.clear();
-      } else {
-        form?.reset();
-      }
-      $props.onClick?.(e);
-    };
+    const attrs = derived.as(() => {
+      const form = getForm<T>();
+      return { form };
+    });
 
     const className = derived(() =>
       classx(
         resetOptions?.class ?? RESET_OPTIONS.class,
         $props.className,
-        Boolean(form?.changed) && ($props.dirtyClass ?? resetOptions?.dirtyClass ?? RESET_OPTIONS.dirtyClass)
+        Boolean(attrs.form?.changed) && ($props.dirtyClass ?? resetOptions?.dirtyClass ?? RESET_OPTIONS.dirtyClass)
       )
     );
 
-    return render(
-      () => (
-        <button {...rest} type="button" disabled={!form?.changed} className={className.value} onClick={handleClick}>
-          {typeof $props.children === 'function' ? $props.children(form) : $props.children}
-        </button>
-      ),
-      'FormResetView'
+    const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
+      if ($props.clear) {
+        attrs.form?.clear();
+      } else {
+        attrs.form?.reset();
+      }
+      $props.onClick?.(e);
+    };
+
+    return () => (
+      <button
+        {...$restProps}
+        type="button"
+        disabled={!attrs.form?.changed}
+        className={className.value}
+        onClick={handleClick}
+      >
+        {renderDynamic($props.children, attrs.form)}
+      </button>
     );
   }, 'FormReset');
 

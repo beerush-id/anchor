@@ -1,5 +1,5 @@
 import { type AnyType, type FormInput, formInput } from '@airlib/form';
-import { type Bindable, classx, derived, render, setup } from '@airlib/react';
+import { $static, type Bindable, classx, derived, setup } from '@airlib/react';
 import type { ChangeEvent, ComponentProps, ReactNode } from 'react';
 import { getInputClasses, INPUT_OPTIONS_KEYS, SELECT_OPTIONS, SELECT_OPTIONS_KEYS } from '../config.js';
 
@@ -11,51 +11,62 @@ export interface SelectProps extends Omit<ComponentProps<'select'>, 'value' | 'c
 }
 
 export const Select = setup<SelectProps>((props) => {
-  const $props = ((props as AnyType).for ?? props) as AnyType;
-
-  const rest = $props.$omit([
+  const $props = $static(() => ((props as AnyType).for ?? props) as AnyType);
+  const $restProps = $props.$omit([
     'for',
     'value',
     'name',
+    'id',
     'disabled',
     'className',
     'children',
     'onChange',
+    'ref',
     ...(SELECT_OPTIONS_KEYS as never[]),
     ...(INPUT_OPTIONS_KEYS as never[]),
   ]);
-  const input = formInput<string | number>($props);
 
-  const { baseClass, errorClass } = getInputClasses(SELECT_OPTIONS);
+  const attrs = derived.as(() => {
+    const input = formInput<string | number>($props);
+    const fieldId = $props.id || input.name.replace(/\./g, '-');
+    const errorId = `${fieldId}-error`;
+
+    return { input, fieldId, errorId };
+  });
+
+  const className = derived(() => {
+    const { baseClass, errorClass } = getInputClasses(SELECT_OPTIONS);
+    return classx(
+      baseClass,
+      $props.className,
+      Boolean(attrs.input.touched && (attrs.input.error || !attrs.input.matched)) && ($props.errorClass ?? errorClass)
+    );
+  });
 
   const handleChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    input.value = e.currentTarget.value;
+    attrs.input.value = e.currentTarget.value;
     $props.onChange?.(e);
   };
 
-  const className = derived(() =>
-    classx(
-      baseClass,
-      $props.className,
-      Boolean(input.touched && (input.error || !input.matched)) && ($props.errorClass ?? errorClass)
-    )
-  );
-
-  return render(() => {
+  return () => {
     const selectProps = {
-      ...rest,
-      name: input.name,
-      disabled: input.disabled,
+      ...$restProps,
+      ref: $props.ref,
+      id: attrs.fieldId,
+      name: attrs.input.name,
+      disabled: attrs.input.disabled,
       className: className.value,
-      value: input.value as AnyType,
+      value: attrs.input.value as AnyType,
+      'aria-invalid': attrs.input.error ? (true as const) : undefined,
+      'aria-describedby': attrs.input.error ? attrs.errorId : undefined,
       onChange: handleChange,
     };
 
     const children = (props as AnyType).children ?? $props.children;
     if (typeof children === 'function') {
-      return children(selectProps, input);
+      return children(selectProps, attrs.input);
     }
 
     return <select {...selectProps}>{children}</select>;
-  }, 'SelectView');
+  };
 }, 'Select');

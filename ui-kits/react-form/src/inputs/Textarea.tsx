@@ -1,5 +1,5 @@
 import { type AnyType, type FormInput, formInput } from '@airlib/form';
-import { type Bindable, classx, derived, effect, render, setup } from '@airlib/react';
+import { $static, type Bindable, classx, derived, effect, setup } from '@airlib/react';
 import type { ComponentProps, FocusEvent, InputEvent, ReactNode } from 'react';
 import { getInputClasses, INPUT_OPTIONS_KEYS, TEXTAREA_OPTIONS, TEXTAREA_OPTIONS_KEYS } from '../config.js';
 
@@ -11,10 +11,8 @@ export interface TextareaProps extends Omit<ComponentProps<'textarea'>, 'value' 
 }
 
 export const Textarea = setup<TextareaProps>((props) => {
-  const $props = ((props as AnyType).for ?? props) as AnyType;
-
-  const input = formInput<string>($props);
-  const rest = $props.$omit([
+  const $props = $static(() => (props as AnyType).for ?? props) as typeof props;
+  const $restProps = $props.$omit([
     'for',
     'value',
     'name',
@@ -29,27 +27,32 @@ export const Textarea = setup<TextareaProps>((props) => {
     ...(INPUT_OPTIONS_KEYS as never[]),
   ]);
 
-  const { baseClass, errorClass } = getInputClasses(TEXTAREA_OPTIONS);
-  const fieldId = $props.id || input.name.replace(/\./g, '-');
-  const errorId = `${fieldId}-error`;
+  const attrs = derived.as(() => {
+    const input = formInput<string>($props);
+    const fieldId = $props.id || input.name.replace(/\./g, '-');
+    const errorId = `${fieldId}-error`;
+
+    return { input, fieldId, errorId };
+  });
+
+  const className = derived(() => {
+    const { baseClass, errorClass } = getInputClasses(TEXTAREA_OPTIONS);
+    return classx(
+      baseClass,
+      $props.className,
+      Boolean(attrs.input.touched && (attrs.input.error || !attrs.input.matched)) && ($props.errorClass ?? errorClass)
+    );
+  });
 
   const handleInput = (e: InputEvent<HTMLTextAreaElement>) => {
-    input.value = e.currentTarget.value;
+    attrs.input.value = e.currentTarget.value;
     $props.onInput?.(e);
   };
 
   const handleBlur = (e: FocusEvent<HTMLTextAreaElement>) => {
-    input.settled();
+    attrs.input.settled();
     $props.onBlur?.(e);
   };
-
-  const className = derived(() =>
-    classx(
-      baseClass,
-      $props.className,
-      Boolean(input.touched && (input.error || !input.matched)) && ($props.errorClass ?? errorClass)
-    )
-  );
 
   let ref: HTMLTextAreaElement | undefined;
 
@@ -64,31 +67,31 @@ export const Textarea = setup<TextareaProps>((props) => {
   };
 
   effect(() => {
-    const value = input.value;
+    const value = attrs.input.value;
     /* istanbul ignore next */
     if (ref && ref.value !== value) ref.value = (value ?? '') as AnyType;
   });
 
-  return render(() => {
+  return () => {
     const textareaProps = {
-      ...rest,
+      ...$restProps,
       ref: assignRef,
-      id: fieldId,
-      name: input.name,
-      disabled: input.disabled,
+      id: attrs.fieldId,
+      name: attrs.input.name,
+      disabled: attrs.input.disabled,
       className: className.value,
-      defaultValue: input.value as AnyType,
-      'aria-invalid': input.error ? (true as const) : undefined,
-      'aria-describedby': input.error ? errorId : undefined,
+      defaultValue: attrs.input.value as AnyType,
+      'aria-invalid': attrs.input.error ? (true as const) : undefined,
+      'aria-describedby': attrs.input.error ? attrs.errorId : undefined,
       onInput: handleInput,
       onBlur: handleBlur,
     };
 
     const children = (props as AnyType).children ?? $props.children;
     if (typeof children === 'function') {
-      return children(textareaProps, input);
+      return children(textareaProps, attrs.input);
     }
 
     return <textarea {...textareaProps} />;
-  }, 'TextareaView');
+  };
 }, 'Textarea');
