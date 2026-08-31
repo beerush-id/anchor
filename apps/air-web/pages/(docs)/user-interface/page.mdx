@@ -152,7 +152,7 @@ import { $bind } from '@airlib/solid';
 
 :::interactive[Component Demo]
 ```tsx
-import { setup, render, mutable, template, $bind, type Bindable } from '@airlib/react';
+import { setup, mutable, template, $bind, type Bindable } from '@airlib/react';
 
 // Shared state
 const settings = mutable({ notifications: true });
@@ -163,11 +163,11 @@ const Toggle = setup<{ label: string; value?: Bindable<boolean> }>((props) => {
     props.value = !props.value;
   };
 
-  return render(() => (
+  return () => (
     <button className={props.value ? 'text-blue-500' : ''} onClick={toggle}>
       {props.label}: {props.value ? 'Enabled' : 'Disabled'}
     </button>
-  ));
+  );
 });
 
 // Reactive UI to present reactive data without owning state
@@ -276,7 +276,7 @@ Compare with the same component using two-way binding:
 
 :::interactive[Autonomous Components Demo]
 ```tsx [NavButton.tsx] /props.value = props.name/ /value?: Bindable/ /props.value === props.name/
-import { setup, render, mutable, derived, $bind, type Bindable } from '@airlib/react';
+import { setup, mutable, derived, $bind, type Bindable } from '@airlib/react';
 
 const NavButton = setup<{ name: string; value?: Bindable<string>; onClick?: () => void }>((props) => {
   const select = () => {
@@ -287,27 +287,27 @@ const NavButton = setup<{ name: string; value?: Bindable<string>; onClick?: () =
   // Tracker that only flips when the comparison is actually changed.
   const isActive = derived(() => props.value === props.name);
 
-  return render(() => (
+  return () => (
     <button
       className={isActive.value ? 'text-blue-500' : ''}
       onClick={select}
     >
       {props.name}
     </button>
-  ));
+  );
 });
 ```
 ```tsx [Nav.tsx] /value={$bind/
 const Nav = setup(() => {
   const state = mutable({ active: 'Home' });
 
-  return render(() => (
+  return () => (
     <nav className="flex gap-6 justify-center text-lg">
       <NavButton name="Home" value={$bind(state, 'active')} />
       <NavButton name="About" value={$bind(state, 'active')} />
       <NavButton name="Contact" value={$bind(state, 'active')} />
     </nav>
-  ));
+  );
 });
 ```
 

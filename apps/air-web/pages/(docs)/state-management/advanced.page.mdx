@@ -171,17 +171,17 @@ Local state is state that is created and destroyed with a specific component ins
 :::code-group
 
 ```tsx [React]
-import { setup, render, mutable } from '@airlib/react';
+import { setup, mutable } from '@airlib/react';
 
 export const Counter = setup(() => {
   // This state is local to this instance of Counter
   const state = mutable({ count: 0 });
 
-  return render(() => (
+  return () => (
     <button onClick={() => state.count++}>
       Count: {state.count}
     </button>
-  ));
+  );
 });
 ```
 

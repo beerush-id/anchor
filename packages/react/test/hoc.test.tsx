@@ -3,6 +3,7 @@ import { classx, getContext, mutable, setContext } from '@airlib/core';
 import { act, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { renderDynamic } from '../src/dynamic.js';
 import { $inline, render as renderView, setup, snippet, stubScheduler, template } from '../src/hoc.js';
 import type { DynamicProps } from '../src/index.js';
 
@@ -61,6 +62,14 @@ describe('Anchor React - HOC', () => {
 
     it('should render setup component correctly', () => {
       const TestComponent = () => 'Test Component';
+      const SetupComponent = setup(TestComponent);
+
+      const { container } = render(<SetupComponent />);
+      expect(container.textContent).toBe('Test Component');
+    });
+
+    it('should render setup component that returns accessor', () => {
+      const TestComponent = () => () => 'Test Component';
       const SetupComponent = setup(TestComponent);
 
       const { container } = render(<SetupComponent />);
@@ -643,6 +652,26 @@ describe('Anchor React - HOC', () => {
   });
 
   describe('Dynamic Children', () => {
+    it('should render children function via renderDynamic', () => {
+      const Test = setup<DynamicProps<'div'>>((props) => {
+        return <div className={props.className}>{renderDynamic(props.children)}</div>;
+      });
+
+      const { container } = render(<Test className={classx('test')}>{() => <div>OK</div>}</Test>);
+      expect(container.textContent).includes('OK');
+      expect(container.querySelector('.test')?.textContent).toBe('OK');
+
+      const { container: container2 } = render(
+        <Test className={classx('test')}>
+          {() => {
+            throw new Error('Failed');
+          }}
+        </Test>
+      );
+      expect(container2.textContent).not.includes('OK');
+      expect(container2.querySelector('.test')?.textContent).toContain('Render Error');
+    });
+
     it('should render children function via $children', () => {
       const Test = setup<DynamicProps<'div'>>((props) => {
         return <div className={props.className}>{props.$children}</div>;

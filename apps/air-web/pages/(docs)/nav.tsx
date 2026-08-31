@@ -145,12 +145,12 @@ export const navs: NavItem[] = [
     items: toNavItems(uiMeta),
   },
   { separator: true },
-  // {
-  //   text: 'AirLib Form',
-  //   icon: () => <ChecklistIcon />,
-  //   collapsed: true,
-  //   items: toNavItems(formMeta),
-  // },
+  {
+    text: 'Form',
+    icon: () => <ChecklistIcon />,
+    collapsed: true,
+    items: toNavItems(formMeta),
+  },
   // {
   //   text: 'AirLib Material 3 CSS',
   //   icon: () => <StyleIcon />,

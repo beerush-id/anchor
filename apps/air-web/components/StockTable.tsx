@@ -1,4 +1,4 @@
-import { classx, derived, For, mutable, render, Show, Snippet, setup } from '@airlib/react';
+import { classx, derived, For, mutable, Show, Snippet, setup } from '@airlib/react';
 import { StockChart } from './StockChart.js';
 
 export type TimeInterval = '1D' | '1W' | '1M' | '1Y' | 'ALL';
@@ -26,14 +26,14 @@ export interface StockTableProps {
  */
 export const StockTable = setup<StockTableProps>((props) => {
   const state = mutable({
-    selectedSymbol: props.items[0]?.symbol ?? '',
+    selectedSymbol: '',
   });
 
   const selected = derived(() => {
-    return props.items.find((item) => item.symbol === state.selectedSymbol) ?? props.items[0];
+    return props.items?.find((item) => item.symbol === (state.selectedSymbol || props.items?.[0]?.symbol)) ?? props.items?.[0];
   });
 
-  return render(() => (
+  return () => (
     <div className={classx('flex flex-col gap-3.5 lg:flex-row lg:items-stretch', props.className)}>
       {/* Left: Market Overview List */}
       <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-border bg-surface">
@@ -45,7 +45,7 @@ export const StockTable = setup<StockTableProps>((props) => {
         <div className="divide-y divide-border/60 overflow-y-auto">
           <For each={() => props.items}>
             {(item) => {
-              const active = derived(() => state.selectedSymbol === item.symbol);
+              const active = derived(() => (state.selectedSymbol || props.items?.[0]?.symbol) === item.symbol);
 
               return (
                 <button
@@ -115,7 +115,7 @@ export const StockTable = setup<StockTableProps>((props) => {
         <Show when={() => selected.value}>{(item) => <StockChart item={item} />}</Show>
       </div>
     </div>
-  ));
+  );
 });
 
 /**

@@ -41,7 +41,7 @@ irpc.construct(processPayment, (method, amount) => {
 
 :::code-group
 ```tsx [React]
-import { setup, render, mutable } from '@airlib/react';
+import { setup, mutable } from '@airlib/react';
 import { processPayment } from './function.js';
 
 export const PaymentForm = setup(() => {
@@ -57,11 +57,11 @@ export const PaymentForm = setup(() => {
     }
   };
 
-  return render(() => (
+  return () => (
     <button onClick={pay} disabled={isPending.value}>
       {isPending.value ? 'Processing...' : 'Pay Now'}
     </button>
-  ));
+  );
 });
 ```
 
@@ -115,7 +115,7 @@ irpc.construct(assessRisk, (userId) => riskAssessmentFlow({ userId }));
 
 :::code-group
 ```tsx [React]
-import { setup, render, mutable } from '@airlib/react';
+import { setup, mutable } from '@airlib/react';
 import { assessRisk } from './function.js';
 
 export const RiskPanel = setup((props: { userId: string }) => {
@@ -131,11 +131,11 @@ export const RiskPanel = setup((props: { userId: string }) => {
     }
   };
 
-  return render(() => (
+  return () => (
     <button onClick={check} disabled={isPending.value}>
       {isPending.value ? 'Assessing...' : 'Assess Risk'}
     </button>
-  ));
+  );
 });
 ```
 

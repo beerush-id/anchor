@@ -13,9 +13,9 @@ To build a form with AirLib Form, you need three things: a schema, a form factor
 
 The Zod schema is the single source of truth. It defines the data shape, validation rules, and error messages.
 
-:::code-group
+:::code-group{group="framework"}
 
-```ts [React]
+```ts [React] name="react"
 import { z } from 'zod';
 
 const userSchema = z.object({
@@ -25,7 +25,7 @@ const userSchema = z.object({
 });
 ```
 
-```ts [SolidJS]
+```ts [SolidJS] name="solid"
 import { z } from 'zod';
 
 const userSchema = z.object({
@@ -43,15 +43,15 @@ Every field in the schema maps to a field in the form. Validation runs on every 
 
 Pass the schema to `createForm` to generate typed components.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 import { createForm } from '@airlib/react-form';
 
 const UserForm = createForm(userSchema);
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { createForm } from '@airlib/solid-form';
 
 const UserForm = createForm(userSchema);
@@ -64,6 +64,8 @@ const UserForm = createForm(userSchema);
 - `<UserForm>` — The form wrapper
 - `<UserForm.Field>` — Typed field wrapper
 - `<UserForm.FieldList>` — Array field wrapper
+- `<UserForm.Submit>` — Typed submit button
+- `<UserForm.Reset>` — Typed reset button
 
 All three enforce the schema types. `<UserForm.Field name="typo">` is a compile error.
 
@@ -71,11 +73,11 @@ All three enforce the schema types. `<UserForm.Field name="typo">` is a compile 
 
 Drop `Field` components inside the form. Each `Field` takes a `name` (the schema path) and wraps an input component.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
-import { setup, render, mutable } from '@airlib/react';
-import { TextInput, EmailInput, NumberInput, FormSubmit } from '@airlib/react-form';
+```tsx [React] name="react"
+import { setup, mutable } from '@airlib/react';
+import { TextInput, EmailInput, NumberInput } from '@airlib/react-form';
 
 export const ProfileEditor = setup(() => {
   const profile = mutable({
@@ -84,7 +86,7 @@ export const ProfileEditor = setup(() => {
     age: 18,
   });
 
-  return render(() => (
+  return () => (
     <UserForm
       value={profile}
       onSubmit={(data) => console.log('Saved:', data)}
@@ -101,15 +103,15 @@ export const ProfileEditor = setup(() => {
         <NumberInput />
       </UserForm.Field>
 
-      <FormSubmit>Save Profile</FormSubmit>
+      <UserForm.Submit>Save Profile</UserForm.Submit>
     </UserForm>
-  ));
+  );
 });
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { setup, mutable } from '@airlib/solid';
-import { TextInput, EmailInput, NumberInput, FormSubmit } from '@airlib/solid-form';
+import { TextInput, EmailInput, NumberInput } from '@airlib/solid-form';
 
 export const ProfileEditor = setup(() => {
   const profile = mutable({
@@ -135,7 +137,7 @@ export const ProfileEditor = setup(() => {
         <NumberInput />
       </UserForm.Field>
 
-      <FormSubmit>Save Profile</FormSubmit>
+      <UserForm.Submit>Save Profile</UserForm.Submit>
     </UserForm>
   );
 });
@@ -156,9 +158,9 @@ The input components (`TextInput`, `EmailInput`, etc.) connect to the field cont
 
 Validation runs on every field change. Errors appear in the `Field` when the value violates the schema.
 
-:::code-group
+:::code-group{group="framework"}
 
-```ts [React]
+```ts [React] name="react"
 const schema = z.object({
   email: z.string().email('Please enter a valid email'),
   password: z.string()
@@ -168,7 +170,7 @@ const schema = z.object({
 });
 ```
 
-```ts [SolidJS]
+```ts [SolidJS] name="solid"
 const schema = z.object({
   email: z.string().email('Please enter a valid email'),
   password: z.string()
@@ -182,15 +184,15 @@ const schema = z.object({
 
 Each Zod rule produces an error message. If a field has multiple rules, all failed messages are collected in `field.error` as an array.
 
-By default, `Field` renders the first error. For custom rendering, use [headless mode](./composition#headless-fields).
+By default, `Field` renders the first error. For custom rendering, use [headless mode](/docs/form/composition#headless-fields).
 
 ## Handling Submission
 
 The `onSubmit` handler receives three arguments: the full data, the changed fields, and the original event.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
+```tsx [React] name="react"
 <UserForm
   value={existingUser}
   onSubmit={async (data, changes, event) => {
@@ -204,7 +206,7 @@ The `onSubmit` handler receives three arguments: the full data, the changed fiel
 >
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 <UserForm
   value={existingUser}
   onSubmit={async (data, changes, event) => {
@@ -230,69 +232,69 @@ During submission:
 
 ## Submit & Reset Components
 
-AirLib Form provides `<FormSubmit>` and `<FormReset>` components that automatically connect to the form state.
+When creating a typed form with `createForm`, use the colocated `<UserForm.Submit>` and `<UserForm.Reset>` components. Standalone `<FormSubmit>` and `<FormReset>` components are also available for general dynamic forms.
 
-`<FormSubmit>` tracks the form's readiness. It disables itself when:
+`<UserForm.Submit>` tracks the form's readiness. It disables itself when:
 1. The form is `pending` (currently submitting)
 2. The form is invalid (violates the schema)
 3. The form is unchanged (no fields have been modified)
 
-Similarly, `<FormReset>` reverts all fields to their initial values, clears touched states, and resets the submission status. It disables itself when the form is unchanged.
+Similarly, `<UserForm.Reset>` reverts all fields to their initial values, clears touched states, and resets the submission status. It disables itself when the form is unchanged.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
-import { FormSubmit, FormReset } from '@airlib/react-form';
-
+```tsx [React] name="react"
 <div>
-  <FormReset className="btn-secondary">Undo Changes</FormReset>
-  <FormSubmit className="btn-primary">Save Profile</FormSubmit>
+  <UserForm.Reset className="btn-secondary">Undo Changes</UserForm.Reset>
+  <UserForm.Submit className="btn-primary">Save Profile</UserForm.Submit>
 </div>
 ```
 
-```tsx [SolidJS]
-import { FormSubmit, FormReset } from '@airlib/solid-form';
-
+```tsx [SolidJS] name="solid"
 <div>
-  <FormReset class="btn-secondary">Undo Changes</FormReset>
-  <FormSubmit class="btn-primary">Save Profile</FormSubmit>
+  <UserForm.Reset class="btn-secondary">Undo Changes</UserForm.Reset>
+  <UserForm.Submit class="btn-primary">Save Profile</UserForm.Submit>
 </div>
 ```
 
 :::
 
-Both components also accept a function as `children`, providing direct access to the form state so you can change their contents dynamically.
+Both components also accept a function as `children`, providing direct access to the form state with full TypeScript inference from your schema.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
-<FormSubmit className="btn-primary">
+```tsx [React] name="react"
+<UserForm.Submit className="btn-primary">
   {(form) => (
     <>
-      {form?.pending && <Spinner />}
+      <Show when={() => form?.pending}>
+        <Spinner />
+      </Show>
       <span>{form?.pending ? 'Saving...' : 'Save Profile'}</span>
     </>
   )}
-</FormSubmit>
+</UserForm.Submit>
 ```
 
-```tsx [SolidJS]
-<FormSubmit class="btn-primary">
+```tsx [SolidJS] name="solid"
+<UserForm.Submit class="btn-primary">
   {(form) => (
     <>
-      {form?.pending && <Spinner />}
+      <Show when={form?.pending}>
+        <Spinner />
+      </Show>
       <span>{form?.pending ? 'Saving...' : 'Save Profile'}</span>
     </>
   )}
-</FormSubmit>
+</UserForm.Submit>
 ```
 
 :::
 
 ## What's Next
 
-- [Form Inputs](./inputs) — Explore the 14 built-in input components
-- [Composition](./composition) — Cross-field matching, arrays, headless mode
-- [Configuration](./configuration) — Global defaults, styling, and behavior overrides
-- [General Form](./general) — Using the untyped Form, Field, Submit, and Reset components
-- [Core API](./core-api) — Use the engine without components
+- [Form Inputs](/docs/form/inputs) — Explore the 14 built-in input components
+- [Composition](/docs/form/composition) — Cross-field matching, arrays, headless mode
+- [Configuration](/docs/form/configuration) — Global defaults, styling, and behavior overrides
+- [General Form](/docs/form/general) — Using the untyped Form, Field, Submit, and Reset components
+- [Core API](/docs/form/core-api) — Use the engine without components

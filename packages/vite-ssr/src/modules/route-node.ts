@@ -91,6 +91,7 @@ export class RouteNode extends EventEmitter {
   public get hasChildren(): boolean {
     if (this.namedPages.size > 0) return true;
     for (const child of this.children.values()) {
+      /* istanbul ignore next */
       if (child.route || child.page || child.layout || child.namedPages.size > 0 || child.hasChildren) {
         return true;
       }

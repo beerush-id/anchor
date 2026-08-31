@@ -1,53 +1,55 @@
-:::interactive[Schema-driven reactive form live demo]
+:::interactive[Schema-Driven Reactive Form Live Demo]
 ```tsx
-import { mutable, render, setup } from '@airlib/react';
-import { createForm, EmailInput, FormSubmit, TextInput } from '@airlib/react-form';
+import { Show, mutable, setup } from '@airlib/react';
+import { createForm, EmailInput, Textarea, TextInput } from '@airlib/react-form';
 import { z } from 'zod';
 
 const schema = z.object({
   name: z.string().min(3, 'Name must be at least 3 characters'),
   email: z.string().email('Invalid email address'),
+  bio: z.string().max(160, 'Bio must be at most 160 characters').optional(),
 });
 
 const UserForm = createForm(schema);
 
 const ProfileForm = setup(() => {
-  const profile = mutable({ name: '', email: '' });
-  const status = mutable({ submitted: false, payload: '' });
+  const payload = mutable('');
 
-  return render(() => (
+  return (
     <div className="flex w-full max-w-sm flex-col gap-3">
-      <UserForm
-        value={profile}
-        onSubmit={(data) => {
-          status.submitted = true;
-          status.payload = JSON.stringify(data, null, 2);
-        }}
-      >
-        <UserForm.Field name="name" label="Name" className="flex flex-col gap-1">
-          <TextInput
-            placeholder="Enter name"
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-on-surface outline-none focus:border-primary"
-          />
+      <UserForm onSubmit={(_data, changes) => {
+        payload.value = JSON.stringify(changes, null, 2);
+      }}>
+        <UserForm.Field name="name" label="Name">
+          <TextInput placeholder="Enter name" />
         </UserForm.Field>
 
-        <UserForm.Field name="email" label="Email" className="flex flex-col gap-1">
-          <EmailInput
-            placeholder="name@company.com"
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-on-surface outline-none focus:border-primary"
-          />
+        <UserForm.Field name="email" label="Email">
+          <EmailInput placeholder="name@company.com" />
         </UserForm.Field>
 
-        <FormSubmit className="air-mdx-btn mt-2">Submit</FormSubmit>
+        <UserForm.Field name="bio" label="Bio">
+          <Textarea placeholder="Tell us about yourself" />
+        </UserForm.Field>
+
+        <div className="flex gap-2">
+          <UserForm.Reset>Reset</UserForm.Reset>
+          <UserForm.Submit className="flex-1">Submit</UserForm.Submit>
+        </div>
       </UserForm>
 
-      {status.submitted && (
-        <pre className="rounded-lg border border-border bg-surface p-3 font-mono text-xs text-on-surface-variant">
-          {status.payload}
-        </pre>
-      )}
+      <Show when={() => payload.value}>
+        {(text) => (
+          <>
+            <div className="text-lg font-bold">Form Changes</div>
+            <pre className="rounded-lg border border-border bg-surface p-3 font-mono text-xs text-on-surface-variant">
+              {text}
+            </pre>
+          </>
+        )}
+      </Show>
     </div>
-  ));
+  );
 });
 ```
 

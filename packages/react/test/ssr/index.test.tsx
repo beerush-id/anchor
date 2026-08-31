@@ -157,7 +157,7 @@ describe('createSSR', () => {
     const router = createRouter<ReactNode>();
     const rootRoute = router.route();
     const RootLayout = page(rootRoute).render(({ children }) => <div>{children}</div>);
-    const Shell = setup<HTMLAttributes<HTMLElement>>((props) => <div className="shell">{props.children}</div>);
+    const Shell = setup<HTMLAttributes<HTMLElement>>((props) => () => <div className="shell">{props.children}</div>);
 
     const ssr = createSSR(router, RootLayout);
 
@@ -231,7 +231,7 @@ describe('createApp', () => {
     const router = createRouter<ReactNode>();
     const rootRoute = router.route();
     const RootLayout = page(rootRoute).render(({ children }) => <div>{children}</div>);
-    const Shell = setup<HTMLAttributes<HTMLElement>>((props) => <div className="shell">{props.children}</div>);
+    const Shell = setup<HTMLAttributes<HTMLElement>>((props) => () => <div className="shell">{props.children}</div>);
     const Entry = ({ url }: { url?: string }) => (
       <Shell>
         <UIRouter router={router} root={RootLayout} url={url} headless={true} />

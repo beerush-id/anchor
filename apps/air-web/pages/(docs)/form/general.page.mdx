@@ -17,10 +17,10 @@ For this, AirLib Form provides the general-purpose, untyped `<Form>` and `<Field
 
 The general `<Form>` component takes the schema and initial value as props. It creates the reactive form state and provides it to all child fields.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
-import { setup, render, mutable } from '@airlib/react';
+```tsx [React] name="react"
+import { setup, mutable } from '@airlib/react';
 import { z } from 'zod';
 import { Form, Field, TextInput, FormSubmit } from '@airlib/react-form';
 
@@ -33,7 +33,7 @@ const dynamicSchema = z.object({
 export const DynamicForm = setup(() => {
   const profile = mutable({ firstName: '', lastName: '' });
 
-  return render(() => (
+  return () => (
     <Form
       schema={dynamicSchema}
       value={profile}
@@ -53,7 +53,7 @@ export const DynamicForm = setup(() => {
 });
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { setup, mutable } from '@airlib/solid';
 import { z } from 'zod';
 import { Form, Field, TextInput, FormSubmit } from '@airlib/solid-form';
@@ -93,34 +93,34 @@ export const DynamicForm = setup(() => {
 
 The general `<Field>` component accepts any `string` as its `name` prop. It functions exactly like a typed field — providing label association, error rendering, and context for nested inputs.
 
-:::code-group
+:::code-group{group="framework"}
 
-```tsx [React]
-import { setup, render } from '@airlib/react';
+```tsx [React] name="react"
+import { For, setup } from '@airlib/react';
 
 // A generic field renderer for dynamic forms
 const RenderDynamicField = setup<{ name: string; label: string; type: string }>((props) => {
-  return render(() => (
+  return () => (
     <Field name={props.name} label={props.label}>
       {props.type === 'email' ? <EmailInput /> : <TextInput />}
     </Field>
-  ));
+  );
 });
 
 // Rendering a list of fields driven by data
 export const DynamicFormRenderer = setup<{ fields: any[]; schema: any; initialValue: any }>((props) => {
-  return render(() => (
+  return () => (
     <Form schema={props.schema} value={props.initialValue}>
-      {props.fields.map(f => (
-        <RenderDynamicField key={f.name} {...f} />
-      ))}
+      <For each={() => props.fields}>
+        {(f) => <RenderDynamicField {...f} />}
+      </For>
       <FormSubmit>Submit</FormSubmit>
     </Form>
-  ));
+  );
 });
 ```
 
-```tsx [SolidJS]
+```tsx [SolidJS] name="solid"
 import { setup } from '@airlib/solid';
 import { For } from 'solid-js';
 import { Form, Field, TextInput, EmailInput, FormSubmit } from '@airlib/solid-form';

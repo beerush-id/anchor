@@ -1,0 +1,188 @@
+---
+nav: 'Super List'
+nav-priority: 84
+title: "Super List"
+description: "Managing large virtualized datasets, continuous sorting, visibility filtering, and selection tracking without memory churn."
+keywords:
+  - super list
+  - virtualization
+  - selection
+  - data grid
+  - reactive collection
+---
+
+# Super List
+
+Building large data tables, virtualized lists, or high-throughput feeds involves a recurring set of state management challenges:
+- **Allocation & GC Churn**: Rapid scrolling creates and destroys row wrappers repeatedly, causing frame drops.
+- **Scattered Row State**: Tracking item selection (checkboxes), visibility (filters), and active indexes usually requires maintaining multiple disconnected Sets and lookup maps that easily fall out of sync.
+- **Constant Re-sorting**: Keeping lists sorted as data streams in forces expensive full-collection re-sorts.
+
+`superList` solves these concerns in a single reactive collection by combining fixed-memory slots, built-in selection tracking, visibility filtering, and automated ordering.
+
+## Virtualization with Memory-Reused Slots
+
+Virtual lists only render the visible window on screen. Instead of creating new wrapper objects on every scroll event, `superList` pre-allocates a fixed array of reactive slots (`values`). 
+
+Each slot holds:
+- `value`: The current data item.
+- `visible`: Whether the row should be displayed (for filtering).
+- `checked`: Whether the row is selected.
+
+:::code-group
+
+```tsx [React]
+import { setup, For, Show } from '@airlib/react';
+import { superList } from '@airlib/react';
+
+interface User {
+  id: number;
+  name: string;
+  role: string;
+}
+
+export const UserTable = setup(() => {
+  const users = superList<User>([
+    { id: 1, name: 'Alice', role: 'Admin' },
+    { id: 2, name: 'Bob', role: 'Editor' },
+  ], {
+    size: 100, // Fixed pool size for virtual rendering
+    orderBy: ['name', 'asc'],
+  });
+
+  return (
+    <table>
+      <tbody>
+        <For each={() => users.values}>
+          {(row) => (
+            <Show when={() => row.value && row.visible}>
+              {() => (
+                <tr className={row.checked ? 'selected' : ''}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={row.checked}
+                      onChange={() => users.toggle(row.value!)}
+                    />
+                  </td>
+                  <td>{row.value?.name}</td>
+                  <td>{row.value?.role}</td>
+                </tr>
+              )}
+            </Show>
+          )}
+        </For>
+      </tbody>
+    </table>
+  );
+});
+```
+
+```tsx [SolidJS]
+import { setup, For, Show } from '@airlib/solid';
+import { superList } from '@airlib/solid';
+
+interface User {
+  id: number;
+  name: string;
+  role: string;
+}
+
+export const UserTable = setup(() => {
+  const users = superList<User>([
+    { id: 1, name: 'Alice', role: 'Admin' },
+    { id: 2, name: 'Bob', role: 'Editor' },
+  ], {
+    size: 100, // Fixed pool size for virtual rendering
+    orderBy: ['name', 'asc'],
+  });
+
+  return (
+    <table>
+      <tbody>
+        <For each={users.values}>
+          {(row) => (
+            <Show when={row.value && row.visible}>
+              <tr class={row.checked ? 'selected' : ''}>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={row.checked}
+                    onChange={() => users.toggle(row.value!)}
+                  />
+                </td>
+                <td>{row.value?.name}</td>
+                <td>{row.value?.role}</td>
+              </tr>
+            </Show>
+          )}
+        </For>
+      </tbody>
+    </table>
+  );
+});
+```
+
+:::
+
+## Managing Selection State
+
+Tracking selected items in dynamic lists usually requires separate `Set` management. `superList` maintains a reactive `selection` Set that updates automatically when rows are checked or removed:
+
+```ts
+// Toggle selection by index or value
+users.select(0);
+users.deselect(0);
+users.toggle(1);
+
+// Reactive selection set — reads total count or inspects selected values directly
+console.log(users.selection.size);
+```
+
+When an item is deleted or replaced, it is automatically removed from `selection`, preventing ghost selection references.
+
+## Filtering Without Destroying Indexes
+
+Traditional `.filter()` destroys the original array indices, complicating selection and pagination. `superList` allows toggling row visibility without modifying array structure:
+
+```ts
+// Hide a range of rows (e.g. collapsed sections or search filters)
+users.hide(0, 10);
+
+// Restore row visibility
+users.show(0, 10);
+```
+
+## Continuous Automated Ordering
+
+When new items are appended or modified, `superList` automatically places them in their correct sorted position using `orderBy` or a custom comparator:
+
+```ts
+const products = superList([
+  { id: 1, name: 'Keyboard', price: 99 },
+  { id: 2, name: 'Monitor', price: 299 },
+], {
+  orderBy: ['price', 'asc'],
+});
+
+// Automatically inserted in sorted order without manual re-sorting
+products.add([{ id: 3, name: 'Mouse', price: 49 }]);
+```
+
+## Updating Collection Data
+
+Update collection data using index or batch methods:
+
+```ts
+// Append new items
+users.add([{ id: 3, name: 'Charlie', role: 'Viewer' }]);
+
+// Replace full dataset (resets excess rows and cleans up stale selections)
+users.assign(newDataset);
+
+// Update a row at a specific index
+users.set(0, { id: 1, name: 'Alice Smith', role: 'Admin' });
+
+// Remove rows starting at an index
+users.delete(0, 1);
+```

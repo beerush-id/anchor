@@ -7,6 +7,7 @@ import { Advanced } from '@/components/features/Advanced.js';
 import { BeyondUi } from '@/components/features/BeyondUi.js';
 import { FineGrained } from '@/components/features/FineGrained.js';
 import { Irpc } from '@/components/features/Irpc.js';
+import { ReactiveForm } from '@/components/features/ReactiveForm.js';
 import { Router } from '@/components/features/Router.js';
 import { Runtime } from '@/components/features/Runtime.js';
 import { UniversalSsr } from '@/components/features/UniversalSsr.js';
@@ -50,6 +51,7 @@ export default page(rootIndexRoute).render(() => {
       <UniversalSsr />
       <Workflow />
       <Runtime />
+      <ReactiveForm />
       <Advanced />
       <FreedomOfChoice />
     </>

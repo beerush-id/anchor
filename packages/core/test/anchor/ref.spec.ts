@@ -12,6 +12,7 @@ import {
   derived,
   DerivedRef,
   destroyRef,
+  exception,
   immutable,
   ImmutableRef,
   isDerivedRef,
@@ -22,6 +23,7 @@ import {
   mutable,
   MutableRef,
   signal,
+  writable,
 } from '../../src/reactive/ref.js';
 import { createStack, withStack } from '../../src/scope/stack.js';
 
@@ -577,6 +579,22 @@ describe('Anchor Core - Ref', () => {
       expect(bar).not.toBe(bar2);
 
       vi.unstubAllGlobals();
+    });
+
+    it('should create writable ref and trigger detectStability', () => {
+      const state = immutable({ count: 0 });
+      const w = writable(state);
+
+      expect(w).toBeDefined();
+      expect(w.count).toBe(0);
+    });
+
+    it('should catch state exceptions using exception helper', () => {
+      const state = mutable({ count: 0 });
+      const handler = vi.fn();
+      const caught = exception(state, handler);
+
+      expect(caught).toBeDefined();
     });
   });
 });

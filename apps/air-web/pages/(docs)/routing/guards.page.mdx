@@ -191,10 +191,10 @@ If a guard throws a standard `Error` instead of a `Redirect`, the error is surfa
 
 ```tsx [React]
 // layout.tsx
-import { page, snippet, render } from '@airlib/react';
+import { page, snippet } from '@airlib/react';
 
 export const DashboardLayout = page(dashboardRoute).render(({ state, children }) => {
-  return render(() => {
+  return () => {
     if (state.error) {
       return (
         <div className="error-barrier">
@@ -205,7 +205,7 @@ export const DashboardLayout = page(dashboardRoute).render(({ state, children })
     }
 
     return <main>{children}</main>;
-  });
+  };
 });
 ```
 

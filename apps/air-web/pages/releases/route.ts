@@ -11,6 +11,7 @@ const releaseV1222Route = route.route('/release-v1.2.22');
 const releaseV1223Route = route.route('/release-v1.2.23');
 const releaseV130Route = route.route('/release-v1.3.0');
 const releaseV200Route = route.route('/release-v2.0.0');
+const releaseV210Route = route.route('/release-v2.1.0');
 /** AirLib managed */
 
 export const releasesRoute = route.config({ preloadMode: 'hover' });
@@ -24,5 +25,6 @@ export const releasesReleaseV12Route = releaseV12Route;
 export const releasesReleaseV130Route = releaseV130Route;
 export const releasesReleaseV1Route = releaseV1Route;
 export const releasesReleaseV200Route = releaseV200Route;
+export const releasesReleaseV210Route = releaseV210Route;
 
 export default releasesRoute;

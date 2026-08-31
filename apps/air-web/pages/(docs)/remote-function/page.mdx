@@ -58,7 +58,7 @@ On the client, you just import the signature and call it inside your component l
 :::code-group
 
 ```tsx [React]
-import { setup, render, mutable } from '@airlib/react';
+import { setup, mutable } from '@airlib/react';
 import { hello } from './rpc/hello/index.js';
 
 export const Greeting = setup(() => {
@@ -68,12 +68,12 @@ export const Greeting = setup(() => {
     state.message = await hello('John');
   };
 
-  return render(() => (
+  return () => (
     <div>
       <button onClick={fetchGreeting}>Say Hello</button>
       <p>{state.message}</p>
     </div>
-  ));
+  );
 });
 ```
 
@@ -150,14 +150,14 @@ Every call returns an `IRPCReader<T>` — a reactive proxy with `.data`, `.statu
 :::code-group
 
 ```tsx [React]
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 import { generatePoem } from './rpc/poem/index.js';
 
 export const PoemWidget = setup(() => {
   const poem = generatePoem.with(() => ['Space']);
 
   // Bind directly — re-renders as data arrives
-  return render(() => <div>{poem.data}</div>);
+  return () => <div>{poem.data}</div>;
 });
 ```
 
@@ -222,7 +222,7 @@ On the client, you access the standard CRUD operations directly from the exporte
 :::code-group
 
 ```tsx [React]
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 import { users } from './rpc/users/index.js';
 
 export const UserProfile = setup((props: { id: string }) => {
@@ -234,12 +234,12 @@ export const UserProfile = setup((props: { id: string }) => {
     await users.update(props.id, { email });
   };
 
-  return render(() => (
+  return () => (
     <div>
       <h1>{user.data?.name}</h1>
       <button onClick={() => updateEmail('new@email.com')}>Update</button>
     </div>
-  ));
+  );
 });
 ```
 

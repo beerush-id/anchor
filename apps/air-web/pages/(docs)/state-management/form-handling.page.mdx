@@ -64,7 +64,7 @@ Since the form state is mutable, you can bind it directly to input elements. Cha
 :::code-group
 
 ```tsx [React]
-import { setup, render, form, $bind, $use } from '@airlib/react';
+import { setup, form, $bind, $use } from '@airlib/react';
 import type { Bindable, Linked } from '@airlib/react';
 
 // 1. Create a reusable, bindable Input Component
@@ -74,7 +74,7 @@ export const TextInput = setup((props: {
   error?: Linked<{ message: string } | undefined>,
   type?: string 
 }) => {
-  return render(() => (
+  return () => (
     <div>
       <label>{props.label}</label>
       <input
@@ -84,14 +84,14 @@ export const TextInput = setup((props: {
       />
       {props.error && <span className="error">{props.error.message}</span>}
     </div>
-  ));
+  );
 });
 
 // 2. Use $bind() and $use() in your Form
 export const LoginForm = setup(() => {
   const [state, errors] = form(schema, { email: '', password: '' });
 
-  return render(() => (
+  return () => (
     <form>
       <TextInput 
         label="Email" 
@@ -105,7 +105,7 @@ export const LoginForm = setup(() => {
         error={$use(errors, 'password')} 
       />
     </form>
-  ));
+  );
 });
 ```
 
@@ -129,8 +129,8 @@ export const TextInput = setup((props: {
         value={props.value ?? ''}
         onInput={(e) => (props.value = e.currentTarget.value)}
       />
-      <Show when={props.error}>
-        <span className="error">{props.error!.message}</span>
+      <Show when={() => props.error}>
+        {() => <span className="error">{props.error!.message}</span>}
       </Show>
     </div>
   );
@@ -201,12 +201,12 @@ const handleSubmit = (e: React.FormEvent) => {
   console.log('Submitting:', result.data);
 };
 
-return render(() => (
+return () => (
   <form onSubmit={handleSubmit}>
     {/* ... inputs ... */}
     <button type="submit">Login</button>
   </form>
-));
+);
 ```
 
 ```tsx [SolidJS]

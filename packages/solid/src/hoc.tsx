@@ -4,15 +4,19 @@ import {
   type AsyncKey,
   AsyncStore,
   CONTEXT_STORE,
+  captureStack,
   getContextStore,
   isFunction,
+  setStaticTracker,
+  untrack,
 } from '@airlib/core';
-import { type Component, getOwner, type JSX, type Owner } from 'solid-js';
+import { type Accessor, type Component, createMemo, getOwner, type JSX, type Owner } from 'solid-js';
 import { proxyProps, setCurrentProps } from './props.js';
 import type {
   BindableComponentProps,
   BindableProps,
   ComponentSlots,
+  ComponentView,
   ComponentWithSnippet,
   SlottedComponent,
 } from './types.js';
@@ -53,12 +57,14 @@ type ContextOwner = Owner & {
  *
  * @param Component - The component with snippets to wrap.
  * @param displayName - The display name of the component.
+ * @param controlled - List of controlled keys to not trigger violation warnings.
  * @returns Slotted component.
  */
 // biome-ignore lint/suspicious/noExplicitAny: library
 export function setup<P extends Record<string, any>, S extends ComponentSlots>(
   Component: ComponentWithSnippet<P, S>,
-  displayName?: string
+  displayName?: string,
+  controlled?: string[]
 ): SlottedComponent<P, S>;
 
 /**
@@ -67,12 +73,14 @@ export function setup<P extends Record<string, any>, S extends ComponentSlots>(
  *
  * @param Component - The component to wrap.
  * @param displayName - The display name of the component.
+ * @param controlled - List of controlled keys to not trigger violation warnings.
  * @returns Bindable component.
  */
 // biome-ignore lint/suspicious/noExplicitAny: library
 export function setup<P extends Record<string, any>>(
-  Component: Component<BindableComponentProps<P>>,
-  displayName?: string
+  Component: ComponentView<P>,
+  displayName?: string,
+  controlled?: string[]
 ): BindableComponent<BindableProps<P>>;
 
 /**
@@ -80,12 +88,14 @@ export function setup<P extends Record<string, any>>(
  *
  * @param Component - The component to wrap.
  * @param displayName - The display name of the component.
+ * @param controlled - List of controlled keys to not trigger violation warnings.
  * @returns Bindable component.
  */
 // biome-ignore lint/suspicious/noExplicitAny: library
 export function setup<P extends Record<string, any>, S extends ComponentSlots>(
-  Component: Component<BindableComponentProps<P>> | ComponentWithSnippet<P, S>,
-  displayName?: string
+  Component: ComponentView<P> | ComponentWithSnippet<P, S>,
+  displayName?: string,
+  controlled?: string[]
 ): BindableComponent<BindableProps<P>> {
   const Setup = (props: BindableComponentProps<P>) => {
     const bindableProps = proxyProps(props);
@@ -99,8 +109,32 @@ export function setup<P extends Record<string, any>, S extends ComponentSlots>(
       self[SETUP_NAME] = name;
     }
 
-    const slots = findSlots((props as AnyType).children);
-    return (Component as ComponentWithSnippet<P, S>)(bindableProps as never, slots as never);
+    const restore = setStaticTracker((_state, key) => {
+      if (typeof key === 'symbol' || controlled?.includes(String(key))) return;
+
+      const error = new Error(`[${name}] Frozen read on "${String(key)}".`);
+      captureStack.violation.general(
+        'Frozen reactive read detected:',
+        `Attempted to read "${String(key)}" inside <${name}> setup() without a reactive boundary.`,
+        error,
+        [
+          `Component setup executes once upon initialization; reads here will not trigger re-renders.`,
+          '- Return an accessor function: `return () => <JSX />` instead of static JSX.',
+          '- Or isolate dynamic reads inside a `<Snippet>` / reactive boundary.',
+          '- If static is expected, wrap with `$static(() => ...)` to silence this warning.',
+        ]
+      );
+    });
+
+    let result: unknown;
+    try {
+      const slots = untrack(() => findSlots((props as AnyType).children));
+      result = (Component as ComponentWithSnippet<P, S>)(bindableProps as never, slots as never);
+    } finally {
+      restore();
+    }
+
+    return typeof result === 'function' ? render(result as never, bindableProps as never) : result;
   };
 
   const SetupSlot = (props: AnyType) => {
@@ -114,9 +148,71 @@ export function setup<P extends Record<string, any>, S extends ComponentSlots>(
   return Setup as never;
 }
 
-function findSlots(children: unknown) {
+/**
+ * Creates a memoized reactive JSX element from a view factory function.
+ *
+ * @param view - Factory function returning a JSX element or an accessor.
+ * @param props - The props to pass to the view function.
+ * @returns A memoized accessor resolving to the evaluated JSX element.
+ */
+export function render<P>(view: ((props: P) => JSX.Element) | Accessor<JSX.Element>, props: P): Accessor<JSX.Element> {
+  return createMemo(() => view(props));
+}
+
+/**
+ * Determines whether a given children value is a dynamic render callback.
+ *
+ * Checks if the value is a function expecting arguments (e.g. `(field) => JSX`),
+ * distinguishing render props from static JSX elements or zero-argument accessors.
+ *
+ * @param children - The children prop or value to inspect.
+ * @returns True if children is a function accepting one or more arguments.
+ */
+export function isDynamic(children: unknown): children is (...args: AnyType[]) => JSX.Element {
+  return typeof children === 'function' && (children as (...args: AnyType[]) => JSX.Element).length > 0;
+}
+
+/**
+ * Resolves dynamic child nodes or accessor functions into evaluated JSX elements.
+ * Invokes the accessor/render-prop with optional arguments, or returns the static element directly.
+ * Catches runtime execution errors and returns an error diagnostic string.
+ *
+ * @param children - Static JSX element or an accessor/render function returning a JSX element.
+ * @param args - Arguments to pass when `children` is a function.
+ * @returns The resolved JSX element or an error diagnostic string.
+ */
+export function renderDynamic(
+  children: Accessor<JSX.Element> | ((...args: AnyType[]) => JSX.Element) | JSX.Element,
+  ...args: AnyType[]
+): JSX.Element {
+  if (typeof children === 'function') {
+    try {
+      return (children as (...args: AnyType[]) => JSX.Element)(...args);
+    } catch (error) {
+      return `[Render Error]: Failed to render dynamic: ${(error as Error).message}`;
+    }
+  }
+  return children;
+}
+
+/**
+ * Extracts named component snippets (slots) from component children.
+ * Resolves child accessors if needed, flattens the node hierarchy, and maps snippet functions by their target slot name.
+ *
+ * @param children - The children or child accessor to inspect for snippets.
+ * @returns A record mapping slot names to snippet render functions.
+ */
+function findSlots(children: unknown): ComponentSlots {
   if (!children) return {} as ComponentSlots;
-  const resolved = typeof children === 'function' ? (children as () => unknown)() : children;
+  let resolved: unknown = children;
+  if (typeof children === 'function' && children.length === 0 && !(children as AnyType)?.[COMPONENT_SNIPPET_KEY]) {
+    try {
+      resolved = (children as () => unknown)();
+    } catch {
+      /* istanbul ignore next */
+      return {} as ComponentSlots;
+    }
+  }
   const nodes = Array.isArray(resolved) ? resolved : [resolved];
   const slots = {} as ComponentSlots;
 

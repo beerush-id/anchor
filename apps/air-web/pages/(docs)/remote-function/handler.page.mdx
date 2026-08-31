@@ -174,13 +174,13 @@ On the client, the `IRPCReader` populates each field independently. The UI skele
 export const DashboardWidget = setup(({ userId }) => {
   const dashboard = getDashboard.with(() => [userId]);
   
-  return render(() => (
+  return () => (
     <div>
       <User data={dashboard.data.user} />
       <Sales data={dashboard.data.sales} />
       <Metrics data={dashboard.data.telemetry} />
     </div>
-  ));
+  );
 });
 ```
 

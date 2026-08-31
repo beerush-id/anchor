@@ -109,6 +109,8 @@ describe('Anchor Core - Inspector', () => {
         keys: [],
         prev: [1, 2],
         value: [3],
+        added: [3],
+        removed: [],
       });
 
       unsubscribe();

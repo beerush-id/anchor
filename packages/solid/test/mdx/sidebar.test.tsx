@@ -338,5 +338,13 @@ describe('Documentation Sidebar Navigation', () => {
       expect(link).not.toBeNull();
       if (link) fireEvent.mouseEnter(link);
     });
+
+    it('renders static leaf item without level and without link', () => {
+      const { container } = render(() => <SidebarNode item={{ text: 'Plain Text' }} />);
+      const item = container.querySelector('.air-mdx-sidebar-item');
+      expect(item).not.toBeNull();
+      expect(item?.textContent).toContain('Plain Text');
+      expect((item as HTMLElement).style.getPropertyValue('--air-nav-level')).toBe('0');
+    });
   });
 });

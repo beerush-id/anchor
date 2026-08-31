@@ -36,7 +36,7 @@ const Header = setup<HeaderProps, HeaderSlots>((props, snippets) => {
     state.open = false;
   };
 
-  return (
+  return () => (
     <header className={classx('air-header', props.className)}>
       <div className="air-header-inner">
         <Link to={rootRoute} className="air-header-logo" aria-label="AirLib Logo" onClick={close}>

@@ -37,7 +37,7 @@ export const Layout: SlottedComponent<LayoutProps, LayoutSlots> = setup<LayoutPr
     state.drawer = '';
   };
 
-  return (
+  return () => (
     <div {...$restProps} class={classx('air-mdx air-mdx-container', props.class)}>
       <div class="air-mdx-mobile-bar">
         <button
@@ -78,7 +78,9 @@ export const Layout: SlottedComponent<LayoutProps, LayoutSlots> = setup<LayoutPr
           }}
         >
           <Slot for={snippets.sidebar?.(ctx)}>
-            <Sidebar nav={props.nav ?? []} preload={props.preload} />
+            <Show when={props.nav}>
+              <Sidebar nav={props.nav!} preload={props.preload} />
+            </Show>
           </Slot>
         </aside>
 
@@ -86,7 +88,9 @@ export const Layout: SlottedComponent<LayoutProps, LayoutSlots> = setup<LayoutPr
           <div class="air-mdx-main-inner">
             {props.children}
             <Slot for={snippets.pagination?.(ctx)}>
-              <Pagination nav={props.nav ?? []} preload={props.preload} />
+              <Show when={props.nav}>
+                <Pagination nav={props.nav!} preload={props.preload} />
+              </Show>
             </Slot>
           </div>
 

@@ -1,5 +1,9 @@
+import { classx, derived, uIndex } from '@airlib/core';
 import type { HTMLAttributes, ReactNode } from 'react';
-import { type Bindable, classx, onMount, render, Show, Snippet, setup, snippet, uIndex } from '../index.js';
+import { setup, Snippet } from '../hoc.js';
+import { onMount } from '../lifecycle.js';
+import { Show } from '../switch.js';
+import type { Bindable } from '../types.js';
 
 export type InteractivePanel = 'source' | 'preview';
 
@@ -21,62 +25,10 @@ const DEFAULT_ICON = (
 
 export const Interactive = setup<InteractiveProps>((props) => {
   const $restProps = props.$omit(['title', 'icon', 'panel', 'children', 'className', 'id', 'standalone']);
-  const name = props.id ?? `air-interactive-${uIndex(INTERACTIVE_INDEX)}`;
-  props.panel = props.panel ?? 'preview';
-
-  const InteractiveHeader = snippet(() => (
-    <div className="air-interactive-header">
-      <span className="air-interactive-controls" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-      </span>
-      <div className="air-interactive-title-bar">
-        <Snippet>
-          {() => (
-            <>
-              <span className="air-interactive-icon" aria-hidden="true">
-                {props.icon ?? DEFAULT_ICON}
-              </span>
-              <span className="air-interactive-title">{props.title ?? 'Interactive Demo'}</span>
-            </>
-          )}
-        </Snippet>
-      </div>
-      <Show when={() => !('standalone' in props)}>
-        {() => (
-          <div className="air-interactive-toggle" role="radiogroup" aria-label="Toggle panel" data-panel={props.panel}>
-            <label>
-              <input
-                type="radio"
-                name={name}
-                value="source"
-                checked={props.panel === 'source'}
-                onChange={() => (props.panel = 'source')}
-              />
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
-                <path d="M320-267.69 107.69-480 320-692.31l28.54 28.54-184 184L348.31-296 320-267.69Zm320 0-28.54-28.54 184-184L611.69-664 640-692.31 852.31-480 640-267.69Z" />
-              </svg>
-              Source
-            </label>
-            <label>
-              <input
-                type="radio"
-                name={name}
-                value="preview"
-                checked={props.panel === 'preview'}
-                onChange={() => (props.panel = 'preview')}
-              />
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true">
-                <path d="M759-201q41-41 41-99v-80H520v80q0 58 41 99t99 41q58 0 99-41ZM520.23-420H640v-137.85q-52.62 7.16-85.5 45.85t-34.27 92ZM680-420h119.77q-1.39-53.31-34.27-92T680-557.85V-420ZM532.46-172.46Q480-224.92 480-300v-120q0-75.08 52.46-127.54Q584.92-600 660-600q75.08 0 127.54 52.46Q840-495.08 840-420v120q0 75.08-52.46 127.54Q735.08-120 660-120q-75.08 0-127.54-52.46ZM160-240v-480 480Zm24.62 40q-27.62 0-46.12-18.5Q120-237 120-264.62v-430.76q0-27.62 18.5-46.12Q157-760 184.62-760h590.76q27.62 0 46.12 18.5Q840-723 840-695.38h-40q0-10.77-6.92-17.7-6.93-6.92-17.7-6.92H184.62q-10.77 0-17.7 6.92-6.92 6.93-6.92 17.7v430.76q0 10.77 6.92 17.7 6.93 6.92 17.7 6.92h200.23v40H184.62Z" />
-              </svg>
-              Preview
-            </label>
-          </div>
-        )}
-      </Show>
-    </div>
-  ));
+  const attr = derived.as(() => ({
+    name: props.id ?? `air-interactive-${uIndex(INTERACTIVE_INDEX)}`,
+    panel: props.panel ?? 'preview',
+  }));
 
   let ref: HTMLDivElement | null = null;
 
@@ -86,20 +38,86 @@ export const Interactive = setup<InteractiveProps>((props) => {
     ref.style.setProperty('--air-mdx-interactive-height', `${ref.offsetHeight}px`);
   });
 
-  return render(
-    () => (
-      <div
-        {...$restProps}
-        ref={(el) => {
-          ref = el;
-        }}
-        id={props.id}
-        className={classx('air-interactive', props.className, { 'air-interactive-standalone': props.standalone })}
-      >
-        <InteractiveHeader />
-        <div className="air-interactive-content">{props.children}</div>
-      </div>
-    ),
-    'Interactive'
+  return () => (
+    <div
+      {...$restProps}
+      ref={(el) => {
+        ref = el;
+      }}
+      id={props.id}
+      className={classx('air-interactive', props.className, { 'air-interactive-standalone': props.standalone })}
+    >
+      <Snippet>
+        {() => (
+          <div className="air-interactive-header">
+            <span className="air-interactive-controls" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+            <div className="air-interactive-title-bar">
+              <Snippet>
+                {() => (
+                  <>
+                    <span className="air-interactive-icon" aria-hidden="true">
+                      {props.icon ?? DEFAULT_ICON}
+                    </span>
+                    <span className="air-interactive-title">{props.title ?? 'Interactive Demo'}</span>
+                  </>
+                )}
+              </Snippet>
+            </div>
+            <Show when={() => !('standalone' in props)}>
+              {() => (
+                <div
+                  className="air-interactive-toggle"
+                  role="radiogroup"
+                  aria-label="Toggle panel"
+                  data-panel={attr.panel}
+                >
+                  <label>
+                    <input
+                      type="radio"
+                      name={attr.name}
+                      value="source"
+                      checked={attr.panel === 'source'}
+                      onChange={() => (props.panel = 'source')}
+                    />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 -960 960 960"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path d="M320-267.69 107.69-480 320-692.31l28.54 28.54-184 184L348.31-296 320-267.69Zm320 0-28.54-28.54 184-184L611.69-664 640-692.31 852.31-480 640-267.69Z" />
+                    </svg>
+                    Source
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name={attr.name}
+                      value="preview"
+                      checked={attr.panel === 'preview'}
+                      onChange={() => (props.panel = 'preview')}
+                    />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 -960 960 960"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path d="M759-201q41-41 41-99v-80H520v80q0 58 41 99t99 41q58 0 99-41ZM520.23-420H640v-137.85q-52.62 7.16-85.5 45.85t-34.27 92ZM680-420h119.77q-1.39-53.31-34.27-92T680-557.85V-420ZM532.46-172.46Q480-224.92 480-300v-120q0-75.08 52.46-127.54Q584.92-600 660-600q75.08 0 127.54 52.46Q840-495.08 840-420v120q0 75.08-52.46 127.54Q735.08-120 660-120q-75.08 0-127.54-52.46ZM160-240v-480 480Zm24.62 40q-27.62 0-46.12-18.5Q120-237 120-264.62v-430.76q0-27.62 18.5-46.12Q157-760 184.62-760h590.76q27.62 0 46.12 18.5Q840-723 840-695.38h-40q0-10.77-6.92-17.7-6.93-6.92-17.7-6.92H184.62q-10.77 0-17.7 6.92-6.92 6.93-6.92 17.7v430.76q0 10.77 6.92 17.7 6.93 6.92 17.7 6.92h200.23v40H184.62Z" />
+                    </svg>
+                    Preview
+                  </label>
+                </div>
+              )}
+            </Show>
+          </div>
+        )}
+      </Snippet>
+      <div className="air-interactive-content">{props.children}</div>
+    </div>
   );
 }, 'Interactive');

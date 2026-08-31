@@ -11,6 +11,7 @@ const immutableRoute = route.route('/immutable');
 const mutableRoute = route.route('/mutable');
 const sideEffectRoute = route.route('/side-effect');
 const cookieRoute = route.route('/cookie');
+const superListRoute = route.route('/super-list');
 /** AirLib managed */
 
 export const stateManagementRoute = route;
@@ -23,5 +24,6 @@ export const stateManagementImmutableRoute = immutableRoute;
 export const stateManagementMutableRoute = mutableRoute;
 export const stateManagementSideEffectRoute = sideEffectRoute;
 export const stateManagementCookieRoute = cookieRoute;
+export const stateManagementSuperListRoute = superListRoute;
 
 export default stateManagementRoute;

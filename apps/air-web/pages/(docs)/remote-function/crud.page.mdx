@@ -44,12 +44,12 @@ The return value is an object containing four standard `IRPCStub` instances. Bec
 :::code-group
 
 ```tsx [React]
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 import { users } from './rpc/users/index.js';
 
 export const UserProfile = setup((props: { id: string }) => {
   const user = users.get.with(() => [props.id]);
-  return render(() => <div>{user.data?.name}</div>);
+  return () => <div>{user.data?.name}</div>;
 });
 ```
 

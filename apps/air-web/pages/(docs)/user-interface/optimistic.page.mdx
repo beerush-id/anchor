@@ -16,7 +16,7 @@ The AirLib provides several ways to implement this pattern depending on your nee
 The simplest approach uses the `undoable()` primitive. It applies mutations instantly and provides an `undo` function to rollback if the network request fails, along with a `settled` callback to finalize the state.
 
 ```tsx
-import { setup, render, undoable } from '@airlib/react';
+import { setup, undoable } from '@airlib/react';
 
 export const LikeButton = setup<{ post: any }>((props) => {
   const toggleLike = async () => {
@@ -34,11 +34,11 @@ export const LikeButton = setup<{ post: any }>((props) => {
       });
   };
 
-  return render(() => (
+  return () => (
     <button onClick={toggleLike}>
       {props.post.liked ? 'Unlike' : 'Like'}
     </button>
-  ));
+  );
 });
 ```
 
@@ -47,7 +47,7 @@ export const LikeButton = setup<{ post: any }>((props) => {
 For complex scenarios requiring sequential state mutations separated by asynchronous boundaries (`await`), where the rollback itself requires manual orchestration, you can track the previous state explicitly.
 
 ```tsx
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 
 export const Checkout = setup<{ cart: any }>((props) => {
   const processCheckout = async () => {
@@ -73,9 +73,9 @@ export const Checkout = setup<{ cart: any }>((props) => {
     }
   };
 
-  return render(() => (
+  return () => (
     <button onClick={processCheckout}>Checkout</button>
-  ));
+  );
 });
 ```
 
@@ -84,7 +84,7 @@ export const Checkout = setup<{ cart: any }>((props) => {
 For complex, multi-stage pipelines, you can use the workflow engine where each step handles its own isolated optimistic updates and rollback logic. This prevents massive centralized error handlers and keeps logic decoupled.
 
 ```tsx
-import { setup, render, plan, undoable, mutable } from '@airlib/react';
+import { setup, plan, undoable, mutable } from '@airlib/react';
 
 export const Checkout = setup(() => {
   const cart = mutable({ id: 'cart_123', status: 'idle' });
@@ -101,10 +101,10 @@ export const Checkout = setup(() => {
       cart.status = 'complete';
     });
 
-  return render(() => (
+  return () => (
     <button onClick={checkoutFlow}>
       {cart.status === 'idle' ? 'Checkout' : cart.status}
     </button>
-  ));
+  );
 });
 ```

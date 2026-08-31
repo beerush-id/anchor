@@ -228,7 +228,7 @@ Wrap multiple fenced code blocks in a `:::code-group` block. Each code block's l
 import { setup } from '@airlib/react';
 
 const Counter = setup(() => {
-  return render(() => <span>Count</span>);
+  return () => <span>Count</span>;
 });
 ```
 
@@ -312,7 +312,7 @@ Interactive blocks support standalone rendering when code snippets should be exe
 ```tsx
 const Counter = setup(() => {
   const count = mutable(0);
-  return render(() => <button onClick={() => count.value++}>Count: {count.value}</button>);
+  return () => <button onClick={() => count.value++}>Count: {count.value}</button>;
 });
 ```
 
@@ -330,16 +330,20 @@ Let's look at the markdown source before seeing it live:
 **1. Create a Counter component:**
 
 ```tsx
-import { setup, render, mutable } from '@airlib/react';
+import { effect, mutable, setup } from '@airlib/react';
 
 const Counter = setup<{ start?: number }>((props) => {
-  const counter = mutable(props.start ?? 0);
+  const counter = mutable(0);
 
-  return render(() => (
+  effect(() => {
+    if (props.start) counter.value = props.start;
+  });
+
+  return () => (
     <button onClick={() => counter.value++}>
       Click me {counter.value}
     </button>
-  ), 'Counter');
+  );
 }, 'Counter');
 ```
 
@@ -364,16 +368,20 @@ The live result:
 **1. Create a Counter component:**
 
 ```tsx
-import { setup, render, mutable } from '@airlib/react';
+import { effect, mutable, setup } from '@airlib/react';
 
 const Counter = setup<{ start?: number }>((props) => {
-  const counter = mutable(props.start ?? 0);
+  const counter = mutable(0);
 
-  return render(() => (
+  effect(() => {
+    if (props.start) counter.value = props.start;
+  });
+
+  return () => (
     <button onClick={() => counter.value++}>
       Click me {counter.value}
     </button>
-  ), 'Counter');
+  );
 }, 'Counter');
 ```
 
@@ -540,6 +548,20 @@ import { docsRoute } from './route.js';
 ```
 
 See [Data Loaders & Providers](/docs/routing/data-loaders) for how to attach data to routes.
+
+### Reserved Scope Identifiers
+
+MDX pages compiled by AirStack automatically inject and expose the following scoped variables in the template:
+
+| Identifier | Type | Description |
+|------------|------|-------------|
+| `$state` | `RouteState` | The route's live reactive state containing `.data`, `.params`, `.query`, `.status`, and `.error`. |
+| `$context` | `RouteContext` | The route runtime context, providing `.url` (URL object with pathname, search, and hash). |
+| `$children` | `JSX.Element` | Nested child content or outlet elements when rendered as a layout or wrapper. |
+
+:::warning[Reserved Names]
+Avoid declaring top-level variables named `$state`, `$context`, or `$children` in your MDX code blocks or inline scripts, as they are reserved by the MDX compiler for route data binding.
+:::
 
 :::tip[What we learn]
 `$state` is the same reactive state object available in `.tsx` pages — when the provider resolves, the MDX page updates automatically. This means you can use MDX for pages that display user-specific data, fetched content, or any route-provided state without switching to TSX.

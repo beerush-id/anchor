@@ -14,7 +14,7 @@
 </p>
 
 > [!WARNING]
-> **Version Notice**: Versions `v2.0.0` through `v2.0.7` are broken due to a React hooks initialization mismatch. Please use **`v2.0.8`** or later for normal, stable operation.
+> **Version Notice**: Versions `v2.0.0` through `v2.0.7` are broken due to a React hooks initialization mismatch. Please use **`v2.1.0`** or later for normal, stable operation.
 
 ---
 

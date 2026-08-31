@@ -1,10 +1,11 @@
 /** @jsxImportSource solid-js */
 
+import { mutable } from '@airlib/core';
 import { render } from '@solidjs/testing-library';
 import type { JSX } from 'solid-js';
 import { describe, expect, it, vi } from 'vitest';
 import { BindingRef } from '../../src/binding.js';
-import { bindable, setup } from '../../src/hoc.js';
+import { bindable, isDynamic, renderDynamic, render as renderView, setup } from '../../src/hoc.js';
 import { type BindableComponentProps, classx, getContext, Slot, setContext } from '../../src/index.js';
 
 describe('Anchor Solid - HOC API', () => {
@@ -177,14 +178,14 @@ describe('Anchor Solid - HOC API', () => {
     it('should create component with setup', async () => {
       setContext('name', 'Root');
 
-      const TopComponent = setup<{ children?: JSX.Element }>(function TopComp({ children }) {
+      const TopComponent = setup<{ children?: JSX.Element }>(function TopComp(_props) {
         setContext('name', 'TOP');
         expect(getContext('name')).toBe('TOP');
 
-        return <div class="top">{children}</div>;
+        return ({ children }) => <div class="top">{children}</div>;
       });
 
-      const BottomComponent = setup<{ children?: JSX.Element }>((props) => (
+      const BottomComponent = setup<{ children?: JSX.Element }>((props) => () => (
         <div class="bottom">
           {props.children}
           <span class="name">{getContext('name')}</span>
@@ -208,11 +209,11 @@ describe('Anchor Solid - HOC API', () => {
     it('should isolate context between sibling and nested setup components', async () => {
       const Tab = setup<{ name: string; children?: JSX.Element; className?: string }>(function TabComp(props) {
         setContext('tab', props.name);
-        return <div class={props.className}>{props.children}</div>;
+        return () => <div class={props.className}>{props.children}</div>;
       });
 
       const Child = setup<{ id: string }>(function ChildComp(props) {
-        return <span data-testid={props.id}>{getContext('tab')}</span>;
+        return () => <span data-testid={props.id}>{getContext('tab')}</span>;
       });
 
       const { unmount, getByTestId, container } = render(() => (
@@ -351,6 +352,169 @@ describe('Anchor Solid - HOC API', () => {
 
       expect(container.textContent).toContain('none');
       expect(container.textContent).toContain('Fallback Children');
+      unmount();
+    });
+  });
+
+  describe('isDynamic', () => {
+    it('returns true for functions with parameters', () => {
+      expect(isDynamic((x: unknown) => x)).toBe(true);
+      expect(isDynamic((a: unknown, b: unknown) => a)).toBe(true);
+    });
+
+    it('returns false for 0-arg accessors, primitives, and static elements', () => {
+      expect(isDynamic(() => 'test')).toBe(false);
+      expect(isDynamic('static')).toBe(false);
+      expect(isDynamic(123)).toBe(false);
+      expect(isDynamic(null)).toBe(false);
+      expect(isDynamic(undefined)).toBe(false);
+      expect(isDynamic(<div>test</div>)).toBe(false);
+    });
+  });
+
+  describe('renderDynamic', () => {
+    it('returns static JSX elements and primitive values as-is', () => {
+      expect(renderDynamic('Hello')).toBe('Hello');
+      expect(renderDynamic(123 as never)).toBe(123);
+      expect(renderDynamic(null as never)).toBeNull();
+      expect(renderDynamic(undefined as never)).toBeUndefined();
+
+      const element = <div>Static Content</div>;
+      expect(renderDynamic(element)).toBe(element);
+    });
+
+    it('evaluates zero-argument accessor functions', () => {
+      const accessor = () => <span>Accessor Result</span>;
+      const result = renderDynamic(accessor);
+
+      const { container, unmount } = render(() => <div>{result}</div>);
+      expect(container.textContent).toBe('Accessor Result');
+      unmount();
+    });
+
+    it('invokes render-props forwarding optional arguments', () => {
+      const renderProp = (name: string, count: number) => (
+        <span>
+          {name}: {count}
+        </span>
+      );
+      const result = renderDynamic(renderProp, 'Items', 42);
+
+      const { container, unmount } = render(() => <div>{result}</div>);
+      expect(container.textContent).toBe('Items: 42');
+      unmount();
+    });
+
+    it('catches execution errors and returns an error diagnostic string', () => {
+      const failingFn = () => {
+        throw new Error('Custom render error');
+      };
+
+      const result = renderDynamic(failingFn);
+      expect(result).toBe('[Render Error]: Failed to render dynamic: Custom render error');
+    });
+  });
+
+  describe('render', () => {
+    it('creates a reactive memo from a view factory function', () => {
+      const state = mutable({ count: 1 });
+      const factorySpy = vi.fn(() => {
+        const count = state.count;
+        return <span>Count: {count}</span>;
+      });
+
+      const Counter = () => {
+        const view = renderView(factorySpy, {});
+        return <div>{view()}</div>;
+      };
+
+      const { container, unmount } = render(() => <Counter />);
+      expect(container.textContent).toBe('Count: 1');
+      expect(factorySpy).toHaveBeenCalledTimes(1);
+
+      state.count = 5;
+      expect(container.textContent).toBe('Count: 5');
+      expect(factorySpy).toHaveBeenCalledTimes(2);
+
+      unmount();
+    });
+
+    it('reactively switches branches when using conditional early returns', () => {
+      const state = mutable({ loading: true, title: 'Dashboard' });
+
+      const StatusView = () => {
+        const view = renderView(() => {
+          if (state.loading) {
+            return <div data-testid="status-loading">Loading...</div>;
+          }
+          return <div data-testid="status-content">Title: {state.title}</div>;
+        }, {});
+        return <div>{view()}</div>;
+      };
+
+      const { getByTestId, queryByTestId, unmount } = render(() => <StatusView />);
+      expect(getByTestId('status-loading').textContent).toBe('Loading...');
+      expect(queryByTestId('status-content')).toBeNull();
+
+      state.loading = false;
+      expect(getByTestId('status-content').textContent).toBe('Title: Dashboard');
+      expect(queryByTestId('status-loading')).toBeNull();
+
+      state.title = 'Analytics';
+      expect(getByTestId('status-content').textContent).toBe('Title: Analytics');
+      unmount();
+    });
+
+    it('unwraps dynamic functions and accessors returned by the view factory', () => {
+      const state = mutable({ prefix: 'Hello' });
+      const dynamicChild = () => <span>{state.prefix} World</span>;
+
+      const DynamicComponent = () => {
+        const view = renderView(() => dynamicChild as never, {});
+        return <div>{view()}</div>;
+      };
+
+      const { container, unmount } = render(() => <DynamicComponent />);
+      expect(container.textContent).toBe('Hello World');
+
+      state.prefix = 'Goodbye';
+      expect(container.textContent).toBe('Goodbye World');
+      unmount();
+    });
+
+    it('triggers violation on frozen static reads inside setup', () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const state = mutable({ count: 1 });
+      const Comp = setup((_props) => {
+        const frozen = state.count;
+        return <div>{frozen}</div>;
+      }, 'FrozenComp');
+
+      const { unmount } = render(() => <Comp />);
+      expect(errorSpy).toHaveBeenCalled();
+
+      errorSpy.mockRestore();
+      unmount();
+    });
+
+    it('ignores violation on controlled keys inside setup', () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const state = mutable({ count: 1 });
+      const Comp = setup(
+        (_props) => {
+          const frozen = state.count;
+          return <div>{frozen}</div>;
+        },
+        'ControlledComp',
+        ['count']
+      );
+
+      const { unmount } = render(() => <Comp />);
+      expect(errorSpy).not.toHaveBeenCalled();
+
+      errorSpy.mockRestore();
       unmount();
     });
   });

@@ -24,7 +24,7 @@ A piece of UI becomes a **component** when it has its own:
 :::code-group
 
 ```tsx [React]
-import { setup, render, derived } from '@airlib/react';
+import { setup, derived } from '@airlib/react';
 
 const PriceTag = setup<{ amount: number; currency?: string }>((props) => {
   const formatter = derived(() => new Intl.NumberFormat('en-US', {
@@ -36,7 +36,7 @@ const PriceTag = setup<{ amount: number; currency?: string }>((props) => {
     try { return formatter.value.format(props.amount); } catch { return 'N/A'; }
   });
 
-  return render(() => <span className="price">{ display.value }</span>);
+  return () => <span className="price">{ display.value }</span>;
 });
 ```
 
@@ -86,9 +86,9 @@ Creating a **stable component** that only runs-once. It **survives parent re-ren
 - `formatter` **recomputes only when `currency` changes**, avoiding unnecessary `Intl.NumberFormat` construction
 - `display` **recomputes when `amount` or `formatter` changes**, chaining dependencies automatically
 - **React:** **`setup()`** makes the component **function run once**, guaranteeing **stable closure** to survive parent re-renders.
-- **React:** **`render()`** creates a **reactive view** that belongs to the component itself.
+- Returning an **accessor `(props) => ()`** creates a **reactive view** that automatically tracks signals/properties, receives `props` as its argument (enabling direct destructuring like `return ({ children }) => (...)`), and re-renders independently when accessed state changes.
 - **SolidJS:** the function already runs once, and **JSX expressions are tracked automatically**
-  :::
+:::
 
 ## Presentational Components
 
@@ -103,7 +103,7 @@ Data comes from the parent as props. The component transforms it.
 :::code-group
 
 ```tsx [React]
-import { setup, render, derived } from '@airlib/react';
+import { setup, derived } from '@airlib/react';
 
 const StatusBadge = setup<{ status: 'online' | 'away' | 'offline' }>((props) => {
   const label = derived(() => {
@@ -119,9 +119,9 @@ const StatusBadge = setup<{ status: 'online' | 'away' | 'offline' }>((props) => 
     }
   });
 
-  return render(() => (
+  return () => (
     <span className={ `badge ${ props.status }` }>{ label.value }</span>
-  ));
+  );
 });
 ```
 
@@ -182,13 +182,13 @@ Data comes from a shared store, not from props. The component reads it directly.
 :::code-group
 
 ```tsx [React]
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 import { appState } from '../states/app.js';
 
 const ThemeIndicator = setup(() => {
-  return render(() => (
+  return () => (
     <span className={ `theme ${ appState.theme }` }>{ appState.theme }</span>
-  ));
+  );
 });
 ```
 
@@ -240,7 +240,7 @@ The simplest form: one action, one state change.
 :::code-group
 
 ```tsx [React]
-import { setup, render, type Bindable } from '@airlib/react';
+import { setup, type Bindable } from '@airlib/react';
 
 const Toggle = setup<{ value?: Bindable<boolean>; onChange?: () => void }>((props) => {
   const toggle = () => {
@@ -248,11 +248,11 @@ const Toggle = setup<{ value?: Bindable<boolean>; onChange?: () => void }>((prop
     props.onChange?.();
   };
 
-  return render(() => (
+  return () => (
     <button className={ props.value ? 'on' : 'off' } onClick={ toggle }>
       { props.value ? 'On' : 'Off' }
     </button>
-  ));
+  );
 });
 ```
 
@@ -311,7 +311,7 @@ Some components don't receive a trigger element — they find it themselves.
 :::code-group
 
 ```tsx [React]
-import { setup, render, mutable, onMount, onCleanup } from '@airlib/react';
+import { setup, mutable, onMount, onCleanup } from '@airlib/react';
 
 const Tooltip = setup<{ text: string }>((props) => {
   const state = mutable({ visible: false });
@@ -333,11 +333,11 @@ const Tooltip = setup<{ text: string }>((props) => {
     });
   });
 
-  return render(() => (
+  return () => (
     <span ref={ (el) => { ref = el; } } className="tooltip-anchor">
       { state.visible && <span className="tooltip">{ props.text }</span> }
     </span>
-  ));
+  );
 });
 ```
 
@@ -413,7 +413,7 @@ A drag is a sequence — start, continue, end. The component owns the full lifec
 :::code-group
 
 ```tsx [React]
-import { setup, render, mutable, onCleanup, type Bindable } from '@airlib/react';
+import { setup, mutable, onCleanup, type Bindable } from '@airlib/react';
 
 const Slider = setup<{ value?: Bindable<number>; min?: number; max?: number }>((props) => {
   const min = props.min ?? 0;
@@ -445,7 +445,7 @@ const Slider = setup<{ value?: Bindable<number>; min?: number; max?: number }>((
 
   onCleanup(cleanup);
 
-  return render(() => {
+  return () => {
     const percent = ((props.value - min) / (max - min)) * 100;
     return (
       <div
@@ -457,7 +457,7 @@ const Slider = setup<{ value?: Bindable<number>; min?: number; max?: number }>((
         <div className="slider-thumb" style={ { left: `${ percent }%` } } />
       </div>
     );
-  });
+  };
 });
 ```
 
@@ -546,7 +546,7 @@ The component enforces rules on a two-way value before writing it.
 :::code-group
 
 ```tsx [React]
-import { setup, render, type Bindable } from '@airlib/react';
+import { setup, type Bindable } from '@airlib/react';
 
 const QuantitySelector = setup<{
   value?: Bindable<number>;
@@ -571,13 +571,13 @@ const QuantitySelector = setup<{
     }
   };
 
-  return render(() => (
+  return () => (
     <div className="quantity">
       <button disabled={ props.value <= min } onClick={ decrement }>−</button>
       <span>{ props.value }</span>
       <button disabled={ props.value >= max } onClick={ increment }>+</button>
     </div>
-  ));
+  );
 });
 ```
 
@@ -651,7 +651,7 @@ The component builds its own structure from configuration, then manages interact
 :::code-group
 
 ```tsx [React]
-import { setup, render, type Bindable } from '@airlib/react';
+import { setup, type Bindable } from '@airlib/react';
 
 const RatingStars = setup<{
   value?: Bindable<number>;
@@ -665,7 +665,7 @@ const RatingStars = setup<{
     props.onChange?.();
   };
 
-  return render(() => (
+  return () => (
     <div className="rating">
       { Array.from({ length: max }, (_, i) => (
         <button
@@ -676,7 +676,7 @@ const RatingStars = setup<{
         </button>
       )) }
     </div>
-  ));
+  );
 });
 ```
 
@@ -738,6 +738,73 @@ Building a **dynamic structure** from configuration, then managing **two-way int
 - **SolidJS:** **`Index`** renders a fixed list **without re-creating DOM nodes**; only `classList` bindings update reactively
   :::
 
+### Dynamic & Conditional Views
+
+When a component needs **early returns**, **multi-branch view switching**, or **render-prop evaluation**, returning an accessor `(props) => JSX` and using **`renderDynamic()`** handles it cleanly:
+
+- **`(props) => JSX` (Reactive Accessor)**: Declares a reactive view body that automatically re-evaluates whenever any state or props accessed inside it change. The accessor receives the component's `props` as its argument, enabling clean destructuring (e.g. `return ({ children }) => (...)`). This allows conditional returns and branch switching in both React and SolidJS without extra markup wrappers.
+- **`renderDynamic(children, ...args)`**: Safely evaluates polymorphic child content — whether passed as static JSX, a dynamic accessor, or a parameterized render function `(props) => JSX`.
+
+:::code-group
+
+```tsx [React]
+import { setup, renderDynamic, type Bindable } from '@airlib/react';
+
+const StatusCard = setup<{
+  loading?: Bindable<boolean>;
+  children?: ((status: string) => JSX.Element) | JSX.Element;
+}>((props) => {
+  // The accessor receives props as its argument, allowing direct destructuring
+  return ({ loading, children }) => {
+    if (loading) {
+      return <div className="card loading"><p>Loading details...</p></div>;
+    }
+
+    return (
+      <div className="card active">
+        { renderDynamic(children, 'Ready') }
+      </div>
+    );
+  };
+});
+```
+
+```tsx [SolidJS]
+import { setup, renderDynamic, type Bindable } from '@airlib/solid';
+
+const StatusCard = setup<{
+  loading?: Bindable<boolean>;
+  children?: ((status: string) => JSX.Element) | JSX.Element;
+}>((props) => {
+  // The accessor receives props as its argument, allowing direct destructuring
+  return ({ loading, children }) => {
+    if (loading) {
+      return <div class="card loading"><p>Loading details...</p></div>;
+    }
+
+    return (
+      <div class="card active">
+        { renderDynamic(children, 'Ready') }
+      </div>
+    );
+  };
+});
+```
+
+:::
+
+:::details[What you learned]
+
+Using reactive accessors `(props) => JSX` and **`renderDynamic()`** for reactive conditional returns and dynamic render props.
+
+**From these two examples, you know:**
+
+- Returning an accessor **`(props) => JSX`** enables conditional returns and branching directly in the view function while preserving full reactivity
+- The accessor receives **`props` as its argument**, allowing clean destructuring directly in the return signature (e.g. `return ({ children }) => (...)`)
+- **`renderDynamic()`** handles polymorphic children (static elements, accessors, or render functions with arguments)
+- Both frameworks share identical component semantics and ergonomic APIs
+:::
+
 ## Component Slots
 
 A component often needs to allow consumers to customize specific regions of its layout without relinquishing control over structural hierarchy and styling. Passing JSX elements as individual props creates awkward prop drilling and bloats component signatures. Named slots solve this by letting components define distinct placeholders that consumers populate declaratively.
@@ -749,7 +816,7 @@ A slotted component declares its available slot renderers through its second typ
 :::code-group
 
 ```tsx [React]
-import { setup, render, Slot, Snippet } from '@airlib/react';
+import { setup, Slot, Snippet } from '@airlib/react';
 import type { ReactNode } from 'react';
 import { Sidebar } from './Sidebar.js';
 import { TableOfContent } from './TableOfContent.js';
@@ -764,7 +831,7 @@ export type LayoutSlots = {
 };
 
 export const Layout = setup<LayoutProps, LayoutSlots>((props, snippets) => {
-  return render(() => (
+  return () => (
     <div className="layout">
       <aside className="layout-sidebar">
         <Slot for={() => snippets.sidebar?.()}>
@@ -782,7 +849,7 @@ export const Layout = setup<LayoutProps, LayoutSlots>((props, snippets) => {
         </Slot>
       </aside>
     </div>
-  ));
+  );
 });
 ```
 
@@ -916,7 +983,7 @@ Slots can pass runtime context and state to the snippet renderer, enabling scope
 :::code-group
 
 ```tsx [React]
-import { setup, render, Slot, Snippet, mutable } from '@airlib/react';
+import { setup, Slot, Snippet, mutable } from '@airlib/react';
 import type { ReactNode } from 'react';
 
 export type CollapsibleProps = {
@@ -933,7 +1000,7 @@ export const Collapsible = setup<CollapsibleProps, CollapsibleSlots>(
     const state = mutable({ expanded: false });
     const toggle = () => { state.expanded = !state.expanded; };
 
-    return render(() => (
+    return () => (
       <div className="collapsible">
         <div className="collapsible-header" onClick={toggle}>
           <Slot for={() => snippets.header?.({ expanded: state.expanded })}>
@@ -942,7 +1009,7 @@ export const Collapsible = setup<CollapsibleProps, CollapsibleSlots>(
         </div>
         {state.expanded && <div className="collapsible-body"><Snippet>{() => props.children}</Snippet></div>}
       </div>
-    ));
+    );
   }
 );
 ```
@@ -1037,7 +1104,7 @@ A component calls a remote function **in response to a user action** — click, 
 :::code-group
 
 ```tsx [React]
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 import { signOut } from '../rpc/auth/index.js';
 
 const LogoutButton = setup(() => {
@@ -1047,9 +1114,9 @@ const LogoutButton = setup(() => {
     });
   };
 
-  return render(() => (
+  return () => (
     <button className="btn-logout" onClick={ handleClick }>Sign Out</button>
-  ));
+  );
 });
 ```
 
@@ -1097,18 +1164,18 @@ The component needs to call a function **once in the browser** with static argum
 :::code-group
 
 ```tsx [React]
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 import { watchPrice } from '../rpc/market/index.js';
 
 const CurrentPrice = setup(() => {
   const stock = watchPrice.once('USD');
 
-  return render(() => (
+  return () => (
     <span className="price">
       ${ stock.data.price.toFixed(2) }
       { stock.status === 'pending' ? ' ⏳' : '' }
     </span>
-  ));
+  );
 });
 ```
 
@@ -1162,18 +1229,18 @@ The component needs data **immediately in the browser** and the data must **stay
 :::code-group
 
 ```tsx [React]
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 import { watchPrice } from '../rpc/market/index.js';
 
 const LivePrice = setup<{ symbol: string }>((props) => {
   const stream = watchPrice.with(() => [props.symbol]);
 
-  return render(() => (
+  return () => (
     <span className="price live">
       ${ stream.data.price.toFixed(2) }
       { stream.status === 'pending' ? ' 🟢' : ' 🛑' }
     </span>
-  ));
+  );
 });
 ```
 
@@ -1228,14 +1295,14 @@ The component should **not call the function on mount** — only when the user *
 :::code-group
 
 ```tsx [React]
-import { setup, render, mutable } from '@airlib/react';
+import { setup, mutable } from '@airlib/react';
 import { searchProducts } from '../rpc/product/index.js';
 
 const SearchBox = setup(() => {
   const state = mutable({ query: '' });
   const results = searchProducts.when(() => [state.query.trim()], 300);
 
-  return render(() => (
+  return () => (
     <div className="search">
       <input
         value={ state.query }
@@ -1251,7 +1318,7 @@ const SearchBox = setup(() => {
         </ul>
       ) }
     </div>
-  ));
+  );
 });
 ```
 
@@ -1331,7 +1398,7 @@ IRPC streams and reactive calls manage their own lifecycle automatically through
 :::code-group
 
 ```tsx [React]
-import { setup, render, mutable, onMount, onCleanup } from '@airlib/react';
+import { setup, mutable, onMount, onCleanup } from '@airlib/react';
 
 const Countdown = setup<{ seconds: number; onComplete?: () => void }>((props) => {
   const state = mutable({ remaining: props.seconds });
@@ -1349,9 +1416,9 @@ const Countdown = setup<{ seconds: number; onComplete?: () => void }>((props) =>
     onCleanup(() => clearInterval(interval));
   });
 
-  return render(() => (
+  return () => (
     <span className="countdown">{ state.remaining }s</span>
-  ));
+  );
 });
 ```
 
@@ -1441,7 +1508,7 @@ A component crosses its boundary when it handles work that doesn't serve its con
 :::code-group
 
 ```tsx [React]
-import { setup, render, derived, type Bindable } from '@airlib/react';
+import { setup, derived, type Bindable } from '@airlib/react';
 
 const ProductCard = setup<{ product: Product; quantity?: Bindable<number> }>((props) => {
   const total = derived(() => (props.product.price * props.quantity).toFixed(2));
@@ -1449,7 +1516,7 @@ const ProductCard = setup<{ product: Product; quantity?: Bindable<number> }>((pr
   const increment = () => { props.quantity++; };
   const decrement = () => { if (props.quantity > 1) props.quantity--; };
 
-  return render(() => (
+  return () => (
     <div className="product-card">
       <span>{ props.product.name }</span>
       <span>${ props.product.price }</span>
@@ -1460,7 +1527,7 @@ const ProductCard = setup<{ product: Product; quantity?: Bindable<number> }>((pr
       </div>
       <span className="total">${ total.value }</span>
     </div>
-  ));
+  );
 });
 ```
 

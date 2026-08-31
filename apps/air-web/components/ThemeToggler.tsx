@@ -1,4 +1,4 @@
-import { classx, cookiePair, effect, render, setup, uiRouterCtx } from '@airlib/react';
+import { classx, cookiePair, effect, setup, uiRouterCtx } from '@airlib/react';
 
 type ThemeMode = 'system' | 'light' | 'dark';
 
@@ -11,7 +11,7 @@ export const ThemeToggler = setup(() => {
     document.documentElement.dataset.theme = stored.mode;
   });
 
-  return render(() => (
+  return () => (
     <div className={classes.pill} data-theme={theme.mode}>
       <button
         type="button"
@@ -38,7 +38,7 @@ export const ThemeToggler = setup(() => {
         <MoonIcon className="size-4.5" />
       </button>
     </div>
-  ));
+  );
 });
 
 const classes = {

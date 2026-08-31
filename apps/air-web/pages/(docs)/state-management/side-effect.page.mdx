@@ -21,7 +21,7 @@ You can execute code immediately and automatically re-run it whenever the state 
 :::code-group
 
 ```tsx [React]
-import { setup, render, mutable, effect } from '@airlib/react';
+import { setup, mutable, effect } from '@airlib/react';
 
 export const Logger = setup(() => {
   const state = mutable({ count: 0 });
@@ -33,7 +33,7 @@ export const Logger = setup(() => {
     console.log('Count changed to:', state.count);
   });
 
-  return render(() => <button onClick={() => state.count++}>Increment</button>);
+  return () => <button onClick={() => state.count++}>Increment</button>;
 });
 ```
 

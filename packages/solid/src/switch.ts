@@ -1,9 +1,11 @@
-import type { AnyType } from '@airlib/core';
-import { createMemo, type JSX, untrack } from 'solid-js';
+import { createMemo, type JSX } from 'solid-js';
+import { render } from './hoc.tsx';
+
+type ShowValue<T> = T extends false | null | undefined | 0 | '' ? never : T;
 
 export type ShowProps<T> = {
   when: T;
-  children: JSX.Element | ((value: NonNullable<T>) => JSX.Element);
+  children: JSX.Element | ((value: ShowValue<T>) => JSX.Element);
   fallback?: JSX.Element;
 };
 
@@ -18,25 +20,19 @@ export type ShowProps<T> = {
  */
 export function Show<T>(props: ShowProps<T>): JSX.Element {
   const condition = createMemo(() => props.when);
-
   return createMemo(() => {
     const value = condition();
     if (value) {
       const child = props.children;
-      const isRenderProp = typeof child === 'function' && child.length > 0;
-
-      return isRenderProp ? untrack(() => (child as any)(value as NonNullable<T>)) : child;
+      return typeof child === 'function' ? child(value as ShowValue<T>) : child;
     }
     return props.fallback;
   }) as unknown as JSX.Element;
 }
 
-export type SnippetProxy<T extends Record<string | symbol, AnyType>> = {
-  [K in keyof T]: T[K] extends object ? () => T[K] : T[K];
-};
-export type SnippetProps<T extends Record<string | symbol, AnyType>> = {
+export type SnippetProps<T> = {
   data?: T;
-  children: (data: SnippetProxy<T>) => JSX.Element;
+  children: (data: T) => JSX.Element;
 };
 
 /**
@@ -49,18 +45,18 @@ export type SnippetProps<T extends Record<string | symbol, AnyType>> = {
  * @param props.children - The render function that takes the data and returns a JSX element.
  * @returns A JSX element.
  */
-export function Snippet<T extends Record<string | symbol, AnyType>>(props: SnippetProps<T>) {
-  const dataProxy = new Proxy(props.data ?? ({} as T), {
-    get(target, prop) {
-      return () => (target as object)[prop as never];
-    },
-  });
-
-  return props.children(dataProxy as T);
+export function Snippet<T>(props: SnippetProps<T>): JSX.Element {
+  const data = createMemo(() => props.data);
+  return render(({ children }) => {
+    if (typeof children !== 'function') {
+      return `[Snippet Error: Snippet must pass function as the children]`;
+    }
+    return children(data() as T);
+  }, props) as unknown as JSX.Element;
 }
 
 export type SlotProps = {
-  for: JSX.Element | (() => JSX.Element);
+  for: JSX.Element;
   children?: JSX.Element | (() => JSX.Element);
 };
 
@@ -72,8 +68,7 @@ export type SlotProps = {
  * @returns The rendered content from the slot function or children.
  */
 export function Slot(props: SlotProps): JSX.Element {
-  const content = createMemo(() => (typeof props.for === 'function' ? (props.for as () => JSX.Element)() : props.for));
-
+  const content = createMemo(() => props.for);
   return createMemo(() => {
     const value = content();
     if (value !== undefined && value !== null) {

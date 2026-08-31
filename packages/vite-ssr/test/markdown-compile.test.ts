@@ -591,4 +591,28 @@ describe('mdx compilation pipe — import deduplication and structure', () => {
     const res = await mdxFile(id, source, { ...PLAIN_OPTIONS, extended: true });
     expect(res.code).toContain('air-mdx-separator');
   });
+
+  it('parses code block title and meta attributes in airMdxRemark', async () => {
+    dir = makeFixture({ 'pages/docs/code-meta/page.mdx': '' });
+    const id = fixturePath(dir, 'pages/docs/code-meta/page.mdx');
+
+    const source = ['# Code Meta Demo', '', '```ts [Custom Title] invalid=abc valid=true', 'const x = 1;', '```'].join(
+      '\n'
+    );
+
+    const res = await mdxFile(id, source, { ...PLAIN_OPTIONS, extended: true });
+    expect(res.code).toContain('Custom Title');
+  });
+
+  it('handles executable module code blocks by pushing body to module globals', async () => {
+    dir = makeFixture({ 'pages/docs/module-block/page.mdx': '' });
+    const id = fixturePath(dir, 'pages/docs/module-block/page.mdx');
+
+    const source = ['# Executable Module', '', '```ts module executable', 'export const helper = 42;', '```'].join(
+      '\n'
+    );
+
+    const res = await mdxFile(id, source, { ...PLAIN_OPTIONS, extended: true });
+    expect(res.file.globals.join('\n')).toContain('export const helper = 42;');
+  });
 });

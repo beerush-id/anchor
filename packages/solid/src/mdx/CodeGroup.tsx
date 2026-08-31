@@ -1,5 +1,6 @@
-import { $symbol, type AnyType, classx, mutable, uIndex } from '@airlib/core';
-import { For, type JSX, onMount, splitProps } from '../solid.js';
+import { $symbol, type AnyType, classx, effect, mutable, uIndex, untrack } from '@airlib/core';
+import { setup } from '../hoc.js';
+import { For, type JSX, onMount } from '../solid.js';
 import { Show } from '../switch.js';
 import { mdxCtx } from './context.js';
 
@@ -22,10 +23,11 @@ export interface CodeTab {
   title: string;
 }
 
-export function CodeGroup(allProps: CodeGroupProps): JSX.Element {
-  const [props, restProps] = splitProps(allProps, ['title', 'group', 'children', 'class', 'id', 'tablistLabel']);
+export const CodeGroup = setup<CodeGroupProps>((props) => {
+  const $restProps = props.$omit(['title', 'group', 'children', 'class', 'id', 'tablistLabel']);
   const state = mutable({ activeIndex: 0 });
-  const groupId = props.id ?? `cg-${uIndex(CODE_GROUP_INDEX, true)}`;
+  const fallbackId = `cg-${uIndex(CODE_GROUP_INDEX, true)}`;
+  const groupId = () => props.id ?? fallbackId;
 
   const nodes = () => {
     const raw = props.children;
@@ -52,11 +54,18 @@ export function CodeGroup(allProps: CodeGroupProps): JSX.Element {
   };
 
   const ctx = mdxCtx.get();
-  if (ctx && props.group && !ctx.store[props.group]) {
-    const firstTab = tabs()[0];
-    if (firstTab) {
-      ctx.store[props.group] = firstTab.name;
-    }
+  if (ctx) {
+    effect(() => {
+      const group = props.group;
+      const firstTab = tabs()[0]?.name;
+      if (!group || !firstTab) return;
+
+      untrack(() => {
+        if (!ctx.store[group]) {
+          ctx.store[group] = firstTab;
+        }
+      });
+    });
   }
 
   const activateTab = (tab: CodeTab) => {
@@ -65,7 +74,7 @@ export function CodeGroup(allProps: CodeGroupProps): JSX.Element {
     } else {
       state.activeIndex = tab.id;
     }
-    document.getElementById(`tab-${groupId}-${tab.id}`)?.focus();
+    document.getElementById(`tab-${groupId()}-${tab.id}`)?.focus();
   };
 
   const handleKeyDown = (e: KeyboardEvent, tab: CodeTab) => {
@@ -99,9 +108,9 @@ export function CodeGroup(allProps: CodeGroupProps): JSX.Element {
     ref.style.setProperty('--air-mdx-group-height', `${ref.offsetHeight}px`);
   });
 
-  return (
+  return () => (
     <div
-      {...restProps}
+      {...$restProps}
       ref={(el) => {
         ref = el;
       }}
@@ -114,9 +123,9 @@ export function CodeGroup(allProps: CodeGroupProps): JSX.Element {
               <button
                 type="button"
                 role="tab"
-                id={`tab-${groupId}-${tab.id}`}
+                id={`tab-${groupId()}-${tab.id}`}
                 aria-selected={isActive(tab)}
-                aria-controls={`panel-${groupId}-${tab.id}`}
+                aria-controls={`panel-${groupId()}-${tab.id}`}
                 tabIndex={isActive(tab) ? 0 : -1}
                 class={classx('air-mdx-codegroup-tab', { active: isActive(tab) })}
                 onClick={() => activateTab(tab)}
@@ -133,15 +142,15 @@ export function CodeGroup(allProps: CodeGroupProps): JSX.Element {
       </div>
       <div
         role="tabpanel"
-        id={`panel-${groupId}-${state.activeIndex}`}
-        aria-labelledby={`tab-${groupId}-${state.activeIndex}`}
+        id={`panel-${groupId()}-${state.activeIndex}`}
+        aria-labelledby={`tab-${groupId()}-${state.activeIndex}`}
         class="air-mdx-codegroup-content"
       >
         <For each={tabs()}>{(tab) => <Show when={isActive(tab)}>{tab.node}</Show>}</For>
       </div>
     </div>
   );
-}
+}, 'CodeGroup');
 
 function findCode(nodes: unknown[]): unknown[] {
   const codes: unknown[] = [];

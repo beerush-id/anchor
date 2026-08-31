@@ -59,18 +59,18 @@ If you are building an admin dashboard to monitor system health, you can directl
 
 :::code-group
 ```tsx [React]
-import { setup, render, WORKFLOW_STORE } from '@airlib/react';
+import { setup, WORKFLOW_STORE } from '@airlib/react';
 
 export const WorkflowDashboard = setup(() => {
   const { workflows, steps, runningWorkflows } = WORKFLOW_STORE;
 
-  return render(() => (
+  return () => (
     <div className="dashboard-stats">
       <span>Total Workflows: {workflows.size}</span>
       <span>Total Steps: {steps.size}</span>
       <span>Active Jobs: {runningWorkflows.size}</span>
     </div>
-  ));
+  );
 });
 ```
 

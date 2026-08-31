@@ -24,7 +24,7 @@ Because `cookies()` accesses the active request scope on the server, instantiate
 :::code-group{group="framework"}
 
 ```tsx [React] name="react"
-import { cookies, render, setup } from '@airlib/react';
+import { cookies, setup } from '@airlib/react';
 
 type UserPreferences = {
   theme: 'light' | 'dark' | 'system';
@@ -43,11 +43,11 @@ export const ThemeToggle = setup(() => {
     preferences.theme = preferences.theme === 'dark' ? 'light' : 'dark';
   };
 
-  return render(() => (
+  return () => (
     <button type="button" onClick={toggleTheme}>
       Current theme: {preferences.theme}
     </button>
-  ));
+  );
 });
 ```
 
@@ -88,7 +88,7 @@ You can specify standard cookie transport attributes such as expiration, path, a
 :::code-group{group="framework"}
 
 ```typescript [React] name="react"
-import { cookies, render, setup } from '@airlib/react';
+import { cookies, setup } from '@airlib/react';
 
 export const UserProfile = setup(() => {
   const session = cookies(
@@ -102,7 +102,7 @@ export const UserProfile = setup(() => {
     }
   );
 
-  return render(() => <div>Logged in as: {session.userId}</div>);
+  return () => <div>Logged in as: {session.userId}</div>;
 });
 ```
 
@@ -182,7 +182,7 @@ When components render on pre-generated static pages (`static: true` SSG) or cac
 :::code-group{group="framework"}
 
 ```tsx [React] name="react"
-import { classx, cookiePair, effect, render, setup, uiRouterCtx } from '@airlib/react';
+import { classx, cookiePair, effect, setup, uiRouterCtx } from '@airlib/react';
 
 type ThemeMode = 'system' | 'light' | 'dark';
 
@@ -201,7 +201,7 @@ export const ThemeToggler = setup(() => {
     document.documentElement.dataset.theme = stored.mode;
   });
 
-  return render(() => (
+  return () => (
     <div className="theme-pill" data-theme={theme.mode}>
       <button
         type="button"

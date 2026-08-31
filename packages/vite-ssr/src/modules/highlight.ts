@@ -170,13 +170,20 @@ export default function HighlightedCode(props) {
 }
 
 export function getMetaAttributes(meta: string) {
-  const attributes = {
-    'data-title': meta.split(']')[0].replace(/\[/, ''),
-  } as Record<string, AnyType>;
+  let title = '';
+  const titleMatch = meta.match(/\[(.*?)\]/);
+  if (titleMatch) {
+    title = titleMatch[1];
+    meta = meta.replace(titleMatch[0], '');
+  }
+
+  const attributes = (title ? { 'data-title': title } : {}) as Record<string, AnyType>;
 
   meta.split(/\s+/g).forEach((candidate) => {
+    if (!candidate) return;
     const [key, value] = candidate.split('=');
 
+    /* istanbul ignore else */
     if (/^[\w\d\-_]+$/.test(key)) {
       try {
         attributes[key] = JSON.parse(value ?? '');

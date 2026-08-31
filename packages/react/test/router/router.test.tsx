@@ -9,10 +9,10 @@ import {
   getCurrentUrl,
   modal,
   page,
-  redirect,
-  route,
   RouteRendererComponent,
   RouteViewer,
+  redirect,
+  route,
   UIRouter,
 } from '../../src/index.js';
 import { DEFAULT_ROUTER_CONFIGS } from '../../src/router/constant.js';
@@ -267,7 +267,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const router = createRouter();
       const testRoute = router.route('/protected-route');
       testRoute.render(({ children }) => <div data-testid="layout-wrapper">{children as any}</div>);
-      testRoute.catch(({ error }) => <div data-testid="unauth-error-view">Error!</div>);
+      testRoute.catch(() => () => <div data-testid="unauth-error-view">Error!</div>);
 
       // Add a child route so route.children.size > 0
       const child = testRoute.route('/child');
@@ -294,7 +294,7 @@ describe('Anchor React - UIRouter & RouteViewer Components', () => {
       const router = createRouter();
       const testRoute = router.route('/protected-route');
       testRoute.render(({ children }) => <div data-testid="layout-wrapper">{children as any}</div>);
-      testRoute.catch(({ error }) => <div data-testid="unauth-error-view">Error!</div>);
+      testRoute.catch(() => () => <div data-testid="unauth-error-view">Error!</div>);
 
       // Add an index route with a renderer
       const indexRoute = testRoute.route('/');

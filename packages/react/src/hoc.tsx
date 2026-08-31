@@ -10,6 +10,7 @@ import {
   isFunction,
   microtask,
   setContextStore,
+  setStaticTracker,
 } from '@airlib/core';
 import { type FC, Fragment, type FunctionComponent, type ReactElement, type ReactNode } from 'react';
 import type { RenderContext } from './context.js';
@@ -40,11 +41,13 @@ const COMPONENT_SNIPPET_KEY = $symbol('component-snippet');
  *
  * @param {ComponentWithSnippet<P, S>} Component - The component to wrap with stable lifecycle management
  * @param {string} [displayName] - Optional display name for debugging purposes
+ * @param controlled - List of controlled keys to not trigger violation warnings.
  * @returns {SlottedComponent<P, S>} A memoized component that only re-renders when props change
  */
 export function setup<P, S extends ComponentSlots>(
   Component: ComponentWithSnippet<P, S>,
-  displayName?: string
+  displayName?: string,
+  controlled?: string[]
 ): SlottedComponent<P, S>;
 
 /**
@@ -52,9 +55,10 @@ export function setup<P, S extends ComponentSlots>(
  *
  * @param {Component<P>} Component - The component to wrap with stable lifecycle management
  * @param {string} [displayName] - Optional display name for debugging purposes
+ * @param controlled - List of controlled keys to not trigger violation warnings.
  * @returns {StableComponent<P>} A memoized component that only re-renders when props change
  */
-export function setup<P>(Component: Component<P>, displayName?: string): StableComponent<P>;
+export function setup<P>(Component: Component<P>, displayName?: string, controlled?: string[]): StableComponent<P>;
 
 /**
  * Higher-Order Component that creates a stable setup component following the modern component lifecycle.
@@ -71,11 +75,13 @@ export function setup<P>(Component: Component<P>, displayName?: string): StableC
  * @template C - The component type being wrapped
  * @param {C} Component - The function component to wrap with stable lifecycle management
  * @param {string} [displayName] - Optional display name for debugging purposes
+ * @param controlled - List of controlled keys to not trigger violation warnings.
  * @returns {C} A memoized component that only re-renders when props change
  */
 export function setup<P, S extends ComponentSlots>(
   Component: Component<P> | ComponentWithSnippet<P, S>,
-  displayName?: string
+  displayName?: string,
+  controlled?: string[]
 ): StableComponent<P> {
   if (typeof Component !== 'function') {
     const error = new Error('Component must be a function.');
@@ -98,7 +104,7 @@ export function setup<P, S extends ComponentSlots>(
 
   const componentName = displayName || (Component as FunctionComponent).displayName || Component.name || 'Anonymous';
 
-  const render = Component as (props: unknown, snippets: ComponentSlots) => ReactNode;
+  const view = Component as (props: unknown, snippets: ComponentSlots) => ReactNode | (() => ReactNode);
   const propsMap = new WeakMap();
 
   const Finish: FC<{ context: RenderContext }> = ({ context }) => {
@@ -144,7 +150,33 @@ export function setup<P, S extends ComponentSlots>(
 
     const children = () => {
       try {
-        return lifecycle.render(() => render(props, findSlots(props.children as ReactElement[])));
+        return lifecycle.render(() => {
+          const child = props.children;
+
+          const restore = setStaticTracker((_state, key) => {
+            if (typeof key === 'symbol' || controlled?.includes(String(key))) return;
+
+            const error = new Error(`[${componentName}] Frozen read on "${String(key)}".`);
+            captureStack.violation.general(
+              'Frozen reactive read detected:',
+              `Attempted to read "${String(key)}" inside <${componentName}> setup() without a reactive boundary.`,
+              error,
+              [
+                `Component setup executes once upon initialization; reads here will not trigger re-renders.`,
+                '- Return an accessor function: `return () => <JSX />` instead of static JSX.',
+                '- Or isolate dynamic reads inside a `<Snippet>` / reactive boundary.',
+                '- If static is expected, wrap with `$static(() => ...)` to silence this warning.',
+              ]
+            );
+          });
+
+          try {
+            const result = view(props, findSlots(child as ReactElement[]));
+            return typeof result === 'function' ? render(result, componentName) : result;
+          } finally {
+            restore();
+          }
+        });
       } catch (error) {
         const newErr = new Error(`[${componentName}] failed to render.`);
         captureStack.error.external(

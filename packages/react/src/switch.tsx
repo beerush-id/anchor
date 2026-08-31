@@ -1,6 +1,6 @@
 import { getContext, setContext } from '@airlib/core';
 import type { ReactNode } from 'react';
-import { render, setup, snippet } from './hoc.js';
+import { setup, snippet } from './hoc.js';
 
 export type SwitchSlotProps<K> = {
   for: K;
@@ -56,10 +56,14 @@ export function createSwitch<T, K>(
   displayName = 'Anonymous',
   scopeName = 'Switch'
 ) {
-  const Switch = setup((props) => {
-    setContext(ctx, (props as never as SwitchProps<T>).for);
-    return render(() => (props as never as SwitchProps<T>).children);
-  }, displayName) as unknown as SwitchNode<T, K>;
+  const Switch = setup(
+    (props) => {
+      setContext(ctx, (props as never as SwitchProps<T>).for);
+      return () => (props as never as SwitchProps<T>).children;
+    },
+    displayName,
+    ['for', 'children']
+  ) as unknown as SwitchNode<T, K>;
 
   Switch.displayName = `${scopeName}(${displayName})`;
   Switch.Slot = createSlot<K>(ctx, key, displayName);
@@ -67,9 +71,11 @@ export function createSwitch<T, K>(
   return Switch as SwitchNode<T, K>;
 }
 
+type ShowValue<T> = T extends false | null | undefined | 0 | '' ? never : T;
+
 export type ShowProps<T> = {
   when: T | (() => T);
-  children: ReactNode | ((value: T) => ReactNode);
+  children: ReactNode | ((value: ShowValue<T>) => ReactNode);
   fallback?: () => ReactNode;
 };
 

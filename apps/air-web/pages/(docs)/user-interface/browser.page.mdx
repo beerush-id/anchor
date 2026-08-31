@@ -110,18 +110,18 @@ The `cursorRef(element)` factory returns a Ref-like reactive object bound to a t
 :::code-group
 
 ```tsx [React]
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 import { cursorRef } from '@airlib/react/browser';
 
 export const InteractiveBox = setup(() => {
   const boxCursor = cursorRef();
 
-  return render(() => (
+  return () => (
     <div ref={boxCursor} className="p-6 border rounded">
       <p>Element Pointer Offset: {boxCursor.x}, {boxCursor.y}</p>
       <p>Active Target: {boxCursor.target ? 'Inside' : 'Outside'}</p>
     </div>
-  ));
+  );
 });
 ```
 
@@ -202,18 +202,18 @@ The `scrollRef(element)` factory returns a Ref-like reactive object bound to a s
 :::code-group
 
 ```tsx [React]
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 import { scrollRef } from '@airlib/react/browser';
 
 export const ScrollableList = setup(() => {
   const listScroll = scrollRef();
 
-  return render(() => (
+  return () => (
     <div ref={listScroll} style={{ height: '300px', overflowY: 'auto' }}>
       <p className="sticky top-0 bg-white">Container Y: {listScroll.y}px</p>
       <div style={{ height: '1000px' }}>Scrollable Content</div>
     </div>
-  ));
+  );
 });
 ```
 
@@ -650,18 +650,18 @@ The `keyboardRef(element)` factory returns a Ref-like reactive object bound to a
 :::code-group
 
 ```tsx [React]
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 import { keyboardRef } from '@airlib/react/browser';
 
 export const ScopedInput = setup(() => {
   const inputKeyboard = keyboardRef();
 
-  return render(() => (
+  return () => (
     <div>
       <input ref={inputKeyboard} placeholder="Type here..." />
       <p>Input Key: {inputKeyboard.key}</p>
     </div>
-  ));
+  );
 });
 ```
 
@@ -734,7 +734,7 @@ The `reframe()` primitive creates a scheduler and canceler pair for `requestAnim
 :::code-group
 
 ```tsx [React]
-import { setup, render } from '@airlib/react';
+import { setup } from '@airlib/react';
 import { reframe } from '@airlib/react/browser';
 
 export const SmoothCanvasRenderer = setup(() => {
@@ -746,11 +746,11 @@ export const SmoothCanvasRenderer = setup(() => {
     });
   };
 
-  return render(() => (
+  return () => (
     <div onPointerMove={handlePointerMove} className="canvas-container">
       Move pointer here for smooth frame scheduling
     </div>
-  ));
+  );
 });
 ```
 

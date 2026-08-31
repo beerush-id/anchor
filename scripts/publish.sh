@@ -14,5 +14,9 @@ bpkg publish -f irpclib/http
 bpkg publish -f irpclib/ws
 bpkg publish -f irpclib/broadcast
 
+bpkg publish -f ui-kits/form
+bpkg publish -f ui-kits/react-form
+bpkg publish -f ui-kits/solid-form
+
 bpkg publish -f packages/vite-ssr
 bpkg publish -f packages/create-airlib

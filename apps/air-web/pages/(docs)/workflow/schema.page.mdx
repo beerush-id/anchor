@@ -44,7 +44,7 @@ irpc.construct(createUser, (id, isActive) => {
 
 :::code-group
 ```tsx [React]
-import { setup, render, mutable } from '@airlib/react';
+import { setup, mutable } from '@airlib/react';
 import { createUser } from './function.js';
 
 export const UserCreator = setup(() => {
@@ -60,11 +60,11 @@ export const UserCreator = setup(() => {
     }
   };
 
-  return render(() => (
+  return () => (
     <button onClick={create} disabled={isPending.value}>
       {isPending.value ? 'Creating...' : 'Create User'}
     </button>
-  ));
+  );
 });
 ```
 
@@ -116,7 +116,7 @@ irpc.construct(searchData, (query) => secureFlow({ query }));
 
 :::code-group
 ```tsx [React]
-import { setup, render, mutable } from '@airlib/react';
+import { setup, mutable } from '@airlib/react';
 import { searchData } from './function.js';
 
 export const SearchBar = setup(() => {
@@ -132,11 +132,11 @@ export const SearchBar = setup(() => {
     }
   };
 
-  return render(() => (
+  return () => (
     <button onClick={search} disabled={isPending.value}>
       {isPending.value ? 'Searching...' : 'Search'}
     </button>
-  ));
+  );
 });
 ```
 

@@ -83,6 +83,8 @@ export function createGetter<T extends Linkable>(init: T, options?: TrapOverride
 
       if (configs.observable) {
         plugin.track?.(init, observers, Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
+        /* istanbul ignore next */
+        if (!observer) plugin.trackStatic?.(init, Array.isArray(init) ? OBSERVER_KEYS.ARRAY_MUTATIONS : prop);
       }
 
       if (configs.observable && observer) {
@@ -182,6 +184,7 @@ export function createOwnKeys<T extends Linkable>(init: T, options?: TrapOverrid
       if (configs.observable) {
         /* istanbul ignore next */
         plugin.track?.(init, observers, OBSERVER_KEYS.OWN_KEYS);
+        if (!observer) plugin.trackStatic?.(init, OBSERVER_KEYS.OWN_KEYS);
       }
 
       if (configs.observable && observer) {

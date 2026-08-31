@@ -5,16 +5,19 @@ export function wrapJsx(framework: Framework, head: string, body: string, templa
 
   if (framework === 'react') {
     return `
-import { anchor as __airAnchor, getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink, onCleanup as __airOnCleanup, uIndex as __airUIndex } from '@airlib/react';
+import { $static as __airStatic, anchor as __airAnchor, getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink, onCleanup as __airOnCleanup, uIndex as __airUIndex } from '@airlib/react';
 
 ${head}
 
 const AIR_CG_INDEX_KEY = Symbol.for('air.mdx.codegroup');
 
-export default function AirMdxPage({ state: $state, context: $context, children: $children }) {
+export default function AirMdxPage(props) {
+  const $state = __airStatic(() => props.state);
+  const $context = __airStatic(() => props.context);
+  const $children = __airStatic(() => props.children);
   const __airMdxCtx = __airGetCtx('mdx-context');
   if (__airMdxCtx) {
-    const url = $context?.url;
+    const url = __airStatic(() => $context?.url);
     Object.assign(__airMdxCtx, {
       url,
       meta: airMdxMeta,
@@ -50,16 +53,19 @@ __airUIndex(AIR_CG_INDEX_KEY, true);
 
   if (framework === 'solid') {
     return `
-import { anchor as __airAnchor, getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink, onCleanup as __airOnCleanup, uIndex as __airUIndex } from '@airlib/solid';
+import { $static as __airStatic, anchor as __airAnchor, getContext as __airGetCtx, Head as AirHtmlHead, Link as AirLink, onCleanup as __airOnCleanup, uIndex as __airUIndex } from '@airlib/solid';
 
 ${head}
 
 const AIR_CG_INDEX_KEY = Symbol.for('air.mdx.codegroup');
 
-export default function AirMdxPage({ state: $state, context: $context, children: $children }) {
+export default function AirMdxPage(props) {
+  const $state = __airStatic(() => props.state);
+  const $context = __airStatic(() => props.context);
+  const $children = __airStatic(() => props.children);
   const __airMdxCtx = __airGetCtx('mdx-context');
   if (__airMdxCtx) {
-    const url = $context?.url;
+    const url = __airStatic(() => $context?.url);
     Object.assign(__airMdxCtx, {
       url,
       meta: airMdxMeta,

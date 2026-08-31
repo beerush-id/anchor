@@ -251,7 +251,9 @@ export const FormField = setup<{ name: string, label?: string, children?: ReactN
   const formState = formContext.get();
   const error = derived(() => formState?.errors[props.name]?.message);
 
-  fieldContext.set({ name: props.name });
+  fieldContext.set({
+    get name() { return props.name; }
+  });
   
   return render(() => (
     <div className="field">
@@ -322,7 +324,7 @@ To solve this, we wrap our coordinator in a strictly typed Form Factory to lock 
 
 ```tsx
 import type { ReactNode, FormEvent } from 'react';
-import { setup, render, createContext, form, snapshot, type Bindable, derived } from '@airlib/react';
+import { setup, render, createContext, form, snapshot, type Bindable, derived, effect } from '@airlib/react';
 import { type ZodType, z } from 'zod';
 
 export function createForm<T extends ZodType>(schema: T, init?: z.infer<T>) {
@@ -343,7 +345,13 @@ export function createForm<T extends ZodType>(schema: T, init?: z.infer<T>) {
   }>((props) => {
     const $props = props as any;
 
-    const [state, errors] = form(schema as any, () => $props.data ?? init ?? {});
+    const [state, errors] = form(schema as any, (init ?? {}) as any);
+
+    effect(() => {
+      if ($props.data) {
+        Object.assign(state, $props.data);
+      }
+    });
     
     formContext.set({ 
       state, 
@@ -371,7 +379,9 @@ export function createForm<T extends ZodType>(schema: T, init?: z.infer<T>) {
     const ctx = formContext.get();
     const error = derived(() => ctx?.errors[$props.name]?.message);
 
-    fieldContext.set({ name: $props.name });
+    fieldContext.set({
+      get name() { return $props.name; }
+    });
     
     return render(() => (
       <div className="field">

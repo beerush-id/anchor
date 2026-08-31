@@ -1,5 +1,17 @@
 import type { HTMLAttributes, KeyboardEvent, ReactElement, ReactNode } from 'react';
-import { type AnyType, classx, For, mutable, onMount, render, Show, setup, uIndex } from '../index.js';
+import {
+  type AnyType,
+  classx,
+  derived,
+  effect,
+  For,
+  mutable,
+  onMount,
+  Show,
+  setup,
+  uIndex,
+  untrack,
+} from '../index.js';
 import { mdxCtx } from './context.ts';
 
 /**
@@ -24,29 +36,41 @@ export interface CodeTab {
 export const CodeGroup = setup<CodeGroupProps>((props) => {
   const $restProps = props.$omit(['children', 'className', 'id', 'tablistLabel', 'title']);
   const state = mutable({ activeIndex: 0 });
-  const groupId = props.id ?? `cg-${uIndex(CODE_GROUP_INDEX, true)}`;
-
-  const nodes = (Array.isArray(props.children) ? props.children : [props.children])
-    .filter((c): c is ReactElement => typeof c === 'object' && c !== null && 'props' in c)
-    .map((n) => (n.props as AnyType).children as ReactElement<'div'>);
-
   const ctx = mdxCtx.get();
-  const tabs = nodes.map((node, i) => {
-    const cProps = (node?.props ?? {}) as AnyType;
-    const dataTitle = cProps['data-title'];
-    const dataLang = cProps['data-language'];
-    const title = dataTitle || dataLang || `Tab ${i + 1}`;
 
-    return {
-      id: i,
-      code: node,
-      name: cProps.name || title.toLowerCase(),
-      title,
-    } as CodeTab;
+  const tabs = derived(() => {
+    const nodes = (Array.isArray(props.children) ? props.children : [props.children])
+      .filter((c): c is ReactElement => typeof c === 'object' && c !== null && 'props' in c)
+      .map((n) => (n.props as AnyType).children as ReactElement<'div'>);
+
+    return nodes.map((node, i) => {
+      const cProps = (node?.props ?? {}) as AnyType;
+      const dataTitle = cProps['data-title'];
+      const dataLang = cProps['data-language'];
+      const title = dataTitle || dataLang || `Tab ${i + 1}`;
+
+      return {
+        id: i,
+        code: node,
+        name: cProps.name || title.toLowerCase(),
+        title,
+      } as CodeTab;
+    });
   });
+  const groupId = derived(() => props.id ?? `cg-${uIndex(CODE_GROUP_INDEX, true)}`);
 
-  if (ctx && props.group && !ctx.store[props.group]) {
-    ctx.store[props.group] = tabs[0]?.name;
+  if (ctx) {
+    effect(() => {
+      const group = props.group;
+      const defaultTab = tabs.value[0]?.name;
+      if (!group || !defaultTab) return;
+
+      untrack(() => {
+        if (!ctx.store[group]) {
+          ctx.store[group] = defaultTab;
+        }
+      });
+    });
   }
 
   const activateTab = (tab: CodeTab) => {
@@ -55,22 +79,23 @@ export const CodeGroup = setup<CodeGroupProps>((props) => {
     } else {
       state.activeIndex = tab.id;
     }
-    document.getElementById(`tab-${groupId}-${tab.id}`)?.focus();
+    document.getElementById(`tab-${groupId.value}-${tab.id}`)?.focus();
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>, tab: CodeTab) => {
+    const items = tabs.value;
     if (e.key === 'ArrowRight') {
       e.preventDefault();
-      activateTab(tabs[(tab.id + 1) % tabs.length]);
+      activateTab(items[(tab.id + 1) % items.length]);
     } else if (e.key === 'ArrowLeft') {
       e.preventDefault();
-      activateTab(tabs[(tab.id - 1 + tabs.length) % tabs.length]);
+      activateTab(items[(tab.id - 1 + items.length) % items.length]);
     } else if (e.key === 'Home') {
       e.preventDefault();
-      activateTab(tabs[0]);
+      activateTab(items[0]);
     } else if (e.key === 'End') {
       e.preventDefault();
-      activateTab(tabs[tabs.length - 1]);
+      activateTab(items[items.length - 1]);
     }
   };
 
@@ -90,48 +115,45 @@ export const CodeGroup = setup<CodeGroupProps>((props) => {
     ref.style.setProperty('--air-mdx-group-height', `${ref.offsetHeight}px`);
   });
 
-  return render(
-    () => (
-      <div
-        {...$restProps}
-        ref={(el) => {
-          ref = el;
-        }}
-        className={classx('air-mdx-codegroup', props.className)}
-      >
-        <div className="air-mdx-codegroup-header">
-          <div className="air-mdx-codegroup-tabs" role="tablist" aria-label={props.tablistLabel ?? 'Code examples'}>
-            <For each={() => tabs}>
-              {(tab) => (
-                <button
-                  role="tab"
-                  id={`tab-${groupId}-${tab.id}`}
-                  aria-selected={isActive(tab)}
-                  aria-controls={`panel-${groupId}-${tab.id}`}
-                  tabIndex={state.activeIndex === tab.id ? 0 : -1}
-                  className={classx('air-mdx-codegroup-tab', { active: isActive(tab) })}
-                  onClick={() => activateTab(tab)}
-                  onKeyDown={(e) => handleKeyDown(e, tab)}
-                >
-                  {tab.title}
-                </button>
-              )}
-            </For>
-          </div>
-          <Show when={props.title}>
-            <strong className="air-mdx-codegroup-title">{props.title}</strong>
-          </Show>
+  return () => (
+    <div
+      {...$restProps}
+      ref={(el) => {
+        ref = el;
+      }}
+      className={classx('air-mdx-codegroup', props.className)}
+    >
+      <div className="air-mdx-codegroup-header">
+        <div className="air-mdx-codegroup-tabs" role="tablist" aria-label={props.tablistLabel ?? 'Code examples'}>
+          <For each={() => tabs.value}>
+            {(tab) => (
+              <button
+                role="tab"
+                id={`tab-${groupId.value}-${tab.id}`}
+                aria-selected={isActive(tab)}
+                aria-controls={`panel-${groupId.value}-${tab.id}`}
+                tabIndex={state.activeIndex === tab.id ? 0 : -1}
+                className={classx('air-mdx-codegroup-tab', { active: isActive(tab) })}
+                onClick={() => activateTab(tab)}
+                onKeyDown={(e) => handleKeyDown(e, tab)}
+              >
+                {tab.title}
+              </button>
+            )}
+          </For>
         </div>
-        <div
-          role="tabpanel"
-          id={`panel-${groupId}-${state.activeIndex}`}
-          aria-labelledby={`tab-${groupId}-${state.activeIndex}`}
-          className="air-mdx-codegroup-content"
-        >
-          <For each={() => tabs}>{(tab) => <Show when={() => isActive(tab)}>{() => tab.code}</Show>}</For>
-        </div>
+        <Show when={() => props.title}>
+          <strong className="air-mdx-codegroup-title">{props.title}</strong>
+        </Show>
       </div>
-    ),
-    'CodeGroup'
+      <div
+        role="tabpanel"
+        id={`panel-${groupId.value}-${state.activeIndex}`}
+        aria-labelledby={`tab-${groupId.value}-${state.activeIndex}`}
+        className="air-mdx-codegroup-content"
+      >
+        <For each={() => tabs.value}>{(tab) => <Show when={() => isActive(tab)}>{() => tab.code}</Show>}</For>
+      </div>
+    </div>
   );
 }, 'CodeGroup');

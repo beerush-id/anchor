@@ -3,6 +3,7 @@ import { linkable } from '../engine/config.js';
 import { switchable } from '../engine/index.js';
 import { $symbol } from '../module.js';
 import { getScope, safeRun } from '../scope/context.js';
+import { onCleanup } from '../scope/lifecycle.js';
 import { STACK_SYMBOL } from '../scope/stack.js';
 import { ANCHOR_SETTINGS as $$ } from '../shared/constant.js';
 import { isBrowser } from '../shared/env.js';
@@ -10,6 +11,7 @@ import { captureStack } from '../shared/index.js';
 import type {
   Anchor,
   AnyType,
+  ArrayChange,
   Immutable,
   Linkable,
   Primitive,
@@ -19,6 +21,7 @@ import type {
 } from '../types.js';
 import { softClone, softEqual } from '../utils/index.js';
 import { $do, createObserver } from './observation.js';
+import { subscribe } from './subscription.js';
 
 /**
  * A mutable reference wrapper for primitive values that provides reactive capabilities.
@@ -463,6 +466,25 @@ export interface DeriveFactory {
    * @returns A proxy of derived reference that automatically updates when its dependencies change
    */
   as<T extends object, A extends AnyType[]>(factory: (...args: A) => T, ...args: A): T;
+
+  /**
+   * Creates an incremental delta reduction over a reactive array.
+   *
+   * Computes the initial aggregate in $O(N)$ and subsequently tracks item mutations
+   * and array modifications in fine-grained $O(1)$ without re-iterating the entire collection.
+   *
+   * @template T - The array of items being reduced.
+   * @template O - The accumulator state shape.
+   * @param init - Initial state value or object.
+   * @param inputs - The reactive array of items to observe.
+   * @param reducer - Callback receiving the live accumulator, the current item, and a removal flag.
+   * @returns A mutable reactive state representing the continuously updated reduction.
+   */
+  reduce<T extends AnyType[], O>(
+    init: O,
+    inputs: T,
+    reducer: (current: O extends Primitive ? { value: O } : O, input: T[number], remove?: boolean) => O | void
+  ): O extends Primitive ? { value: O } : O;
 }
 
 function derivedFn<T>(derive: () => T): DerivedRef<T> {
@@ -483,6 +505,88 @@ derivedFn.as = <T extends object, A extends AnyType[]>(factory: (...args: A) => 
   assign();
   return state as T;
 };
+
+derivedFn.reduce = ((init, inputs, reducer) => {
+  if (!anchor.has(inputs)) inputs = anchor(inputs);
+
+  const state = mutable(init && typeof init === 'object' ? init : { value: init }) as AnyType;
+  const target = anchor.get(state);
+  const current = new Proxy(target, {
+    get(_target, prop) {
+      return target[prop];
+    },
+    set(_target, prop, value) {
+      state[prop] = value;
+      return true;
+    },
+    deleteProperty(_target, prop) {
+      delete state[prop];
+      return true;
+    },
+  });
+  const observers = new Map<Linkable, StateObserver>();
+
+  const unsubscribe = subscribe(
+    inputs as Linkable,
+    (_, event) => {
+      const { type, added, removed } = event as ArrayChange;
+
+      if (type === 'init') {
+        inputs.forEach((item) => {
+          reduce(item);
+        });
+        return;
+      } else if (type === 'set') {
+        /* istanbul ignore else */
+        if (event.prev !== undefined) splice(event.prev);
+        reduce(event.value);
+        return;
+      } else if (type === 'delete') {
+        splice(event.prev);
+        return;
+      }
+
+      added?.forEach((item) => {
+        reduce(item);
+      });
+
+      removed?.forEach((item) => {
+        splice(item);
+      });
+    },
+    false
+  );
+
+  function reduce(item: AnyType) {
+    const observer = createObserver(() => {
+      compute();
+    });
+
+    const compute = () => {
+      observer.run(() => reducer(current, item));
+    };
+
+    observers.set(item, observer);
+    compute();
+  }
+
+  function splice(item: AnyType) {
+    const observer = observers.get(item);
+    observer?.destroy();
+    observers.delete(item);
+    reducer(current, item, true);
+  }
+
+  onCleanup(() => {
+    unsubscribe();
+    observers.forEach((observer) => {
+      observer.destroy();
+    });
+    observers.clear();
+  });
+
+  return state;
+}) as DeriveFactory['reduce'];
 
 export const derived = derivedFn as DeriveFactory;
 

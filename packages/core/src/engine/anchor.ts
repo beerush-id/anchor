@@ -288,12 +288,10 @@ anchorFn.catch = ((state, handler) => {
     });
     const destroy = () => {
       anchorFn.destroy(errors);
-      anchorFn.destroy(exceptionMap);
       unsubscribe();
     };
 
-    const exceptionMap = anchorFn({ errors, destroy });
-    return exceptionMap;
+    return { errors, destroy };
   }
 
   const { exceptionHandlers } = controller.meta;
