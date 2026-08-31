@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from 'react';
-import { classx, derived, For, isBrowser, Link, mutable, onCleanup, render, Snippet, setup } from '../index.js';
+import { classx, derived, For, isBrowser, Link, mutable, onCleanup, Snippet, setup } from '../index.js';
 import { mdxCtx } from './context.js';
 
 export interface TableOfContentProps extends HTMLAttributes<HTMLDivElement> {
@@ -53,7 +53,7 @@ export const TableOfContent = setup<TableOfContentProps>((props) => {
     }
   };
 
-  return render(() => {
+  return () => {
     if (!ctx?.headings?.length) return null;
 
     return (
@@ -83,5 +83,5 @@ export const TableOfContent = setup<TableOfContentProps>((props) => {
         </nav>
       </div>
     );
-  }, 'TableOfContent');
+  };
 }, 'TableOfContent');

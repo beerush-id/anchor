@@ -1,7 +1,7 @@
 import { classx, derived, untrack } from '@airlib/core';
 import { Route } from '@airlib/router';
 import type { MouseEventHandler, ReactNode, RefObject } from 'react';
-import { render, setup } from '../hoc.js';
+import { setup } from '../hoc.js';
 import { onMount } from '../lifecycle.js';
 import type { ComponentProps } from '../types.js';
 import { DEFAULT_ROUTER_CONFIGS } from './constant.js';
@@ -181,20 +181,17 @@ export const Link = setup<LinkProps<AnyRoute>>((props) => {
     }
   });
 
-  return render(
-    () => (
-      <a
-        {...restProps}
-        ref={assignRef}
-        href={state.fullPath}
-        onClick={handleClick}
-        onMouseEnter={handleHover}
-        aria-current={state.route?.active ? 'page' : undefined}
-        className={classx(props.className, state.route?.active ? props.activeClass : null)}
-      >
-        {props.children}
-      </a>
-    ),
-    'Link'
+  return () => (
+    <a
+      {...restProps}
+      ref={assignRef}
+      href={state.fullPath}
+      onClick={handleClick}
+      onMouseEnter={handleHover}
+      aria-current={state.route?.active ? 'page' : undefined}
+      className={classx(props.className, state.route?.active ? props.activeClass : null)}
+    >
+      {props.children}
+    </a>
   );
 }, 'Link') as LinkComponent;

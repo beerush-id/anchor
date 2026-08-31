@@ -1,6 +1,6 @@
 import type { PreloadMode } from '@airlib/router';
 import type { HTMLAttributes } from 'react';
-import { type AnyType, classx, derived, Link, render, Show, setup, uiRouterCtx, untrack } from '../index.js';
+import { type AnyType, classx, derived, Link, Show, setup, uiRouterCtx, untrack } from '../index.js';
 import type { NavItem } from './Sidebar.js';
 
 export interface PaginationProps extends HTMLAttributes<HTMLElement> {
@@ -40,7 +40,7 @@ export const Pagination = setup<PaginationProps>((props) => {
     });
   });
 
-  return render(() => {
+  return () => {
     if (!links.prev && !links.next) return null;
 
     return (
@@ -82,7 +82,7 @@ export const Pagination = setup<PaginationProps>((props) => {
         </div>
       </nav>
     );
-  }, 'Pagination');
+  };
 }, 'Pagination');
 
 function flatten(items: NavItem[] = []): NavigableItem[] {

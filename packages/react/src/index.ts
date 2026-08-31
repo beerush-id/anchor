@@ -46,6 +46,7 @@ export type {
 } from '@airlib/core';
 export {
   $module,
+  $static,
   $symbol,
   $unit,
   ASYNC_STATUS,

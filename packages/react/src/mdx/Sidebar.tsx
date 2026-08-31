@@ -7,12 +7,12 @@ import {
   For,
   Link,
   mutable,
-  render,
   Show,
   setup,
   template,
   uIndex,
   uiRouterCtx,
+  untrack,
 } from '../index.js';
 
 const SIDEBAR_NODE_INDEX = Symbol.for('air.mdx.sidebar.node');
@@ -52,10 +52,8 @@ export interface SidebarNodeProps extends HTMLAttributes<HTMLElement> {
 
 export const SidebarNode = setup<SidebarNodeProps>((props) => {
   const $restProps = props.$omit(['item', 'className', 'level', 'preload', 'collapsible']);
-
   const ctx = uiRouterCtx.get();
-  const collapsible = props.collapsible ?? false;
-  const collapsed = mutable(collapsible && (props.item.collapsed ?? false));
+  const collapsed = mutable(untrack(() => (props.collapsible ?? false) && (props.item?.collapsed ?? false)));
   const childrenId = `sbn-${uIndex(SIDEBAR_NODE_INDEX)}`;
 
   const toggleCollapsed = () => {
@@ -77,8 +75,8 @@ export const SidebarNode = setup<SidebarNodeProps>((props) => {
     if (hasActive) collapsed.value = false;
   });
 
-  return render(() => {
-    const { item, className, level, preload } = props;
+  return () => {
+    const { item, className, level, preload, collapsible } = props;
 
     if (item.separator) {
       return <hr {...$restProps} className={classx('air-mdx-sidebar-separator', className)} />;
@@ -202,7 +200,7 @@ export const SidebarNode = setup<SidebarNodeProps>((props) => {
         <SidebarItem icon={item.icon} text={item.text} />
       </span>
     );
-  }, 'SidebarNode');
+  };
 }, 'SidebarNode');
 
 const SidebarItem = template<{ icon?: () => ReactNode; text?: string }>(
