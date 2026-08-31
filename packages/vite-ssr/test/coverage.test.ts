@@ -794,5 +794,18 @@ describe('coverage tests for unreached branches', () => {
       cleanFixture(dir);
       AIR_ENV.viteRoot = '';
     });
+
+    it('evaluates RouteNode hasChildren property', () => {
+      dir = makeFixture({
+        'pages/parent/page.tsx': '',
+        'pages/parent/child/page.tsx': '',
+      });
+      app = makeApp(dir);
+      const parentNode = app.rootRoute?.children.get('parent');
+      expect(parentNode?.hasChildren).toBe(true);
+      const childNode = parentNode?.children.get('child');
+      expect(childNode?.hasChildren).toBe(false);
+      cleanFixture(dir);
+    });
   });
 });

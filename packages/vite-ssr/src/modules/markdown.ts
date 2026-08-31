@@ -557,10 +557,18 @@ export function airMdxRemark(module?: MdxModule) {
 
       if (node.meta) {
         node.attributes = node.attributes || {};
+        let meta = node.meta;
+        const titleMatch = meta.match(/\[(.*?)\]/);
+        if (titleMatch) {
+          node.attributes.title = titleMatch[1];
+          meta = meta.replace(titleMatch[0], '');
+        }
 
-        node.meta.split(/\s+/g).forEach((candidate) => {
+        meta.split(/\s+/g).forEach((candidate) => {
+          if (!candidate) return;
           const [key, value] = candidate.split('=');
 
+          /* istanbul ignore else */
           if (/^[\w\d\-_]+$/.test(key)) {
             try {
               data[key] = JSON.parse(value ?? '');
