@@ -1,5 +1,5 @@
 import { type AnyType, type FormInput, formInput } from '@airlib/form';
-import { type Bindable, classx, derived, type JSX, setup } from '@airlib/solid';
+import { $static, type Bindable, classx, derived, isDynamic, type JSX, setup } from '@airlib/solid';
 import { CHECKBOX_OPTIONS, CHECKBOX_OPTIONS_KEYS, getInputClasses, INPUT_OPTIONS_KEYS } from '../config.js';
 
 export interface CheckboxProps extends Omit<JSX.InputHTMLAttributes<HTMLInputElement>, 'checked' | 'children'> {
@@ -12,7 +12,7 @@ export interface CheckboxProps extends Omit<JSX.InputHTMLAttributes<HTMLInputEle
 }
 
 export const Checkbox = setup<CheckboxProps>((props) => {
-  const $props = ((props as AnyType).for ?? props) as AnyType;
+  const $props = $static(() => ((props as AnyType).for ?? props) as AnyType);
   $props.type = 'checkbox';
 
   const rest = $props.$omit([
@@ -52,8 +52,8 @@ export const Checkbox = setup<CheckboxProps>((props) => {
   });
 
   return () => {
-    const children = (props as AnyType).children ?? $props.children;
-    if (typeof children === 'function') {
+    const children = $props.children;
+    if (isDynamic(children)) {
       const inputProps = {
         ...rest,
         id: attrs.fieldId,

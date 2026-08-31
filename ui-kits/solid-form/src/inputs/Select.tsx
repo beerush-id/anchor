@@ -1,5 +1,5 @@
 import { type AnyType, type FormInput, formInput } from '@airlib/form';
-import { type Bindable, classx, derived, type JSX, setup } from '@airlib/solid';
+import { $static, type Bindable, classx, derived, effect, isDynamic, type JSX, onMount, setup } from '@airlib/solid';
 import { getInputClasses, INPUT_OPTIONS_KEYS, SELECT_OPTIONS, SELECT_OPTIONS_KEYS } from '../config.js';
 
 export interface SelectProps extends Omit<JSX.SelectHTMLAttributes<HTMLSelectElement>, 'value' | 'children'> {
@@ -12,7 +12,7 @@ export interface SelectProps extends Omit<JSX.SelectHTMLAttributes<HTMLSelectEle
 }
 
 export const Select = setup<SelectProps>((props) => {
-  const $props = ((props as AnyType).for ?? props) as AnyType;
+  const $props = $static(() => ((props as AnyType).for ?? props) as AnyType);
 
   const rest = $props.$omit([
     'for',
@@ -35,6 +35,21 @@ export const Select = setup<SelectProps>((props) => {
     return { input, fieldId, errorId };
   });
 
+  let ref: HTMLSelectElement | undefined;
+
+  onMount(() => {
+    if (ref && attrs.input.value !== undefined) {
+      ref.value = String(attrs.input.value);
+    }
+  });
+
+  effect(() => {
+    const value = attrs.input.value;
+    if (ref && value !== undefined) {
+      ref.value = String(value);
+    }
+  });
+
   const handleChange = (e: Event) => {
     attrs.input.value = (e.currentTarget as HTMLSelectElement).value;
     $props.onChange?.(e as AnyType);
@@ -50,8 +65,8 @@ export const Select = setup<SelectProps>((props) => {
   });
 
   return () => {
-    const children = (props as AnyType).children ?? $props.children;
-    if (typeof children === 'function') {
+    const children = $props.children;
+    if (isDynamic(children)) {
       const selectProps = {
         ...rest,
         id: attrs.fieldId,
@@ -68,6 +83,7 @@ export const Select = setup<SelectProps>((props) => {
 
     return (
       <select
+        ref={(el) => (ref = el)}
         {...rest}
         id={attrs.fieldId}
         name={attrs.input.name}

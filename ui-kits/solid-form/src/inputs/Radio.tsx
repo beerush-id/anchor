@@ -1,5 +1,5 @@
 import { type AnyType, type FormInput, formInput } from '@airlib/form';
-import { type Bindable, classx, derived, type JSX, setup } from '@airlib/solid';
+import { $static, type Bindable, classx, derived, isDynamic, type JSX, setup } from '@airlib/solid';
 import { getInputClasses, INPUT_OPTIONS_KEYS, RADIO_OPTIONS, RADIO_OPTIONS_KEYS } from '../config.js';
 
 export interface RadioProps extends Omit<JSX.InputHTMLAttributes<HTMLInputElement>, 'checked' | 'children'> {
@@ -12,7 +12,7 @@ export interface RadioProps extends Omit<JSX.InputHTMLAttributes<HTMLInputElemen
 }
 
 export const Radio = setup<RadioProps>((props) => {
-  const $props = ((props as AnyType).for ?? props) as AnyType;
+  const $props = $static(() => ((props as AnyType).for ?? props) as AnyType);
   $props.type = 'radio';
 
   const rest = $props.$omit([
@@ -53,8 +53,8 @@ export const Radio = setup<RadioProps>((props) => {
   });
 
   return () => {
-    const children = (props as AnyType).children ?? $props.children;
-    if (typeof children === 'function') {
+    const children = $props.children;
+    if (isDynamic(children)) {
       const inputProps = {
         ...rest,
         id: attrs.fieldId,

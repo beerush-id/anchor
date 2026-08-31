@@ -1,5 +1,5 @@
 import { type AnyType, type FormInput, formInput } from '@airlib/form';
-import { classx, derived, type JSX, setup } from '@airlib/solid';
+import { $static, classx, derived, isDynamic, type JSX, setup } from '@airlib/solid';
 import { FILE_OPTIONS, FILE_OPTIONS_KEYS, getInputClasses, INPUT_OPTIONS_KEYS } from '../config.js';
 
 export interface FilePickerProps extends Omit<JSX.InputHTMLAttributes<HTMLInputElement>, 'value' | 'children'> {
@@ -12,7 +12,7 @@ export interface FilePickerProps extends Omit<JSX.InputHTMLAttributes<HTMLInputE
 }
 
 export const FilePicker = setup<FilePickerProps>((props) => {
-  const $props = ((props as AnyType).for ?? props) as AnyType;
+  const $props = $static(() => ((props as AnyType).for ?? props) as AnyType);
 
   const rest = $props.$omit([
     'for',
@@ -51,8 +51,8 @@ export const FilePicker = setup<FilePickerProps>((props) => {
   });
 
   return () => {
-    const children = (props as AnyType).children ?? $props.children;
-    if (typeof children === 'function') {
+    const children = $props.children;
+    if (isDynamic(children)) {
       const inputProps = {
         ...rest,
         id: attrs.fieldId,

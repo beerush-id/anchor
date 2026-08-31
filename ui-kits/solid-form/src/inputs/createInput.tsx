@@ -1,6 +1,6 @@
 import type { AnyType, FormInput, FormInputOptions } from '@airlib/form';
 import { formInput } from '@airlib/form';
-import { type Bindable, classx, derived, type JSX, setup } from '@airlib/solid';
+import { $static, type Bindable, classx, derived, isDynamic, type JSX, setup } from '@airlib/solid';
 import { getInputClasses, getSpecificOptions, INPUT_OPTIONS_KEYS } from '../config.js';
 
 export interface InputProps<T = AnyType> extends Omit<JSX.InputHTMLAttributes<HTMLInputElement>, 'value' | 'children'> {
@@ -19,7 +19,7 @@ export function createInput<P extends Record<string, AnyType> = InputProps, T = 
   const { options: specificOptions, keys: specificOptionKeys } = getSpecificOptions(type);
 
   return setup<P>((props) => {
-    const $props = ((props as AnyType).for ?? props) as AnyType;
+    const $props = $static(() => ((props as AnyType).for ?? props) as AnyType);
     $props.type = type;
 
     const rest = $props.$omit([
@@ -64,8 +64,8 @@ export function createInput<P extends Record<string, AnyType> = InputProps, T = 
     });
 
     return () => {
-      const children = (props as AnyType).children ?? $props.children;
-      if (typeof children === 'function') {
+      const children = $props.children;
+      if (isDynamic(children)) {
         const inputProps = {
           ...rest,
           id: attrs.fieldId,

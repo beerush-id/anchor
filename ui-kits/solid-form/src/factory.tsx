@@ -1,6 +1,6 @@
 import type { AnyType, DeepPaths, FormField, FormState, PathValue } from '@airlib/form';
 import { formField, formState, getForm } from '@airlib/form';
-import { classx, derived, For, type JSX, renderDynamic, Show, Slot, setup, untrack } from '@airlib/solid';
+import { classx, derived, For, isDynamic, type JSX, renderDynamic, Show, Slot, setup, untrack } from '@airlib/solid';
 import type { input, ZodObject, ZodRawShape } from 'zod';
 import type {
   FieldDefaultOptions,
@@ -220,7 +220,10 @@ export function createForm<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawSh
         <Slot for={snippets.error?.(attrs.form)}>
           <Show when={attrs.form.error}>
             {(error) => (
-              <span class={classx(formOptions?.errorClass ?? FORM_OPTIONS.errorClass, $props.errorClass)} role="alert">
+              <span
+                class={classx($props.errorClass ?? formOptions?.errorClass ?? FORM_OPTIONS.errorClass)}
+                role="alert"
+              >
                 {error.message}
               </span>
             )}
@@ -263,7 +266,7 @@ export function createForm<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawSh
         );
       }
 
-      if (typeof $props.children === 'function') {
+      if (isDynamic($props.children)) {
         return renderDynamic($props.children, attrs.field);
       }
 
@@ -290,7 +293,7 @@ export function createForm<T extends ZodObject<ZodRawShape> = ZodObject<ZodRawSh
           </Slot>
           <div class={classx(fieldOptions?.controlClass ?? FIELD_OPTIONS.controlClass, $props.controlClass)}>
             <Slot for={snippets.prefix?.(attrs.field)} />
-            {renderDynamic($props.children, attrs.field)}
+            {$props.children}
             <Slot for={snippets.suffix?.(attrs.field)} />
           </div>
           <Slot for={snippets.support?.(attrs.field)}>

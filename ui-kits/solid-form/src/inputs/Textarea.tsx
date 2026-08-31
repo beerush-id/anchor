@@ -1,5 +1,5 @@
 import { type AnyType, type FormInput, formInput } from '@airlib/form';
-import { type Bindable, classx, derived, type JSX, setup } from '@airlib/solid';
+import { $static, type Bindable, classx, derived, isDynamic, type JSX, setup } from '@airlib/solid';
 import { getInputClasses, INPUT_OPTIONS_KEYS, TEXTAREA_OPTIONS, TEXTAREA_OPTIONS_KEYS } from '../config.js';
 
 export interface TextareaProps extends Omit<JSX.TextareaHTMLAttributes<HTMLTextAreaElement>, 'value' | 'children'> {
@@ -12,7 +12,7 @@ export interface TextareaProps extends Omit<JSX.TextareaHTMLAttributes<HTMLTextA
 }
 
 export const Textarea = setup<TextareaProps>((props) => {
-  const $props = ((props as AnyType).for ?? props) as AnyType;
+  const $props = $static(() => ((props as AnyType).for ?? props) as AnyType);
 
   const rest = $props.$omit([
     'for',
@@ -56,8 +56,8 @@ export const Textarea = setup<TextareaProps>((props) => {
   });
 
   return () => {
-    const children = (props as AnyType).children ?? $props.children;
-    if (typeof children === 'function') {
+    const children = $props.children;
+    if (isDynamic(children)) {
       const textareaProps = {
         ...rest,
         id: attrs.fieldId,
